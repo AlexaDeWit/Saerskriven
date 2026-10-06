@@ -8,6 +8,7 @@ import {
   nameField,
   nodeNamed,
   openFile,
+  readClipboardText,
   runFromMenu,
   storefront,
   twoDiagramsFile,
@@ -16,7 +17,7 @@ import {
 const shared = async (page: Page): Promise<string> => {
   await runFromMenu(page, 'Share as link');
   await expect(page.getByTestId('share-report')).not.toBeEmpty();
-  return page.evaluate(() => navigator.clipboard.readText());
+  return readClipboardText(page);
 };
 
 const moduleFetches = (page: Page): string[] => {

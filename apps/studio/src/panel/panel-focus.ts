@@ -10,23 +10,17 @@ export type ThreatRequest = {
   readonly opened: () => void;
 };
 
-/**
- * What a model panel that styles hide did with a threat asked for: opened
- * it, or refused it for the refused text another threat holds.
- */
+/** A covered editor can refuse a different threat while it holds refused text. */
 export type HiddenChoice = 'opened' | 'refused';
 
-/** Where focus lands in the model panel's list: on the open threat's summary, or on the field holding refused text. */
-export type ListFocus = 'summary' | 'refusal';
+/** The model panel's focus target. */
+export type ListFocus = 'summary' | 'refusal' | 'details';
 
-/**
- * What the mounted model panel's threat list answers to from outside it.
- * `showTab` shows the tab the list is on, and `hidden` is what the list did
- * with that threat where styles hide the panel.
- */
+/** The mounted editor answers requests without putting focus into model or undo state. */
 export type ModelList = {
   readonly open: (request: ThreatRequest) => void;
   readonly showTab: () => void;
+  readonly showDetails: () => void;
   readonly focus: (on: ListFocus) => void;
   readonly hidden: (threatId: ThreatId) => HiddenChoice | undefined;
 };
@@ -49,11 +43,7 @@ export function focusThreatPanel(): boolean {
   return panelFocus.current()?.() ?? false;
 }
 
-/**
- * Opens the model panel on its Threats tab with focus on that tab, clearing
- * the canvas selection, or closes it with focus on the canvas where it
- * already shows.
- */
+/** Toggles the model editor, clearing selection on open and returning focus to the canvas on close. */
 export function toggleModelPanel(): void {
   if (modelStore.getState().modelPanel) {
     hideModelPanel();
@@ -80,11 +70,7 @@ export function takeModelPanelFocus(focusTab: () => void): void {
 /** Registers the mounted model panel's threat list, and returns the removal. */
 export const modelListHandler = modelList.register;
 
-/**
- * Opens a threat on the model panel's Threats tab, showing the panel where it
- * is hidden, which clears the selection. The list calls `opened` once it has
- * opened the threat, and never where a refused draft holds another open.
- */
+/** Opens one threat immediately or after the editor mounts, unless another holds refused text. */
 export function openInModelPanel(request: ThreatRequest): void {
   const list = shownList();
   if (list !== undefined) {
@@ -105,11 +91,7 @@ export function settleArrivingThreat(): void {
   arriving = undefined;
 }
 
-/**
- * Moves focus into the model panel where it shows, and answers whether it
- * did. Focus lands where `on` asks, on the open threat's summary where no
- * field holds refused text, and on the Threats tab where no threat shows.
- */
+/** Focuses the mounted editor, falling back to its Threats tab when no threat shows. */
 export function focusModelPanel(on: ListFocus): boolean {
   const list = shownList();
   list?.focus(on);
@@ -121,13 +103,12 @@ export function showModelThreats(): void {
   shownList()?.showTab();
 }
 
-/**
- * What the model panel did with that threat out of sight: hidden by the
- * styles of a pane drawn over the panel, as the threat register's hide it in
- * a window too narrow for both. It answers nothing where the panel shows.
- * The answer is read from the panel as it is drawn, so it holds no width of
- * its own.
- */
+/** Shows model metadata without replacing the chosen threat or its refused draft. */
+export function showModelDetails(): void {
+  shownList()?.showDetails();
+}
+
+/** Reads a covered editor's result from computed visibility, keeping the width rule in CSS. */
 export function hiddenInModelPanel(
   threatId: ThreatId,
 ): HiddenChoice | undefined {

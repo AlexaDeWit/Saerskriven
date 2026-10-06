@@ -5,6 +5,17 @@ recorded on the elements they attach to. It runs in the browser and keeps no
 server-side state. How it is built is in the READMEs under
 [`apps/studio/src`](../apps/studio/src/canvas/README.md).
 
+The studio supports current Chrome, Firefox and Safari. The built site's
+Content Security Policy requires Chrome 97, Firefox 102 or Safari 16 for
+WebAssembly, according to the
+[browser compatibility data](https://github.com/mdn/browser-compat-data/blob/main/http/headers/Content-Security-Policy.json).
+These are policy requirements, not whole-app compatibility guarantees for
+those older browsers. The policy permits same-origin scripts and assets,
+the hashed startup scripts, WebAssembly compilation and inline styles.
+It blocks other script sources, JavaScript evaluation, workers, objects
+and form submissions. It applies to the built studio, not the development
+server or exported documents.
+
 ## The window
 
 The canvas fills the window. One card centred at the top holds the menu
@@ -666,16 +677,23 @@ the rows you are reading keep their place.
 
 ### The model panel
 
-**Model**, in the menu or M, shows the model panel in the threat panel's place,
-headed by the model's title, on two tabs: **Threats**, which carries the
-model's threat count, and **Details**. It opens on Threats with focus on that
-tab, and clears the selection. Whether it is shown belongs to each browser tab.
-Selecting anything brings the threat panel back. Escape, Close model panel, or
-running the command again closes it and moves focus to the canvas.
+A row in the Register opens one focused threat in the panel, including a
+threat on no element. **Details** in the Register opens the model's metadata
+there and focuses its title. Both clear the selection. The panel has two tabs:
+**Threats**, which counts threats explicitly linked to the whole model, and **Details**.
+M opens the panel on Threats with focus on that tab. Whether it is shown
+belongs to each browser tab. Selecting an element brings its contextual
+threat panel back. Escape, Close model panel, or M closes the model panel and
+moves focus to the canvas.
 
-Threats lists every threat in the model, a threat on no element included, in
-the order above and with the same summaries. A threat that applies to the
-whole model reads "Applies to the whole model", each summary names every
+M shows all model-wide threats with the same summaries and editors as an
+element's panel. Register opens one chosen threat in that panel.
+Threats also attached to elements count when they apply to the whole model.
+An unattached threat without that model link remains in Register.
+Choose any threat from the Register, including one outside the model context.
+An expanded editor remains open when its scope or attachments change.
+Reopening M restores the model context, except for a retained refused draft.
+A threat that applies to the whole model reads "Applies to the whole model", each summary names every
 element its threat is on, and a threat on neither reads "On no element".
 **Add a threat** creates a threat that applies to the whole model and names no
 element, opened with focus in its title. There is no Attach existing threat
@@ -745,9 +763,9 @@ leads its elements with "The whole model", and a threat on neither reads "No
 element".
 There is no filter or search.
 
-Choosing a row by its title opens that threat on the model panel's Threats
-tab, landed at the top as if it were opened there, and shows the model panel
-where something else was in its place. The register stays open with the row
+The Register is the global threat index. Choosing a row by its title opens
+that threat alone on the panel's Threats tab, landed at the top, and shows
+the editor where something else was in its place. The register stays open with the row
 marked and focus on its title, and the status line says which threat opened.
 A threat holding refused text in the model panel stays open there, and
 another row chosen meanwhile is not marked.
@@ -805,7 +823,7 @@ outside one, and none works while focus is inside an open menu or list.
 | Align left, right, top, bottom         | Mod+Shift+Left, Right, Up, Down              | Menu, Arrange       |
 | Align centres, Align middles           | Mod+Shift+H, Mod+Shift+V                     | Menu, Arrange       |
 | Distribute horizontally, vertically    | Mod+Shift+D, Mod+Shift+B                     | Menu, Arrange       |
-| Model                                  | M                                            | Menu                |
+| Model                                  | M                                            | Register Details    |
 | Threat register                        | R                                            | Menu                |
 | Focus threats                          | T                                            | Keyboard only       |
 | Start a flow                           | F                                            | Keyboard only       |
@@ -897,6 +915,7 @@ navigation keys do not.
 - Records have no list of their own: a mitigation is reached through its
   threats, and an assumption through its threats or the model panel's Details.
   The model's explicit record removal has no control.
+- In Safari, record rows in view move when another tab adds a record above them.
 - Link existing and Attach existing have no search or filter, and neither the
   threat list nor the threat register has a filter, a search, or an order but
   the one above.

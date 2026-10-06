@@ -4,13 +4,13 @@ import {
   ZoomOutIcon,
 } from '@radix-ui/react-icons';
 import { Panel, useViewport } from '@xyflow/react';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { IconCommandButton } from '../commands/command-button.js';
 import { useTranslator } from '../messages/locale.js';
 import styles from './zoom-cluster.module.css';
 
-/** The zoom and fit controls over the canvas. */
-export function ZoomCluster() {
+/** Viewport and locale updates refresh the controls without parent drag renders. */
+export const ZoomCluster = memo(function ZoomCluster() {
   const { zoom } = useViewport();
   const { t, locale } = useTranslator();
   const percent = Math.round(zoom * 100);
@@ -44,4 +44,4 @@ export function ZoomCluster() {
       </section>
     </Panel>
   );
-}
+});

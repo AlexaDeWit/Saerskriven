@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const frameTimeFloor = /drag-frame-time\.spec\.ts$/u;
-const pagesExport = /pages-export\.spec\.ts$/u;
+const pagesSuite = /pages-(?:export|csp)\.spec\.ts$/u;
 const phoneWidth = /@phone/u;
 const phoneOnly = /@phone-only/u;
 const pagesBasePath = '/Saerskriven';
@@ -10,7 +10,7 @@ const pagesPort = 4300;
 // What `chromium` runs, held once so the Firefox and WebKit projects run the
 // same specs and cannot drift from it.
 const desktopSuite = {
-  testIgnore: [frameTimeFloor, pagesExport],
+  testIgnore: [frameTimeFloor, pagesSuite],
   grepInvert: phoneOnly,
   fullyParallel: true,
 };
@@ -111,7 +111,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         baseURL: `http://localhost:${String(pagesPort)}${pagesBasePath}/`,
       },
-      testMatch: pagesExport,
+      testMatch: pagesSuite,
       dependencies: ['phone'],
       workers: 1,
     },
@@ -165,6 +165,24 @@ export default defineConfig({
             name: 'webkit',
             use: { ...devices['Desktop Safari'] },
             ...desktopSuite,
+          },
+          {
+            name: 'pages-firefox',
+            use: {
+              ...devices['Desktop Firefox'],
+              baseURL: `http://localhost:${String(pagesPort)}${pagesBasePath}/`,
+            },
+            testMatch: pagesSuite,
+            workers: 1,
+          },
+          {
+            name: 'pages-webkit',
+            use: {
+              ...devices['Desktop Safari'],
+              baseURL: `http://localhost:${String(pagesPort)}${pagesBasePath}/`,
+            },
+            testMatch: pagesSuite,
+            workers: 1,
           },
         ]
       : []),

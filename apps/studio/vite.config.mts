@@ -7,6 +7,7 @@ import {
 } from './initial-page.mjs';
 import { socialCardAsset, socialImage } from './social-card.mjs';
 import { buildAssets } from './build-assets.mjs';
+import { typstCspCallbacks } from './typst-csp.mjs';
 
 const siteUrl = process.env['PAGES_SITE_URL'] ?? hostedStudioUrl;
 const pagesBasePath = process.env['PAGES_BASE_PATH'];
@@ -33,6 +34,19 @@ const initialPageStyles = () => ({
       tag: 'style',
       attrs: { 'data-studio-theme': '' },
       children: initialPageStylesheet,
+      injectTo: 'head-prepend' as const,
+    },
+  ],
+});
+
+const schemaConfiguration = () => ({
+  name: 'studio-schema-configuration',
+  apply: 'build' as const,
+  transformIndexHtml: () => [
+    {
+      tag: 'script',
+      attrs: { 'data-studio-schema-config': '' },
+      children: 'globalThis.__zod_globalConfig = { jitless: true };',
       injectTo: 'head-prepend' as const,
     },
   ],
@@ -74,14 +88,12 @@ export const studioConfig = (options: StudioConfigOptions = {}) =>
     plugins: [
       versionStamp(),
       initialPageStyles(),
+      schemaConfiguration(),
+      typstCspCallbacks(),
       buildAssets(),
       socialCardAsset(),
     ],
-    // jsdom implements no ResizeObserver, and specs here fail without one:
-    // the canvas package's setup module stubs one that observes nothing. The
-    // studio's own then stubs the Element methods jsdom leaves undefined,
-    // pointer capture and scrollIntoView, each with the smallest shape that
-    // can be called.
+    // The canvas and studio setup modules supply browser APIs jsdom omits.
     setupFiles: ['@saerskriven/canvas/test-setup', './src/test-setup.ts'],
     siteUrl,
     socialImage,

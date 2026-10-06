@@ -1,7 +1,5 @@
-/* Over the canvas left of the panel, with the panel's top and height so the
-   two panes line up. The inline end is set on the element from the pane's
-   measured coverage. Where that leaves less than the minimum, the register
-   keeps the minimum from its start edge and draws over the panel. */
+/* Measured panel coverage sets the inline end. The minimum width can cover
+   the panel when both panes do not fit. */
 .register {
   position: absolute;
   z-index: 3;
@@ -23,13 +21,8 @@
   overflow: hidden;
 }
 
-/* A window too narrow for the minimum beside the default panel cover
-   (472px, 24rem and three gutters) gives the register its whole width, so no
-   sliver of the panel shows beside it. The panes it then covers are hidden
-   while it is open, which takes them off the Tab path and out of the
-   accessibility tree, and they show again as it closes. A chosen row reads
-   the model panel's computed visibility, and closes the register where it is
-   hidden, so this query is the one home of the width. */
+/* Below the width needed for both panes, covered controls leave the Tab path.
+   Row choices read this visibility rule before deciding whether to close. */
 @media (max-width: 55rem) {
   .register {
     min-inline-size: calc(100% - var(--saer-space-3) * 2);
@@ -62,17 +55,26 @@
   font-weight: normal;
 }
 
-.close {
+.close,
+.details {
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  inline-size: 2rem;
   block-size: 2rem;
   border: 1px solid var(--saer-colour-border);
   border-radius: var(--saer-radius);
   background: var(--saer-colour-surface);
   color: var(--saer-colour-text);
+}
+
+.close {
+  inline-size: 2rem;
+}
+
+.details {
+  padding-inline: var(--saer-space-2);
+  font: inherit;
 }
 
 /* The header row stays pinned while the rows scroll, and the browser's own
@@ -226,6 +228,7 @@
 }
 
 .close:focus-visible,
+.details:focus-visible,
 .choose:focus-visible,
 .link:focus-visible {
   outline: var(--saer-focus-ring);

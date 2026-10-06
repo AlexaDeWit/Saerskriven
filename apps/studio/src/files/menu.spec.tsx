@@ -394,7 +394,7 @@ describe('what the menu offers', () => {
     await openMenu(user);
 
     expect(item('Save').getAttribute('aria-keyshortcuts')).toBe('Control+S');
-    expect(item('Model').getAttribute('aria-keyshortcuts')).toBe('M');
+    expect(item('Threat register').getAttribute('aria-keyshortcuts')).toBe('R');
 
     await user.hover(item('Export'));
     expect(
@@ -492,41 +492,15 @@ describe('what the studio says about the file', () => {
     });
   });
 
-  it('shows the model panel from the menu, clearing the selection', async () => {
+  it('offers the register as the only global threat entrypoint', async () => {
     const user = userEvent.setup();
     mounted(specBridge());
-    act(() => {
-      dispatch(Action.Select({ elementIds: [actorElement] }));
-    });
-
-    await choose(user, 'Model');
-
-    expect(modelStore.getState()).toMatchObject({
-      selection: [],
-      modelPanel: true,
-    });
-  });
-
-  it('hands focus to the model panel Threats tab as the menu closes on Model, and only that once', async () => {
-    const user = userEvent.setup();
-    render(
-      <>
-        <Menu bridge={specBridge()} />
-        <ThreatOverlay />
-      </>,
-    );
-
-    await choose(user, 'Model');
-
-    await waitFor(() => {
-      expect(screen.queryByRole('menu')).toBeNull();
-      expect(document.activeElement).toBe(threatsTab());
-    });
     await openMenu(user);
-    await user.keyboard('{Escape}');
-    await waitFor(() => {
-      expect(document.activeElement).toBe(burger());
-    });
+
+    expect(screen.queryByRole('menuitem', { name: 'Model' })).toBeNull();
+    expect(
+      screen.getByRole('menuitem', { name: /Threat register/u }),
+    ).toBeDefined();
   });
 
   it('leaves focus on the Threats tab that Model took before the closed menu returned focus to its button', async () => {

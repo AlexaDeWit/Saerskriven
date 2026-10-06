@@ -83,7 +83,9 @@ HTML report and uploads it as `playwright-report` for 14 days.
 Wait for `canvasSettled` from `src/canvas.fixtures.ts` before sending a canvas
 gesture. Opening a model fits its diagram after React Flow measures the
 canvas. A click sent during that fit can land at the wrong position.
-The fixture polls the viewport transform until consecutive readings match.
+The fixture reads the viewport transform on animation frames and waits for
+three consecutive matches. Wall-clock polls can fall between slow frames
+and report rest before a fit or pan finishes.
 
 ## Scope
 

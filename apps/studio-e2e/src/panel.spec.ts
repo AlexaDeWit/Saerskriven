@@ -43,7 +43,7 @@ import {
   threatPanel,
   threatSummary,
 } from './studio.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 
 const replayed = /Session token replayed/u;
 
@@ -363,12 +363,12 @@ test('undoing a threat just added from the keyboard hands focus to Add a threat,
   await page.keyboard.press('Enter');
   await expect(titleField(page)).toBeFocused();
 
-  await page.keyboard.press(registeredChords.undo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
 
   await expect(titleField(page)).toHaveCount(0);
   await expect(add).toBeFocused();
 
-  await page.keyboard.press(registeredChords.redo[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.redo[0]));
 
   await expect(titleField(page)).toBeFocused();
   await expect
@@ -580,7 +580,7 @@ test('every field of a threat is reachable and editable from the keyboard, add a
 
   const title = titleField(page);
   await expect(title).toBeFocused();
-  await title.press('ControlOrMeta+a');
+  await title.press('Control+a');
   await page.keyboard.type('Queue poisoning');
   await page.keyboard.press('Tab');
 
@@ -806,7 +806,7 @@ test('keyboard width changes preserve the viewport and persist across selection 
 const scrollsInside = (field: Locator): Promise<boolean> =>
   field.evaluate((node) => node.scrollHeight > node.clientHeight + 1);
 
-test('prose starts at two lines and grows with its text without scrolling inside, keeps manual resizing, and commits once through pane controls', async ({
+test('prose starts at two lines and grows with its text without scrolling inside, and commits once through pane controls', async ({
   page,
 }) => {
   await openPlaceholder(page);
@@ -858,6 +858,42 @@ test('prose starts at two lines and grows with its text without scrolling inside
   await expect(
     panel.getByRole('button', { name: 'Close threats' }),
   ).toBeVisible();
+  await runFromMenu(page, 'Undo');
+  await expect(recordProse).toHaveCount(0);
+  await runFromMenu(page, 'Undo');
+  await expect(description).toHaveValue('');
+  await runFromMenu(page, 'Redo');
+  await expect(description).toHaveValue(prose);
+  await description.fill(`Draft${softHyphen}text`);
+  await panel.getByRole('button', { name: 'Restore pane width' }).click();
+  await expect(description).toHaveAttribute('aria-invalid', 'true');
+  await panel.getByRole('button', { name: 'Close threats' }).click();
+  await page.keyboard.press(registeredChords['focus-threats'][0]);
+  await expect(description).toHaveValue(`Draft${softHyphen}text`);
+  await expect(description).toHaveAttribute('aria-invalid', 'true');
+});
+
+test('prose keeps a manual resize after typing', async ({
+  page,
+  browserName,
+}) => {
+  test.skip(
+    browserName === 'webkit',
+    'This Linux WebKit build draws no native textarea resize grip',
+  );
+  await openPlaceholder(page);
+  await selectNode(page, placeholder.actor);
+  await expandPane(page);
+  const panel = threatPanel(page);
+  await panel.getByRole('button', { name: 'Add a threat' }).click();
+  await panel
+    .getByRole('button', { name: 'Add mitigation', exact: true })
+    .click();
+  const recordProse = panel.getByRole('textbox', {
+    name: 'Mitigation 1 description',
+    exact: true,
+  });
+  await recordProse.fill('A mitigation description.\n'.repeat(6));
   await recordProse.scrollIntoViewIfNeeded();
   const manual = await edgesOf(recordProse);
   await page.mouse.move(manual.right - 5, manual.bottom - 5);
@@ -872,19 +908,6 @@ test('prose starts at two lines and grows with its text without scrolling inside
   expect((await edgesOf(recordProse)).height).toBe(resized);
   await recordProse.press('Backspace');
   expect((await edgesOf(recordProse)).height).toBe(resized);
-  await runFromMenu(page, 'Undo');
-  await expect(recordProse).toHaveCount(0);
-  await runFromMenu(page, 'Undo');
-  await expect(description).toHaveValue('');
-  await runFromMenu(page, 'Redo');
-  await expect(description).toHaveValue(prose);
-  await description.fill(`Draft${softHyphen}text`);
-  await panel.getByRole('button', { name: 'Restore pane width' }).click();
-  await expect(description).toHaveAttribute('aria-invalid', 'true');
-  await panel.getByRole('button', { name: 'Close threats' }).click();
-  await page.keyboard.press(registeredChords['focus-threats'][0]);
-  await expect(description).toHaveValue(`Draft${softHyphen}text`);
-  await expect(description).toHaveAttribute('aria-invalid', 'true');
 });
 
 test('long titles and fields remain usable in a narrow viewport', async ({

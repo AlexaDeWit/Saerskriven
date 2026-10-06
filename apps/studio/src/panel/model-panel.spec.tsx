@@ -1,4 +1,4 @@
-import type { Model, Threat } from '@saerskriven/model';
+import type { Model, Threat, ThreatId } from '@saerskriven/model';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -22,6 +22,7 @@ import { dispatch, modelStore } from '../store/store.js';
 import { runRegistered } from '../commands/commands.fixtures.js';
 import { activeTranslator } from '../messages/locale.js';
 import { ModelPanel } from './model-panel.js';
+import { openInModelPanel } from './panel-focus.js';
 import {
   chooseFrom,
   editorTimeout,
@@ -49,12 +50,18 @@ const showPanel = ({
   onHeld = noop,
   onClose = noop,
   drafts = new Map(),
+  threatId: chosenThreat,
 }: {
   readonly held?: RefusedField;
   readonly onHeld?: (draft: RefusedField | undefined) => void;
   readonly onClose?: () => void;
   readonly drafts?: HeldDrafts;
+  readonly threatId?: ThreatId;
 } = {}): void => {
+  modelStore.setState({ modelPanel: true });
+  if (chosenThreat !== undefined) {
+    openInModelPanel({ threatId: chosenThreat, opened: noop });
+  }
   render(
     <ModelPanel
       drafts={drafts}
@@ -103,6 +110,13 @@ const summary = (title: RegExp): HTMLElement =>
 const listed = (): readonly (string | undefined)[] =>
   listedThreats(screen.getByRole('region', { name: 'Model' }));
 
+const scopedFallbackModel: Model = {
+  ...recordedModel,
+  threats: recordedModel.threats.map((threat) =>
+    threat.id === secondThreat ? { ...threat, appliesToModel: true } : threat,
+  ),
+};
+
 const wholeModel = 'Applies to the whole model';
 
 const looseThreat = threatId('threat-loose');
@@ -146,7 +160,7 @@ describe(
       resetAnnouncements();
     });
 
-    it('is a region named Model, headed by the model title, on a Threats tab counting every threat beside Details', () => {
+    it('is a region named Model, headed by the model title, on a Threats tab counting model-wide threats beside Details', () => {
       showPanel();
 
       expect(screen.getByRole('region', { name: 'Model' })).toBe(
@@ -156,9 +170,7 @@ describe(
         screen.getByRole('heading', { name: recordedModel.metadata.title }),
       ).toBeDefined();
       expect(threatsTab().getAttribute('aria-selected')).toBe('true');
-      expect(numbersIn(threatsTab().textContent)).toEqual([
-        recordedModel.threats.length,
-      ]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([0]);
       expect(detailsTab().getAttribute('aria-selected')).toBe('false');
       expect(screen.queryByRole('textbox', { name: 'Title' })).toBeNull();
     });
@@ -174,7 +186,7 @@ describe(
         }),
         true,
       );
-      showPanel();
+      showPanel({ threatId: firstThreat });
 
       expect(
         screen.getByRole('heading', {
@@ -183,28 +195,30 @@ describe(
       ).toBeDefined();
     });
 
-    it('lists every threat in the model in review order, whatever element it is on', () => {
+    it('shows only model-wide threats without a Register choice', () => {
       withLooseThreat();
+      act(() => {
+        dispatch(Action.LinkThreatToModel({ threatId: looseThreat }));
+      });
       showPanel();
 
-      expect(listed()).toEqual([
-        looseThreat,
-        firstThreat,
-        secondThreat,
-        mitigatedThreat,
-      ]);
+      expect(listed()).toEqual([looseThreat]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([1]);
     });
 
     it('names the elements each threat is on, and says where one is on none', () => {
       const { t } = activeTranslator();
       withLooseThreat();
-      showPanel();
+      showPanel({ threatId: looseThreat });
 
       expect(
         summary(/A substituted dependency/u).textContent?.includes(
           t('panel.on-no-element'),
         ),
       ).toBe(true);
+      act(() => {
+        openInModelPanel({ threatId: firstThreat, opened: noop });
+      });
       expect(
         summary(/A reader edits/u).textContent?.includes(
           t('panel.on-elements', { list: ['Reader'] }),
@@ -236,10 +250,10 @@ describe(
     });
 
     it('applies a threat to the whole model from its attached elements, keeps it when its last element is detached and says why, and removes it when the model link goes too', async () => {
+      modelStore.setState(initialState(scopedFallbackModel), true);
       const user = userEvent.setup();
       const { t } = activeTranslator();
-      showPanel();
-      await user.click(summary(/A reader edits/u));
+      showPanel({ threatId: firstThreat });
 
       await chooseFrom(wholeModel, t('enums.yes'));
 
@@ -256,7 +270,7 @@ describe(
         elements: [],
         appliesToModel: true,
       });
-      expect(listed()).toEqual([firstThreat, secondThreat]);
+      expect(listed()).toEqual([firstThreat]);
       expect(currentAnnouncement().message).toContain(
         t('canvas.threat-stays-on-model'),
       );
@@ -280,6 +294,7 @@ describe(
     });
 
     it('ends the key press that chooses No with the removal, leaving the next threat closed under focus and the notice standing', async () => {
+      modelStore.setState(initialState(scopedFallbackModel), true);
       const user = userEvent.setup();
       const { t } = activeTranslator();
       act(() => {
@@ -291,8 +306,7 @@ describe(
           }),
         );
       });
-      showPanel();
-      await user.click(summary(/A reader edits/u));
+      showPanel({ threatId: firstThreat });
       resetAnnouncements();
 
       screen.getByRole('combobox', { name: wholeModel }).focus();
@@ -309,18 +323,16 @@ describe(
     });
 
     it('keeps a threat on its elements when its model link goes, and says nothing', async () => {
-      const user = userEvent.setup();
       const { t } = activeTranslator();
       act(() => {
         dispatch(Action.LinkThreatToModel({ threatId: firstThreat }));
       });
-      showPanel();
-      await user.click(summary(/A reader edits/u));
+      showPanel({ threatId: firstThreat });
 
       await chooseFrom(wholeModel, t('enums.no'));
 
       expect(present().threats[0]).toEqual(recordedModel.threats[0]);
-      expect(listed()).toEqual([firstThreat, secondThreat]);
+      expect(listed()).toEqual([firstThreat]);
       expect(currentAnnouncement().message).toBe('');
     });
 
@@ -338,12 +350,10 @@ describe(
     });
 
     it('opens a threat on no element in place and commits an edit to it as one undo step', async () => {
-      const user = userEvent.setup();
       withLooseThreat();
       const before = present();
-      showPanel();
+      showPanel({ threatId: looseThreat });
 
-      await user.click(summary(/A substituted dependency/u));
       expect(
         screen.getByRole('group', { name: 'Attached elements' }),
       ).toBeDefined();
@@ -360,9 +370,8 @@ describe(
     it('attaches an element to a threat on no element, which stays in its place in the list', async () => {
       const user = userEvent.setup();
       withLooseThreat();
-      showPanel();
+      showPanel({ threatId: looseThreat });
       const shown = listed();
-      await user.click(summary(/A substituted dependency/u));
 
       await chooseFrom('Existing element', 'Studio');
       await user.click(button('Attach existing element'));
@@ -384,9 +393,8 @@ describe(
           }),
         );
       });
-      showPanel();
+      showPanel({ threatId: firstThreat });
       const shown = listed();
-      await user.click(summary(/A reader edits/u));
 
       await user.click(button('Detach Reader'));
 
@@ -396,10 +404,10 @@ describe(
     });
 
     it('removes a threat when the detach takes its last element, says so, and moves focus to the next threat', async () => {
+      modelStore.setState(initialState(scopedFallbackModel), true);
       const user = userEvent.setup();
       const before = present();
-      showPanel();
-      await user.click(summary(/A reader edits/u));
+      showPanel({ threatId: firstThreat });
 
       await user.click(button('Detach Reader'));
 
@@ -423,8 +431,7 @@ describe(
         }),
         true,
       );
-      showPanel();
-      await user.click(summary(/A reader edits/u));
+      showPanel({ threatId: firstThreat });
 
       await user.click(button('Delete threat 1'));
 
@@ -441,8 +448,7 @@ describe(
           }),
         );
       });
-      showPanel();
-      await user.click(summary(/New threat/u));
+      showPanel({ threatId: present().threats.at(-1)?.id });
       await user.click(textbox('Title'));
 
       runRegistered('undo');
@@ -459,8 +465,7 @@ describe(
     it('hands a refused draft in a threat to the drafts it was given under no element, and opens on it again', async () => {
       const user = userEvent.setup();
       const drafts: HeldDrafts = new Map();
-      showPanel({ drafts });
-      await user.click(summary(/A reader edits/u));
+      showPanel({ drafts, threatId: firstThreat });
 
       await typeRefusedProse(user);
       await user.click(summary(/A reader edits/u));
@@ -471,21 +476,24 @@ describe(
         text: refusedProse,
       });
       cleanup();
-      showPanel({ drafts });
+      showPanel({ drafts, threatId: firstThreat });
 
       expect(textbox('Description').getAttribute('aria-invalid')).toBe('true');
     });
 
-    it('keeps a refused draft on screen where an undo brings another threat back, with focus left on the Threats tab', async () => {
+    it('keeps a refused draft on screen where undo restores another threat', async () => {
       const user = userEvent.setup();
       act(() => {
         dispatch(Action.RemoveThreat({ threatId: secondThreat }));
         dispatch(Action.Undo());
       });
-      showPanel();
-      await user.click(summary(/A reader edits/u));
+      showPanel({ threatId: firstThreat });
       await typeRefusedProse(user);
-      await user.click(summary(/A reader sees/u));
+      await user.click(threatsTab());
+      expect(refusedDraft().getAttribute('aria-invalid')).toBe('true');
+      act(() => {
+        openInModelPanel({ threatId: secondThreat, opened: noop });
+      });
       runRegistered('redo');
       expect(present().threats).toHaveLength(1);
       expect(document.activeElement).toBe(threatsTab());
@@ -493,9 +501,9 @@ describe(
       runRegistered('undo');
 
       expect(present().threats).toHaveLength(2);
-      expect(summary(/A reader sees/u).getAttribute('aria-expanded')).toBe(
-        'false',
-      );
+      expect(
+        screen.queryByRole('button', { name: /A reader sees/u }),
+      ).toBeNull();
       expect(refusedDraft().getAttribute('aria-invalid')).toBe('true');
       expect(document.activeElement).toBe(threatsTab());
     });
@@ -503,8 +511,7 @@ describe(
     it('adds nothing while another threat holds a refused draft, on a press that leaves the field holding it, and moves focus back to that field', async () => {
       const user = userEvent.setup();
       const drafts: HeldDrafts = new Map();
-      showPanel({ drafts });
-      await user.click(summary(/A reader edits/u));
+      showPanel({ drafts, threatId: firstThreat });
       await typeRefusedProse(user);
       const before = present();
 

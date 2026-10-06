@@ -29,7 +29,7 @@ import {
 import { dispatch, modelStore } from '../store/store.js';
 import { detailsTab, numbersIn, threatsTab } from '../ui/ui.fixtures.js';
 import { markedWithin } from './marked.js';
-import { editorTimeout, listedThreats } from './panel.fixtures.js';
+import { chooseFrom, editorTimeout, listedThreats } from './panel.fixtures.js';
 import { ThreatOverlay } from './threat-overlay.js';
 import panelStyles from './threat-panel.module.css';
 import { resetThreatRegister } from './threat-register-state.js';
@@ -69,6 +69,40 @@ const registerModel: Model = {
 
 const reviewed = [looseThreat, firstThreat, mitigatedThreat];
 
+const modelOnlyThreat = threatId('threat-model-only');
+
+const mixedModel: Model = {
+  ...registerModel,
+  threats: [
+    ...registerModel.threats.map((threat) =>
+      threat.id === mitigatedThreat
+        ? {
+            ...threat,
+            appliesToModel: true,
+            elements: [...base.elements, storeElement],
+          }
+        : threat,
+    ),
+    {
+      ...base,
+      id: modelOnlyThreat,
+      number: 4,
+      title: 'A model-wide trust assumption fails',
+      severity: 'critical',
+      elements: [],
+      appliesToModel: true,
+    },
+  ],
+  lastIssuedThreatNumber: 4,
+};
+
+const scopedCollectionModel: Model = {
+  ...mixedModel,
+  threats: mixedModel.threats.map((threat) =>
+    threat.id === firstThreat ? { ...threat, appliesToModel: true } : threat,
+  ),
+};
+
 const register = (): HTMLElement =>
   screen.getByRole('region', { name: 'Threat register' });
 
@@ -94,6 +128,9 @@ const listedRows = (): readonly (string | undefined)[] =>
 
 const modelSummary = (title: RegExp): HTMLElement =>
   within(modelPanel()).getByRole('button', { name: title });
+
+const absentSummary = (title: RegExp): HTMLElement | null =>
+  within(modelPanel()).queryByRole('button', { name: title });
 
 const hideModelPanel = (): void => {
   act(() => {
@@ -182,6 +219,228 @@ describe(
 
     afterEach(() => {
       vi.restoreAllMocks();
+    });
+
+    it.each(['delete', 'unlink', 'detach'] as const)(
+      'keeps the ordinary Model collection after %s and history',
+      async (change) => {
+        const user = userEvent.setup();
+        modelStore.setState(initialState(scopedCollectionModel), true);
+        showStudio();
+        runRegistered('model-panel');
+        const initial = [modelOnlyThreat, firstThreat, mitigatedThreat];
+        expect(listedThreats(modelPanel())).toEqual(initial);
+        expect(numbersIn(threatsTab().textContent)).toEqual([3]);
+        const removed = change === 'unlink' ? modelOnlyThreat : firstThreat;
+        const remaining = initial.filter((id) => id !== removed);
+        await user.click(
+          modelSummary(
+            change === 'unlink'
+              ? /A model-wide trust assumption/u
+              : /A reader edits/u,
+          ),
+        );
+
+        if (change === 'delete') {
+          await user.click(
+            within(modelPanel()).getByRole('button', {
+              name: 'Delete threat 1',
+            }),
+          );
+        } else {
+          await chooseFrom('Applies to the whole model', 'No');
+        }
+        expect(listedThreats(modelPanel())).toEqual(
+          change === 'detach' ? [...remaining, firstThreat] : remaining,
+        );
+        expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+        if (change === 'detach') {
+          await user.click(
+            within(modelPanel()).getByRole('button', { name: 'Detach Reader' }),
+          );
+        }
+
+        expect(listedThreats(modelPanel())).toEqual(remaining);
+        expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+        expect(
+          modelStore
+            .getState()
+            .present.threats.some(({ id }) => id === removed),
+        ).toBe(false);
+        const restored = change === 'detach' ? [remaining, initial] : [initial];
+        for (const expected of restored) {
+          runRegistered('undo');
+          expect(listedThreats(modelPanel())).toEqual(expected);
+          expect(numbersIn(threatsTab().textContent)).toEqual([
+            expected.length,
+          ]);
+        }
+        for (const _ of restored) {
+          runRegistered('redo');
+          expect(listedThreats(modelPanel())).toEqual(remaining);
+          expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+        }
+      },
+    );
+
+    it('keeps Register-focused fallback separate from the remaining Model collection', async () => {
+      const user = userEvent.setup();
+      modelStore.setState(initialState(scopedCollectionModel), true);
+      showStudio();
+      openRegister();
+      await user.click(chooser(modelOnlyThreat));
+      await user.click(
+        screen.getByRole('button', { name: 'Close threat register' }),
+      );
+      await user.click(
+        within(modelPanel()).getByRole('button', { name: 'Delete threat 4' }),
+      );
+
+      expect(listedThreats(modelPanel())).toEqual([firstThreat]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+      expect(document.activeElement).toBe(modelSummary(/A reader edits/u));
+      runRegistered('undo');
+      expect(listedThreats(modelPanel())).toEqual([firstThreat]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([3]);
+      runRegistered('redo');
+      expect(listedThreats(modelPanel())).toEqual([firstThreat]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+    });
+
+    it('keeps Model, element and Register collections distinct, and opens excluded threats for editing', async () => {
+      const user = userEvent.setup();
+      modelStore.setState(initialState(mixedModel), true);
+      showStudio();
+      runRegistered('model-panel');
+
+      expect(listedThreats(modelPanel())).toEqual([
+        modelOnlyThreat,
+        mitigatedThreat,
+      ]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+      expect(document.activeElement).toBe(threatsTab());
+
+      act(() => {
+        dispatch(Action.Select({ elementIds: base.elements }));
+      });
+      expect(
+        listedThreats(screen.getByRole('region', { name: 'Threats' })),
+      ).toEqual([firstThreat, mitigatedThreat]);
+      openRegister();
+      expect(listedRows()).toEqual([modelOnlyThreat, ...reviewed]);
+
+      for (const selectedThreat of [firstThreat, looseThreat]) {
+        await user.click(chooser(selectedThreat));
+        expect(listedThreats(modelPanel())).toEqual([selectedThreat]);
+        const before = modelStore.getState().present;
+        const title = within(modelPanel()).getByRole('textbox', {
+          name: 'Title',
+        });
+        await user.click(title);
+        await user.keyboard('{End} edited');
+        await user.click(screen.getByRole('button', { name: 'Opener' }));
+        expect(
+          modelStore
+            .getState()
+            .present.threats.find(({ id }) => id === selectedThreat)?.title,
+        ).toBe(
+          `${before.threats.find(({ id }) => id === selectedThreat)?.title} edited`,
+        );
+        runRegistered('undo');
+        expect(modelStore.getState().present).toBe(before);
+      }
+
+      await user.click(
+        screen.getByRole('button', { name: 'Close threat register' }),
+      );
+      runRegistered('model-panel');
+      runRegistered('model-panel');
+      expect(listedThreats(modelPanel())).toEqual([
+        modelOnlyThreat,
+        mitigatedThreat,
+      ]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+    });
+
+    it('holds an expanded editor and its refusal across leaving Model scope, reopening, and undo', async () => {
+      const user = userEvent.setup();
+      modelStore.setState(initialState(mixedModel), true);
+      showStudio();
+      runRegistered('model-panel');
+      await user.click(modelSummary(/A model file is read past its bounds/u));
+      const description = within(modelPanel()).getByRole('textbox', {
+        name: 'Description',
+      });
+      await user.click(description);
+      await user.keyboard(`Pasted${softHyphen}prose`);
+      await user.click(screen.getByRole('button', { name: 'Opener' }));
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+
+      act(() => {
+        dispatch(Action.UnlinkThreatFromModel({ threatId: mitigatedThreat }));
+        dispatch(
+          Action.DetachThreat({
+            threatId: mitigatedThreat,
+            elementId: storeElement,
+          }),
+        );
+      });
+      expect(listedThreats(modelPanel())).toEqual([
+        modelOnlyThreat,
+        mitigatedThreat,
+      ]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([1]);
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+      runRegistered('model-panel');
+      runRegistered('model-panel');
+      expect(listedThreats(modelPanel())).toEqual([mitigatedThreat]);
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+      openRegister();
+      await user.click(chooser(looseThreat));
+      expect(listedThreats(modelPanel())).toEqual([mitigatedThreat]);
+      await user.click(
+        screen.getByRole('button', { name: 'Close threat register' }),
+      );
+      await user.click(
+        within(modelPanel()).getByRole('button', { name: 'Add a threat' }),
+      );
+      expect(document.activeElement).toBe(refusedDescription());
+      expect(modelStore.getState().present.threats).toHaveLength(4);
+      runRegistered('undo');
+      runRegistered('undo');
+      expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+      expect(document.activeElement).toBe(refusedDescription());
+    });
+
+    it('keeps a focused excluded threat in history, returning focus after undo and redo', async () => {
+      const user = userEvent.setup();
+      showStudio();
+      const threat = {
+        ...registerModel.threats[1],
+        id: modelOnlyThreat,
+        number: 4,
+      };
+      act(() => {
+        dispatch(Action.AddThreat({ threat }));
+      });
+      openRegister();
+      await user.click(chooser(modelOnlyThreat));
+      await user.click(
+        screen.getByRole('button', { name: 'Close threat register' }),
+      );
+      await user.click(
+        within(modelPanel()).getByRole('textbox', { name: 'Title' }),
+      );
+      expect(numbersIn(threatsTab().textContent)).toEqual([0]);
+      runRegistered('undo');
+      expect(listedThreats(modelPanel())).toEqual([]);
+      expect(document.activeElement).toBe(threatsTab());
+      runRegistered('redo');
+      expect(listedThreats(modelPanel())).toEqual([modelOnlyThreat]);
+      expect(document.activeElement).toBe(
+        within(modelPanel()).getByRole('textbox', { name: 'Title' }),
+      );
     });
 
     it('opens on R with focus on its first row, opening no panel and leaving the model alone', () => {
@@ -302,9 +561,7 @@ describe(
       await user.click(chooser(mitigatedThreat));
 
       expect(threatsTab().getAttribute('aria-selected')).toBe('true');
-      expect(
-        modelSummary(/A substituted dependency/u).getAttribute('aria-expanded'),
-      ).toBe('false');
+      expect(absentSummary(/A substituted dependency/u)).toBeNull();
       await waitFor(() => {
         expect(landed().at(-1)).toBe(200);
       });
@@ -317,6 +574,46 @@ describe(
         'true',
       );
       expect(chooser(looseThreat).getAttribute('aria-current')).toBeNull();
+    });
+
+    it.each([false, true])(
+      'opens model Details from the register with %s hidden panes, without changing the model',
+      async (hidden) => {
+        const user = userEvent.setup();
+        if (hidden) {
+          hidePanesUnderTheRegister();
+        }
+        showStudio();
+        const before = modelStore.getState().present;
+        openRegister();
+
+        await user.click(
+          within(register()).getByRole('button', { name: 'Details' }),
+        );
+
+        expect(registerShown()).toBeNull();
+        expect(detailsTab().getAttribute('aria-selected')).toBe('true');
+        expect(document.activeElement).toBe(
+          within(modelPanel()).getByRole('textbox', { name: 'Title' }),
+        );
+        expect(modelStore.getState().present).toBe(before);
+      },
+    );
+
+    it('keeps a refused threat draft through Details opened from the register', async () => {
+      const user = userEvent.setup();
+      await showStudioHoldingARefusedDraft(user);
+
+      await user.click(
+        within(register()).getByRole('button', { name: 'Details' }),
+      );
+      await user.click(threatsTab());
+
+      expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
+      expect(
+        modelSummary(/A substituted dependency/u).getAttribute('aria-expanded'),
+      ).toBe('true');
+      expect(listedThreats(modelPanel())).toEqual([looseThreat]);
     });
 
     it('selects an element on another diagram from its name, closing the register', async () => {
@@ -474,11 +771,7 @@ describe(
       expect(
         modelSummary(/A substituted dependency/u).getAttribute('aria-expanded'),
       ).toBe('true');
-      expect(
-        modelSummary(/A model file is read past its bounds/u).getAttribute(
-          'aria-expanded',
-        ),
-      ).toBe('false');
+      expect(absentSummary(/A model file is read past its bounds/u)).toBeNull();
       expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
       expect(currentAnnouncement().message).toBe('');
     });
@@ -493,11 +786,7 @@ describe(
       expect(
         modelSummary(/A substituted dependency/u).getAttribute('aria-expanded'),
       ).toBe('true');
-      expect(
-        modelSummary(/A model file is read past its bounds/u).getAttribute(
-          'aria-expanded',
-        ),
-      ).toBe('false');
+      expect(absentSummary(/A model file is read past its bounds/u)).toBeNull();
       expect(chooser(mitigatedThreat).getAttribute('aria-current')).toBeNull();
       expect(currentAnnouncement().message).toBe('');
 
@@ -569,11 +858,7 @@ describe(
       expect(registerShown()).toBeNull();
       expect(document.activeElement).toBe(refusedDescription());
       expect(refusedDescription().getAttribute('aria-invalid')).toBe('true');
-      expect(
-        modelSummary(/A model file is read past its bounds/u).getAttribute(
-          'aria-expanded',
-        ),
-      ).toBe('false');
+      expect(absentSummary(/A model file is read past its bounds/u)).toBeNull();
       expect(currentAnnouncement().message).toBe('');
 
       openRegister();
@@ -670,12 +955,10 @@ describe(
         );
       });
       await showStudioHoldingARefusedDraft(user);
-      modelSummary(/An added threat/u).focus();
+      threatsTab().focus();
       runRegistered('undo');
       runRegistered('redo');
-      expect(
-        modelSummary(/An added threat/u).getAttribute('aria-expanded'),
-      ).toBe('false');
+      expect(absentSummary(/An added threat/u)).toBeNull();
       openRegister();
 
       await user.click(chooser(mitigatedThreat));

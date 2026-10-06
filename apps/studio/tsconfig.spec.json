@@ -17,6 +17,7 @@
     "initial-page.mts",
     "social-card.mts",
     "build-assets.mts",
+    "typst-csp.mts",
     "src/**/*.fixtures.ts",
     "src/**/*.fixtures.tsx",
     "src/test-setup.ts",

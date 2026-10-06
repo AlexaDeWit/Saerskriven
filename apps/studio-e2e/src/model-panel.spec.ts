@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import { onScreen, screenBoxOf } from './canvas.fixtures.js';
 import {
   allowClipboard,
@@ -8,27 +8,24 @@ import {
   chooseInPanel,
   editAnnouncement,
   expandThreat,
-  menuButton,
-  menuItem,
   nodeNamed,
+  modelPanel,
+  openModelPanel,
   offeredToLink,
   openShopperTakeover,
   openTwoDiagrams,
   panelControl,
   panelField,
+  requiresClipboardApiRead,
   runFromMenu,
   selectByKeyboard,
   selectNode,
   showDetails,
   storefront,
-  tabToNextControl,
   threatPanel,
   threatSummary,
   undoOffered,
 } from './studio.fixtures.js';
-
-const modelPanel = (page: Page): Locator =>
-  page.getByRole('region', { name: 'Model', exact: true });
 
 const modelField = (
   page: Page,
@@ -77,11 +74,6 @@ const attachedElements = (page: Page): Locator =>
     exact: true,
   });
 
-const openModelPanel = async (page: Page): Promise<void> => {
-  await runFromMenu(page, 'Model');
-  await expect(modelPanel(page)).toBeVisible();
-};
-
 const replaceText = async (field: Locator, text: string): Promise<void> => {
   await field.fill(text);
   await field.press('Tab');
@@ -123,36 +115,17 @@ test('the model panel takes the selection panel location and clears the selectio
   await expect(threatPanel(page)).toBeVisible();
 });
 
-test('M opens the model panel on Threats, listing every threat with one on no element, which opens and is edited in place', async ({
+test('the Register opens an unattached threat alone in the editor and its edit is one undo step', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
   await selectNode(page, storefront.shopper);
-  const [shortcut] = registeredChords['model-panel'];
 
-  await page.keyboard.press(shortcut);
+  await openModelPanel(page, refundAbuse);
 
-  await expect(threatsTab(page)).toBeFocused();
-  await expect(threatsTab(page)).toHaveAttribute('aria-selected', 'true');
-  await expect(threatsTab(page)).toHaveText(/10/u);
-  await expect(
-    modelPanel(page).getByRole('heading', { name: 'Two diagrams' }),
-  ).toBeVisible();
-  await expect(modelPanel(page).locator('[data-threat-item]')).toHaveCount(10);
+  await expect(modelPanel(page).locator('[data-threat-item]')).toHaveCount(1);
   const loose = modelThreat(page, refundAbuse);
   await expect(loose).toHaveAccessibleName(/On no element$/u);
-  await expect(modelThreat(page, storefront.takeover)).toHaveAccessibleName(
-    /On Shopper and /u,
-  );
-  await expect(modelThreat(page, cardData)).toHaveAccessibleName(
-    /Applies to the whole model On /u,
-  );
-
-  await tabToNextControl(page);
-  await expect(modelControl(page, 'Add a threat')).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(modelThreat(page, storefront.takeover)).toBeFocused();
-  await loose.click();
   await expect(loose).toHaveAttribute('aria-expanded', 'true');
   await expect(modelField(page, 'textbox', 'Title')).toHaveValue(
     'Refund policy abused',
@@ -169,9 +142,8 @@ test("detaching a threat's last element from the model's list removes the threat
   page,
 }) => {
   await openTwoDiagrams(page);
-  await openModelPanel(page);
-  const callback = modelThreat(page, /Forged payment callback/u);
-  await callback.click();
+  await openModelPanel(page, forgedCallback);
+  const callback = modelThreat(page, forgedCallback);
   await expect(callback).toHaveAttribute('aria-expanded', 'true');
 
   await attachedElements(page)
@@ -179,12 +151,13 @@ test("detaching a threat's last element from the model's list removes the threat
     .click();
 
   await expect(callback).toHaveCount(0);
-  await expect(threatsTab(page)).toHaveText(/9/u);
+  await expect(threatsTab(page)).toHaveText(/1/u);
   await expect(editAnnouncement(page)).toContainText('7');
 
   await runFromMenu(page, 'Undo');
+  await openModelPanel(page, forgedCallback);
   await expect(callback).toBeVisible();
-  await expect(threatsTab(page)).toHaveText(/10/u);
+  await expect(threatsTab(page)).toHaveText(/1/u);
 });
 
 test('Add a threat on the model panel adds a threat that applies to the whole model, opened on its title, and one undo takes it back', async ({
@@ -196,7 +169,7 @@ test('Add a threat on the model panel adds a threat that applies to the whole mo
   await modelControl(page, 'Add a threat').click();
 
   await expect(modelField(page, 'textbox', 'Title')).toBeFocused();
-  await expect(threatsTab(page)).toHaveText(/11/u);
+  await expect(threatsTab(page)).toHaveText(/2/u);
   await expect(
     modelPanel(page).getByRole('button', { name: /^12 /u, expanded: true }),
   ).toHaveAccessibleName(/Applies to the whole model$/u);
@@ -206,7 +179,7 @@ test('Add a threat on the model panel adds a threat that applies to the whole mo
   ).toHaveCount(0);
 
   await runFromMenu(page, 'Undo');
-  await expect(threatsTab(page)).toHaveText(/10/u);
+  await expect(threatsTab(page)).toHaveText(/1/u);
   expect(await undoOffered(page)).toBe(false);
 });
 
@@ -214,9 +187,8 @@ test('a threat applied to the whole model stays when its last element is detache
   page,
 }) => {
   await openTwoDiagrams(page);
-  await openModelPanel(page);
+  await openModelPanel(page, forgedCallback);
   const callback = modelThreat(page, forgedCallback);
-  await callback.click();
   await expect(callback).toHaveAttribute('aria-expanded', 'true');
   await expect(wholeModel(page)).toContainText('No');
 
@@ -229,21 +201,22 @@ test('a threat applied to the whole model stays when its last element is detache
     .click();
 
   await expect(callback).toHaveAccessibleName(/Applies to the whole model$/u);
-  await expect(threatsTab(page)).toHaveText(/10/u);
+  await expect(threatsTab(page)).toHaveText(/2/u);
   await expect(wholeModel(page)).toBeFocused();
   await expect(editAnnouncement(page)).toContainText('7');
 
   await chooseByKeyboard(page, 'ArrowDown');
   await expect(callback).toHaveCount(0);
-  await expect(threatsTab(page)).toHaveText(/9/u);
+  await expect(threatsTab(page)).toHaveText(/1/u);
   await expect(editAnnouncement(page)).toContainText('7');
-  const next = modelThreat(page, /Unpublished listings readable/u);
+  const next = modelThreat(page, cardData);
   await expect(next).toBeFocused();
   await expect(next).toHaveAttribute('aria-expanded', 'false');
 
   await runFromMenu(page, 'Undo');
+  await openModelPanel(page, forgedCallback);
   await expect(callback).toHaveAccessibleName(/Applies to the whole model$/u);
-  await expect(threatsTab(page)).toHaveText(/10/u);
+  await expect(threatsTab(page)).toHaveText(/2/u);
 });
 
 test('a threat applied to the whole model in one tab reads so in another, and an undo there takes it back in both', async ({
@@ -253,13 +226,12 @@ test('a threat applied to the whole model in one tab reads so in another, and an
   const other = await context.newPage();
   await openTwoDiagrams(page);
   await openTwoDiagrams(other);
-  await openModelPanel(other);
+  await openModelPanel(other, forgedCallback);
   const there = modelThreat(other, forgedCallback);
   await expect(there).not.toHaveAccessibleName(/Applies to the whole model/u);
 
-  await openModelPanel(page);
+  await openModelPanel(page, forgedCallback);
   const here = modelThreat(page, forgedCallback);
-  await here.click();
   await chooseInPanel(page, wholeModelField, 'Yes', modelPanel(page));
 
   await expect(there).toHaveAccessibleName(/Applies to the whole model On /u);
@@ -272,35 +244,36 @@ test('cutting an element of a threat that applies to the whole model and pasting
   context,
   page,
 }) => {
+  requiresClipboardApiRead(context);
   await allowClipboard(context);
   await openTwoDiagrams(page);
   await selectByKeyboard(page, paymentGateway);
 
-  await page.keyboard.press('ControlOrMeta+x');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+x'));
   await expect(nodeNamed(page, paymentGateway)).toHaveCount(0);
-  await page.keyboard.press('ControlOrMeta+v');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+v'));
 
   await expect(nodeNamed(page, paymentGateway)).toHaveCount(1);
   await expect(threatSummary(page, cardData)).toHaveAccessibleName(/^4 /u);
-  await openModelPanel(page);
-  await expect(threatsTab(page)).toHaveText(/10/u);
+  await openModelPanel(page, cardData);
+  await expect(threatsTab(page)).toHaveText(/1/u);
   await expect(modelThreat(page, cardData)).toHaveCount(1);
   await expect(modelThreat(page, cardData)).toHaveAccessibleName(
     /Applies to the whole model On /u,
   );
 });
 
-test('the model panel opened from the menu by keyboard focuses its Threats tab, and Escape, Close or the menu item again closes it with focus on the canvas', async ({
+test('Register Details opens by keyboard, and Escape, Close or M returns focus to the canvas', async ({
   page,
 }) => {
   await openTwoDiagrams(page);
-
-  await menuButton(page).focus();
+  await runFromMenu(page, 'Threat register');
+  const details = page
+    .getByRole('region', { name: 'Threat register', exact: true })
+    .getByRole('button', { name: 'Details', exact: true });
+  await details.focus();
   await page.keyboard.press('Enter');
-  const item = menuItem(page, 'Model');
-  await item.focus();
-  await page.keyboard.press('Enter');
-  await expect(threatsTab(page)).toBeFocused();
+  await expect(modelField(page, 'textbox', 'Title')).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(modelPanel(page)).toHaveCount(0);
   await expect(canvasSurface(page)).toBeFocused();
@@ -311,9 +284,8 @@ test('the model panel opened from the menu by keyboard focuses its Threats tab, 
   await expect(canvasSurface(page)).toBeFocused();
 
   await openModelPanel(page);
-  await runFromMenu(page, 'Model');
+  await page.keyboard.press(registeredChords['model-panel'][0]);
   await expect(modelPanel(page)).toHaveCount(0);
-  await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(canvasSurface(page)).toBeFocused();
 });
 

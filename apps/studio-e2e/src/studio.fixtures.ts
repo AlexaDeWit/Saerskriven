@@ -1,5 +1,6 @@
 import {
   expect,
+  test,
   type BrowserContext,
   type Locator,
   type Page,
@@ -191,6 +192,51 @@ export const allowClipboard = async (
   await context.grantPermissions([...(clipboardPermissions[engine] ?? [])]);
 };
 
+/** Skips successful API-read integrations in Playwright 1.59.1's Linux WebKit 26.4 driver. Native paste remains available. */
+export const requiresClipboardApiRead = (context: BrowserContext): void => {
+  const browser = context.browser();
+  test.skip(
+    process.platform === 'linux' &&
+      browser?.browserType().name() === 'webkit' &&
+      browser.version() === '26.4' &&
+      test.info().config.version === '1.59.1',
+    'Playwright 1.59.1 WebKit 26.4 on Linux returns NotAllowedError from clipboard.readText even with trusted activation and an explicit clipboard-read grant. Native text paste works. Desktop Safari is unverified. See #754 and PR #785.',
+  );
+};
+
+/**
+ * Uses native text paste because this Linux WebKit driver refuses programmatic
+ * clipboard reads. The temporary field blurs the focused control.
+ */
+export const readClipboardText = async (page: Page): Promise<string> => {
+  if (page.context().browser()?.browserType().name() !== 'webkit') {
+    return page.evaluate(() => navigator.clipboard.readText());
+  }
+  const focused = await page.evaluateHandle(() => document.activeElement);
+  await page.evaluate(() => {
+    const field = document.createElement('textarea');
+    field.dataset.clipboardRead = '';
+    document.body.append(field);
+  });
+  const clipboard = page.locator('textarea[data-clipboard-read]');
+  try {
+    await clipboard.focus();
+    await page.keyboard.press('ControlOrMeta+v');
+    await expect(clipboard).not.toHaveValue('');
+    return await clipboard.inputValue();
+  } finally {
+    await clipboard.evaluate((field) => {
+      field.remove();
+    });
+    await focused.evaluate((element) => {
+      if (element instanceof HTMLElement) {
+        element.focus();
+      }
+    });
+    await focused.dispose();
+  }
+};
+
 /** Opens a file under `test-data` through the fallback picker and waits for its canvas. */
 export const openFile = async (
   page: Page,
@@ -279,6 +325,36 @@ export const runFromMenu = async (page: Page, name: string): Promise<void> => {
   await expect(page.getByRole('menu')).toHaveCount(0);
 };
 
+/** The panel shared by a focused global threat and model metadata. */
+export const modelPanel = (page: Page): Locator =>
+  page.getByRole('region', { name: 'Model', exact: true });
+
+/** Opens one threat through the Register, or the model controls through its Details action. */
+export const openModelPanel = async (
+  page: Page,
+  threat?: string | RegExp,
+): Promise<void> => {
+  await runFromMenu(page, 'Threat register');
+  const register = page.getByRole('region', {
+    name: 'Threat register',
+    exact: true,
+  });
+  if (threat === undefined) {
+    await register
+      .getByRole('button', { name: 'Details', exact: true })
+      .click();
+    await modelPanel(page)
+      .getByRole('tab', { name: /^Threats \d+$/u })
+      .click();
+  } else {
+    await register.getByRole('button', { name: threat, exact: true }).click();
+    if (await register.isVisible()) {
+      await page.keyboard.press('Escape');
+    }
+  }
+  await expect(modelPanel(page)).toBeVisible();
+};
+
 /** Whether the menu offers Undo, read by opening the menu and putting it away again. */
 export const undoOffered = async (
   page: Page,
@@ -301,6 +377,12 @@ export const expectFileShown = async (
   await expect(page.getByTestId('file-state')).toContainText(format);
   await closeMenu(page);
 };
+
+/** This Linux WebKit driver replaces spaces in the anchor's download name with underscores. */
+export const downloadName = (page: Page, name: string): string =>
+  page.context().browser()?.browserType().name() === 'webkit'
+    ? name.replaceAll(' ', '_')
+    : name;
 
 type Downloaded = {
   readonly name: string;

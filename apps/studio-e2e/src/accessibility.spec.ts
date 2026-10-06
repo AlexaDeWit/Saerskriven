@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { audit } from './accessibility.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import {
   chooseFile,
   chooseInPanel,
@@ -183,7 +183,9 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
   await expect(name).toBeFocused();
   await name.press('Enter');
   await expect(name).toHaveCount(0);
-  await menuButton(page).press(registeredChords['close-file'][0]);
+  await menuButton(page).press(
+    await commandChord(page, registeredChords['close-file'][0]),
+  );
   await expect(
     menuItem(page, 'Discard changes and create new model'),
   ).toBeVisible();
@@ -192,7 +194,7 @@ test('the studio carries no violation with the menu open', async ({ page }) => {
 
   await closeMenu(page);
   await expect(menuButton(page)).toBeFocused();
-  await page.keyboard.press(registeredChords.open[0]);
+  await page.keyboard.press(await commandChord(page, registeredChords.open[0]));
   await expect(menuItem(page, 'Discard changes and open')).toBeVisible();
 
   await audit(page, 'showing the menu asking before it opens a file');

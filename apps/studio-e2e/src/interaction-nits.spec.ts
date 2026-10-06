@@ -17,7 +17,7 @@ import {
   placeholder,
   toolButton,
 } from './studio.fixtures.js';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 
 const movedPoint = (page: Page, from: Point): Point => {
   const width = page.viewportSize()?.width ?? 0;
@@ -182,7 +182,7 @@ for (const placement of notePlacements) {
     const editor = page.getByRole('textbox', { name: 'Note text' });
     await expect(editor).toBeFocused();
     await editor.fill('First line\nSecond line');
-    await editor.press('Control+Enter');
+    await editor.press(await commandChord(page, 'ControlOrMeta+Enter'));
     const note = nodeNamed(page, /^Note, text/u);
     const drawnText = async (): Promise<string> =>
       (
@@ -194,9 +194,13 @@ for (const placement of notePlacements) {
         .replace(/\s/gu, '');
     await expect.poll(drawnText).toBe('FirstlineSecondline');
 
-    await page.keyboard.press(registeredChords.undo[0]);
+    await page.keyboard.press(
+      await commandChord(page, registeredChords.undo[0]),
+    );
     await expect.poll(drawnText).toBe('Newnote');
-    await page.keyboard.press(registeredChords.undo[0]);
+    await page.keyboard.press(
+      await commandChord(page, registeredChords.undo[0]),
+    );
     await expect(note).toHaveCount(0);
   });
 }

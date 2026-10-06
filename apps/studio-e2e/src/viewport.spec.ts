@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { commandKey } from './chords.fixtures.js';
 import {
   boxesOverlap,
   canvasContainer,
@@ -180,14 +181,21 @@ test('each control in the cluster says which chord runs it, to a pointer and to 
   const tooltip = page.getByRole('tooltip');
   const fit = page.getByRole('button', { name: 'Fit to view' });
 
-  await expect(fit).toHaveAttribute('aria-keyshortcuts', 'Control+0');
+  await expect(fit).toHaveAttribute(
+    'aria-keyshortcuts',
+    `${await commandKey(page)}+0`,
+  );
   await fit.hover();
-  await expect(tooltip).toContainText('Ctrl+0');
+  await expect(tooltip).toContainText(
+    (await commandKey(page)) === 'Meta' ? '⌘0' : 'Ctrl+0',
+  );
 
   await page.mouse.move(0, 0);
   await expect(tooltip).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Zoom in' }).focus();
 
-  await expect(tooltip).toContainText('Ctrl+=');
+  await expect(tooltip).toContainText(
+    (await commandKey(page)) === 'Meta' ? '⌘=' : 'Ctrl+=',
+  );
 });

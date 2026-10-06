@@ -25,6 +25,7 @@ import {
   placeholder,
   runFromMenu,
   selectNode,
+  tabTo,
   storefront,
   threatPanel,
   toolButton,
@@ -337,6 +338,7 @@ for (const [tool, named, shape, shapeCount] of previewedBoxTools) {
       expect(bounds).not.toBeNull();
       expectInside(bounds ?? committed, committed);
     }
+    await tabTo(page, node);
     const ring = await node.evaluate((element) => {
       const style = getComputedStyle(element);
       return {

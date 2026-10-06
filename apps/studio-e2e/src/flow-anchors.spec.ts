@@ -1,6 +1,6 @@
 import { expect, test, type Locator } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
-import { registeredChords } from './chords.fixtures.js';
+import { commandChord, registeredChords } from './chords.fixtures.js';
 import {
   boxOf,
   dragOnto,
@@ -66,9 +66,9 @@ test('pins a flow end to a side by keyboard and by dragging, releases it, and sa
     handleOn(nodeNamed(page, placeholder.actor), 'top'),
   );
   await expect.poll(async () => turnsOf(await drawnBy(line))[0]).toEqual(top);
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(line).toHaveAttribute('d', original);
-  await page.keyboard.press('ControlOrMeta+Shift+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+Shift+z'));
   await expect.poll(async () => turnsOf(await drawnBy(line))[0]).toEqual(top);
   const written = await savedFile(page);
   expect(written.text).toContain('side: top');
@@ -88,9 +88,9 @@ test('a flow becomes bidirectional by its command, draws two arrowheads, and sav
   await page.keyboard.press(registeredChords['toggle-flow-direction'][0]);
   await expect(arrows).toHaveCount(2);
   await expect(flow).toHaveAccessibleName(/between Actor and Store/u);
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(arrows).toHaveCount(1);
-  await page.keyboard.press('ControlOrMeta+Shift+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+Shift+z'));
   await expect(arrows).toHaveCount(2);
   const written = await savedFile(page);
   expect(written.text).toContain('bidirectional: true');
@@ -140,7 +140,7 @@ test('a flow reverses by its chord and its command, one undo step each, and save
     .getByRole('button', { name: 'Reverse flow', exact: true })
     .click();
   await expect(flow).toHaveAccessibleName(/from Actor to Store/u);
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(flow).toHaveAccessibleName(/from Store to Actor/u);
   expect(await savedFlow(page)).toMatchObject({
     source: { kind: 'attached', element: 'placeholder-store' },
@@ -171,6 +171,6 @@ test('a flow end dragged onto empty canvas goes free there, moves by arrow key, 
     'd',
     original,
   );
-  await page.keyboard.press('ControlOrMeta+z');
+  await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(flow).toHaveAccessibleName(/from Actor to a free point/u);
 });
