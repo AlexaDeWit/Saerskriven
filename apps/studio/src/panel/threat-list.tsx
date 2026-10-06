@@ -227,7 +227,7 @@ export function ThreatList({
     setDraft(undefined);
     if (element === undefined) {
       setExpanded('');
-      setChosen(next);
+      setChosen((previous) => (previous === undefined ? undefined : next));
     }
     if (next === undefined) {
       home.current?.focus();

@@ -29,7 +29,7 @@ import {
 import { dispatch, modelStore } from '../store/store.js';
 import { detailsTab, numbersIn, threatsTab } from '../ui/ui.fixtures.js';
 import { markedWithin } from './marked.js';
-import { editorTimeout, listedThreats } from './panel.fixtures.js';
+import { chooseFrom, editorTimeout, listedThreats } from './panel.fixtures.js';
 import { ThreatOverlay } from './threat-overlay.js';
 import panelStyles from './threat-panel.module.css';
 import { resetThreatRegister } from './threat-register-state.js';
@@ -94,6 +94,13 @@ const mixedModel: Model = {
     },
   ],
   lastIssuedThreatNumber: 4,
+};
+
+const scopedCollectionModel: Model = {
+  ...mixedModel,
+  threats: mixedModel.threats.map((threat) =>
+    threat.id === firstThreat ? { ...threat, appliesToModel: true } : threat,
+  ),
 };
 
 const register = (): HTMLElement =>
@@ -212,6 +219,92 @@ describe(
 
     afterEach(() => {
       vi.restoreAllMocks();
+    });
+
+    it.each(['delete', 'unlink', 'detach'] as const)(
+      'keeps the ordinary Model collection after %s and history',
+      async (change) => {
+        const user = userEvent.setup();
+        modelStore.setState(initialState(scopedCollectionModel), true);
+        showStudio();
+        runRegistered('model-panel');
+        const initial = [modelOnlyThreat, firstThreat, mitigatedThreat];
+        expect(listedThreats(modelPanel())).toEqual(initial);
+        expect(numbersIn(threatsTab().textContent)).toEqual([3]);
+        const removed = change === 'unlink' ? modelOnlyThreat : firstThreat;
+        const remaining = initial.filter((id) => id !== removed);
+        await user.click(
+          modelSummary(
+            change === 'unlink'
+              ? /A model-wide trust assumption/u
+              : /A reader edits/u,
+          ),
+        );
+
+        if (change === 'delete') {
+          await user.click(
+            within(modelPanel()).getByRole('button', {
+              name: 'Delete threat 1',
+            }),
+          );
+        } else {
+          await chooseFrom('Applies to the whole model', 'No');
+        }
+        expect(listedThreats(modelPanel())).toEqual(
+          change === 'detach' ? [...remaining, firstThreat] : remaining,
+        );
+        expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+        if (change === 'detach') {
+          await user.click(
+            within(modelPanel()).getByRole('button', { name: 'Detach Reader' }),
+          );
+        }
+
+        expect(listedThreats(modelPanel())).toEqual(remaining);
+        expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+        expect(
+          modelStore
+            .getState()
+            .present.threats.some(({ id }) => id === removed),
+        ).toBe(false);
+        const restored = change === 'detach' ? [remaining, initial] : [initial];
+        for (const expected of restored) {
+          runRegistered('undo');
+          expect(listedThreats(modelPanel())).toEqual(expected);
+          expect(numbersIn(threatsTab().textContent)).toEqual([
+            expected.length,
+          ]);
+        }
+        for (const _ of restored) {
+          runRegistered('redo');
+          expect(listedThreats(modelPanel())).toEqual(remaining);
+          expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+        }
+      },
+    );
+
+    it('keeps Register-focused fallback separate from the remaining Model collection', async () => {
+      const user = userEvent.setup();
+      modelStore.setState(initialState(scopedCollectionModel), true);
+      showStudio();
+      openRegister();
+      await user.click(chooser(modelOnlyThreat));
+      await user.click(
+        screen.getByRole('button', { name: 'Close threat register' }),
+      );
+      await user.click(
+        within(modelPanel()).getByRole('button', { name: 'Delete threat 4' }),
+      );
+
+      expect(listedThreats(modelPanel())).toEqual([firstThreat]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([2]);
+      expect(document.activeElement).toBe(modelSummary(/A reader edits/u));
+      runRegistered('undo');
+      expect(listedThreats(modelPanel())).toEqual([firstThreat]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([3]);
+      runRegistered('redo');
+      expect(listedThreats(modelPanel())).toEqual([firstThreat]);
+      expect(numbersIn(threatsTab().textContent)).toEqual([2]);
     });
 
     it('keeps Model, element and Register collections distinct, and opens excluded threats for editing', async () => {
