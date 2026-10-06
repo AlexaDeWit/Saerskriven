@@ -25,6 +25,24 @@
   outline-offset: var(--saer-focus-ring-offset);
 }
 
+.canvas :global(.saer-diagram-flow-focus-ring) {
+  display: none;
+}
+
+.canvas :global(.react-flow__edge:focus-visible .saer-diagram-flow-focus-ring) {
+  display: inline;
+}
+
+.canvas :global(.saer-diagram-flow-focus-ink) {
+  flood-color: var(--saer-colour-accent);
+}
+
+@media (forced-colors: active) {
+  .canvas :global(.saer-diagram-flow-focus-ink) {
+    flood-color: Highlight;
+  }
+}
+
 /* The selection frame stays inside the node's requested bounds. */
 .canvas :global(.react-flow__node.selected)::after {
   content: '';
@@ -140,12 +158,7 @@
   z-index: 4;
 }
 
-/* A threat badge draws over the selection frame and the side lines, and under
-   every control's hit area: a side line forms no stacking context, so its
-   button stacks above the badge while its border stays beneath it. While its
-   element is selected the canvas package steps the badge out past the corner
-   handle. A selected boundary box's badge rides in the viewport portal, where
-   this lifts it above the nodes around it. */
+/* Badges rise above selection frames and stay below control hit areas. */
 .canvas :global(.saer-diagram-badge-layer) {
   z-index: 1;
 }
@@ -174,8 +187,7 @@
   height: 9px;
 }
 
-/* Side lines are placed by offsets rather than a transform, which would give
-   each one a stacking context and trap its button under the badge layer. */
+/* Offsets avoid a stacking context that traps a side button below its badge. */
 .canvas :global(.react-flow__resize-control.line) {
   transform: none;
 }
@@ -194,9 +206,7 @@
   translate: 0 0;
 }
 
-/* Scaled up at low zoom, a right-hand corner handle grows inward from the
-   right side, so it never reaches the badge stepped out past the top-right
-   corner or the marks stacked under it. */
+/* Grow low-zoom corner handles inward to leave the badge clear. */
 .canvas :global(.react-flow__resize-control.handle.top.right) {
   translate: -100% 0;
   transform-origin: 100% 50%;
@@ -286,14 +296,7 @@
   z-index: var(--saer-node-z);
 }
 
-/* The handles a flow attaches to are drawn on the element under the pointer
-   and on the selected one, so a diagram at rest is not covered in dots.
-   Hidden rather than removed: React Flow measures a handle's box to resolve
-   where an edge ends, and a removed one has no box. A handle that stays
-   hidden is still a place to drop a flow, React Flow resolving the nearest
-   handle within its connection radius rather than hit testing the dot. React
-   Flow marks a handle `connectable` from the node it belongs to, so a trust
-   boundary, which no flow ends on, shows none. */
+/* Hidden handles retain the bounds React Flow uses for endpoint placement and drops. */
 .canvas :global(.react-flow__handle) {
   visibility: hidden;
   z-index: 3;
@@ -315,17 +318,13 @@
   transform: translate(-50%, -100%);
 }
 
-/* Which element a gesture is aimed at: the one under the pointer, and the
-   one selected. Hover is read here rather than held as state, so it costs no
-   render of a controlled canvas that rebuilds every node. */
+/* CSS hover avoids rebuilding the controlled canvas on pointer entry. */
 .canvas :global(.react-flow__node:hover .react-flow__handle.connectable),
 .canvas :global(.react-flow__node.selected .react-flow__handle.connectable) {
   visibility: visible;
 }
 
-/* React Flow's own attribution, restyled to the app's tokens because the
-   colour it ships is below the contrast the studio's axe run demands. The
-   attribution itself stays. */
+/* React Flow's default attribution colour falls below the contrast requirement. */
 .canvas :global(.react-flow__attribution) {
   background: var(--saer-colour-canvas);
 }
@@ -334,8 +333,7 @@
   color: var(--saer-colour-text-muted);
 }
 
-/* The selection cards hang from the canvas itself, so their wrapper draws
-   no box. It goes inert while the threat register covers the cards. */
+/* The wrapper draws no box and goes inert beneath the threat register. */
 .cards {
   display: contents;
 }

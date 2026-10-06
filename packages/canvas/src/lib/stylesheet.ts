@@ -16,11 +16,7 @@ import {
 
 type DiagramClassName = `saer-diagram-${string}`;
 
-/**
- * Class names the canvas primitives emit and the canvas stylesheet styles.
- * The `saer-diagram-` prefix keeps them apart from the classes
- * `@saerskriven/render` puts on a register.
- */
+/** The diagram prefix separates canvas classes from rendered register classes. */
 export const canvasClassNames = {
   element: 'saer-diagram-element',
   outOfScope: 'saer-diagram-out-of-scope',
@@ -57,12 +53,12 @@ export const canvasInteractionClassNames = {
   boundaryHitTarget: 'saer-diagram-boundary-hit-target',
   flowBlockLayer: 'saer-diagram-flow-block-layer',
   flowBlockSurface: 'saer-diagram-flow-block-surface',
+  flowFocusRing: 'saer-diagram-flow-focus-ring',
+  flowFocusInk: 'saer-diagram-flow-focus-ink',
 } as const satisfies Record<string, DiagramClassName>;
 
-/** Which run of text a primitive is drawing. */
 export type WrappedTextStyle = 'label' | 'note' | 'flowLabel';
 
-/** How one run of text is named in the stylesheet and how large it is. */
 export type TextStyleRule = {
   readonly className: string;
   readonly fontSize: number;
@@ -81,7 +77,6 @@ export const wrappedTextStyles = {
   },
 } as const satisfies Record<WrappedTextStyle, TextStyleRule>;
 
-/** Maps each severity to its diagram tone class. */
 export const severityToneClass = {
   low: canvasClassNames.toneLow,
   medium: canvasClassNames.toneMedium,

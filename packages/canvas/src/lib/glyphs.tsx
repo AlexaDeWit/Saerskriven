@@ -15,10 +15,7 @@ import { strokeWidths } from './tokens.js';
 /** An element kind whose model geometry is a position and size. */
 export type BoxElementKind = Exclude<CanvasNodeKind, 'boundary-curve' | 'text'>;
 
-/**
- * How far a box element's stroke reaches past its model box. Given a size,
- * the stroke is narrowed to fit a box thinner than it.
- */
+/** A thin box narrows its stroke before these insets bound the painted extent. */
 export function boxElementStrokeInsets(
   kind: BoxElementKind,
   size?: Size,
@@ -90,10 +87,7 @@ export function ElementGlyph({
   );
 }
 
-/**
- * One element's glyph translated to the element's position, the form the
- * headless render composes into a standalone SVG.
- */
+/** Headless rendering uses model positions rather than React Flow placement. */
 export function PlacedElementGlyph({
   marks,
   node,
@@ -196,7 +190,10 @@ function outlineOf(node: CanvasNode): ReactElement | null {
 export function rectOfBox(
   className: string | undefined,
   box: Box,
-  attributes: Pick<SVGProps<SVGRectElement>, 'fill' | 'pointerEvents'> = {},
+  attributes: Pick<
+    SVGProps<SVGRectElement>,
+    'fill' | 'pointerEvents' | 'stroke' | 'filter'
+  > = {},
 ): ReactElement {
   return (
     <rect

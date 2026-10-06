@@ -8,13 +8,14 @@ import {
 } from '@xyflow/react';
 import { useEffect } from 'react';
 import { drawnSelector } from './edits.js';
+import { paintFlowFocusRing } from './flow-focus-paint.js';
 import { followKeyboardMoves, type KeyboardMove } from './keyboard-moves.js';
 import { selectionRectangleSelector } from './selection-frame.js';
 
-/** How long the pan takes, in milliseconds, so the eye can follow the view moving. */
+/** Duration in milliseconds. */
 export const focusPanDuration = 500;
 
-/** How far inside the viewport's border the pan leaves a ring, in screen pixels, so the whole ring is drawn clear of the edge. */
+/** Inset from a crossed viewport edge, in screen pixels. */
 export const ringMargin = 4;
 
 export type PannedView = Pick<ReactFlowInstance, 'getViewport' | 'setViewport'>;
@@ -25,12 +26,12 @@ const ringedSelector = `${drawnSelector}, .react-flow__resize-control > button, 
 
 const movedSelector = `${ringedSelector}, ${selectionRectangleSelector}`;
 
-/** Tab, including Shift or Alt, arms focus panning until the next pointer press. */
+/** Safari's Alt+Tab arms the pan too. */
 export function armsFocusPan(event: KeyboardEvent): boolean {
   return event.key === 'Tab' && !event.ctrlKey && !event.metaKey;
 }
 
-/** Finds the least pan that clears a ring past the viewport border. Oversized rings fill the viewport. */
+/** Crossed edges retain `ringMargin`. An oversized ring fills the viewport with the least move. */
 export function offsetIntoView(ring: Box, viewport: Box): Point | undefined {
   const offset = {
     x: shiftInto(ring.minX, ring.maxX, viewport.minX, viewport.maxX),
@@ -39,7 +40,7 @@ export function offsetIntoView(ring: Box, viewport: Box): Point | undefined {
   return offset.x === 0 && offset.y === 0 ? undefined : offset;
 }
 
-/** Preserves zoom and replaces an active pan. Reduced motion and held keys move at once. */
+/** A new target cancels an unfinished pan, including when the target already fits. Repeated arrow keys move at once. */
 export function viewPanner(
   view: PannedView,
   instant: () => boolean,
@@ -69,8 +70,8 @@ export function viewPanner(
 }
 
 /**
- * Follows visible keyboard focus after one frame, excluding window restoration.
- * Pointer-first script focus preserves `:focus-visible` in Chromium but clears it in Playwright WebKit.
+ * Tab controls modality because Chromium retains `:focus-visible` after pointer-first script focus.
+ * Pointer presses disarm the pan. Focus returning from another window does not pan.
  */
 export function onKeyboardFocus(
   surface: HTMLElement,
@@ -122,7 +123,7 @@ export function onKeyboardFocus(
   };
 }
 
-/** Measures keyboard moves on the next frame, using the focused item or a placed bend. Returns a stop function. */
+/** The caller distinguishes keyboard moves from pointer moves. Callbacks run on the next frame and carry key-repeat state. */
 export function onKeyboardMove(
   surface: HTMLElement,
   moved: (target: Element, held: boolean) => void,
@@ -150,7 +151,7 @@ export function onKeyboardMove(
   };
 }
 
-/** Follows keyboard focus, moves, and resizes inside a React Flow provider. Overlays do not reduce the viewport. */
+/** Mounted inside `ReactFlow`. Pans keyboard focus and movement using the current viewport and ring extent. */
 export function FocusPan(): null {
   const flow = useReactFlow();
   const surface = useStore((state) => state.domNode);
@@ -218,6 +219,15 @@ function boxOf(drawn: Element): Box {
 }
 
 function ringOf(target: Element, zoom: number): Box {
+  if (
+    target instanceof SVGGraphicsElement &&
+    target.matches('.react-flow__edge')
+  ) {
+    const painted = paintFlowFocusRing(target);
+    if (painted !== undefined) {
+      return painted;
+    }
+  }
   const drawn = boxOf(target);
   const style = getComputedStyle(target);
   const scale =

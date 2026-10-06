@@ -5,7 +5,10 @@ import {
   type Locator,
   type Page,
 } from '@playwright/test';
-import { canvasClassNames } from '@saerskriven/canvas';
+import {
+  canvasClassNames,
+  canvasInteractionClassNames,
+} from '@saerskriven/canvas';
 
 /** A box, in the diagram's own coordinates or on screen. */
 export type Box = {
@@ -206,7 +209,7 @@ export const onScreen = async (target: Locator): Promise<void> => {
 
 const ringReach = 16;
 
-/** Measures the visible fraction of a focus ring by comparing screenshots in CSS pixels. Holds the viewport fixed and leaves focus on `away`. */
+/** Holds the viewport fixed and leaves focus on `away`. Flow attachments compare native and painted focus frames. */
 export const focusRingShown = async (
   target: Locator,
   away: Locator,
@@ -225,6 +228,7 @@ export const focusRingShown = async (
     height: Math.ceil(shown.height) + 2 * ringReach,
   };
   const after = await page.screenshot({ clip, scale: 'css' });
+  await attachFlowFocus(target, clip, after);
   await away.focus();
   const before = await page.screenshot({ clip, scale: 'css' });
   expect(
@@ -300,6 +304,43 @@ export const focusRingShown = async (
     },
   );
 };
+
+async function attachFlowFocus(
+  target: Locator,
+  clip: Box,
+  painted: Buffer,
+): Promise<void> {
+  if (
+    !(await target.evaluate((element) => element.matches('.react-flow__edge')))
+  ) {
+    return;
+  }
+  const carrier = target.locator(
+    `.${canvasInteractionClassNames.flowFocusRing}`,
+  );
+  const style = await carrier.getAttribute('style');
+  await carrier.evaluate<void, SVGElement>((element) => {
+    element.style.setProperty('display', 'none', 'important');
+  });
+  try {
+    await test.info().attach('flow-focus-native-outline', {
+      body: await target.page().screenshot({ clip, scale: 'css' }),
+      contentType: 'image/png',
+    });
+    await test.info().attach('flow-focus-painted-ring', {
+      body: painted,
+      contentType: 'image/png',
+    });
+  } finally {
+    await carrier.evaluate((element, previous) => {
+      if (previous === null) {
+        element.removeAttribute('style');
+      } else {
+        element.setAttribute('style', previous);
+      }
+    }, style);
+  }
+}
 
 /** How far every ancestor of `target` is scrolled, summed, so a scroll anywhere above it shows. */
 export const scrolledAbove = (target: Locator): Promise<number> =>

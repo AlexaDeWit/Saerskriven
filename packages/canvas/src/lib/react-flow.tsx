@@ -26,6 +26,7 @@ import {
   ThreatBadgeGlyph,
   type BadgeMarks,
 } from './badges.js';
+import { drawnBounds } from './bounds.js';
 import { edgePoints } from './flow-anchors.js';
 import { shiftedBy, type Box } from './geometry.js';
 import {
@@ -54,15 +55,12 @@ import { polylinePath, smoothPath } from './paths.js';
 import { ResizeControls, type ResizeLabels } from './resize-controls.js';
 import { nodeAtSize, type GestureInput } from './resizing.js';
 import { canvasClassNames, canvasInteractionClassNames } from './stylesheet.js';
-import { interactionWidths } from './tokens.js';
+import { focusRing, interactionWidths } from './tokens.js';
 
-/** What a React Flow node of a diagram carries: the laid-out node. */
 export type CanvasNodeData = { readonly node: CanvasNode };
 
-/** One React Flow node of a Saerskriven diagram. */
 export type CanvasFlowNode = Node<CanvasNodeData, CanvasNodeKind>;
 
-/** What a React Flow edge of a diagram carries: the laid-out flow. */
 export type CanvasEdgeData = {
   readonly edge: CanvasEdge;
   readonly boxes?: ReadonlyMap<ElementId, NodeBox>;
@@ -70,19 +68,14 @@ export type CanvasEdgeData = {
   readonly targetBox?: NodeBox;
 };
 
-/** One React Flow edge of a Saerskriven diagram. */
 export type CanvasFlowEdge = Edge<CanvasEdgeData, 'flow'>;
 
-/** The React Flow node type of the anchor a flow's free end rides on. */
 export const freeEndNodeKind = 'free-end';
 
-/** Which end of a flow an anchor stands for. */
 export type FlowEndSide = 'source' | 'target';
 
-/** What a free-end anchor carries: nothing, since it draws nothing. */
 export type CanvasFreeEndData = Record<string, never>;
 
-/** One React Flow node standing in for a flow's free end. */
 export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
 
 /**
@@ -202,6 +195,7 @@ export function CanvasEdgeBody({
 }): ReactElement | null {
   const [blockHovered, setBlockHovered] = useState(false);
   const clipId = useId();
+  const focusId = useId();
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
   const groupMovement = useStore((state) => {
@@ -250,6 +244,7 @@ export function CanvasEdgeBody({
             })}
         <FlowGlyph blockVisible={false} edge={edge} marks={marks} />
       </g>
+      <FlowFocusRing edge={edge} id={focusId} />
       {backing === undefined
         ? null
         : renderBlock(
@@ -327,7 +322,6 @@ export function freeEndNodes(layout: CanvasLayout): CanvasFreeEndNode[] {
   ]);
 }
 
-/** Derives the same anchor ID for an edge and its free-end node. */
 export function flowEndNodeId(flow: ElementId, side: FlowEndSide): string {
   return `${flow}-${side}`;
 }
@@ -401,6 +395,52 @@ const handlePlacement = {
   bottom: Position.Bottom,
   left: Position.Left,
 } as const satisfies Record<HandleSide, Position>;
+
+function FlowFocusRing({
+  edge,
+  id,
+}: {
+  readonly edge: CanvasEdge;
+  readonly id: string;
+}): ReactElement {
+  const { x, y, width, height } = drawnBounds([], [edge]);
+  const offset = Number.parseFloat(focusRing.offset);
+  const reach = offset + Number.parseFloat(focusRing.width);
+  return (
+    <g aria-hidden="true" pointerEvents="none">
+      <defs>
+        <filter
+          id={id}
+          colorInterpolationFilters="sRGB"
+          filterUnits="userSpaceOnUse"
+          primitiveUnits="userSpaceOnUse"
+          x={svgNumber(x - reach)}
+          y={svgNumber(y - reach)}
+          width={svgNumber(width + reach * 2)}
+          height={svgNumber(height + reach * 2)}
+        >
+          <feFlood
+            className={canvasInteractionClassNames.flowFocusInk}
+            result="outer"
+          />
+          <feFlood
+            x={svgNumber(x - offset)}
+            y={svgNumber(y - offset)}
+            width={svgNumber(width + offset * 2)}
+            height={svgNumber(height + offset * 2)}
+            result="inner"
+          />
+          <feComposite in="outer" in2="inner" operator="out" />
+        </filter>
+      </defs>
+      {rectOfBox(
+        canvasInteractionClassNames.flowFocusRing,
+        { minX: x, minY: y, maxX: x + width, maxY: y + height },
+        { fill: 'none', stroke: 'none', filter: `url(#${id})` },
+      )}
+    </g>
+  );
+}
 
 function flowBlockLayer({
   backing,
