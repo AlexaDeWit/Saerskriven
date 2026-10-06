@@ -3,7 +3,7 @@ import { shellMessages } from './contract.js';
 
 export const shellSv = catalogue(shellMessages)('sv')({
   language: 'Språk',
-  'landing-title': 'Saerskriven: studio för hotmodellering med öppen källkod',
+  'landing-title': 'Saerskriven: hotmodellering för utvecklare',
   'development-version': '{version} (utveckling)',
   stopped: 'Saerskriven har slutat fungera',
   'stopped-explanation':

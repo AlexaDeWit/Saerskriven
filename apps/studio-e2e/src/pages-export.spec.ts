@@ -18,7 +18,7 @@ const compilerDownloadAndTypesetTimeout = 60_000;
 
 const socialImage = `${hostedStudioUrl}social-card.png`;
 const socialImageAlt =
-  'Saerskriven: Draw the system. Record the threats. An example threat model connects a maintainer, studio, and model file.';
+  'Saerskriven. Threat Modelling for Developers. Open source. Browser editor. CLI with MCP support. Work with your AI agent. Keep the model with your code. An example threat model connects a maintainer, studio, and model file.';
 
 test('the Pages build loads its hashed PDF assets below the site base', async ({
   page,

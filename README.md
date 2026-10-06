@@ -1,14 +1,30 @@
 # Saerskriven
 
-A threat modelling studio: draw the system, and record the threats on the
-diagram itself.
+**Threat Modelling for Developers**
+
+Saerskriven is an open-source threat modelling tool built for working with AI
+agents. It provides a browser editor and MCP support through the `saer` CLI.
+You and your agent work on the same model: diagrams, threats, mitigations,
+and assumptions, stored as a file alongside your code.
+
+Use it while you design and build. Ask your agent to explore threats when you
+add a component, change a data flow, or revisit a trust boundary. Review the
+model changes alongside the code and use the browser editor to examine the
+diagram. The CLI validates models and exports diagrams and threat registers
+for reviews and documentation.
+
+The focus is development, not compliance management. The model records your
+security reasoning and changes with the system.
+
+See [Using the studio](docs/studio.md) and [MCP support](docs/mcp.md)
+to get started.
 
 The name `Saerskriven` is a simplified spelling of Swedish _särskriven_,
 "written separately." It nods to _särskrivningar_, compound words split into
 their parts. Threat modelling does similar work: it breaks apart a complex
 problem or design so each risk can be examined.
 
-## Goal
+## Design
 
 Saerskriven keeps the paradigm of [OWASP Threat Dragon](https://github.com/OWASP/threat-dragon),
 element-attached threats edited in place on a data-flow diagram, and rebuilds

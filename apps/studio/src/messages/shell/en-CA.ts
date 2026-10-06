@@ -3,7 +3,7 @@ import { shellMessages } from './contract.js';
 
 export const shellEnCA = catalogue(shellMessages)('en-CA')({
   language: 'Language',
-  'landing-title': 'Saerskriven: Open-source threat modelling studio',
+  'landing-title': 'Saerskriven: Threat Modelling for Developers',
   'development-version': '{version} (development)',
   stopped: 'Saerskriven stopped',
   'stopped-explanation':
