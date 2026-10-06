@@ -47,8 +47,9 @@ Edit here when the process changes, in the same PR as the change.
   driver WebKit needs off NixOS.
 - Read a night in the run's `Browser suite (<engine>)` jobs and its
   `playwright-report-<engine>` artifact, kept 14 days.
-- A red night opens one issue, or comments on it while it is open. A person
-  closes it. Its title: `Nightly browser run is red in Firefox or WebKit`.
+- A red night opens one issue, or comments on it while it is open. A successful
+  run on `main` closes it with the run URL and tested commit after both browser
+  jobs and their reports pass. Its title: `Nightly browser run is red in Firefox or WebKit`.
 - Start one by hand with `gh workflow run nightly-browsers.yml`. With
   `--ref <branch>` it runs that branch and reports to no issue.
 

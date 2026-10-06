@@ -1,26 +1,12 @@
 #!/usr/bin/env bash
-# Report a red nightly browser run on one tracking issue, for
-# .github/workflows/nightly-browsers.yml.
+# Reconcile the nightly browser tracker from <engine>.json reports.
 #
 #     RUN_URL=<run> GITHUB_SHA=<commit> GH_REPO=<owner/name> \
 #       scripts/nightly/report.sh [--dry-run] <reports directory> <engine>...
 #
-# The directory holds Playwright's JSON report of each engine as
-# <engine>.json. An engine is red where its report lists a failing spec or an
-# error outside any spec, and where no readable report is found: a job stopped
-# before the suite finished leaves none, and neither does a run whose JSON
-# artifact has expired. BROWSERS_RESULT, the result of the browser jobs, makes
-# the night red where every report is green and a job still failed.
-#
-# A red night comments on the open issue carrying the title below, and opens
-# that issue where none is open. A green one writes nothing. Nothing here
-# closes the issue: a person does.
-#
-# --dry-run prints the action and the body in place of writing either. It
-# still asks GitHub which issues are open.
-#
-# bash, jq and gh alone, so the job that may write issues runs on a plain
-# runner and installs nothing.
+# Missing reports, failing specs, report errors and failed jobs keep it open.
+# Closure requires readable green reports and BROWSERS_RESULT=success.
+# --dry-run reads the open issues and prints the intended write.
 set -euo pipefail
 
 title='Nightly browser run is red in Firefox or WebKit'
@@ -98,8 +84,8 @@ red=''
   printf '\nThe HTML report of each engine is an artifact of the run, `playwright-report-<engine>`.\n'
 } >"$body"
 
-if [ -z "$red" ]; then
-  echo 'No engine is red: nothing to report.'
+if [ -z "$red" ] && [ "${BROWSERS_RESULT:-}" != success ]; then
+  echo 'No successful browser job result: nothing to close.'
   exit 0
 fi
 
@@ -110,7 +96,20 @@ open=$(gh issue list --state open --limit 1000 --json number,title)
 number=$(jq -r --arg title "$title" \
   '[.[] | select(.title == $title) | .number] | min // empty' <<<"$open")
 
-if [ -n "$dry_run" ]; then
+if [ -z "$red" ]; then
+  if [ -z "$number" ]; then
+    echo 'No tracking issue is open: nothing to close.'
+    exit 0
+  fi
+  printf '\nBoth browser jobs succeeded. Closing the tracking issue.\n' >>"$body"
+  if [ -n "$dry_run" ]; then
+    echo "Would close #$number:"
+    echo
+    cat "$body"
+  else
+    gh issue close "$number" --reason completed --comment "$(cat "$body")"
+  fi
+elif [ -n "$dry_run" ]; then
   if [ -n "$number" ]; then
     echo "Would comment on #$number:"
   else

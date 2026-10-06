@@ -52,7 +52,8 @@ const fakeGh = `#!/usr/bin/env node
 const fs = require('node:fs');
 const args = process.argv.slice(2);
 const flag = args.indexOf('--body-file');
-const body = flag === -1 ? '' : fs.readFileSync(args[flag + 1], 'utf8');
+const comment = args.indexOf('--comment');
+const body = flag === -1 ? (comment === -1 ? '' : args[comment + 1]) : fs.readFileSync(args[flag + 1], 'utf8');
 const inherited = ['HOME', 'GH_TOKEN', 'GITHUB_TOKEN'].filter((name) => name in process.env);
 fs.appendFileSync(process.env.NIGHTLY_TEST_LOG, JSON.stringify({ args, body, inherited }) + '\\n');
 const tracker = JSON.parse(process.env.NIGHTLY_TEST_TRACKER);
@@ -152,10 +153,63 @@ const night = (
   };
 };
 
-void test('a green night asks GitHub nothing and writes nothing', () => {
-  const { result, calls } = night({ firefox: green, webkit: green });
+void test('a green night with no open tracker writes nothing', () => {
+  const { result, writes } = night(
+    { firefox: green, webkit: green },
+    {
+      issues: [
+        { number: 30, title, state: 'closed' },
+        { number: 31, title: `${title}, again`, state: 'open' },
+      ],
+    },
+  );
   assert.equal(result.status, 0, result.stderr);
-  assert.deepEqual(calls, []);
+  assert.deepEqual(writes, []);
+});
+
+void test('a green night closes the open tracker as completed with run evidence', () => {
+  const { result, writes } = night(
+    { firefox: green, webkit: green },
+    { issues: [{ number: 41, title, state: 'open' }] },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(writes.length, 1);
+  assert.deepEqual(writes[0]?.args.slice(0, 6), [
+    'issue',
+    'close',
+    '41',
+    '--reason',
+    'completed',
+    '--comment',
+  ]);
+  assert.ok(writes[0]?.body.includes(runUrl));
+  assert.ok(writes[0]?.body.includes(commit));
+  assert.ok(writes[0]?.body.includes('Both browser jobs succeeded.'));
+});
+
+void test('a green dry run names the tracker it would close and writes nothing', () => {
+  const { result, writes } = night(
+    { firefox: green, webkit: green },
+    { args: ['--dry-run'], issues: [{ number: 41, title, state: 'open' }] },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(writes, []);
+  assert.ok(result.stdout.includes('Would close #41:'));
+  assert.ok(result.stdout.includes(runUrl));
+});
+
+void test('green reports without a successful job result close nothing', () => {
+  for (const browsersResult of ['', 'failure', 'cancelled', 'skipped']) {
+    const { result, writes } = night(
+      { firefox: green, webkit: green },
+      { browsersResult, issues: [{ number: 41, title, state: 'open' }] },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(
+      writes.some(({ args }) => args[1] === 'close'),
+      false,
+    );
+  }
 });
 
 void test('a red night with no tracking issue open opens it, with the run, the commit and the failing specs by engine', () => {
@@ -250,19 +304,28 @@ void test('a closed tracking issue gets no comment: the night opens a new one', 
 void test('an engine whose job left no readable report is red', () => {
   const truncated: Reports = { firefox: green, webkit: '{"suites": [' };
   for (const reports of [{ firefox: green }, truncated]) {
-    const { result, writes } = night(reports);
+    const { result, writes } = night(reports, {
+      issues: [{ number: 41, title, state: 'open' }],
+    });
     assert.equal(result.status, 0, result.stderr);
     assert.equal(writes.length, 1);
+    assert.equal(writes[0]?.args[1], 'comment');
   }
 });
 
 void test('an error outside any spec makes its engine red', () => {
-  const { result, writes } = night({
-    firefox: report({ errors: [{ message: 'the web server never answered' }] }),
-    webkit: green,
-  });
+  const { result, writes } = night(
+    {
+      firefox: report({
+        errors: [{ message: 'the web server never answered' }],
+      }),
+      webkit: green,
+    },
+    { issues: [{ number: 41, title, state: 'open' }] },
+  );
   assert.equal(result.status, 0, result.stderr);
   assert.equal(writes.length, 1);
+  assert.equal(writes[0]?.args[1], 'comment');
 });
 
 void test('a failed job is a red night even where every report is green', () => {
@@ -310,26 +373,36 @@ void test('a dry run names the issue it would comment on and writes nothing', ()
   assert.ok(result.stdout.includes('files.spec.ts:40'));
 });
 
-void test('a listing that fails opens nothing, so no second tracking issue appears', () => {
-  const { result, writes } = night(
-    { firefox: red, webkit: green },
-    { listFails: true },
-  );
-  assert.notEqual(result.status, 0);
-  assert.deepEqual(writes, []);
+void test('a listing that fails writes nothing on a red or green night', () => {
+  for (const firefox of [red, green]) {
+    const { result, writes } = night(
+      { firefox, webkit: green },
+      { listFails: true },
+    );
+    assert.notEqual(result.status, 0);
+    assert.deepEqual(writes, []);
+  }
 });
 
 void test('a write GitHub refuses fails the report, after one attempt', () => {
-  const reports = { firefox: red, webkit: green };
   const refused = [
-    { issues: [], attempt: 'create' },
+    { issues: [], attempt: 'create', firefox: red },
     {
       issues: [{ number: 41, title, state: 'open' as const }],
       attempt: 'comment',
+      firefox: red,
+    },
+    {
+      issues: [{ number: 41, title, state: 'open' as const }],
+      attempt: 'close',
+      firefox: green,
     },
   ];
-  for (const { issues, attempt } of refused) {
-    const { result, writes } = night(reports, { issues, writesFail: true });
+  for (const { issues, attempt, firefox } of refused) {
+    const { result, writes } = night(
+      { firefox, webkit: green },
+      { issues, writesFail: true },
+    );
     assert.notEqual(result.status, 0, attempt);
     assert.deepEqual(
       writes.map(({ args }) => args.slice(0, 2)),
@@ -374,7 +447,7 @@ void test('each engine runs its suite in the nightly shell, which neither the ga
   assert.equal(setupAction.includes('.#nightly'), false);
 });
 
-void test('only the report job may write, to issues alone, and only for a red run on main nobody cancelled', () => {
+void test('only the report job may write, to issues alone, and only for a run on main nobody cancelled', () => {
   assert.deepEqual(nightly.permissions, {});
   assert.deepEqual(
     Object.entries(nightly.jobs)
@@ -390,6 +463,6 @@ void test('only the report job may write, to issues alone, and only for a red ru
   });
   assert.equal(
     nightly.jobs['report']?.if?.trim().replace(/\s+/gu, ' '),
-    "!cancelled() && github.ref == 'refs/heads/main' && needs.browsers.result != 'success'",
+    "!cancelled() && github.ref == 'refs/heads/main'",
   );
 });

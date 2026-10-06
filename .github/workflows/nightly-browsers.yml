@@ -114,21 +114,18 @@ jobs:
           if-no-files-found: ignore
           retention-days: 1
 
-  # One tracking issue for a red night: opened where none is open, commented
-  # on where one is, and closed by a person. A run on another branch reports
-  # nothing, and neither does a run someone cancelled. A leg its timeout
-  # stopped is red whichever result it ends with.
+  # Only main updates the tracker. Cancelled runs leave it unchanged.
+  # Successful browser jobs and green reports close it with run evidence.
   report:
-    name: Report a red night
+    name: Update the nightly tracker
     needs: browsers
     if: >-
       !cancelled() && github.ref == 'refs/heads/main'
-      && needs.browsers.result != 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
-      issues: write # open the tracking issue or comment on it
+      issues: write # open, comment on or close the tracking issue
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -147,7 +144,7 @@ jobs:
 
       # The runner's own bash, jq and gh: the job that may write issues
       # installs nothing.
-      - name: Open the tracking issue or comment on it
+      - name: Update the tracking issue
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
