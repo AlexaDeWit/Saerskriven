@@ -206,7 +206,50 @@ const sheetFrom = (
 `;
 
 /** The canvas stylesheet with colours read from the studio root properties. */
-export const themedCanvasStylesheet = sheetFrom(paletteProperty);
+export const themedCanvasStylesheet = `${sheetFrom(paletteProperty)}
+@media (forced-colors: active) {
+  .${canvasClassNames.shape} {
+    fill: Canvas;
+    stroke: CanvasText;
+  }
+  .${canvasClassNames.store},
+  .${canvasClassNames.boundaryBox},
+  .${canvasClassNames.boundaryCurve},
+  .${canvasClassNames.noteFrame},
+  .${canvasClassNames.flow} {
+    fill: none;
+  }
+  .${canvasClassNames.label},
+  .${canvasClassNames.note},
+  .${canvasClassNames.flowLabel},
+  .${canvasClassNames.flowArrow},
+  .${canvasClassNames.outOfScope} .${canvasClassNames.flowArrow} {
+    fill: CanvasText;
+  }
+  .${canvasClassNames.flowBacking} {
+    fill: Canvas;
+  }
+  .${canvasClassNames.outOfScope} .${canvasClassNames.shape} {
+    stroke: CanvasText;
+  }
+  .${canvasClassNames.badge} {
+    stroke: CanvasText;
+    stroke-width: 1.5;
+  }
+  .${canvasClassNames.badge} .${canvasClassNames.toneCritical},
+  .${canvasClassNames.badge} .${canvasClassNames.toneHigh},
+  .${canvasClassNames.badge} .${canvasClassNames.toneMedium},
+  .${canvasClassNames.badge} .${canvasClassNames.toneLow},
+  .${canvasClassNames.badge} .${canvasClassNames.toneNeutral},
+  .${canvasClassNames.badge} .${canvasClassNames.toneFlag} {
+    fill: Canvas;
+  }
+  .${canvasClassNames.badgeCount},
+  .${canvasClassNames.badgeMark} {
+    fill: CanvasText;
+  }
+}
+`;
 
 /** Resolves headless drawing colours, font family, and badge appearance. */
 export function renderCanvasStylesheet(

@@ -37,12 +37,6 @@
   flood-color: var(--saer-colour-accent);
 }
 
-@media (forced-colors: active) {
-  .canvas :global(.saer-diagram-flow-focus-ink) {
-    flood-color: Highlight;
-  }
-}
-
 /* The selection frame stays inside the node's requested bounds. */
 .canvas :global(.react-flow__node.selected)::after {
   content: '';
@@ -336,4 +330,39 @@
 /* The wrapper draws no box and goes inert beneath the threat register. */
 .cards {
   display: contents;
+}
+
+@media (forced-colors: active) {
+  .canvas :global(.react-flow__background) {
+    display: none;
+  }
+
+  .canvas :global(.react-flow__node.selected)::after,
+  .canvas :global(.react-flow__selection),
+  .canvas :global(.react-flow__nodesselection-rect) {
+    border-color: Highlight;
+  }
+
+  .canvas :global(.react-flow__selection),
+  .canvas :global(.react-flow__nodesselection-rect) {
+    background: transparent;
+  }
+
+  .canvas :global(.react-flow__edge.selected .saer-diagram-shape) {
+    stroke: Highlight;
+  }
+
+  .canvas :global(.react-flow__edge.selected .saer-diagram-flow-arrow) {
+    fill: Highlight;
+  }
+
+  .canvas :global(.react-flow__nodes .react-flow__node):focus-visible,
+  .canvas :global(.react-flow__edge):focus-visible,
+  .canvas :global(.react-flow__resize-control > button:focus-visible) {
+    outline-color: Highlight;
+  }
+
+  .canvas :global(.saer-diagram-flow-focus-ink) {
+    flood-color: Highlight;
+  }
 }

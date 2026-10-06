@@ -855,7 +855,9 @@ model: its name, its kind, what its badge says, and each flag its threats
 raise. A flow also names the elements it runs between. The inline name field is
 named "Name of" the element it renames. Selection is a dashed frame and a
 heavier line, and focus is a separate ring, so neither depends on colour and
-both survive forced colours. A badge carries its open count over a severity
+both survive forced colours. The diagram follows the system contrast theme,
+whatever Appearance selects. The grid is not drawn in a contrast theme, but
+snapping still works. A badge carries its open count over a severity
 letter, and a flag is a triangle marked `!`.
 
 A focused element or resize control that lies under the threat panel, the

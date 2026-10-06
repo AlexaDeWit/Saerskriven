@@ -207,50 +207,57 @@ export const onScreen = async (target: Locator): Promise<void> => {
   expect(reached, 'the control is covered').toBe(true);
 };
 
-const ringReach = 16;
+type ScreenshotPixels = {
+  readonly width: number;
+  readonly height: number;
+  readonly data: readonly number[];
+};
 
-/** Holds the viewport fixed and leaves focus on `away`. Flow attachments compare native and painted focus frames. */
-export const focusRingShown = async (
-  target: Locator,
-  away: Locator,
-  focus: () => Promise<void>,
-): Promise<number> => {
-  const page = target.page();
-  await focus();
-  await expect(target).toBeFocused();
-  await canvasSettled(page);
-  const rested = await viewportTransform(page);
-  const shown = await screenBoxOf(target);
-  const clip = {
-    x: Math.max(Math.floor(shown.x) - ringReach, 0),
-    y: Math.max(Math.floor(shown.y) - ringReach, 0),
-    width: Math.ceil(shown.width) + 2 * ringReach,
-    height: Math.ceil(shown.height) + 2 * ringReach,
-  };
-  const after = await page.screenshot({ clip, scale: 'css' });
-  await attachFlowFocus(target, clip, after);
-  await away.focus();
-  const before = await page.screenshot({ clip, scale: 'css' });
-  expect(
-    await viewportTransform(page),
-    'the view moved while the ring was measured',
-  ).toBe(rested);
-  return page.evaluate(
-    async ({ images, origin, box, across }) => {
-      const [from, to] = await Promise.all(
-        images.map(async (png) => {
-          const image = new Image();
-          image.src = `data:image/png;base64,${png}`;
-          await image.decode();
-          const canvas = new OffscreenCanvas(image.width, image.height);
+type ScreenshotInspection =
+  | { readonly kind: 'pixels' }
+  | {
+      readonly kind: 'ring';
+      readonly origin: Point;
+      readonly box: Box;
+      readonly across: number;
+    };
+
+const inspectScreenshots = (
+  page: Page,
+  pngs: readonly Buffer[],
+  inspection: ScreenshotInspection,
+): Promise<{
+  readonly pixels: readonly ScreenshotPixels[];
+  readonly measurement: number;
+}> =>
+  page.evaluate(
+    async ({ images, inspection: measure }) => {
+      const decoded = await Promise.all(
+        images.map(async (image) => {
+          const loaded = new Image();
+          loaded.src = `data:image/png;base64,${image}`;
+          await loaded.decode();
+          const canvas = new OffscreenCanvas(loaded.width, loaded.height);
           const context = canvas.getContext('2d');
-          context?.drawImage(image, 0, 0);
+          context?.drawImage(loaded, 0, 0);
           return (
-            context?.getImageData(0, 0, image.width, image.height) ??
+            context?.getImageData(0, 0, loaded.width, loaded.height) ??
             new ImageData(1, 1)
           );
         }),
       );
+      if (measure.kind === 'pixels') {
+        return {
+          pixels: decoded.map((pixels) => ({
+            width: pixels.width,
+            height: pixels.height,
+            data: Array.from(pixels.data),
+          })),
+          measurement: 0,
+        };
+      }
+      const [from, to] = decoded;
+      const { origin, box, across } = measure;
       const fromWidth = from?.width ?? 0;
       const toWidth = to?.width ?? 0;
       const width = Math.min(fromWidth, toWidth);
@@ -294,15 +301,57 @@ export const focusRingShown = async (
           along.some((offset) => changed(right - offset, box.y + step)),
         ]),
       ].flat();
-      return sides.filter(Boolean).length / Math.max(sides.length, 1);
+      return {
+        pixels: [],
+        measurement: sides.filter(Boolean).length / Math.max(sides.length, 1),
+      };
     },
-    {
-      images: [before.toString('base64'), after.toString('base64')],
+    { images: pngs.map((png) => png.toString('base64')), inspection },
+  );
+
+/** Serializes screenshot pixels so browser paint checks share one PNG decoder. */
+export const screenshotPixels = async (
+  page: Page,
+  png: Buffer,
+): Promise<ScreenshotPixels> =>
+  (await inspectScreenshots(page, [png], { kind: 'pixels' })).pixels[0];
+
+const ringReach = 16;
+
+/** Holds the viewport fixed and leaves focus on `away`. Flow attachments compare native and painted focus frames. */
+export const focusRingShown = async (
+  target: Locator,
+  away: Locator,
+  focus: () => Promise<void>,
+): Promise<number> => {
+  const page = target.page();
+  await focus();
+  await expect(target).toBeFocused();
+  await canvasSettled(page);
+  const rested = await viewportTransform(page);
+  const shown = await screenBoxOf(target);
+  const clip = {
+    x: Math.max(Math.floor(shown.x) - ringReach, 0),
+    y: Math.max(Math.floor(shown.y) - ringReach, 0),
+    width: Math.ceil(shown.width) + 2 * ringReach,
+    height: Math.ceil(shown.height) + 2 * ringReach,
+  };
+  const after = await page.screenshot({ clip, scale: 'css' });
+  await attachFlowFocus(target, clip, after);
+  await away.focus();
+  const before = await page.screenshot({ clip, scale: 'css' });
+  expect(
+    await viewportTransform(page),
+    'the view moved while the ring was measured',
+  ).toBe(rested);
+  return (
+    await inspectScreenshots(page, [before, after], {
+      kind: 'ring',
       origin: { x: clip.x, y: clip.y },
       box: shown,
       across: ringReach,
-    },
-  );
+    })
+  ).measurement;
 };
 
 async function attachFlowFocus(
@@ -504,6 +553,7 @@ export const dragOnto = async (
 export const boxSelect = async (
   page: Page,
   targets: readonly [Locator, ...Locator[]],
+  whileSelecting?: () => Promise<void>,
 ): Promise<void> => {
   const drawn = await Promise.all(targets.map((target) => screenBoxOf(target)));
   const margin = 16;
@@ -518,8 +568,12 @@ export const boxSelect = async (
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   await page.mouse.move(to.x, to.y, { steps: 12 });
-  await expect(page.locator('.react-flow__selection')).toBeVisible();
-  await page.mouse.up();
+  try {
+    await expect(page.locator('.react-flow__selection')).toBeVisible();
+    await whileSelecting?.();
+  } finally {
+    await page.mouse.up();
+  }
 };
 
 const clearBy = 48;
