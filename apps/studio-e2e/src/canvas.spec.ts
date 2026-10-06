@@ -9,6 +9,7 @@ import {
   centreOf,
   dragBy,
   dragOnto,
+  flowBlockOf,
   halfwayAlong,
   lineOf,
   placeOf,
@@ -107,7 +108,9 @@ test('a flow under a selected trust boundary takes a line or label click', async
 
   await page.mouse.click(onOutline.x, onOutline.y);
   await canvasSettled(page);
-  await clickSvgText(flow.locator(`.${canvasClassNames.flowLabel}`));
+  await clickSvgText(
+    (await flowBlockOf(flow)).locator(`.${canvasClassNames.flowLabel}`),
+  );
   await expect(flow).toHaveClass(/selected/u);
   await expect(boundary).not.toHaveClass(/selected/u);
 });

@@ -12,7 +12,13 @@ import {
   type Node,
   type NodeProps,
 } from '@xyflow/react';
-import type { ReactElement } from 'react';
+import {
+  useId,
+  useState,
+  type FocusEventHandler,
+  type ReactElement,
+  type Ref,
+} from 'react';
 import {
   badgeAnchor,
   badgeStepsOut,
@@ -21,8 +27,13 @@ import {
   type BadgeMarks,
 } from './badges.js';
 import { edgePoints } from './flow-anchors.js';
-import { shiftedBy } from './geometry.js';
-import { ElementGlyph, FlowGlyph } from './glyphs.js';
+import { shiftedBy, type Box } from './geometry.js';
+import {
+  ElementGlyph,
+  flowBlockGlyph,
+  FlowGlyph,
+  rectOfBox,
+} from './glyphs.js';
 import {
   handleSides,
   nodeBoxesOf,
@@ -75,24 +86,14 @@ export type CanvasFreeEndData = Record<string, never>;
 export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
 
 /**
- * One element as a React Flow node: the shared glyph at the model's own size
- * and a `source` handle at each side midpoint, so the canvas mounting it
- * passes `connectionMode={ConnectionMode.Loose}` for a flow to end on one.
- * The drawing is hidden from assistive technology, so the mounting canvas
- * gives the node its accessible name. `textVisible` false leaves the glyph's
- * text out, for a canvas with a text editor over it. A selected element
- * carries the resize controls, named from `resizeLabels`, and while `resizing`
- * draws at the extent React Flow reports, a boundary curve's points scaled
- * with it. The badge letters `marks` and draws last, in an SVG layer classed
- * `canvasInteractionClassNames.badgeLayer`, so a canvas can stack it above the
- * selection frame. A selected node draws its badge at `selectedBadgeAnchor`.
- * A selected boundary box draws that layer in React Flow's viewport portal at
- * the node's live position, since the boundary itself sits below every other
- * item.
+ * Draws at the live extent during resizing and leaves accessible naming to the mounting canvas.
+ * A selected boundary raises its badge through the viewport portal.
+ * Side handles require `connectionMode={ConnectionMode.Loose}`.
  */
 export function CanvasNodeBody({
   controlsVisible = true,
   data,
+  drawingRef,
   height,
   isConnectable,
   marks,
@@ -107,6 +108,7 @@ export function CanvasNodeBody({
   width,
 }: NodeProps<CanvasFlowNode> & {
   readonly controlsVisible?: boolean;
+  readonly drawingRef?: Ref<SVGSVGElement>;
   readonly marks: BadgeMarks;
   readonly resizeLabels: ResizeLabels;
   readonly onResize?: () => void;
@@ -137,6 +139,7 @@ export function CanvasNodeBody({
   return (
     <>
       <svg
+        ref={drawingRef}
         width={svgNumber(shownSize.width)}
         height={svgNumber(shownSize.height)}
         style={{ display: 'block' }}
@@ -176,31 +179,37 @@ export function CanvasNodeBody({
 }
 
 /**
- * One flow from the transient layout a controlled canvas supplies. During a
- * drag it follows the live endpoint boxes and translates selected flow
- * geometry by the shared group offset. `textVisible` false leaves the name
- * out, as on {@link CanvasNodeBody}, and its badge letters `marks`.
+ * Follows live endpoints and raises the name block while its line stays in the edge layer.
+ * The mounting canvas redirects native focus through `onBlockFocus`.
  */
 export function CanvasEdgeBody({
   data,
+  id,
   interactionWidth,
   marks,
+  onBlockFocus,
+  renderBlock = defaultBlockPortal,
   selected,
+  selectable,
   source,
   target,
   textVisible = true,
 }: EdgeProps<CanvasFlowEdge> & {
   readonly marks: BadgeMarks;
+  readonly onBlockFocus?: FocusEventHandler<SVGElement>;
+  readonly renderBlock?: (block: ReactElement) => ReactElement | null;
   readonly textVisible?: boolean;
 }): ReactElement | null {
+  const [blockHovered, setBlockHovered] = useState(false);
+  const clipId = useId();
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
   const groupMovement = useStore((state) => {
     if (!selected || data?.boxes === undefined) {
       return '0,0';
     }
-    for (const [id, settled] of data.boxes) {
-      const node = state.nodeLookup.get(id);
+    for (const [nodeId, settled] of data.boxes) {
+      const node = state.nodeLookup.get(nodeId);
       if (node?.selected !== true) {
         continue;
       }
@@ -224,6 +233,7 @@ export function CanvasEdgeBody({
     offset,
   );
   const path = polylinePath(edgePoints(edge));
+  const backing = edge.label.backing;
   return (
     <>
       <BaseEdge
@@ -231,30 +241,42 @@ export function CanvasEdgeBody({
         interactionWidth={interactionWidth ?? interactionWidths.flow}
         strokeOpacity={0}
       />
-      <g aria-hidden="true">
-        <FlowGlyph edge={edge} marks={marks} textVisible={textVisible} />
+      <g aria-hidden="true" data-flow-block-hovered={blockHovered || undefined}>
+        {backing === undefined
+          ? null
+          : rectOfBox(undefined, backing, {
+              fill: 'none',
+              pointerEvents: 'none',
+            })}
+        <FlowGlyph blockVisible={false} edge={edge} marks={marks} />
       </g>
+      {backing === undefined
+        ? null
+        : renderBlock(
+            flowBlockLayer({
+              backing,
+              clipId,
+              edge,
+              id,
+              interactionWidth: interactionWidth ?? interactionWidths.flow,
+              marks,
+              onHover: setBlockHovered,
+              onFocus: onBlockFocus,
+              path,
+              selectable,
+              textVisible,
+            }),
+          )}
     </>
   );
 }
 
-/**
- * The anchor a flow's free end rides on: one handle, so React Flow can
- * resolve an edge that ends there, and nothing drawn. The flow's own glyph
- * carries the line all the way to the free position, so a mark here would be
- * ink the headless render does not lay down.
- */
+/** Resolves a free endpoint without adding a mark to the drawing. */
 export function CanvasFreeEndBody(): ReactElement {
   return <Handle type="source" position={Position.Top} />;
 }
 
-/**
- * The laid-out nodes as React Flow's own, each carrying the model's position
- * and extent so React Flow measures nothing. A boundary curve rides as a node
- * sized to the box its waypoints span, so it drags and selects as one thing.
- * A boundary sits below the other nodes and takes pointer events only on its
- * outline. Flows come over through {@link toReactFlowEdges}.
- */
+/** Keeps model extents and places boundaries below regular nodes. */
 export function toReactFlowNodes(layout: CanvasLayout): CanvasFlowNode[] {
   return layout.nodes.map((node) => {
     const boundary = isBoundary(node);
@@ -271,13 +293,7 @@ export function toReactFlowNodes(layout: CanvasLayout): CanvasFlowNode[] {
   });
 }
 
-/**
- * The laid-out flows as React Flow's own edges. A React Flow edge runs
- * between two nodes, so an end the model leaves free takes the anchor
- * {@link freeEndNodes} places at that position. The handle each attached end
- * names is the side the layout resolved, so React Flow's own idea of where
- * an edge runs matches the drawn line.
- */
+/** Uses the layout's handle sides and supplies invisible anchors for free ends. */
 export function toReactFlowEdges(layout: CanvasLayout): CanvasFlowEdge[] {
   const boxes = nodeBoxesOf(layout.nodes);
   return layout.edges.map((edge) => ({
@@ -303,13 +319,7 @@ export function toReactFlowEdges(layout: CanvasLayout): CanvasFlowEdge[] {
   }));
 }
 
-/**
- * One anchor node per free flow end, so React Flow resolves an edge that
- * ends at a position belonging to no element. An anchor is not draggable,
- * not selectable, not focusable, hidden from assistive technology and
- * without React Flow's role description: it is a place for an edge to end,
- * not a thing on the diagram.
- */
+/** Free endpoints resolve through anchors excluded from gestures and accessibility. */
 export function freeEndNodes(layout: CanvasLayout): CanvasFreeEndNode[] {
   return layout.edges.flatMap((edge) => [
     ...anchorOf(edge, 'source'),
@@ -317,11 +327,7 @@ export function freeEndNodes(layout: CanvasLayout): CanvasFreeEndNode[] {
   ]);
 }
 
-/**
- * The id of the node a flow's free end rides on, the flow's own id with the
- * side appended. It is derived rather than stored, so the edge and the
- * anchor agree without either holding a reference to the other.
- */
+/** Derives the same anchor ID for an edge and its free-end node. */
 export function flowEndNodeId(flow: ElementId, side: FlowEndSide): string {
   return `${flow}-${side}`;
 }
@@ -395,6 +401,84 @@ const handlePlacement = {
   bottom: Position.Bottom,
   left: Position.Left,
 } as const satisfies Record<HandleSide, Position>;
+
+function flowBlockLayer({
+  backing,
+  clipId,
+  edge,
+  id,
+  interactionWidth,
+  marks,
+  onHover,
+  onFocus,
+  path,
+  selectable,
+  textVisible,
+}: {
+  readonly backing: Box;
+  readonly clipId: string;
+  readonly edge: CanvasEdge;
+  readonly id: string;
+  readonly interactionWidth: number;
+  readonly marks: BadgeMarks;
+  readonly onHover: (hovered: boolean) => void;
+  readonly onFocus: FocusEventHandler<SVGElement> | undefined;
+  readonly path: string;
+  readonly selectable: boolean | undefined;
+  readonly textVisible: boolean;
+}): ReactElement {
+  return (
+    <g
+      aria-hidden="true"
+      className={`${canvasInteractionClassNames.flowBlockLayer} ${canvasClassNames.element} nopan`}
+      data-id={id}
+      data-testid={`rf__flow-block-${id}`}
+      pointerEvents={selectable === false ? 'none' : 'visibleStroke'}
+      onFocus={onFocus}
+      tabIndex={-1}
+      onMouseEnter={() => {
+        onHover(true);
+      }}
+      onMouseLeave={() => {
+        onHover(false);
+      }}
+      style={{
+        cursor: selectable ? 'pointer' : undefined,
+      }}
+    >
+      <defs>
+        <clipPath id={clipId}>{rectOfBox(undefined, backing)}</clipPath>
+      </defs>
+      <g clipPath={`url(#${clipId})`}>
+        <BaseEdge
+          path={path}
+          interactionWidth={0}
+          strokeOpacity={0}
+          style={{ strokeWidth: Math.max(1, interactionWidth) }}
+        />
+      </g>
+      {flowBlockGlyph({ edge, marks, textVisible })}
+    </g>
+  );
+}
+
+function defaultBlockPortal(block: ReactElement): ReactElement {
+  return (
+    <ViewportPortal>
+      <svg
+        aria-hidden="true"
+        className={canvasInteractionClassNames.flowBlockSurface}
+        width={1}
+        height={1}
+        overflow="visible"
+        pointerEvents="none"
+        style={{ position: 'absolute', left: 0, top: 0 }}
+      >
+        {block}
+      </svg>
+    </ViewportPortal>
+  );
+}
 
 function BadgeLayer({
   at = { x: 0, y: 0 },

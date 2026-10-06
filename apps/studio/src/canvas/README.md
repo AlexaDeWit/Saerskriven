@@ -22,6 +22,7 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `pane-shield.ts`                                                                                | Keeping a double-click's second press out of a pane its first press opened                                                                                 |
 | `connecting.ts`, `flow-target-chooser.tsx`                                                      | The flow a start-flow command holds until a target is chosen, and the listbox that chooses it                                                              |
 | `inline-editing.tsx`                                                                            | The inline name and Note editors, and the node and edge bodies that mount them                                                                             |
+| `resize-layer-position.ts`                                                                      | Live offsets for a node while its resize button holds focus                                                                                                |
 | `selection-controls.tsx`, `selection-control.ts`                                                | The controls over a selection, and the event a command opens one of them through                                                                           |
 | `geometry-editor.tsx`, `endpoint-editor.tsx`                                                    | The Position and size form, and the flow end form                                                                                                          |
 | `element-draft.ts`                                                                              | The preview of an edit to the selected element, and its commit as one dispatch                                                                             |
@@ -187,13 +188,16 @@ flow.
 
 React Flow z-index values are set by hand: a boundary at -1, a regular node at
 0 and a selected regular node at 1, so selection keeps a regular node visible
-without raising a boundary above what it encloses. A node whose resize control
-holds keyboard focus rises to 2 while it does, above every other item and the
-handles on a curve's points, and that control above the node's other controls,
-so nothing on the canvas covers the control's ring. A boundary's interior passes
+without raising a boundary above what it encloses. A resize control with
+keyboard focus rises above the point handles while its node drawing keeps its
+index. Live position offsets replace the node transform during that focus,
+so the control escapes the node's stacking context. The canvas writes those
+offsets only while a resize button holds focus and clears them on blur.
+A boundary's interior passes
 pointer events through, and its name, resize control and an invisible stroke
 around its outline stay selectable. Its disabled connection handles cannot take
-an outline drag.
+an outline drag. Flow name blocks share one viewport SVG above the nodes, with segment targets
+and point handles above the blocks. The flow lines stay below the nodes.
 
 Select rests on the arrow over the pane and nodes, a flow keeps its link
 pointer and a connection handle its crosshair. Place uses a crosshair and Hand

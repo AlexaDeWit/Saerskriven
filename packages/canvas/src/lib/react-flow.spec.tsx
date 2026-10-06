@@ -1,5 +1,17 @@
 import { elementId } from '@saerskriven/model/fixtures';
-import { Position, ReactFlowProvider, type EdgeProps } from '@xyflow/react';
+import {
+  Position,
+  ReactFlowProvider,
+  useStoreApi,
+  type EdgeProps,
+} from '@xyflow/react';
+import {
+  act,
+  useLayoutEffect,
+  useRef,
+  type FocusEvent as ReactFocusEvent,
+} from 'react';
+import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { selectedBadgeAnchor } from './badges.js';
 import {
@@ -29,6 +41,8 @@ import {
   type CanvasFlowNode,
   type CanvasEdgeData,
 } from './react-flow.js';
+
+const blockFocused = vi.fn<(event: ReactFocusEvent<SVGElement>) => void>();
 
 const nodeProps = (node: CanvasNode) => ({
   id: node.id,
@@ -93,16 +107,67 @@ const edgeMarkup = (
   nodes: CanvasFlowNode[] = [],
   selected = false,
   textVisible = true,
-): string =>
-  renderToStaticMarkup(
-    <ReactFlowProvider initialNodes={nodes}>
-      <CanvasEdgeBody
-        marks={specMarks}
-        {...edgeProps(data, selected)}
-        textVisible={textVisible}
-      />
-    </ReactFlowProvider>,
+  inspect?: (container: HTMLDivElement) => void,
+): string => {
+  const container = document.createElement('div');
+  if (inspect !== undefined) {
+    document.body.appendChild(container);
+  }
+  const root = createRoot(container);
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  act(() => {
+    root.render(
+      <ReactFlowProvider initialNodes={nodes}>
+        <EdgeFixture
+          data={data}
+          selected={selected}
+          textVisible={textVisible}
+        />
+      </ReactFlowProvider>,
+    );
+  });
+  try {
+    inspect?.(container);
+    return container.innerHTML;
+  } finally {
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
+    vi.unstubAllGlobals();
+  }
+};
+
+function EdgeFixture({
+  data,
+  selected,
+  textVisible,
+}: {
+  readonly data: CanvasEdgeData | undefined;
+  readonly selected: boolean;
+  readonly textVisible: boolean;
+}) {
+  const store = useStoreApi();
+  const surface = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    store.setState({ domNode: surface.current });
+  }, [store]);
+  return (
+    <div ref={surface}>
+      <svg>
+        <g className="react-flow__edge" tabIndex={0}>
+          <CanvasEdgeBody
+            marks={specMarks}
+            onBlockFocus={blockFocused}
+            {...edgeProps(data, selected)}
+            textVisible={textVisible}
+          />
+        </g>
+      </svg>
+      <div className="react-flow__viewport-portal" />
+    </div>
   );
+}
 
 const nodesWith = (moved: string, by: number): CanvasFlowNode[] =>
   toReactFlowNodes(everyGlyphLayout).map((node) =>
@@ -321,6 +386,47 @@ describe('CanvasEdgeBody', () => {
     expect(edgeMarkup(data, nodesWith('el-client', 0))).toContain(settled);
   });
 
+  it('raises only the block and keeps its bounds with the line', () => {
+    const data = toReactFlowEdges(everyGlyphLayout)[0].data;
+    const container = document.createElement('div');
+    container.innerHTML = edgeMarkup(data);
+    const lineLayer = container.querySelector('svg');
+    const blockLayer = container.querySelector(
+      `.${canvasInteractionClassNames.flowBlockLayer}`,
+    );
+    expect(
+      lineLayer?.querySelector(`.${canvasClassNames.flow}`),
+    ).not.toBeNull();
+    expect(
+      lineLayer?.querySelector(`.${canvasClassNames.flowBacking}`),
+    ).toBeNull();
+    expect(
+      lineLayer?.querySelector('rect[pointer-events="none"]'),
+    ).not.toBeNull();
+    expect(blockLayer?.querySelector(`.${canvasClassNames.flow}`)).toBeNull();
+    expect(
+      blockLayer?.querySelector(`.${canvasClassNames.flowBacking}`),
+    ).not.toBeNull();
+    expect(
+      blockLayer?.querySelector(`.${canvasClassNames.flowLabel}`),
+    ).not.toBeNull();
+  });
+
+  it('hands block focus to the mounting canvas without adding a tab stop', () => {
+    const data = toReactFlowEdges(everyGlyphLayout)[0].data;
+    edgeMarkup(data, [], false, true, (container) => {
+      blockFocused.mockClear();
+      const block = container.querySelector<SVGElement>(
+        `.${canvasInteractionClassNames.flowBlockLayer}`,
+      );
+      act(() => {
+        block?.focus();
+      });
+      expect(blockFocused).toHaveBeenCalledOnce();
+      expect(container.querySelectorAll('[tabindex="0"]')).toHaveLength(1);
+    });
+  });
+
   it('draws no name while a name field is open over it', () => {
     const data = toReactFlowEdges(everyGlyphLayout)[0].data;
     expect(edgeMarkup(data, nodesWith('el-client', 0))).toContain(
@@ -415,7 +521,14 @@ describe('CanvasEdgeBody', () => {
   });
 
   it('draws nothing where React Flow hands it an edge with no data', () => {
-    expect(edgeMarkup(undefined)).toBe('');
+    const container = document.createElement('div');
+    container.innerHTML = edgeMarkup(undefined);
+    expect(container.querySelector('.react-flow__edge')?.children).toHaveLength(
+      0,
+    );
+    expect(
+      container.querySelector('.react-flow__viewport-portal')?.children,
+    ).toHaveLength(0);
   });
 });
 

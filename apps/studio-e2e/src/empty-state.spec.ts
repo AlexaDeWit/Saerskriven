@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
-import { elementNodes } from './canvas.fixtures.js';
+import { elementNodes, flowBlockOf } from './canvas.fixtures.js';
 import {
   nodeNamed,
   openFallback,
@@ -27,7 +27,10 @@ test('the studio opens on an actor, the records it sends, and the store they lan
   await expect(elementNodes(page)).toHaveCount(2);
   await expect(page.locator('.react-flow__edge')).toHaveCount(1);
   for (const { of, className, says } of drawnNames) {
-    const lines = nodeNamed(page, of).locator(`text.${className} tspan`);
+    const item = nodeNamed(page, of);
+    const drawing =
+      className === canvasClassNames.flowLabel ? await flowBlockOf(item) : item;
+    const lines = drawing.locator(`text.${className} tspan`);
 
     await expect(lines, `${says} is drawn on one line`).toHaveCount(1);
     await expect(lines).toHaveText(says);

@@ -53,11 +53,14 @@ import {
   commitNote,
   commitRename,
   endInlineEditing,
+  focusElement,
   resizeNode,
   stopInlineEditing,
 } from './edits.js';
 import { keyboardMoved } from './keyboard-moves.js';
 import { NodeFold } from './live-edges.js';
+import { useFlowBlockPortal } from './flow-block-layer.js';
+import { useResizeLayerPosition } from './resize-layer-position.js';
 import { useTranslator } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
 import { gestureDecimals } from './stored-decimals.js';
@@ -80,13 +83,10 @@ type InlineFieldProps = {
   readonly refuse?: (label: Said, text: string) => TextRefusal | undefined;
 };
 
-/** The height of a one-line name field, which a placed element must reach in both dimensions for its name to open in place. */
+/** A one-line name opens in place only when its box fits a field in both dimensions. */
 export const nameFieldExtent = lineHeight(wrappedTextStyles.label.fontSize);
 
-/**
- * The canvas node types, each drawing its inline name or Note field in place
- * of its text while the store's inline editor names it.
- */
+/** The store's inline editor replaces the corresponding node text. */
 export const editingNodeTypes = {
   actor: EditingNodeBody,
   process: EditingNodeBody,
@@ -260,6 +260,8 @@ function InlineField({
 
 function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
   const { node } = props.data;
+  const drawing = useRef<SVGSVGElement>(null);
+  useResizeLayerPosition(drawing, props);
   const { t } = useTranslator();
   const marks = useBadgeMarks();
   const [resizing, setResizing] = useState(false);
@@ -283,6 +285,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
       <CanvasNodeBody
         {...props}
         controlsVisible={!editing}
+        drawingRef={drawing}
         marks={marks}
         onResize={() => {
           setResizing(true);
@@ -340,6 +343,13 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
 
 function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
   const edge = props.data?.edge;
+  const id = edge?.id;
+  const renderBlock = useFlowBlockPortal();
+  const focus = useCallback(() => {
+    if (id !== undefined) {
+      focusElement(id);
+    }
+  }, [id]);
   const marks = useBadgeMarks();
   const editing = useModelStore(
     useCallback(
@@ -352,7 +362,13 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
 
   return (
     <>
-      <CanvasEdgeBody {...props} marks={marks} textVisible={!editing} />
+      <CanvasEdgeBody
+        {...props}
+        marks={marks}
+        onBlockFocus={focus}
+        renderBlock={renderBlock}
+        textVisible={!editing}
+      />
       {editing && edge !== undefined && (
         <EdgeLabelRenderer>
           <div

@@ -12,6 +12,12 @@ export const initialColourModeScript = `try {
 
 /** Styles needed before the studio JavaScript mounts the application. */
 export const initialPageStylesheet = `${tokenStylesheet}
+:root {
+  --saer-node-x: 0px;
+  --saer-node-y: 0px;
+  --saer-node-z: 0;
+}
+
 .initial-page,
 .no-script {
   position: fixed;

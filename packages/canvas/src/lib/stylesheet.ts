@@ -51,14 +51,12 @@ export const canvasClassNames = {
   toneFlag: 'saer-diagram-tone-flag',
 } as const satisfies Record<string, DiagramClassName>;
 
-/**
- * Class names the React Flow bodies add for the mounting canvas to style, and
- * the canvas stylesheet does not: the badge layer and a boundary's pointer
- * target.
- */
+/** Names for interactive layers that the mounting canvas styles. */
 export const canvasInteractionClassNames = {
   badgeLayer: 'saer-diagram-badge-layer',
   boundaryHitTarget: 'saer-diagram-boundary-hit-target',
+  flowBlockLayer: 'saer-diagram-flow-block-layer',
+  flowBlockSurface: 'saer-diagram-flow-block-surface',
 } as const satisfies Record<string, DiagramClassName>;
 
 /** Which run of text a primitive is drawing. */

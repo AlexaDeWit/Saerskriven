@@ -378,6 +378,13 @@ export const handlesOf = (box: Box): Point[] =>
 export const lineOf = (page: Page, name: RegExp): Locator =>
   page.getByRole('group', { name }).locator(`path.${canvasClassNames.flow}`);
 
+/** The raised block shares its flow's ID without adding an accessible item. */
+export const flowBlockOf = async (flow: Locator): Promise<Locator> => {
+  const id = await flow.getAttribute('data-id');
+  expect(id, 'the flow has a React Flow ID').not.toBeNull();
+  return flow.page().getByTestId(`rf__flow-block-${String(id)}`);
+};
+
 /** Finds the flow midpoint in whole screen pixels, avoiding Firefox's truncation of fractional pointer positions. */
 export const halfwayAlong = (line: Locator): Promise<Point> =>
   line.evaluate<Point, SVGPathElement>((path) => {

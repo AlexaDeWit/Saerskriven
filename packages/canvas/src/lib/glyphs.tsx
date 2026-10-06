@@ -1,5 +1,5 @@
 import type { Size } from '@saerskriven/model';
-import type { CSSProperties, ReactElement } from 'react';
+import type { CSSProperties, ReactElement, SVGProps } from 'react';
 import { badgeAnchor, ThreatBadgeGlyph, type BadgeMarks } from './badges.js';
 import { edgePoints } from './flow-anchors.js';
 import type { Box } from './geometry.js';
@@ -61,14 +61,8 @@ export function BoxElementGlyph({
 }
 
 /**
- * One element's glyph in the element's own coordinates, its origin at the
- * element's position: its outline, its run of text, and its badge, in that
- * order. A note has no outline, and draws a frame outside its box while it
- * is out of scope. React Flow places a node itself, and the headless render
- * places it with {@link PlacedElementGlyph}. `textVisible` false leaves the
- * run of text out, for a canvas with an editor open where that text is drawn.
- * `badgeVisible` false leaves the badge out, for a canvas that draws it in a
- * layer of its own. `marks` are the letters the badge draws.
+ * Uses node coordinates, with the text and badge optionally drawn in separate layers.
+ * An out-of-scope note adds a frame outside its box.
  */
 export function ElementGlyph({
   badgeVisible = true,
@@ -114,19 +108,14 @@ export function PlacedElementGlyph({
   );
 }
 
-/**
- * One flow, in the diagram's own coordinates rather than a node's: straight
- * segments from its source through its waypoints to its target, an arrowhead
- * at the target, and its block where the layout settled it: the backing,
- * drawn over the line so the line breaks around it, then the badge and the
- * name. A caller sizing a picture bounds the backing. `textVisible` false
- * leaves the name out, as it does on {@link ElementGlyph}.
- */
+/** Draws the block after the line so its backing covers the line. */
 export function FlowGlyph({
+  blockVisible = true,
   edge,
   marks,
   textVisible = true,
 }: {
+  readonly blockVisible?: boolean;
   readonly edge: CanvasEdge;
   readonly marks: BadgeMarks;
   readonly textVisible?: boolean;
@@ -148,6 +137,23 @@ export function FlowGlyph({
           d={arrowheadPath(edge.source, points[1])}
         />
       ) : null}
+      {blockVisible ? flowBlockGlyph({ edge, marks, textVisible }) : null}
+    </g>
+  );
+}
+
+/** The backing, badge and name share one layout in the studio and exports. */
+export function flowBlockGlyph({
+  edge,
+  marks,
+  textVisible = true,
+}: {
+  readonly edge: CanvasEdge;
+  readonly marks: BadgeMarks;
+  readonly textVisible?: boolean;
+}): ReactElement {
+  return (
+    <>
       {edge.label.backing === undefined
         ? null
         : rectOfBox(canvasClassNames.flowBacking, edge.label.backing)}
@@ -159,7 +165,7 @@ export function FlowGlyph({
         />
       )}
       {textVisible ? <WrappedText {...edge.label.name} /> : null}
-    </g>
+    </>
   );
 }
 
@@ -186,7 +192,12 @@ function outlineOf(node: CanvasNode): ReactElement | null {
   return <BoxElementGlyph kind={node.kind} size={node.size} />;
 }
 
-function rectOfBox(className: string, box: Box): ReactElement {
+/** Formats the backing and its interaction bounds with the same coordinate checks. */
+export function rectOfBox(
+  className: string | undefined,
+  box: Box,
+  attributes: Pick<SVGProps<SVGRectElement>, 'fill' | 'pointerEvents'> = {},
+): ReactElement {
   return (
     <rect
       className={className}
@@ -194,6 +205,7 @@ function rectOfBox(className: string, box: Box): ReactElement {
       y={svgNumber(box.minY)}
       width={svgNumber(box.maxX - box.minX)}
       height={svgNumber(box.maxY - box.minY)}
+      {...attributes}
     />
   );
 }
