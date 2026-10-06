@@ -911,6 +911,7 @@ navigation keys do not.
 - Records have no list of their own: a mitigation is reached through its
   threats, and an assumption through its threats or the model panel's Details.
   The model's explicit record removal has no control.
+- In Safari, record rows in view move when another tab adds a record above them.
 - Link existing and Attach existing have no search or filter, and neither the
   threat list nor the threat register has a filter, a search, or an order but
   the one above.

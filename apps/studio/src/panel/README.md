@@ -195,9 +195,10 @@ record in the model would move it for every other threat and in the file.
 
 An unlink restores the body's scroll position before the frame paints, so the
 rows below move up under the pointer. Browser scroll anchoring would otherwise
-hold a row below the removed one in place. Anchoring stays on for every other
-change, so a record arriving above the rows in view leaves them where they
-are. A row that goes while it holds focus leaves focus in its group.
+hold a row below the removed one in place. For other changes, browsers with
+scroll anchoring hold the rows in view when a record arrives above them.
+Safari has no scroll anchoring, so those rows move. A row that goes while it
+holds focus leaves focus in its group.
 
 The empty row carries its status control and a Discard control in its name row
 from the start, so nothing moves when it becomes a record and a click on Add or
