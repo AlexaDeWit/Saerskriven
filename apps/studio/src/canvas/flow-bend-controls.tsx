@@ -194,7 +194,7 @@ export function FlowBendControls({
           <HandleActions
             actions={[
               {
-                label: t('tools.follow-route'),
+                label: t('tools.auto-anchor'),
                 pressed: pinned(mode.end) === undefined,
                 run: () => {
                   interaction.pinEnd(mode.end, undefined);

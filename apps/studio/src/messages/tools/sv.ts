@@ -50,7 +50,7 @@ export const toolsSv = catalogue(toolMessages)('sv')({
   'flow-target-end': 'Flödets målände',
   'remove-bend': 'Ta bort knäckpunkten',
   'move-bend': 'Flytta knäckpunkten',
-  'follow-route': 'Följ sträckningen',
+  'auto-anchor': 'Auto',
   'bend-handle-help':
     'Dra eller använd piltangenterna för att flytta. Klicka för åtgärder. Delete tar bort knäckpunkten.',
   'flow-end-handle-help':

@@ -407,7 +407,7 @@ readers announce placement instructions.
   of that element to pin the end there, onto another actor, process or store
   to attach the end there, following the route, or onto empty canvas to free
   the end where it is dropped. Dropped on the element the other end holds, or
-  on a Note, it changes nothing. Click it for Follow the route and directional
+  on a Note, it changes nothing. Click it for Auto and directional
   connection icons for Top, Right, Bottom and Left. A focused end handle takes
   an arrow key as the side it points at, and Delete or Backspace returns it to
   following the route. A
@@ -418,7 +418,7 @@ readers announce placement instructions.
   is and says so: select the flow itself to delete it.
 
 The local bend, point and Close actions use icons with names in hover and
-keyboard-focus tooltips. Follow the route retains text. The endpoint editor
+keyboard-focus tooltips. Auto keeps the end attached and releases its pinned side. The endpoint editor
 keeps text in its native side selector.
 
 While one flow is selected with the Select tool and no name or note is open for
