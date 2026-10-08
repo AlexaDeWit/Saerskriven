@@ -1,6 +1,7 @@
 import { expect, test, type Locator } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
 import { commandChord, registeredChords } from './chords.fixtures.js';
+import { withFlowFailureEvidence } from './flow-diagnostics.fixtures.js';
 import {
   boxOf,
   dragOnto,
@@ -150,12 +151,20 @@ test('a flow reverses by its chord and its command, one undo step each, and save
 
 test('a flow end dragged onto empty canvas goes free there, moves by arrow key, and attaches where it is dropped on an element', async ({
   page,
-}) => {
+}, testInfo) => {
   await openFallback(page);
   const flow = await selectByKeyboard(page, placeholder.records);
   const original = await drawnBy(lineOf(page, placeholder.records));
   await dragTo(page, targetEnd(page), await emptyCanvasPoint(page));
-  await expect(flow).toHaveAccessibleName(/from Actor to a free point/u);
+  await withFlowFailureEvidence(
+    page,
+    testInfo,
+    'placeholder-flow',
+    ['placeholder-actor', 'placeholder-store', 'placeholder-flow-target'],
+    async () => {
+      await expect(flow).toHaveAccessibleName(/from Actor to a free point/u);
+    },
+  );
   const freed = await savedFlow(page);
   expect(freed).toMatchObject({ target: { kind: 'free' } });
   await targetEnd(page).focus();

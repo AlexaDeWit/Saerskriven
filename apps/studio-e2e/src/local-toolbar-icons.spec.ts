@@ -1,4 +1,10 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import {
+  expect,
+  test,
+  type Locator,
+  type Page,
+  type TestInfo,
+} from '@playwright/test';
 import {
   contrastRatio,
   darkPalette,
@@ -41,110 +47,147 @@ const iconTooltip = async (page: Page, control: Locator): Promise<void> => {
   await expect(control).toHaveCSS('outline-style', 'solid');
 };
 
-for (const scheme of ['light', 'dark'] as const) {
+const colourSchemes = ['light', 'dark'] as const;
+
+const closeConnectionIcons = async (
+  page: Page,
+  flow: Locator,
+  actions: Locator,
+  before: Awaited<ReturnType<typeof savedModel>>,
+): Promise<void> => {
+  const close = actions.getByRole('button', { name: 'Close', exact: true });
+  await iconTooltip(page, close);
+  await close.press('Enter');
+  await expect(actions).toHaveCount(0);
+  await expect(flow).toBeFocused();
+  await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
+  expect(await savedModel(page)).toEqual(before);
+};
+
+const connectionIconsAtSelectedLeft = async (
+  page: Page,
+  scheme: (typeof colourSchemes)[number],
+  info: TestInfo,
+) => {
+  await page.emulateMedia({ colorScheme: scheme });
+  await openFallback(page);
+  const flow = await selectByKeyboard(page, placeholder.records);
+  const before = await savedModel(page);
+  const end = page.getByRole('button', {
+    name: 'Flow source end',
+    exact: true,
+  });
+  const actions = page.getByRole('group', { name: 'Flow end actions' });
+  for (const [side, label] of [
+    ['top', 'Top'],
+    ['right', 'Right'],
+    ['bottom', 'Bottom'],
+    ['left', 'Left'],
+  ] as const) {
+    await end.focus();
+    await end.press('Enter');
+    const automatic = actions.getByRole('button', {
+      name: 'Auto',
+      exact: true,
+    });
+    await expect(automatic).toHaveAttribute('aria-pressed', 'true');
+    await expect(automatic).toHaveText('Auto');
+    const choice = actions.getByRole('button', { name: label, exact: true });
+    await expect(choice).toHaveAttribute('aria-pressed', 'false');
+    await iconTooltip(page, choice);
+    await choice.press('Enter');
+    await expect(actions).toHaveCount(0);
+    await expect(flow).toBeFocused();
+    expect((await savedModel(page)).diagrams[0].elements).toContainEqual(
+      expect.objectContaining({
+        kind: 'flow',
+        source: { kind: 'attached', element: 'placeholder-actor', side },
+      }),
+    );
+    await end.focus();
+    await end.press('Enter');
+    await expect(choice).toHaveAttribute('aria-pressed', 'true');
+    await expect(automatic).toHaveAttribute('aria-pressed', 'false');
+    const colours = await choice.evaluate((control) => ({
+      background: getComputedStyle(control).backgroundColor,
+      text: getComputedStyle(control).color,
+    }));
+    expect(colours.background).not.toBe(
+      await automatic.evaluate(
+        (control) => getComputedStyle(control).backgroundColor,
+      ),
+    );
+    expect(colours.text).not.toBe(colours.background);
+    if (side === 'left') {
+      await iconTooltip(page, choice);
+      const palette = scheme === 'light' ? lightPalette : darkPalette;
+      expect(
+        await choice.evaluate((control) => control.matches(':hover')),
+      ).toBe(true);
+      await expect(choice).toHaveCSS(
+        'background-color',
+        rgbColour(palette.actionPrimary),
+      );
+      await expect(choice).toHaveCSS('color', rgbColour(palette.actionText));
+      await expect(choice).toHaveCSS(
+        'outline-color',
+        rgbColour(palette.actionText),
+      );
+      expect(
+        contrastRatio(palette.actionPrimary, palette.actionText),
+      ).toBeGreaterThanOrEqual(3);
+      await info.attach(`connection-icons-${scheme}`, {
+        body: await page.screenshot(),
+        contentType: 'image/png',
+      });
+    } else {
+      await closeConnectionIcons(page, flow, actions, before);
+    }
+  }
+  return {
+    flow,
+    before,
+    end,
+    actions,
+    choice: actions.getByRole('button', { name: 'Left', exact: true }),
+    automatic: actions.getByRole('button', {
+      name: 'Auto',
+      exact: true,
+    }),
+  };
+};
+
+for (const scheme of colourSchemes) {
+  test(`connection icons carry no accessibility violation in ${scheme}`, async ({
+    page,
+  }, info) => {
+    await connectionIconsAtSelectedLeft(page, scheme, info);
+    await audit(page, `with connection icons in ${scheme}`);
+  });
+
   test(`connection icons preserve anchors, automatic routing, close and undo in ${scheme}`, async ({
     page,
   }, info) => {
-    await page.emulateMedia({ colorScheme: scheme });
-    await openFallback(page);
-    const flow = await selectByKeyboard(page, placeholder.records);
-    const before = await savedModel(page);
-    const end = page.getByRole('button', {
-      name: 'Flow source end',
-      exact: true,
-    });
-    const actions = page.getByRole('group', { name: 'Flow end actions' });
-    for (const [side, label] of [
-      ['top', 'Top'],
-      ['right', 'Right'],
-      ['bottom', 'Bottom'],
-      ['left', 'Left'],
-    ] as const) {
-      await end.focus();
-      await end.press('Enter');
-      const automatic = actions.getByRole('button', {
-        name: 'Follow the route',
-        exact: true,
-      });
-      await expect(automatic).toHaveAttribute('aria-pressed', 'true');
-      await expect(automatic).toHaveText('Follow the route');
-      const choice = actions.getByRole('button', { name: label, exact: true });
-      await expect(choice).toHaveAttribute('aria-pressed', 'false');
-      await iconTooltip(page, choice);
-      await choice.press('Enter');
-      await expect(actions).toHaveCount(0);
-      await expect(flow).toBeFocused();
-      expect((await savedModel(page)).diagrams[0].elements).toContainEqual(
-        expect.objectContaining({
-          kind: 'flow',
-          source: { kind: 'attached', element: 'placeholder-actor', side },
-        }),
-      );
-      await end.focus();
-      await end.press('Enter');
-      await expect(choice).toHaveAttribute('aria-pressed', 'true');
-      await expect(automatic).toHaveAttribute('aria-pressed', 'false');
-      const colours = await choice.evaluate((control) => ({
-        background: getComputedStyle(control).backgroundColor,
-        text: getComputedStyle(control).color,
-      }));
-      expect(colours.background).not.toBe(
-        await automatic.evaluate(
-          (control) => getComputedStyle(control).backgroundColor,
-        ),
-      );
-      expect(colours.text).not.toBe(colours.background);
-      if (side === 'left') {
-        await iconTooltip(page, choice);
-        const palette = scheme === 'light' ? lightPalette : darkPalette;
-        expect(
-          await choice.evaluate((control) => control.matches(':hover')),
-        ).toBe(true);
-        await expect(choice).toHaveCSS(
-          'background-color',
-          rgbColour(palette.actionPrimary),
-        );
-        await expect(choice).toHaveCSS('color', rgbColour(palette.actionText));
-        await expect(choice).toHaveCSS(
-          'outline-color',
-          rgbColour(palette.actionText),
-        );
-        expect(
-          contrastRatio(palette.actionPrimary, palette.actionText),
-        ).toBeGreaterThanOrEqual(3);
-        await info.attach(`connection-icons-${scheme}`, {
-          body: await page.screenshot(),
-          contentType: 'image/png',
-        });
-        await audit(page, `with connection icons in ${scheme}`);
-        await page.emulateMedia({ forcedColors: 'active' });
-        expect(
-          await choice.evaluate(
-            (control) => getComputedStyle(control).backgroundColor,
-          ),
-        ).not.toBe(
-          await automatic.evaluate(
-            (control) => getComputedStyle(control).backgroundColor,
-          ),
-        );
-        await page.emulateMedia({ forcedColors: 'none' });
-      }
-      const close = actions.getByRole('button', { name: 'Close', exact: true });
-      await iconTooltip(page, close);
-      await close.press('Enter');
-      await expect(actions).toHaveCount(0);
-      await expect(flow).toBeFocused();
-      await page.keyboard.press(
-        await commandChord(page, registeredChords.undo[0]),
-      );
-      expect(await savedModel(page)).toEqual(before);
-    }
+    const { flow, before, end, actions, choice, automatic } =
+      await connectionIconsAtSelectedLeft(page, scheme, info);
+    await page.emulateMedia({ forcedColors: 'active' });
+    expect(
+      await choice.evaluate(
+        (control) => getComputedStyle(control).backgroundColor,
+      ),
+    ).not.toBe(
+      await automatic.evaluate(
+        (control) => getComputedStyle(control).backgroundColor,
+      ),
+    );
+    await page.emulateMedia({ forcedColors: 'none' });
+    await closeConnectionIcons(page, flow, actions, before);
     await end.focus();
     await end.press('ArrowLeft');
     await end.focus();
     await end.press('Enter');
     await actions
-      .getByRole('button', { name: 'Follow the route', exact: true })
+      .getByRole('button', { name: 'Auto', exact: true })
       .press('Enter');
     expect(await savedModel(page)).toEqual(before);
     await page.keyboard.press(
@@ -302,6 +345,11 @@ test('local icon names and tooltips follow the chosen language', async ({
   const actions = page.getByRole('group', {
     name: 'Actions de l’extrémité du flux',
   });
+  const automatic = actions.getByRole('button', { name: 'Auto', exact: true });
+  await expect(automatic).toBeFocused();
+  await expect(automatic).toHaveText('Auto');
+  await automatic.hover();
+  await expect(page.getByRole('tooltip')).toHaveText('Auto');
   for (const name of ['Haut', 'Droite', 'Bas', 'Gauche', 'Fermer']) {
     const control = actions.getByRole('button', { name, exact: true });
     expect(await reachesAt(control, await centreOf(control))).toBe(true);
@@ -342,3 +390,65 @@ test('French local actions remain reachable beside the pane on a narrow desktop'
     );
   }
 });
+
+for (const width of [1280, 800, 390]) {
+  for (const scheme of colourSchemes) {
+    for (const activation of ['pointer', 'keyboard'] as const) {
+      test(`Auto opens as a direct control at ${String(width)} in ${scheme} by ${activation}`, async ({
+        page,
+      }, info) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.emulateMedia({ colorScheme: scheme });
+        await openFallback(page);
+        await selectByKeyboard(page, placeholder.records);
+        const end = page.getByRole('button', {
+          name: 'Flow source end',
+          exact: true,
+        });
+        if (activation === 'pointer') {
+          await end.click();
+        } else {
+          await end.focus();
+          await end.press('Enter');
+        }
+        const actions = page.getByRole('group', { name: 'Flow end actions' });
+        const automatic = actions.getByRole('button', {
+          name: 'Auto',
+          exact: true,
+        });
+        await expect(automatic).toBeFocused();
+        await expect(automatic).toHaveText('Auto');
+        await expect(automatic).toHaveAttribute('aria-pressed', 'true');
+        await expect(actions.getByRole('button')).toHaveCount(6);
+        await expect(page.getByRole('tooltip')).toHaveCount(0);
+        for (const forcedColors of ['none', 'active'] as const) {
+          await page.emulateMedia({ forcedColors });
+          const bounds = await screenBoxOf(automatic);
+          for (const control of await actions.getByRole('button').all()) {
+            expect((await screenBoxOf(control)).y).toBeCloseTo(bounds.y, 0);
+            expect(await reachesAt(control, await centreOf(control))).toBe(
+              true,
+            );
+          }
+          if (activation === 'keyboard') {
+            await expect(automatic).toHaveCSS('outline-style', 'solid');
+          }
+          await info.attach(
+            `auto-${String(width)}-${scheme}-${activation}-${forcedColors}`,
+            {
+              body: await page.screenshot(),
+              contentType: 'image/png',
+            },
+          );
+        }
+        await automatic.hover();
+        await expect(page.getByRole('tooltip')).toHaveText('Auto');
+        await automatic.press('Tab');
+        await page.keyboard.press('Shift+Tab');
+        await expect(automatic).toBeFocused();
+        await expect(page.getByRole('tooltip')).toHaveText('Auto');
+        await expect(automatic).toHaveCSS('outline-style', 'solid');
+      });
+    }
+  }
+}

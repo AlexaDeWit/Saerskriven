@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -77,6 +77,8 @@ type Reports = Readonly<Record<string, object | string>>;
 type Night = Readonly<{
   args?: readonly string[];
   browsersResult?: string;
+  mergeResult?: string;
+  reportsResult?: string;
   gh?: boolean;
   issues?: readonly Readonly<{
     number: number;
@@ -92,6 +94,8 @@ const night = (
   {
     args = [],
     browsersResult = 'success',
+    mergeResult = 'success',
+    reportsResult = 'success',
     gh = true,
     issues = [],
     listFails = false,
@@ -137,6 +141,8 @@ const night = (
         RUN_URL: runUrl,
         GITHUB_SHA: commit,
         BROWSERS_RESULT: browsersResult,
+        MERGE_RESULT: mergeResult,
+        REPORTS_RESULT: reportsResult,
         NIGHTLY_TEST_LOG: log,
         NIGHTLY_TEST_TRACKER: JSON.stringify({ issues, listFails, writesFail }),
       },
@@ -184,7 +190,11 @@ void test('a green night closes the open tracker as completed with run evidence'
   ]);
   assert.ok(writes[0]?.body.includes(runUrl));
   assert.ok(writes[0]?.body.includes(commit));
-  assert.ok(writes[0]?.body.includes('Both browser jobs succeeded.'));
+  assert.ok(
+    writes[0]?.body.includes(
+      'All browser shards, report merges and report downloads succeeded.',
+    ),
+  );
 });
 
 void test('a green dry run names the tracker it would close and writes nothing', () => {
@@ -209,6 +219,52 @@ void test('green reports without a successful job result close nothing', () => {
       writes.some(({ args }) => args[1] === 'close'),
       false,
     );
+  }
+});
+
+void test('green reports without successful merges and downloads close nothing', () => {
+  for (const outcome of ['', 'failure', 'cancelled', 'skipped']) {
+    for (const guard of ['mergeResult', 'reportsResult']) {
+      const { result, writes } = night(
+        { firefox: green, webkit: green },
+        { [guard]: outcome, issues: [{ number: 41, title, state: 'open' }] },
+      );
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(
+        writes.some(({ args }) => args[1] === 'close'),
+        false,
+      );
+    }
+  }
+});
+
+void test('cancelled shards, merges or downloads leave even a red tracker unchanged', () => {
+  for (const guard of ['browsersResult', 'mergeResult', 'reportsResult']) {
+    const { result, calls } = night(
+      { firefox: red, webkit: green },
+      { [guard]: 'cancelled', issues: [{ number: 41, title, state: 'open' }] },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(calls, []);
+  }
+});
+
+void test('a failed download reports missing evidence and never closes the tracker', () => {
+  const inputs: readonly Reports[] = [
+    { firefox: green },
+    { firefox: green, webkit: green },
+  ];
+  for (const reports of inputs) {
+    const { result, writes } = night(reports, {
+      reportsResult: 'failure',
+      issues: [{ number: 41, title, state: 'open' }],
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0]?.args[1], 'comment');
+    assert.ok(writes[0]?.body.includes('report downloads ended as `failure`'));
+    if (!('webkit' in reports))
+      assert.ok(writes[0]?.body.includes('No report found.'));
   }
 });
 
@@ -465,4 +521,81 @@ void test('only the report job may write, to issues alone, and only for a run on
     nightly.jobs['report']?.if?.trim().replace(/\s+/gu, ' '),
     "!cancelled() && github.ref == 'refs/heads/main'",
   );
+});
+
+void test('tracker updates survive failed downloads and require all merge outcomes', () => {
+  const tracker = nightly.jobs['report'];
+  assert.deepEqual(tracker?.needs, ['browsers', 'merge']);
+  const downloads = tracker?.steps?.filter(({ uses }) =>
+    uses?.startsWith('actions/download-artifact@'),
+  );
+  assert.deepEqual(
+    downloads?.map((step) => step.with?.['name']),
+    ['playwright-json-firefox', 'playwright-json-webkit'],
+  );
+  for (const step of downloads ?? [])
+    assert.equal(step.if, '${{ !cancelled() }}');
+  const update = tracker?.steps?.find(({ run }) =>
+    run?.includes('scripts/nightly/report.sh'),
+  );
+  assert.equal(update?.if, '${{ !cancelled() }}');
+  assert.equal(update?.env?.['MERGE_RESULT'], '${{ needs.merge.result }}');
+  assert.equal(
+    update?.env?.['REPORTS_RESULT'],
+    "${{ steps.firefox-report.outcome == 'success' && steps.webkit-report.outcome == 'success' && 'success' || 'failure' }}",
+  );
+  assert.equal(
+    tracker?.steps?.some(({ uses }) => uses?.includes('setup-toolchain')),
+    false,
+  );
+});
+
+void test('the merge requires one ZIP from each shard and preserves equal source names', () => {
+  const collect = nightly.jobs['merge']?.steps?.find(
+    ({ name }) => name === 'Require one blob from each shard',
+  );
+  assert.ok(collect?.run);
+  for (const files of [
+    ['first.zip'],
+    [],
+    ['first.zip', 'extra.zip'],
+    ['extra.txt'],
+  ]) {
+    const directory = temporaryWorkspace();
+    const blobs = join(directory, 'blobs');
+    for (const shard of ['shard-1', 'shard-2'])
+      mkdirSync(join(blobs, shard), { recursive: true });
+    writeFileSync(join(blobs, 'shard-1', 'first.zip'), 'first shard');
+    for (const file of files)
+      writeFileSync(join(blobs, 'shard-2', file), 'second shard');
+    const result: SpawnSyncReturns<string> = spawnSync(
+      'bash',
+      ['-euo', 'pipefail', '-c', collect.run],
+      {
+        cwd: directory,
+        encoding: 'utf8',
+        env: { PATH: process.env['PATH'], BLOB_ROOT: blobs },
+      },
+    );
+    if (files.length === 1 && files[0] === 'first.zip') {
+      assert.equal(result.status, 0, result.stderr);
+      const output = join(
+        directory,
+        'apps/studio-e2e/test-output/playwright/blob',
+      );
+      assert.equal(
+        readFileSync(join(output, 'shard-1.zip'), 'utf8'),
+        'first shard',
+      );
+      assert.equal(
+        readFileSync(join(output, 'shard-2.zip'), 'utf8'),
+        'second shard',
+      );
+    } else {
+      assert.notEqual(result.status, 0);
+      assert.ok(
+        result.stderr.includes('Expected exactly one blob ZIP from shard 2'),
+      );
+    }
+  }
 });

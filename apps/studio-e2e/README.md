@@ -57,7 +57,9 @@ SAERSKRIVEN_E2E_OTHER_ENGINES=1 pnpm nx e2e @saerskriven/studio-e2e -- \
   --project=webkit --no-deps src/files.spec.ts
 ```
 
-CI runs both on `main` once a night, outside the gate
+CI runs both on `main` once a night, outside the gate, with two shards per
+engine and one worker per runner. The shards use the same test selectors,
+deadlines and zero retries. Each test keeps its own concurrent pages
 ([Nightly browsers](../../.agents/orchestration.md#nightly-browsers)).
 
 The Pages build uses a separate Vite cache to avoid reloading the development
@@ -69,7 +71,7 @@ A failed test keeps its trace and error context under
 trace. A CI job that fails or times out uploads that directory for 14 days,
 as `playwright-output-shard-<n>` from a shard leg,
 `playwright-output-pages-floor` from the floor job, and
-`playwright-output-<engine>` from a nightly leg. Open a trace with
+`playwright-output-<engine>-shard-<n>` from a nightly leg. Open a trace with
 `pnpm exec playwright show-trace <trace.zip>`.
 
 A local run writes the HTML report under `test-output/playwright/report/`. In
@@ -77,6 +79,12 @@ CI each job writes a blob report in its place, uploaded for a day as
 `playwright-blob-shard-<n>` or `playwright-blob-pages-floor`. When a browser
 job goes red, the `Merged Playwright report` job merges every blob into one
 HTML report and uploads it as `playwright-report` for 14 days.
+
+Nightly shards upload `playwright-blob-<engine>-shard-<n>` for one day.
+A merge job per engine requires both blobs and uses Playwright's merger to
+write `playwright-report-<engine>` for 14 days and `playwright-json-<engine>`
+for one day. These reports include failed tests. Missing required artifacts
+fail their job, and incomplete evidence cannot close the nightly tracker.
 
 ## Waiting on the canvas
 

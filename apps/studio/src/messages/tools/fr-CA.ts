@@ -51,7 +51,7 @@ export const toolsFrCA = catalogue(toolMessages)('fr-CA')({
   'flow-target-end': 'Extrémité destination du flux',
   'remove-bend': 'Retirer le coude',
   'move-bend': 'Déplacer le coude',
-  'follow-route': 'Suivre le tracé',
+  'auto-anchor': 'Auto',
   'bend-handle-help':
     'Faites glisser ou utilisez les touches fléchées pour déplacer. Cliquez pour les actions. Suppr retire ce coude.',
   'flow-end-handle-help':

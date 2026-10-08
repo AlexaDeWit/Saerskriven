@@ -268,7 +268,23 @@ export function CanvasEdgeBody({
 
 /** Resolves a free endpoint without adding a mark to the drawing. */
 export function CanvasFreeEndBody(): ReactElement {
-  return <Handle type="source" position={Position.Top} />;
+  return (
+    <Handle
+      type={freeEndHandle.type}
+      position={freeEndHandle.position}
+      style={{
+        left: freeEndHandle.x,
+        top: freeEndHandle.y,
+        width: freeEndHandle.width,
+        height: freeEndHandle.height,
+        minWidth: freeEndHandle.width,
+        minHeight: freeEndHandle.height,
+        border: 0,
+        transform: 'none',
+        visibility: 'hidden',
+      }}
+    />
+  );
 }
 
 /** Keeps model extents and places boundaries below regular nodes. */
@@ -314,7 +330,7 @@ export function toReactFlowEdges(layout: CanvasLayout): CanvasFlowEdge[] {
   }));
 }
 
-/** Free endpoints resolve through anchors excluded from gestures and accessibility. */
+/** Free endpoints carry declared handles and exclude gestures and accessibility. */
 export function freeEndNodes(layout: CanvasLayout): CanvasFreeEndNode[] {
   return layout.edges.flatMap((edge) => [
     ...anchorOf(edge, 'source'),
@@ -384,6 +400,15 @@ export function layoutAtReactFlowNodes(
 }
 
 const anchorExtent = 1;
+
+const freeEndHandle = {
+  type: 'source',
+  position: Position.Top,
+  x: 0,
+  y: 0,
+  width: anchorExtent,
+  height: anchorExtent,
+} as const satisfies NonNullable<CanvasFreeEndNode['handles']>[number];
 
 const boundaryZIndex = -1;
 
@@ -615,6 +640,7 @@ function anchorOf(edge: CanvasEdge, side: FlowEndSide): CanvasFreeEndNode[] {
       position: side === 'source' ? edge.source : edge.target,
       width: anchorExtent,
       height: anchorExtent,
+      handles: [freeEndHandle],
       data: {},
       draggable: false,
       selectable: false,

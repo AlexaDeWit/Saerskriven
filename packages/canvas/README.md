@@ -150,9 +150,12 @@ fixtures, which no entry point exports.
 [`react-flow.tsx`](src/lib/react-flow.tsx): `CanvasNodeBody`,
 `CanvasEdgeBody` and `CanvasFreeEndBody` are the node, edge and free-end
 components. `toReactFlowNodes`, `toReactFlowEdges` and `freeEndNodes` carry a
-layout over with every position and extent explicit, so React Flow measures
-nothing. A flow end at a free position rides on an anchor node named by
-`flowEndNodeId`, of type `freeEndNodeKind`. `layoutAtReactFlowNodes` lays the
+layout over with every node position and extent explicit. A flow end at a
+free position rides on an anchor node named by `flowEndNodeId`, of type
+`freeEndNodeKind`. Each anchor declares its fixed handle geometry through
+React Flow's public `handles` field and draws the same invisible handle.
+Resolving a free end does not wait for browser handle measurement.
+`layoutAtReactFlowNodes` lays the
 diagram out at the node positions React Flow holds during a gesture.
 `CanvasNodeBody` draws a selected node's badge at `selectedBadgeAnchor`,
 stepped out past its top-right corner and clear of a resize handle inside it.

@@ -11,6 +11,7 @@ import {
   canvasSettled,
   dragBy,
   emptyCanvasPoint,
+  filterBoxOf,
   flowBlockOf,
   screenBoxOf,
   screenshotPixels,
@@ -37,7 +38,7 @@ const flowName = /^Submit order, flow/u;
 const systemColours = (page: Page) =>
   page.evaluate(() => {
     const probe = document.createElement('span');
-    probe.style.forcedColorAdjust = 'none';
+    probe.style.colorScheme = 'light dark';
     document.body.append(probe);
     const read = (name: 'Canvas' | 'CanvasText' | 'Highlight'): string => {
       probe.style.color = name;
@@ -134,10 +135,17 @@ const arrowMask = (target: Locator, clip: Box): Promise<readonly boolean[]> =>
 const expectPaint = async (
   target: Locator,
   colour: string,
-  interior = false,
-  arrowFill = false,
+  {
+    interior = false,
+    arrowFill = false,
+    bounds,
+  }: {
+    readonly interior?: boolean;
+    readonly arrowFill?: boolean;
+    readonly bounds?: Box;
+  } = {},
 ): Promise<void> => {
-  const box = await screenBoxOf(target);
+  const box = bounds ?? (await screenBoxOf(target));
   const page = target.page();
   const viewport = page.viewportSize() ?? { width: 1280, height: 720 };
   const x = Math.max(0, Math.floor(box.x + (interior ? box.width / 4 : -2)));
@@ -159,6 +167,18 @@ const expectPaint = async (
   expect(
     await paintedPixels(page, png, colour, interior ? 0 : 40, mask),
   ).toBeGreaterThan(2);
+};
+
+const expectCanvasGround = async (
+  page: Page,
+  colour: string,
+): Promise<void> => {
+  const at = await emptyCanvasPoint(page);
+  const paint = await page.screenshot({
+    clip: { x: at.x - 4, y: at.y - 4, width: 8, height: 8 },
+    scale: 'css',
+  });
+  expect(await paintedPixels(page, paint, colour, 0)).toBe(64);
 };
 
 const capture = async (
@@ -192,7 +212,7 @@ for (const scheme of ['light', 'dark'] as const) {
       await expectPaint(
         actor.locator(`.${canvasClassNames.actor}`),
         colours.Canvas,
-        true,
+        { interior: true },
       );
       await expectPaint(
         actor.locator(`.${canvasClassNames.label}`),
@@ -202,7 +222,7 @@ for (const scheme of ['light', 'dark'] as const) {
         const badge = canvasContainer(page)
           .locator(`.${canvasClassNames.badge} .${tone}`)
           .first();
-        await expectPaint(badge, colours.Canvas, true);
+        await expectPaint(badge, colours.Canvas, { interior: true });
         await expectPaint(badge, colours.CanvasText);
       }
       await expectPaint(
@@ -213,21 +233,32 @@ for (const scheme of ['light', 'dark'] as const) {
       );
       const flow = nodeNamed(page, flowName);
       const arrow = flow.locator(`.${canvasClassNames.flowArrow}`).first();
-      await expectPaint(arrow, colours.CanvasText, false, true);
+      await expectPaint(arrow, colours.CanvasText, { arrowFill: true });
       await expectPaint(
         nodeNamed(page, /^Store order, flow/u)
           .locator(`.${canvasClassNames.flowArrow}`)
           .first(),
         colours.CanvasText,
-        false,
-        true,
+        { arrowFill: true },
       );
       await expectPaint(
         (await flowBlockOf(flow)).locator(`.${canvasClassNames.flowBacking}`),
         colours.Canvas,
-        true,
+        { interior: true },
       );
       await capture(page, `rest-${scheme}-${appearance}`);
+      await expectCanvasGround(page, colours.Canvas);
+      for (const shape of [
+        canvasClassNames.store,
+        canvasClassNames.boundaryBox,
+        canvasClassNames.boundaryCurve,
+        canvasClassNames.noteFrame,
+        canvasClassNames.flow,
+      ]) {
+        const drawing = canvasContainer(page).locator(`.${shape}`).first();
+        await expect(drawing).toHaveCSS('fill', 'none');
+        await expectPaint(drawing, colours.CanvasText);
+      }
       if (appearance === 'system') {
         const drawing = actor.locator('svg').first();
         const rested = await screenshotPixels(
@@ -243,6 +274,8 @@ for (const scheme of ['light', 'dark'] as const) {
             .getByRole('menuitemradio', { name: mode, exact: true })
             .click();
           await beforeCanvas(page).focus();
+          await capture(page, `appearance-${scheme}-${mode}`, false);
+          await expectCanvasGround(page, colours.Canvas);
           const painted = await screenshotPixels(
             page,
             await drawing.screenshot({ scale: 'css' }),
@@ -266,7 +299,7 @@ for (const scheme of ['light', 'dark'] as const) {
       await selectByKeyboard(page, flowName);
       await closeThreats(page);
       await beforeCanvas(page).focus();
-      await expectPaint(arrow, colours.Highlight, false, true);
+      await expectPaint(arrow, colours.Highlight, { arrowFill: true });
       const line = flow.locator(`path.${canvasClassNames.flow}`);
       const at = await line.evaluate<Point, SVGPathElement>((path) => {
         const point = path.getPointAtLength(path.getTotalLength() * 0.2);
@@ -331,10 +364,10 @@ for (const state of states) {
       await tabTo(page, target);
       await expect(target).toHaveCSS('outline-color', colours.Highlight);
       if (state === 'flow-focus') {
-        await expectPaint(
-          flow.locator('.saer-diagram-flow-focus-ring'),
-          colours.Highlight,
-        );
+        const ring = flow.locator('.saer-diagram-flow-focus-ring');
+        await expectPaint(ring, colours.Highlight, {
+          bounds: await filterBoxOf(ring),
+        });
       }
     } else if (state === 'draft-curve') {
       const at = await emptyCanvasPoint(page);

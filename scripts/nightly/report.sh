@@ -5,7 +5,7 @@
 #       scripts/nightly/report.sh [--dry-run] <reports directory> <engine>...
 #
 # Missing reports, failing specs, report errors and failed jobs keep it open.
-# Closure requires readable green reports and BROWSERS_RESULT=success.
+# Closure also requires BROWSERS_RESULT, MERGE_RESULT and REPORTS_RESULT=success.
 # --dry-run reads the open issues and prints the intended write.
 set -euo pipefail
 
@@ -27,6 +27,13 @@ shift
 }
 run_url=${RUN_URL:?RUN_URL must link the workflow run}
 commit=${GITHUB_SHA:?GITHUB_SHA must name the commit the run tested}
+
+if [ "${BROWSERS_RESULT:-}" = cancelled ] ||
+  [ "${MERGE_RESULT:-}" = cancelled ] ||
+  [ "${REPORTS_RESULT:-}" = cancelled ]; then
+  echo 'The run was cancelled: tracker unchanged.'
+  exit 0
+fi
 
 # One failing spec a line, as `file:line › describe › title`. A title is
 # flattened to one line, so the count is the line count.
@@ -76,16 +83,19 @@ red=''
       fi
     fi
   done
-  if [ -z "$red" ] && [ "${BROWSERS_RESULT:-success}" != success ]; then
-    red=1
-    printf '\nNo report lists a failure, and the browser jobs ended as `%s`.\n' \
-      "$BROWSERS_RESULT"
-  fi
+  for outcome in "browser shards:${BROWSERS_RESULT:-success}" \
+    "report merges:${MERGE_RESULT:-success}" "report downloads:${REPORTS_RESULT:-success}"; do
+    if [ "${outcome#*:}" != success ]; then
+      red=1
+      printf '\nThe %s ended as `%s`.\n' "${outcome%%:*}" "${outcome#*:}"
+    fi
+  done
   printf '\nThe HTML report of each engine is an artifact of the run, `playwright-report-<engine>`.\n'
 } >"$body"
 
-if [ -z "$red" ] && [ "${BROWSERS_RESULT:-}" != success ]; then
-  echo 'No successful browser job result: nothing to close.'
+if [ -z "$red" ] && { [ "${BROWSERS_RESULT:-}" != success ] ||
+  [ "${MERGE_RESULT:-}" != success ] || [ "${REPORTS_RESULT:-}" != success ]; }; then
+  echo 'Missing successful shard, merge or download result: nothing to close.'
   exit 0
 fi
 
@@ -101,7 +111,7 @@ if [ -z "$red" ]; then
     echo 'No tracking issue is open: nothing to close.'
     exit 0
   fi
-  printf '\nBoth browser jobs succeeded. Closing the tracking issue.\n' >>"$body"
+  printf '\nAll browser shards, report merges and report downloads succeeded. Closing the tracking issue.\n' >>"$body"
   if [ -n "$dry_run" ]; then
     echo "Would close #$number:"
     echo

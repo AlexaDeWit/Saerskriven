@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
 import {
   canvasContainer,
+  canvasSettled,
   dragOnto,
   elementNodes,
   emptyCanvasPoint,
@@ -361,6 +362,7 @@ test('a thin drag keeps the pointer rectangle', async ({ page }) => {
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   await page.mouse.move(from.x + 200, from.y + 20, { steps: 8 });
+  await canvasSettled(page, '[data-testid="box-draft"]');
 
   const draft = page.getByTestId('box-draft');
   const preview = await inkBoxOf(draft.locator(`.${canvasClassNames.actor}`));

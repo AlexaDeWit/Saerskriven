@@ -41,10 +41,13 @@ export const pointHandles = (page: Page): Locator =>
 export const viewportZoom = async (page: Page): Promise<number> =>
   Number(/scale\(([\d.]+)\)/u.exec(await viewportTransform(page))?.[1]);
 
-/** Waits for three matching animation frames so slow browser frames cannot appear at rest between polls. */
-export const canvasSettled = async (page: Page): Promise<void> => {
+/** Waits for three matching frames of the viewport and any named preview. */
+export const canvasSettled = async (
+  page: Page,
+  previewSelector?: string,
+): Promise<void> => {
   await page.waitForFunction(
-    () => {
+    (selector) => {
       const viewport = document.querySelector('.react-flow__viewport');
       if (viewport === null) {
         return false;
@@ -53,7 +56,19 @@ export const canvasSettled = async (page: Page): Promise<void> => {
         let before = '';
         let matching = 0;
         const read = () => {
-          const now = viewport.getAttribute('style') ?? '';
+          const preview =
+            selector === undefined ? null : document.querySelector(selector);
+          const style = viewport.getAttribute('style') ?? '';
+          const box =
+            preview instanceof SVGGraphicsElement ? preview.getBBox() : null;
+          const now =
+            style === '' || (selector !== undefined && preview === null)
+              ? ''
+              : JSON.stringify([
+                  style,
+                  preview?.getAttribute('style') ?? null,
+                  box === null ? null : [box.x, box.y, box.width, box.height],
+                ]);
           matching = now !== '' && now === before ? matching + 1 : 0;
           before = now;
           if (matching >= 3) {
@@ -65,7 +80,7 @@ export const canvasSettled = async (page: Page): Promise<void> => {
         requestAnimationFrame(read);
       });
     },
-    undefined,
+    previewSelector,
     { polling: 'raf' },
   );
 };
@@ -401,22 +416,50 @@ export const scrolledAbove = (target: Locator): Promise<number> =>
     return scrolled;
   });
 
-const drawnBoxOf = (shapes: Locator, stroked: boolean): Promise<Box> =>
-  shapes.evaluateAll((elements, withStroke) => {
+const drawnBoxOf = (
+  shapes: Locator,
+  bounds: 'geometry' | 'stroke' | 'filter',
+): Promise<Box> =>
+  shapes.evaluateAll((elements, extent) => {
     const boxes = elements.map((element) => {
       if (!(element instanceof SVGGraphicsElement)) {
         throw new Error('The locator found a non-SVG shape.');
       }
-      const geometry = element.getBBox();
+      const filter =
+        extent === 'filter'
+          ? element.ownerDocument.getElementById(
+              /^url\(#(.+)\)$/u.exec(
+                element.getAttribute('filter') ?? '',
+              )?.[1] ?? '',
+            )
+          : null;
+      if (
+        extent === 'filter' &&
+        (!(filter instanceof SVGFilterElement) ||
+          filter.filterUnits.baseVal !==
+            SVGUnitTypes.SVG_UNIT_TYPE_USERSPACEONUSE)
+      ) {
+        throw new Error('The SVG shape must reference a user-space filter.');
+      }
+      const geometry =
+        filter instanceof SVGFilterElement
+          ? {
+              x: filter.x.baseVal.value,
+              y: filter.y.baseVal.value,
+              width: filter.width.baseVal.value,
+              height: filter.height.baseVal.value,
+            }
+          : element.getBBox();
       const matrix = element.getScreenCTM() ?? new DOMMatrix();
       const corners = [geometry.x, geometry.x + geometry.width].flatMap((x) =>
         [geometry.y, geometry.y + geometry.height].map((y) =>
           new DOMPoint(x, y).matrixTransform(matrix),
         ),
       );
-      const stroke = withStroke
-        ? Number.parseFloat(getComputedStyle(element).strokeWidth)
-        : 0;
+      const stroke =
+        extent === 'stroke'
+          ? Number.parseFloat(getComputedStyle(element).strokeWidth)
+          : 0;
       const scaleX = Math.hypot(matrix.a, matrix.b);
       const scaleY = Math.hypot(matrix.c, matrix.d);
       const horizontalLine =
@@ -445,15 +488,19 @@ const drawnBoxOf = (shapes: Locator, stroked: boolean): Promise<Box> =>
     const right = Math.max(...boxes.map((box) => box.right));
     const bottom = Math.max(...boxes.map((box) => box.bottom));
     return { x: left, y: top, width: right - left, height: bottom - top };
-  }, stroked);
+  }, bounds);
 
 /** Measures SVG geometry without stroke in screen coordinates. Client bounds include stroke in Firefox and exclude it in Chromium. */
 export const geometryBoxOf = (shapes: Locator): Promise<Box> =>
-  drawnBoxOf(shapes, false);
+  drawnBoxOf(shapes, 'geometry');
 
 /** The screen-space box of SVG shape ink: its geometry and half its stroke on each stroked side. */
 export const inkBoxOf = (shapes: Locator): Promise<Box> =>
-  drawnBoxOf(shapes, true);
+  drawnBoxOf(shapes, 'stroke');
+
+/** Measures the live user-space filter region in screen coordinates. */
+export const filterBoxOf = (shapes: Locator): Promise<Box> =>
+  drawnBoxOf(shapes, 'filter');
 
 /** Where a flow attached to that box ends: one of the four side midpoints. */
 export const handlesOf = (box: Box): Point[] =>

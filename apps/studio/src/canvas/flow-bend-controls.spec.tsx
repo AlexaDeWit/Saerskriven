@@ -600,6 +600,32 @@ describe('DiagramCanvas, what the view is told of', () => {
 });
 
 describe('DiagramCanvas, the ends of a flow', () => {
+  it.each(['source', 'target'] as const)(
+    'Auto releases the %s pin and retains its attachment',
+    (end) => {
+      render(<DiagramCanvas />);
+      const handle = end === 'source' ? sourceEnd : targetEnd;
+      const before = endOf(requestFlow, end);
+      fireEvent.click(handle());
+      fireEvent.click(screen.getByRole('button', { name: 'Top' }));
+      expect(endOf(requestFlow, end)).toEqual({ ...before, side: 'top' });
+      fireEvent.click(handle());
+      const automatic = screen.getByRole('button', { name: 'Auto' });
+      expect(automatic).toBe(document.activeElement);
+      expect(automatic.getAttribute('aria-pressed')).toBe('false');
+      fireEvent.click(automatic);
+      expect(endOf(requestFlow, end)).toEqual(before);
+      expect(
+        screen.queryByRole('group', { name: 'Flow end actions' }),
+      ).toBeNull();
+      expect(modelStore.getState().past).toHaveLength(2);
+      act(() => {
+        dispatch(Action.Undo());
+      });
+      expect(endOf(requestFlow, end)).toEqual({ ...before, side: 'top' });
+    },
+  );
+
   it('pins a flow end to a side by arrow key once, and releases it by Delete', () => {
     render(<DiagramCanvas />);
     expect(
@@ -626,7 +652,7 @@ describe('DiagramCanvas, the ends of a flow', () => {
     expect(
       screen.getByRole('group', { name: 'Flow end actions' }),
     ).not.toBeNull();
-    expect(screen.getByRole('button', { name: 'Follow the route' })).toBe(
+    expect(screen.getByRole('button', { name: 'Auto' })).toBe(
       document.activeElement,
     );
     press('Tab');

@@ -50,7 +50,7 @@ export const toolsEnCA = catalogue(toolMessages)('en-CA')({
   'flow-target-end': 'Flow target end',
   'remove-bend': 'Remove bend',
   'move-bend': 'Move bend',
-  'follow-route': 'Follow the route',
+  'auto-anchor': 'Auto',
   'bend-handle-help':
     'Drag or use arrow keys to move. Click for actions. Delete removes this bend.',
   'flow-end-handle-help':
