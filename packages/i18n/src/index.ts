@@ -10,6 +10,7 @@ export {
   text,
   type Contract,
   type MessageSpec,
+  type NoParameters,
   type ParameterKind,
   type ParameterShape,
   type PluralMessage,

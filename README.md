@@ -257,8 +257,10 @@ than replaced. Converting a file to another format over itself, through any
 link or spelling, is refused with exit code 2 before anything is written. A
 document past the size Saerskriven reads is not written to a file. OTM and
 TM-BOM are read only, so `--to` refuses them. Whatever the read and the write
-did not carry exactly goes to standard error as a warning, and the command
-still writes the document and exits 0.
+did not carry exactly,
+[a rounded coordinate aside](packages/formats/README.md#divergences), goes to
+standard error as a warning, and the command still writes the document and
+exits 0.
 
 `share` prints one line on standard output: a link to the hosted studio at
 `https://saerskriven.com/` that opens the model in a browser, as the studio's

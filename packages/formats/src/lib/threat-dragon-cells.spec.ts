@@ -1,4 +1,4 @@
-import { elementSchema, type Element } from '@saerskriven/model';
+import { elementSchema, type Element, type Point } from '@saerskriven/model';
 import type { ThreatDragonCell } from '@saerskriven/wire-threat-dragon';
 import { renderDivergences } from './divergence.js';
 import { mergeCell, withNeededPorts } from './threat-dragon-cells.js';
@@ -19,6 +19,14 @@ const store = elementOf({ kind: 'store', id: 'cell-1', ...named, ...box });
 
 const cellOf = (element: Element, held?: ThreatDragonCell): ThreatDragonCell =>
   mergeCell(element, held, [], 0, new Map()).cell;
+
+const curveThrough = (waypoints: readonly Point[]): Element =>
+  elementOf({
+    kind: 'trust-boundary',
+    id: 'cell-1',
+    ...named,
+    shape: { kind: 'curve', waypoints },
+  });
 
 describe('drawing an element the source document holds no cell for', () => {
   it.each([
@@ -66,19 +74,11 @@ describe('drawing an element the source document holds no cell for', () => {
   it('draws a boundary curve through its ends and its middle', () => {
     expect(
       cellOf(
-        elementOf({
-          kind: 'trust-boundary',
-          id: 'cell-1',
-          ...named,
-          shape: {
-            kind: 'curve',
-            waypoints: [
-              { x: 0, y: 0 },
-              { x: 5, y: 5 },
-              { x: 9, y: 0 },
-            ],
-          },
-        }),
+        curveThrough([
+          { x: 0, y: 0 },
+          { x: 5, y: 5 },
+          { x: 9, y: 0 },
+        ]),
       ),
     ).toMatchObject({
       shape: 'trust-boundary-curve',
@@ -155,6 +155,97 @@ describe('drawing an element over the cell the source document holds', () => {
     expect(renderDivergences(merged.divergences)).toBe(
       'element "cell-1": what the source held on the store cell of this id, which now draws an actor (removed by an edit)',
     );
+  });
+});
+
+const freeFlow = (
+  source: Point,
+  target: Point,
+  waypoints: readonly Point[] = [],
+): Element =>
+  elementOf({
+    kind: 'flow',
+    id: 'cell-1',
+    ...named,
+    source: { kind: 'free', position: source },
+    target: { kind: 'free', position: target },
+    waypoints,
+    bidirectional: false,
+  });
+
+describe('a point end, which Threat Dragon types as two whole numbers', () => {
+  it('writes a free flow end at the nearest whole number, and a bend as the model holds it', () => {
+    const merged = mergeCell(
+      freeFlow({ x: 880.5, y: -0.4 }, { x: -12.5, y: 7.2 }, [
+        { x: 1.5, y: 2.25 },
+      ]),
+      undefined,
+      [],
+      0,
+      new Map(),
+    );
+    expect(merged.cell).toMatchObject({
+      source: { x: 881, y: 0 },
+      target: { x: -13, y: 7 },
+      vertices: [{ x: 1.5, y: 2.25 }],
+    });
+    expect(merged.divergences).toEqual([]);
+  });
+
+  it('writes each end of a boundary curve at the nearest whole number, and its middle as the model holds it', () => {
+    const merged = mergeCell(
+      curveThrough([
+        { x: 0.5, y: -0.4 },
+        { x: 5.5, y: 5.25 },
+        { x: 8.6, y: 0.2 },
+      ]),
+      undefined,
+      [],
+      0,
+      new Map(),
+    );
+    expect(merged.cell).toMatchObject({
+      source: { x: 1, y: 0 },
+      vertices: [{ x: 5.5, y: 5.25 }],
+      target: { x: 9, y: 0 },
+    });
+    expect(merged.divergences).toEqual([]);
+  });
+
+  it('rounds an end the source cell itself holds between two whole numbers', () => {
+    const drawn = freeFlow({ x: 880.5, y: -60 }, { x: 10, y: 10 });
+    const held: ThreatDragonCell = {
+      id: 'cell-1',
+      shape: 'flow',
+      source: { x: 880.5, y: -60 },
+      target: { x: 10, y: 10 },
+      data: { type: 'tm.Flow', name: 'Ledger' },
+    };
+    expect(cellOf(drawn, held)).toMatchObject({
+      source: { x: 881, y: -60 },
+      target: { x: 10, y: 10 },
+    });
+  });
+
+  it('rounds each end of a curve the source cell itself holds between two whole numbers, and leaves its middle', () => {
+    const held: ThreatDragonCell = {
+      id: 'cell-1',
+      shape: 'trust-boundary-curve',
+      source: { x: 0.5, y: 300 },
+      vertices: [{ x: 200.25, y: 340.5 }],
+      target: { x: 400, y: -299.5 },
+      data: { type: 'tm.Boundary', name: 'Ledger' },
+    };
+    const drawn = curveThrough([
+      { x: 0.5, y: 300 },
+      { x: 200.25, y: 340.5 },
+      { x: 400, y: -299.5 },
+    ]);
+    expect(cellOf(drawn, held)).toMatchObject({
+      source: { x: 1, y: 300 },
+      vertices: [{ x: 200.25, y: 340.5 }],
+      target: { x: 400, y: -300 },
+    });
   });
 });
 

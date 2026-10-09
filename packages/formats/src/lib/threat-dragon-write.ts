@@ -34,17 +34,20 @@ import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
  * A pinned flow end is fastened to a port on its side: the source's own,
  * else one the cell declares there, else one this write declares and names
  * for the side. An end the model leaves unpinned is written with no port.
+ * A free flow end and each end of a boundary curve are written at the
+ * nearest whole number, the only kind Threat Dragon's schema admits there,
+ * so one the source holds between two whole numbers is rewritten.
  *
  * The codec stamps release 2.6.2 and reports a different source stamp as
  * `overridden`. Threat and diagram numbers, and the `threatTop` and
  * `diagramTop` marks, follow `planThreats` and `numberDiagrams`, and a mark
- * this write moves is reported as `overridden`. Issuing a number is not a
- * divergence. What the format cannot hold is reported as `unrepresentable`:
- * an assumption, a threat on a trust boundary or a note, the model link of a
- * threat, a note's name, an out-of-scope boundary or note, and a diagram's
- * name. A diagram, cell or
- * threat the source held and the model no longer does is reported as
- * `discarded-by-edit`. Mitigation texts follow `mitigationDivergences`.
+ * this write moves is reported as `overridden`. Neither issuing a number nor
+ * rounding an end is a divergence. What the format cannot hold is reported
+ * as `unrepresentable`: an assumption, a threat on a trust boundary or a
+ * note, the model link of a threat, a note's name, an out-of-scope boundary
+ * or note, and a diagram's name. A diagram, cell or threat the source held
+ * and the model no longer does is reported as `discarded-by-edit`.
+ * Mitigation texts follow `mitigationDivergences`.
  */
 export function writeThreatDragon(
   model: Model,
