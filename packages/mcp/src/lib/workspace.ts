@@ -18,7 +18,8 @@ import { revisionOf } from './revision.js';
  * What the host adds to the root for one call. `Pinned` and `OverHttp` are a
  * server that never asks, and `Unasked` one that follows the host on a call
  * that stayed under the root. The rest are a call that left it: the host
- * declares no roots, its answer carried no list, or it listed these real
+ * declares no roots, its answer carried no list, its list held more entries
+ * than the server reads, so none of them was read, or it listed these real
  * paths.
  */
 export type HostDirectories = Data.TaggedEnum<{
@@ -27,6 +28,7 @@ export type HostDirectories = Data.TaggedEnum<{
   Unasked: {};
   Undeclared: {};
   Unanswered: {};
+  Overlong: { readonly entries: number; readonly limit: number };
   Listed: { readonly directories: readonly string[] };
 }>;
 
@@ -73,6 +75,12 @@ export type WorkspaceFailure = Data.TaggedEnum<{
  * helpers.
  */
 export const WorkspaceFailure = Data.taggedEnum<WorkspaceFailure>();
+
+/** A model path beside the workspace it is resolved and confined in. */
+export type NamedModel = {
+  readonly workspace: ModelWorkspace;
+  readonly file: string;
+};
 
 /** One file's bytes as the server read them, and the text they decode to. */
 export type ReadTextFile = {
@@ -151,6 +159,25 @@ export function confined(
           host: workspace.host,
         }),
       );
+}
+
+/**
+ * The model a call reads, as the path to resolve and the workspace to hold it
+ * to: the file the call names under what the call permits, or the default
+ * file under the root alone. `--file` means the root on every call, so a
+ * default file since replaced by a link into a listed directory is refused.
+ * Nothing where the call names no file and the server carries no default.
+ */
+export function namedModel(
+  workspace: ModelWorkspace,
+  file: string | undefined,
+): NamedModel | undefined {
+  if (file !== undefined) {
+    return { workspace, file };
+  }
+  return workspace.defaultFile === undefined
+    ? undefined
+    : { workspace: heldToRoot(workspace), file: workspace.defaultFile };
 }
 
 /**
@@ -277,6 +304,12 @@ function permittedDirectories(workspace: ModelWorkspace): readonly string[] {
     : [workspace.root];
 }
 
+function heldToRoot(workspace: ModelWorkspace): ModelWorkspace {
+  return HostDirectories.$is('Listed')(workspace.host)
+    ? { ...workspace, host: HostDirectories.Unasked() }
+    : workspace;
+}
+
 function holds(directory: string, path: string): boolean {
   return path === directory || path.startsWith(directory + sep);
 }
@@ -293,6 +326,9 @@ function hostLines(host: HostDirectories): readonly string[] {
     ],
     Unanswered: () => [
       'The host was asked for its directories and sent no list.',
+    ],
+    Overlong: ({ entries, limit }) => [
+      `The host listed ${String(entries)} entries, past the ${String(limit)} the server reads, so it read none of them.`,
     ],
     Listed: ({ directories }) => [
       directories.length === 0

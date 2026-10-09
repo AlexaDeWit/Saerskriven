@@ -27,10 +27,12 @@ import { readingSchema, renderReading } from './reading.js';
 import { revisionOf } from './revision.js';
 import {
   confined,
+  namedModel,
   reasonOf,
   renderWorkspaceFailure,
   resultPath,
   type ModelWorkspace,
+  type NamedModel,
   type ReadModelFile,
 } from './workspace.js';
 
@@ -164,15 +166,17 @@ export function renderWriteFailure(failure: WriteFailure): readonly string[] {
   });
 }
 
-/** The file a call names, or the default the server carries. */
+/**
+ * The file a call names, or the default the server carries, with the
+ * workspace {@link namedModel} holds it to.
+ */
 export function namedFile(
   workspace: ModelWorkspace,
   file: string | undefined,
-): Either.Either<string, WriteFailure> {
-  const named = file ?? workspace.defaultFile;
-  return named === undefined
-    ? Either.left(WriteFailure.NoFile({ root: workspace.root }))
-    : Either.right(named);
+): Either.Either<NamedModel, WriteFailure> {
+  return Either.fromNullable(namedModel(workspace, file), () =>
+    WriteFailure.NoFile({ root: workspace.root }),
+  );
 }
 
 /**

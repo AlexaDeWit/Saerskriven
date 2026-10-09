@@ -1,6 +1,6 @@
 import { DetectionFailure, renderReadFailure } from '@saerskriven/formats';
 import { Either } from 'effect';
-import { realpathSync, rmSync } from 'node:fs';
+import { realpathSync, rmSync, symlinkSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { modelFile } from './edit.fixtures.js';
 import { hostTree, insideFile, leakFile } from './host-directories.fixtures.js';
@@ -9,6 +9,7 @@ import {
   HostDirectories,
   WorkspaceFailure,
   confined,
+  namedModel,
   openWorkspace,
   readModelFile,
   reasonOf,
@@ -212,6 +213,36 @@ describe('a path beyond the root, on a call the host listed a directory for', ()
     expect(Either.isLeft(confined(unasked, listedModel))).toBe(true);
   });
 
+  it('holds the default file to the root, whatever the call was listed', () => {
+    const own = hostTree();
+    const defaulted = Either.getOrThrow(
+      openWorkspace({ root: own.launch, file: insideFile, reach: 'host' }),
+    );
+    rmSync(join(own.launch, insideFile));
+    symlinkSync(join(own.listed, modelFile), join(own.launch, insideFile));
+    const named = namedModel(
+      {
+        ...defaulted,
+        host: HostDirectories.Listed({ directories: [own.listed] }),
+      },
+      undefined,
+    );
+    expect(
+      named === undefined
+        ? undefined
+        : readModelFile(named.workspace, named.file),
+    ).toEqual(
+      Either.left(
+        WorkspaceFailure.OutsideRoot({
+          requested: join(own.launch, insideFile),
+          resolved: join(own.listed, modelFile),
+          root: own.launch,
+          host: HostDirectories.Unasked(),
+        }),
+      ),
+    );
+  });
+
   it('names a file under the root by its relative path, and one beyond it by its absolute path', () => {
     expect(
       [
@@ -234,11 +265,14 @@ const refusal = (host: HostDirectories): readonly string[] =>
   );
 
 describe('the refusal of a path outside every permitted directory', () => {
-  it('reads as it did before for a call the host was not asked about', () => {
-    expect(refusal(HostDirectories.Unasked())).toEqual([
-      'The file "../spelled.yaml" is outside the root this server may read.',
-      'It resolves to "/resolved/spelled.yaml", and the root is "/launch".',
-    ]);
+  it('names the spelling, where it resolved and the root in two lines, for a call the host was not asked about', () => {
+    const lines = refusal(HostDirectories.Unasked());
+    expect(lines).toHaveLength(2);
+    expect(
+      ['"../spelled.yaml"', '"/resolved/spelled.yaml"', '"/launch"'].filter(
+        (named) => !lines.join('\n').includes(named),
+      ),
+    ).toEqual([]);
   });
 
   it('names the spelling, where it resolved, the root and every directory the host listed', () => {
@@ -262,6 +296,7 @@ describe('the refusal of a path outside every permitted directory', () => {
       HostDirectories.OverHttp(),
       HostDirectories.Undeclared(),
       HostDirectories.Unanswered(),
+      HostDirectories.Overlong({ entries: 65, limit: 64 }),
     ].map(refusal);
     expect(reasons.map((lines) => lines.slice(0, 2))).toEqual(
       reasons.map(() => refusal(HostDirectories.Unasked())),
@@ -269,7 +304,13 @@ describe('the refusal of a path outside every permitted directory', () => {
     expect(
       new Set(reasons.map((lines) => lines.slice(2).join('\n'))).size,
     ).toBe(reasons.length);
-    expect(reasons.map((lines) => lines.length)).toEqual([3, 3, 3, 3]);
+    expect(reasons.map((lines) => lines.length)).toEqual([3, 3, 3, 3, 3]);
+  });
+
+  it('names how many entries the host listed and how many the server reads, where the list was too long', () => {
+    const line =
+      refusal(HostDirectories.Overlong({ entries: 65, limit: 64 }))[2] ?? '';
+    expect([line.includes('65'), line.includes('64')]).toEqual([true, true]);
   });
 
   it('says so where the host listed nothing usable', () => {

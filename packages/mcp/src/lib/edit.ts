@@ -104,7 +104,10 @@ export function editModel(
     namedFile(workspace, args.file),
     Either.mapLeft(renderWriteFailure),
     Either.flatMap((named) =>
-      Either.mapLeft(readModelFile(workspace, named), renderWorkspaceFailure),
+      Either.mapLeft(
+        readModelFile(named.workspace, named.file),
+        renderWorkspaceFailure,
+      ),
     ),
     Either.flatMap((read) =>
       Either.mapLeft(

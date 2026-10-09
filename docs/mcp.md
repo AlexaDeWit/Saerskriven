@@ -39,8 +39,13 @@ inside the root or one listed directory.
 
 - The list comes from the host process, never from a tool argument, so nothing
   an agent passes widens it.
-- A listed entry counts when it is a `file://` URI that resolves, through
-  every symbolic link, to a directory that exists. Any other entry is ignored.
+- A listed entry counts when it is a `file://` URI naming no other machine
+  that resolves, through every symbolic link, to a directory that exists and
+  is not the file-system root. Any other entry is ignored, except on a
+  2025-era connection, where the SDK refuses a list holding an entry that is
+  no `file://` URI before the server reads it: the call fails with the SDK's
+  own error, and a prompt with error `-32603`.
+- A list of more than 64 entries is read not at all, and the refusal says so.
 - The host is asked on every call that leaves the root. A directory added to
   the session is reachable on the next call, with no restart, and one taken
   away is gone on the next.
@@ -59,7 +64,9 @@ Three servers read their root alone, and each says why when it refuses a path:
   ([serving over Streamable HTTP](#serving-over-streamable-http)).
 - One whose host declares no roots.
 
-A host that answers with no usable list is refused after that one round.
+A host that answers with no usable list is refused after that one round. A
+2025-era host that declares roots has 30 seconds to answer, after which the
+call fails with the SDK's own error.
 
 | Host        | What the server reads beyond its root                                                          |
 | ----------- | ---------------------------------------------------------------------------------------------- |
@@ -82,6 +89,10 @@ and not its arguments, so an allow rule on `saer_edit`, `saer_create`,
 write in: the root and every directory the host lists. Leave the approval
 prompt on those tools, or start the server with `--root`, where that is wider
 than you mean.
+
+A stdio server that follows its host takes whoever writes its standard input
+to be that host. Behind a bridge or relay that forwards another client's
+requests, start it with `--root`.
 
 ## A model file is untrusted input
 
@@ -555,7 +566,7 @@ directory list. A prompt has no refused result, so a `file` outside every
 permitted directory fails as any unreadable model does, with error `-32602`
 and no list of directories. A host that does not send a prompt again with its
 list gets no prompt for a file outside the root, which the tools still read.
-Claude Code's answer was checked for tool calls and not for prompts.
+Whether Claude Code sends a prompt again with its list is not established.
 
 - `stride_pass` takes `element`, an id or an exact name, and lays out that
   element, its flows, the stores those flows reach and the threats already

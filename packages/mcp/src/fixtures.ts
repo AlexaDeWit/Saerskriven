@@ -81,7 +81,7 @@ export type McpSession = {
  * directories of its session. A spec counts the calls to know how often the
  * server asked.
  */
-export type HostRoots = () => ListRootsResult;
+export type HostRoots = () => ListRootsResult | Promise<ListRootsResult>;
 
 /**
  * A client connected over the transport in the given era, whose end closes

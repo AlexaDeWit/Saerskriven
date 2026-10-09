@@ -37,7 +37,11 @@ import {
   getThreatResultSchema,
   renderThreatRecord,
 } from './get-threat.js';
-import { hostTurnOf, workspaceForCall } from './host-directories.js';
+import {
+  hostRoundLimits,
+  hostTurnOf,
+  workspaceForCall,
+} from './host-directories.js';
 import {
   importArgumentsSchema,
   importDescription,
@@ -172,6 +176,7 @@ export function createSaerskrivenServer(
     { name: serverName, title: 'Saerskriven', version: options.version },
     {
       capabilities: { tools: {} },
+      inputRequired: hostRoundLimits,
       cacheHints: {
         'server/discover': uncached,
         'tools/list': uncached,

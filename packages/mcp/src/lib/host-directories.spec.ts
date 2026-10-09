@@ -3,10 +3,17 @@ import {
   isInputRequiredResult,
 } from '@modelcontextprotocol/client';
 import { Either } from 'effect';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
+  dataNotInstructions,
   editOf,
   eras,
   readingOf,
@@ -26,7 +33,10 @@ import {
   listingHost,
 } from './host-directories.fixtures.js';
 import {
+  hostRoundLimits,
   listedDirectories,
+  localFileUrl,
+  maxListedRoots,
   rootsRequestKey,
   workspaceForCall,
   type HostTurn,
@@ -46,6 +56,23 @@ const uriOf = (path: string): string => pathToFileURL(path).href;
 
 const answering = (...uris: readonly unknown[]) => ({
   [rootsRequestKey]: { roots: uris.map((uri) => ({ uri })) },
+});
+
+describe('a root URI as a file on this machine', () => {
+  it.each([
+    ['a file URI naming no host', 'file:///srv/models'],
+    ['a file URI naming localhost', 'file://localhost/srv/models'],
+  ])('reads %s', (_what, uri) => {
+    expect(localFileUrl(uri)?.pathname).toEqual('/srv/models');
+  });
+
+  it.each([
+    ['a file URI naming another machine', 'file://fileserver/srv/models'],
+    ['a URI of another scheme', 'https://localhost/srv/models'],
+    ['a path that is no URI', '/srv/models'],
+  ])('passes over %s', (_what, uri) => {
+    expect(localFileUrl(uri)).toBeUndefined();
+  });
 });
 
 describe('the directories a roots answer names', () => {
@@ -74,6 +101,9 @@ describe('the directories a roots answer names', () => {
       'a directory that is not there',
       { uri: uriOf(join(tree.listed, 'gone')) },
     ],
+    ['the file-system root', { uri: 'file:///' }],
+    ['the file-system root, spelled with no path', { uri: 'file://' }],
+    ['the file-system root, spelled as the bare scheme', { uri: 'file:' }],
     ['an entry naming no URI', { name: tree.listed }],
     ['an entry whose URI is no text', { uri: 7 }],
     ['an entry that is no object', tree.listed],
@@ -90,6 +120,25 @@ describe('the directories a roots answer names', () => {
     ['a bare list', [{ uri: uriOf(tree.listed) }]],
   ])('takes %s as no answer', (_what, answer) => {
     expect(listedDirectories(answer)).toEqual(HostDirectories.Unanswered());
+  });
+
+  const listing = (entries: number) =>
+    listedDirectories({
+      roots: Array.from({ length: entries }, () => ({
+        uri: uriOf(tree.listed),
+      })),
+    });
+
+  it('reads a list of as many entries as it takes, and no entry of a longer one', () => {
+    expect([listing(maxListedRoots), listing(maxListedRoots + 1)]).toEqual([
+      HostDirectories.Listed({
+        directories: Array.from({ length: maxListedRoots }, () => tree.listed),
+      }),
+      HostDirectories.Overlong({
+        entries: maxListedRoots + 1,
+        limit: maxListedRoots,
+      }),
+    ]);
   });
 });
 
@@ -406,6 +455,68 @@ describe.each(eras)('a %s client of a server that follows its host', (era) => {
     });
   });
 
+  it('refuses a list past the entries it reads after one round, saying so, and writes nothing', async () => {
+    const tree = hostTree();
+    const entries = maxListedRoots + 1;
+    const host = listingHost(
+      ...Array.from({ length: entries }, () => tree.listed),
+    );
+    const path = join(tree.listed, 'started.yaml');
+    const open = await session({
+      root: tree.launch,
+      reach: 'host',
+      era,
+      roots: host.roots,
+    });
+    const result = await calling(open, 'saer_create', {
+      file: path,
+      title: 'Started',
+    });
+    await open.end();
+    expect(textOf(result)).toContain(
+      refusal(
+        path,
+        tree.launch,
+        HostDirectories.Overlong({ entries, limit: maxListedRoots }),
+      ),
+    );
+    expect({ asked: host.asked(), written: existsSync(path) }).toEqual({
+      asked: 1,
+      written: false,
+    });
+  });
+
+  it('reads the default file under the root alone, on a call whose `out` reaches a listed directory', async () => {
+    const tree = hostTree();
+    const host = listingHost(tree.listed);
+    const out = join(tree.listed, 'drawn.png');
+    const open = await session({
+      root: tree.launch,
+      file: insideFile,
+      reach: 'host',
+      era,
+      roots: host.roots,
+    });
+    rmSync(join(tree.launch, insideFile));
+    symlinkSync(join(tree.listed, modelFile), join(tree.launch, insideFile));
+    const result = await calling(open, 'saer_render_diagram', { out });
+    await open.end();
+    expect(textOf(result)).toContain(
+      renderWorkspaceFailure(
+        WorkspaceFailure.OutsideRoot({
+          requested: join(tree.launch, insideFile),
+          resolved: join(tree.listed, modelFile),
+          root: tree.launch,
+          host: HostDirectories.Unasked(),
+        }),
+      ).join('\n'),
+    );
+    expect({ asked: host.asked(), written: existsSync(out) }).toEqual({
+      asked: 1,
+      written: false,
+    });
+  });
+
   it('refuses an answer that is no list without asking for another, and writes nothing', async () => {
     const tree = hostTree();
     const host = listingHost(tree.listed);
@@ -556,6 +667,82 @@ describe('the first answer to a 2026-07-28 call that leaves the root', () => {
     expect({ asked: host.asked(), written: existsSync(path) }).toEqual({
       asked: 0,
       written: false,
+    });
+  });
+});
+
+describe('a 2025-era host, whose round the SDK holds open', () => {
+  it('is given the bound of the round to answer, then the call is refused and nothing is written', async () => {
+    vi.useFakeTimers();
+    try {
+      const tree = hostTree();
+      const path = join(tree.listed, 'started.yaml');
+      const tally = { asked: 0 };
+      const open = await session({
+        root: tree.launch,
+        reach: 'host',
+        era: 'legacy',
+        roots: () => {
+          tally.asked += 1;
+          return new Promise(() => undefined);
+        },
+      });
+      const pending = calling(open, 'saer_create', {
+        file: path,
+        title: 'Started',
+      });
+      await vi.advanceTimersByTimeAsync(hostRoundLimits.roundTimeoutMs + 1000);
+      const result = await pending;
+      await open.end();
+      expect({
+        refused: result.isError,
+        asked: tally.asked,
+        written: existsSync(path),
+      }).toEqual({ refused: true, asked: 1, written: false });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('loses the whole list to the SDK where one entry is no file URI, for a tool and a prompt alike', async () => {
+    const tree = hostTree();
+    const path = join(tree.listed, 'started.yaml');
+    const open = await session({
+      root: tree.launch,
+      reach: 'host',
+      era: 'legacy',
+      roots: () => ({
+        roots: [
+          { uri: 'https://example.com/models' },
+          { uri: uriOf(tree.listed) },
+        ],
+      }),
+    });
+    const called = await calling(open, 'saer_create', {
+      file: path,
+      title: 'Started',
+    });
+    const prompted = await open.client
+      .getPrompt({
+        name: 'review_model',
+        arguments: { file: join(tree.listed, modelFile) },
+      })
+      .then(
+        () => 'the prompt was built',
+        (error: unknown) =>
+          error instanceof ProtocolError ? error.code : error,
+      );
+    await open.end();
+    expect({
+      refused: called.isError,
+      ours: textOf(called).startsWith(dataNotInstructions),
+      written: existsSync(path),
+      prompted,
+    }).toEqual({
+      refused: true,
+      ours: false,
+      written: false,
+      prompted: -32603,
     });
   });
 });

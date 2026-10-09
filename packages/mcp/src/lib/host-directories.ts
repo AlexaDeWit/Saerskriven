@@ -7,6 +7,7 @@ import {
 } from '@modelcontextprotocol/server';
 import { Either } from 'effect';
 import { realpathSync, statSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { HostDirectories, confined, type ModelWorkspace } from './workspace.js';
@@ -23,6 +24,21 @@ export type HostTurn = {
 
 /** The key the one `roots/list` request of a round is sent and answered under. */
 export const rootsRequestKey = 'roots';
+
+/**
+ * The most entries of a roots answer the server reads, well above the
+ * directories a session grants. Each entry costs a path resolution, so a
+ * longer list is read not at all rather than in part.
+ */
+export const maxListedRoots = 64;
+
+/**
+ * The bounds on the round a 2025-era host is asked in, which the SDK holds
+ * open as a request of its own: one re-entry, since no call asks twice, and
+ * half a minute for the answer, where the SDK's own bound is ten minutes. A
+ * 2026-07-28 host retries the call itself, so nothing is held open for it.
+ */
+export const hostRoundLimits = { maxRounds: 1, roundTimeoutMs: 30_000 };
 
 /**
  * The host's side of one request. A 2026-07-28 request states its
@@ -78,17 +94,34 @@ export function workspaceForCall(
 
 /**
  * The directories a `roots/list` answer names. An entry counts when it is a
- * `file://` URI resolving, through every symbolic link, to a directory that
- * exists, and any other entry is passed over. An answer that is no list of
- * entries is `Unanswered`.
+ * {@link localFileUrl} resolving, through every symbolic link, to a directory
+ * that exists and is not the file-system root, and any other entry is passed
+ * over. An answer that is no list of entries is `Unanswered`, and one past
+ * {@link maxListedRoots} entries is `Overlong` with no entry read.
  */
 export function listedDirectories(answer: unknown): HostDirectories {
   const listed = rootsAnswerSchema.safeParse(answer);
-  return listed.success
-    ? HostDirectories.Listed({
-        directories: listed.data.roots.flatMap(directoryOf),
+  if (!listed.success) {
+    return HostDirectories.Unanswered();
+  }
+  const entries = listed.data.roots;
+  return entries.length > maxListedRoots
+    ? HostDirectories.Overlong({
+        entries: entries.length,
+        limit: maxListedRoots,
       })
-    : HostDirectories.Unanswered();
+    : HostDirectories.Listed({ directories: entries.flatMap(directoryOf) });
+}
+
+/**
+ * A root's URI as a file URL on this machine, or nothing. The scheme has to
+ * be `file` and the host empty, which is also how a URL parser reads
+ * `localhost`. The host is decided here on every platform, since Windows
+ * turns any other into the UNC path of a share on another machine.
+ */
+export function localFileUrl(uri: string): URL | undefined {
+  const url = Either.getOrUndefined(Either.try(() => new URL(uri)));
+  return url?.protocol === 'file:' && url.hostname === '' ? url : undefined;
 }
 
 const envelopeSchema = z.object({
@@ -107,15 +140,16 @@ function underRoot(workspace: ModelWorkspace, path: string): boolean {
 
 function directoryOf(entry: unknown): readonly string[] {
   const root = rootSchema.safeParse(entry);
-  return root.success
-    ? Either.getOrElse(
-        Either.try(() => existingDirectory(new URL(root.data.uri))),
+  const url = root.success ? localFileUrl(root.data.uri) : undefined;
+  return url === undefined
+    ? []
+    : Either.getOrElse(
+        Either.try(() => existingDirectory(url)),
         () => [],
-      )
-    : [];
+      );
 }
 
-function existingDirectory(uri: URL): readonly string[] {
-  const path = realpathSync(fileURLToPath(uri));
-  return statSync(path).isDirectory() ? [path] : [];
+function existingDirectory(url: URL): readonly string[] {
+  const path = realpathSync(fileURLToPath(url));
+  return statSync(path).isDirectory() && dirname(path) !== path ? [path] : [];
 }
