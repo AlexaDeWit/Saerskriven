@@ -2,7 +2,7 @@ import { renderRegister } from '@saerskriven/render';
 import { Either } from 'effect';
 import type { z } from 'zod';
 import { coverageOf, renderCoverage } from './coverage.js';
-import { fileArgumentSchema } from './inspect.js';
+import { fileArgumentSchema } from './path-arguments.js';
 import {
   PromptFailure,
   briefDataReminder,

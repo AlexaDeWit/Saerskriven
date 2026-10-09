@@ -16,4 +16,5 @@ export {
   openWorkspace,
   reasonOf,
   renderWorkspaceFailure,
+  type Reach,
 } from './lib/workspace.js';

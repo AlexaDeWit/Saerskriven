@@ -1,4 +1,8 @@
-import { Client, type Transport } from '@modelcontextprotocol/client';
+import {
+  Client,
+  type ListRootsResult,
+  type Transport,
+} from '@modelcontextprotocol/client';
 import type {
   CallToolResult,
   GetPromptResult,
@@ -73,18 +77,34 @@ export type McpSession = {
 };
 
 /**
+ * What a client answers a server's `roots/list` with, as a host lists the
+ * directories of its session. A spec counts the calls to know how often the
+ * server asked.
+ */
+export type HostRoots = () => ListRootsResult | Promise<ListRootsResult>;
+
+/**
  * A client connected over the transport in the given era, whose end closes
- * the client and then runs `after` to stop what serves it.
+ * the client and then runs `after` to stop what serves it. Given `roots`, it
+ * declares the roots capability and answers with them, and without them it
+ * declares none.
  */
 export async function connectedClient(
   transport: Transport,
   era: Era,
   after: () => Promise<void>,
+  roots?: HostRoots,
 ): Promise<McpSession> {
   const client = new Client(
     { name: 'saerskriven-spec', version: '0.0.0-spec' },
-    { versionNegotiation: { mode: era === 'modern' ? 'auto' : 'legacy' } },
+    {
+      versionNegotiation: { mode: era === 'modern' ? 'auto' : 'legacy' },
+      capabilities: roots === undefined ? {} : { roots: {} },
+    },
   );
+  if (roots !== undefined) {
+    client.setRequestHandler('roots/list', roots);
+  }
   await client.connect(transport);
   return {
     client,

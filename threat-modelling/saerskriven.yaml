@@ -377,7 +377,7 @@ diagrams:
         name: Agent and its harness
         description: "An agent reaching Saerskriven through the MCP server, issue #46. Its context holds whatever it has read, model files among that."
         outOfScope: true
-        reasonOutOfScope: The harness that runs the agent belongs to whoever is running it. Saerskriven trusts nothing it sends and models only its own side of the connection.
+        reasonOutOfScope: The harness that runs the agent belongs to whoever is running it. Saerskriven trusts nothing it sends but the list of directories a stdio server started without `--root` takes from it, and models only its own side of the connection.
         position:
           x: 30
           y: 190
@@ -399,7 +399,7 @@ diagrams:
       - kind: process
         id: el-mcp
         name: MCP server and tools
-        description: "`saer mcp` over stdio, launched by the host, or with `--http` over Streamable HTTP on 127.0.0.1, where a request needs the bearer token minted at start and written to a file only its owner reads, and a foreign Origin or Host is refused (`apps/cli/src/mcp-http.ts`). The server object lives in `packages/mcp` and carries no transport, no session and no parsed model, so every call names its file and reads it again. Paths are confined to the root the invocation named, symbolic links followed (`confined` in `workspace.ts`). The tools read, query, draw, share and write, the register and each diagram are resources, and `stride_pass` and `review_model` are prompts. `saer_share_link` answers with a file's model as a link to the hosted studio, which it writes nowhere and sends nowhere. `saer_edit` writes through a temporary file in the target's own directory, refuses a revision handle the file no longer hashes to, and hashes the file again immediately before the rename. A write that lands between that second hash and the rename is still overwritten rather than refused. `saer_create`, `saer_import` and a drawing given an `out` path write only a path that is free."
+        description: "`saer mcp` over stdio, launched by the host, or with `--http` over Streamable HTTP on 127.0.0.1, where a request needs the bearer token minted at start and written to a file only its owner reads, and a foreign Origin or Host is refused (`apps/cli/src/mcp-http.ts`). The server object lives in `packages/mcp` and carries no transport, no session and no parsed model, so every call names its file and reads it again. Paths are confined to the root, and on a stdio server started without `--root` to the root and the directories the host lists through MCP roots, symbolic links followed (`confined` in `workspace.ts`). That list is asked of the host on every call that leaves the root and is never taken from a tool argument (`host-directories.ts`). The tools read, query, draw, share and write, the register and each diagram are resources, and `stride_pass` and `review_model` are prompts. `saer_share_link` answers with a file's model as a link to the hosted studio, which it writes nowhere and sends nowhere. `saer_edit` writes through a temporary file in the target's own directory, refuses a revision handle the file no longer hashes to, and hashes the file again immediately before the rename. A write that lands between that second hash and the rename is still overwritten rather than refused. `saer_create`, `saer_import` and a drawing given an `out` path write only a path that is free."
         outOfScope: false
         reasonOutOfScope: ""
         position:
@@ -759,7 +759,7 @@ mitigations:
       - th-agent-loss
   - id: th-prompt-mitigation
     title: ""
-    prose: "Partly held. Every text result the server returns opens with a fixed line saying that what follows is data read from a file rather than instructions. A spec derives that check from the tool list the server advertises rather than naming the tools it knows, so a tool registered without the line reds it, and the register and diagram resources and both prompts open with the same line. That line is what Saerskriven owns on the inbound side: the harness that decides what an agent does with what it reads is out of scope. On the return path the write tools bound what a steered agent can do through this server: paths confined to the root the invocation named, every edit a model operation that refuses rather than writes a model the parse would not read, and a created file, an import or a drawing written only to a path that is free. What is left is the residual. The line is a statement to the agent rather than a control, and nothing stops an agent that acts on the prose from making an edit the model accepts, such as a threat removed or a status changed, which the tool result reports to an agent that has just been steered. Medium, because what this server can be steered into is a wrong model file or a picture under the root, not a reach past it."
+    prose: "Partly held. Every text result the server writes opens with a fixed line saying that what follows is data read from a file rather than instructions. A spec derives that check from the tool list the server advertises rather than naming the tools it knows, so a tool registered without the line reds it, and the register and diagram resources and both prompts open with the same line. An error the SDK answers in the server's place, for arguments that do not fit a tool's schema or a failed roots round on a 2025-era connection, carries nothing read from a model file and does not open with it. That line is what Saerskriven owns on the inbound side: the harness that decides what an agent does with what it reads is out of scope. On the return path the write tools bound what a steered agent can do through this server: paths confined to the root and, where the server follows its host, the directories the host lists, every edit a model operation that refuses rather than writes a model the parse would not read, and a created file, an import or a drawing written only to a path that is free. What is left is the residual. The line is a statement to the agent rather than a control, and nothing stops an agent that acts on the prose from making an edit the model accepts, such as a threat removed or a status changed, which the tool result reports to an agent that has just been steered. Medium, because what this server can be steered into is a wrong model file or a picture in a directory it may write, the root and those the host lists, not a reach past them."
     status: proposed
     threats:
       - th-prompt
@@ -804,6 +804,12 @@ mitigations:
     status: proposed
     threats:
       - th-share-disclosure
+  - id: th-host-directories-mitigation
+    title: ""
+    prose: "Partly held. The list is the host's answer to `roots/list` and never a tool argument, so nothing an agent passes widens it, and the host is asked again on every call that leaves the root, with no list kept between calls (`workspaceForCall` in `host-directories.ts`). An explicit `--root` pins the server and `--http` never follows, and neither reads a list sent to it anyway (`reachOf` in `apps/cli/src/mcp.ts`). An entry counts only as a `file:` URL naming no other machine that resolves, symbolic links followed, to an existing directory that is not the file-system root, and a list of more than 64 entries is refused whole (`listedDirectories` in `host-directories.ts`). The default file stays on the root whatever the host lists (`namedModel` in `workspace.ts`). What the server writes in a listed directory is what it writes under the root: an edit of a file that already reads as a model, or a new model or picture at a path that is free. `host-directories.spec.ts` pins the round, the entry rule, the bound, the default file and the write rules, and `mcp-session.spec.ts` pins the two flags against the packaged CLI. What is left is the residual. The server cannot know what its user granted, only what the host says, so a host that lists too much is believed, and so is a bridge or relay that writes to the server's standard input in the host's place. A list attached to a call the server never asked about is read as the host's answer too. That a directory added in the middle of a session is listed on the next call is the host's behaviour, and checking it in an interactive session is the maintainer's. Low, because whoever controls the host's answer already runs as the user who started the server."
+    status: implemented
+    threats:
+      - th-host-directories
 threats:
   - id: th-oversize
     number: 1
@@ -1127,4 +1133,16 @@ threats:
     description: A future regression that interprets a model string as HTML or JavaScript gives the file author script execution in the studio tab. The current studio renders model strings as text and has no such DOM sink, so this is a conditional injection risk rather than an observed vulnerability. The built site's Content Security Policy adds a second control, with the same-origin trust and inline-style limits its mitigation names.
     elements:
       - el-renderer
-lastIssuedThreatNumber: 28
+  - id: th-host-directories
+    number: 29
+    title: The MCP server believes its host about where it may read and write
+    category:
+      methodology: STRIDE
+      category: elevation-of-privilege
+    severity: low
+    status: open
+    description: "A stdio server started without `--root` takes the directories it may read and write from the host's answer to `roots/list`, and cannot verify that answer. Whoever controls it widens the server's reach: a host that lists more than its user meant, a bridge or relay that forwards another client's requests to the server's standard input, or anything able to change the host's own grants."
+    elements:
+      - el-mcp
+      - el-fs
+lastIssuedThreatNumber: 29

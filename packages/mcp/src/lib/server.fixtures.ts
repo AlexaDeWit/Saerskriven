@@ -1,15 +1,26 @@
 import { InMemoryTransport } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import { Either } from 'effect';
-import { connectedClient, type Era, type McpSession } from '../fixtures.js';
+import {
+  connectedClient,
+  type Era,
+  type HostRoots,
+  type McpSession,
+} from '../fixtures.js';
 import type { RasterizerAssets } from './render-diagram.js';
 import { createSaerskrivenServer } from './server.js';
 import type { BrotliModule } from './share-link.js';
-import { openWorkspace, renderWorkspaceFailure } from './workspace.js';
+import {
+  openWorkspace,
+  renderWorkspaceFailure,
+  type Reach,
+} from './workspace.js';
 
 type SessionRequest = {
   readonly root: string;
   readonly file?: string;
+  readonly reach?: Reach;
+  readonly roots?: HostRoots;
   readonly era: Era;
   readonly rasterizer?: RasterizerAssets;
   readonly brotli?: BrotliModule;
@@ -36,10 +47,15 @@ export const noBrotli: BrotliModule = () =>
  * rasterizer defaults to {@link noRasterizer} and the brotli module to
  * {@link noBrotli}, since both are built from Rust and no dev shell exports
  * either, so a session that means neither to draw nor to share gets the
- * refusal rather than a skipped suite.
+ * refusal rather than a skipped suite. `reach` makes the server follow its
+ * host, and `roots` gives the client a list to answer `roots/list` with.
  */
 export async function session(request: SessionRequest): Promise<McpSession> {
-  const workspace = openWorkspace({ root: request.root, file: request.file });
+  const workspace = openWorkspace({
+    root: request.root,
+    file: request.file,
+    reach: request.reach,
+  });
   if (Either.isLeft(workspace)) {
     throw new Error(renderWorkspaceFailure(workspace.left).join('\n'));
   }
@@ -54,5 +70,10 @@ export async function session(request: SessionRequest): Promise<McpSession> {
       }),
     { transport: serverSide, legacy: 'serve' },
   );
-  return connectedClient(clientSide, request.era, () => handle.close());
+  return connectedClient(
+    clientSide,
+    request.era,
+    () => handle.close(),
+    request.roots,
+  );
 }

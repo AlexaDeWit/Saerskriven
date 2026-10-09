@@ -5,8 +5,11 @@ import {
   ResourceNotFoundError,
   ResourceTemplate,
   type CacheHint,
+  type CallToolResult,
   type GetPromptResult,
+  type InputRequiredResult,
   type ReadResourceResult,
+  type ServerContext,
 } from '@modelcontextprotocol/server';
 import { Either } from 'effect';
 import {
@@ -35,6 +38,11 @@ import {
   renderThreatRecord,
 } from './get-threat.js';
 import {
+  hostRoundLimits,
+  hostTurnOf,
+  workspaceForCall,
+} from './host-directories.js';
+import {
   importArgumentsSchema,
   importDescription,
   importIntoModel,
@@ -42,12 +50,12 @@ import {
   renderImport,
 } from './import.js';
 import {
-  fileArgumentSchema,
   inspect,
   inspectDescription,
   inspectResultSchema,
   renderInspection,
 } from './inspect.js';
+import { fileArgumentSchema } from './path-arguments.js';
 import {
   register,
   registerDescription,
@@ -155,9 +163,11 @@ const writes = {
 } as const;
 
 /**
- * The MCP server object, with no transport of its own. It holds no model, so
- * every call reads its file from disk again, and every cacheable result tells
- * a 2026-07-28 client to keep it for no time and share it with no other client.
+ * The MCP server object, with no transport of its own. It holds no model and
+ * no list of the host's directories, so every call reads its file from disk
+ * again and asks the host again where its path leaves the root. Every
+ * cacheable result tells a 2026-07-28 client to keep it for no time and share
+ * it with no other client.
  */
 export function createSaerskrivenServer(
   options: SaerskrivenServerOptions,
@@ -166,6 +176,7 @@ export function createSaerskrivenServer(
     { name: serverName, title: 'Saerskriven', version: options.version },
     {
       capabilities: { tools: {} },
+      inputRequired: hostRoundLimits,
       cacheHints: {
         'server/discover': uncached,
         'tools/list': uncached,
@@ -176,17 +187,52 @@ export function createSaerskrivenServer(
       },
     },
   );
-  readTools(server, options);
-  queryTools(server, options);
-  drawingTools(server, options);
-  sharingTools(server, options);
-  writeTools(server, options);
+  const within = withinReach(server, options.workspace);
+  readTools(server, within);
+  queryTools(server, within);
+  drawingTools(server, options, within);
+  sharingTools(server, options, within);
+  writeTools(server, within);
   resources(server, options);
-  prompts(server, options);
+  prompts(server, within);
   return server;
 }
 
-function readTools(server: McpServer, options: SaerskrivenServerOptions): void {
+type Within = <Result>(
+  ctx: ServerContext,
+  paths: readonly (string | undefined)[],
+  run: (workspace: ModelWorkspace) => Result,
+) => Result | InputRequiredResult;
+
+function withinReach(server: McpServer, workspace: ModelWorkspace): Within {
+  return (ctx, paths, run) =>
+    Either.match(workspaceForCall(workspace, paths, hostTurnOf(server, ctx)), {
+      onLeft: (round) => round,
+      onRight: run,
+    });
+}
+
+function fileTool<
+  Arguments extends { readonly file?: string | undefined },
+  Answer extends Record<string, unknown>,
+>(
+  within: Within,
+  answer: (
+    workspace: ModelWorkspace,
+    args: Arguments,
+  ) => Either.Either<Answer, readonly string[]>,
+  render: (answer: Answer) => readonly string[],
+): (
+  args: Arguments,
+  ctx: ServerContext,
+) => CallToolResult | InputRequiredResult {
+  return (args, ctx) =>
+    within(ctx, [args.file], (workspace) =>
+      toolResult(answer(workspace, args), render),
+    );
+}
+
+function readTools(server: McpServer, within: Within): void {
   server.registerTool(
     'saer_inspect',
     {
@@ -196,7 +242,7 @@ function readTools(server: McpServer, options: SaerskrivenServerOptions): void {
       outputSchema: inspectResultSchema,
       annotations: reads,
     },
-    (args) => toolResult(inspect(options.workspace, args), renderInspection),
+    fileTool(within, inspect, renderInspection),
   );
   server.registerTool(
     'saer_validate',
@@ -207,7 +253,7 @@ function readTools(server: McpServer, options: SaerskrivenServerOptions): void {
       outputSchema: validateResultSchema,
       annotations: reads,
     },
-    (args) => toolResult(validate(options.workspace, args), renderValidation),
+    fileTool(within, validate, renderValidation),
   );
   server.registerTool(
     'saer_coverage',
@@ -218,7 +264,7 @@ function readTools(server: McpServer, options: SaerskrivenServerOptions): void {
       outputSchema: coverageResultSchema,
       annotations: reads,
     },
-    (args) => toolResult(coverage(options.workspace, args), renderCoverage),
+    fileTool(within, coverage, renderCoverage),
   );
   server.registerTool(
     'saer_register',
@@ -229,15 +275,11 @@ function readTools(server: McpServer, options: SaerskrivenServerOptions): void {
       outputSchema: registerResultSchema,
       annotations: reads,
     },
-    (args) =>
-      toolResult(register(options.workspace, args), renderRegisterResult),
+    fileTool(within, register, renderRegisterResult),
   );
 }
 
-function queryTools(
-  server: McpServer,
-  options: SaerskrivenServerOptions,
-): void {
+function queryTools(server: McpServer, within: Within): void {
   server.registerTool(
     'saer_search_elements',
     {
@@ -247,8 +289,7 @@ function queryTools(
       outputSchema: searchElementsResultSchema,
       annotations: reads,
     },
-    (args) =>
-      toolResult(searchElements(options.workspace, args), renderElementSearch),
+    fileTool(within, searchElements, renderElementSearch),
   );
   server.registerTool(
     'saer_search_threats',
@@ -259,8 +300,7 @@ function queryTools(
       outputSchema: searchThreatsResultSchema,
       annotations: reads,
     },
-    (args) =>
-      toolResult(searchThreats(options.workspace, args), renderThreatSearch),
+    fileTool(within, searchThreats, renderThreatSearch),
   );
   server.registerTool(
     'saer_search_records',
@@ -271,8 +311,7 @@ function queryTools(
       outputSchema: searchRecordsResultSchema,
       annotations: reads,
     },
-    (args) =>
-      toolResult(searchRecords(options.workspace, args), renderRecordSearch),
+    fileTool(within, searchRecords, renderRecordSearch),
   );
   server.registerTool(
     'saer_get_threat',
@@ -283,14 +322,14 @@ function queryTools(
       outputSchema: getThreatResultSchema,
       annotations: reads,
     },
-    (args) =>
-      toolResult(getThreat(options.workspace, args), renderThreatRecord),
+    fileTool(within, getThreat, renderThreatRecord),
   );
 }
 
 function drawingTools(
   server: McpServer,
   options: SaerskrivenServerOptions,
+  within: Within,
 ): void {
   server.registerTool(
     'saer_render_diagram',
@@ -301,10 +340,12 @@ function drawingTools(
       outputSchema: renderDiagramResultSchema,
       annotations: { ...writes, destructiveHint: false },
     },
-    async (args) =>
-      attachedToolResult(
-        await renderDiagram(options.workspace, options.rasterizer, args),
-        renderDrawing,
+    (args, ctx) =>
+      within(ctx, [args.file, args.out], async (workspace) =>
+        attachedToolResult(
+          await renderDiagram(workspace, options.rasterizer, args),
+          renderDrawing,
+        ),
       ),
   );
 }
@@ -312,6 +353,7 @@ function drawingTools(
 function sharingTools(
   server: McpServer,
   options: SaerskrivenServerOptions,
+  within: Within,
 ): void {
   server.registerTool(
     'saer_share_link',
@@ -322,18 +364,17 @@ function sharingTools(
       outputSchema: shareLinkResultSchema,
       annotations: reads,
     },
-    async (args) =>
-      attachedToolResult(
-        await shareLink(options.workspace, options.brotli, args),
-        renderShareLink,
+    (args, ctx) =>
+      within(ctx, [args.file], async (workspace) =>
+        attachedToolResult(
+          await shareLink(workspace, options.brotli, args),
+          renderShareLink,
+        ),
       ),
   );
 }
 
-function writeTools(
-  server: McpServer,
-  options: SaerskrivenServerOptions,
-): void {
+function writeTools(server: McpServer, within: Within): void {
   server.registerTool(
     'saer_edit',
     {
@@ -343,7 +384,7 @@ function writeTools(
       outputSchema: editResultSchema,
       annotations: { ...writes, destructiveHint: true },
     },
-    (args) => toolResult(editModel(options.workspace, args), renderEdit),
+    fileTool(within, editModel, renderEdit),
   );
   server.registerTool(
     'saer_create',
@@ -354,8 +395,7 @@ function writeTools(
       outputSchema: writeReportSchema,
       annotations: { ...writes, destructiveHint: false },
     },
-    (args) =>
-      toolResult(createModel(options.workspace, args), renderWriteReport),
+    fileTool(within, createModel, renderWriteReport),
   );
   server.registerTool(
     'saer_import',
@@ -366,8 +406,10 @@ function writeTools(
       outputSchema: importResultSchema,
       annotations: { ...writes, destructiveHint: false },
     },
-    (args) =>
-      toolResult(importIntoModel(options.workspace, args), renderImport),
+    (args, ctx) =>
+      within(ctx, [args.file, args.target], (workspace) =>
+        toolResult(importIntoModel(workspace, args), renderImport),
+      ),
   );
 }
 
@@ -408,7 +450,7 @@ function resources(server: McpServer, options: SaerskrivenServerOptions): void {
   );
 }
 
-function prompts(server: McpServer, options: SaerskrivenServerOptions): void {
+function prompts(server: McpServer, within: Within): void {
   server.registerPrompt(
     'stride_pass',
     {
@@ -416,7 +458,10 @@ function prompts(server: McpServer, options: SaerskrivenServerOptions): void {
       description: stridePassDescription,
       argsSchema: stridePassArgumentsSchema,
     },
-    (args) => promptOrThrow(stridePass(options.workspace, args)),
+    (args, ctx) =>
+      within(ctx, [args.file], (workspace) =>
+        promptOrThrow(stridePass(workspace, args)),
+      ),
   );
   server.registerPrompt(
     'review_model',
@@ -425,7 +470,10 @@ function prompts(server: McpServer, options: SaerskrivenServerOptions): void {
       description: reviewModelDescription,
       argsSchema: reviewModelArgumentsSchema,
     },
-    (args) => promptOrThrow(reviewModel(options.workspace, args)),
+    (args, ctx) =>
+      within(ctx, [args.file], (workspace) =>
+        promptOrThrow(reviewModel(workspace, args)),
+      ),
   );
 }
 
@@ -457,7 +505,7 @@ function promptOrThrow(
         ProtocolErrorCode.InvalidParams,
         PromptFailure.$match(failure, {
           NoModel: () =>
-            'There is no model to read. Name a readable model file under the server root in `file`, or start the server with --file.',
+            'There is no model to read. Name a readable model file in `file`, under the server root or a directory the host lists, or start the server with --file.',
           NoSuchElement: () =>
             'The model holds no element with that id or name. Call saer_search_elements for the ids of its elements.',
           SharedName: () =>

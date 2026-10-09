@@ -2,7 +2,7 @@ import { quotedForTerminal } from '@saerskriven/formats';
 import { diagramsNamed, type Model } from '@saerskriven/model';
 import { Either } from 'effect';
 import { z } from 'zod';
-import { fileArgumentSchema } from './inspect.js';
+import { fileArgumentSchema } from './path-arguments.js';
 
 /**
  * How much of each match a search carries back: the identifying fields, or

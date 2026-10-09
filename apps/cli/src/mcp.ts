@@ -9,6 +9,7 @@ import {
   renderWorkspaceFailure,
   type BrotliModule,
   type RasterizerAssets,
+  type Reach,
 } from '@saerskriven/mcp';
 import { Either } from 'effect';
 import type { Readable, Writable } from 'node:stream';
@@ -27,14 +28,17 @@ import { cliVersion } from './version.js';
 
 /**
  * What `mcp` needs, and the one gate on the option bag the parser hands over.
- * `--root` defaults to the working directory, which is where a host launches
- * the server. `--http` requires `--token-file`, `--port` defaults to one the
- * system picks, and both are refused without `--http`. `http` is what the
- * HTTP server needs, and nothing where the server speaks stdio.
+ * Without `--root` the root is the working directory, which is where a host
+ * launches the server, and `reach` is `host`: a stdio server follows the
+ * directories its host lists. `--root` pins the server to that directory, and
+ * `--http` holds it to its root, so neither asks the host. `--http` requires
+ * `--token-file`, `--port` defaults to one the system picks, and both are
+ * refused without `--http`. `http` is what the HTTP server needs, and nothing
+ * where the server speaks stdio.
  */
 export const mcpOptionsSchema = z
   .object({
-    root: z.string().default(() => process.cwd()),
+    root: z.string().optional(),
     file: z.string().optional(),
     http: z.boolean().default(false),
     port: z.coerce.number().int().min(0).max(65_535).optional(),
@@ -52,8 +56,10 @@ export const mcpOptionsSchema = z
     path: ['token-file'],
     message: 'is required with --http, the only place the token is written',
   })
-  .transform(({ http, port, tokenFile, ...workspace }) => ({
+  .transform(({ root, http, port, tokenFile, ...workspace }) => ({
     ...workspace,
+    root: root ?? process.cwd(),
+    reach: reachOf(root, http),
     http:
       http && tokenFile !== undefined
         ? { port: port ?? 0, tokenFile }
@@ -129,6 +135,13 @@ export function serveMcp(
         : serveHttp(factory, options.http, host);
     },
   });
+}
+
+function reachOf(root: string | undefined, http: boolean): Reach {
+  if (http) {
+    return 'http';
+  }
+  return root === undefined ? 'host' : 'pinned';
 }
 
 async function servedOverStdio(

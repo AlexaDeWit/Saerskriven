@@ -24,7 +24,11 @@ import { Either } from 'effect';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { flowEndSchema } from './element-rows.js';
-import { fileArgumentSchema } from './inspect.js';
+import {
+  defaultedFileSentence,
+  fileArgumentSchema,
+  pathReach,
+} from './path-arguments.js';
 import {
   readNamed,
   readingSchema,
@@ -38,7 +42,7 @@ import {
   confined,
   extensionOf,
   renderWorkspaceFailure,
-  withinRoot,
+  resultPath,
   type ModelWorkspace,
 } from './workspace.js';
 
@@ -81,7 +85,7 @@ export const renderDiagramArgumentsSchema = fileArgumentSchema.extend({
     .string()
     .optional()
     .describe(
-      `Where to also write the PNG, as a path relative to the server root. The path has to end in ${imageExtension}, in any case, since that is what the bytes are, and a path already holding a file is refused rather than replaced. Left out, nothing is written and the image reaches you in the result alone.`,
+      `Where to also write the PNG. ${pathReach} The path has to end in ${imageExtension}, in any case, since that is what the bytes are, and a path already holding a file is refused rather than replaced. Left out, nothing is written and the image reaches you in the result alone.`,
     ),
 });
 
@@ -136,7 +140,8 @@ export type DrawnDiagram = WithBlocks<RenderDiagramResult>;
 export const renderDiagramDescription = [
   'Draw one diagram of a Saerskriven threat model as a picture and return it as a PNG image block, so you can see the shape of the system rather than read a listing of its parts.',
   'Call this when the geometry matters: which elements a trust boundary encloses, where a flow runs, what the diagram looks like to the people who drew it. Do not call it to enumerate elements or threats, which saer_search_elements and saer_search_threats answer in a fraction of the context a picture costs.',
-  'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. `diagram` names which diagram to draw by id or exact title, and a model of one diagram does not need it. `width` is the pixel length of the longer edge. `out` also writes the PNG to a path under the root, which comes back as a resource link.',
+  defaultedFileSentence,
+  '`diagram` names which diagram to draw by id or exact title, and a model of one diagram does not need it. `width` is the pixel length of the longer edge. `out` also writes the PNG to the path it names, which comes back as a resource link.',
   `The image is always PNG, never SVG, and never larger than ${String(mcpImageLongEdge)} pixels on its longer edge. A flow whose endpoint names an element the canvas draws as no box is left out of the drawing, and the text of the result names every such endpoint, so a picture is not the whole diagram where that list is not empty.`,
   'Called without `out` this tool writes nothing. Called with it, it writes that one PNG and never a model, and it refuses a path that is already taken rather than replacing what is there.',
 ].join(' ');
@@ -249,7 +254,7 @@ function writeTarget(
     Either.mapLeft(confined(workspace, out), renderWorkspaceFailure),
     (path) =>
       Either.map(endsInPng(out), () => ({
-        file: withinRoot(workspace, path),
+        file: resultPath(workspace, path),
         path,
       })),
   );

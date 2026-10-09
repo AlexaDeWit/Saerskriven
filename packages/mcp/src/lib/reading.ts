@@ -9,9 +9,10 @@ import type { Model } from '@saerskriven/model';
 import { Either } from 'effect';
 import { z } from 'zod';
 import {
+  namedModel,
   readModelFile,
   renderWorkspaceFailure,
-  withinRoot,
+  resultPath,
   type ModelWorkspace,
 } from './workspace.js';
 
@@ -49,13 +50,13 @@ export function readNamed(
   workspace: ModelWorkspace,
   file: string | undefined,
 ): Either.Either<ModelReading, readonly string[]> {
-  const named = file ?? workspace.defaultFile;
+  const named = namedModel(workspace, file);
   return named === undefined
     ? Either.left(unnamed(workspace))
-    : Either.mapBoth(readModelFile(workspace, named), {
+    : Either.mapBoth(readModelFile(named.workspace, named.file), {
         onLeft: renderWorkspaceFailure,
         onRight: (read) => ({
-          file: withinRoot(workspace, read.path),
+          file: resultPath(workspace, read.path),
           format: read.read.format,
           revision: read.revision,
           model: read.read.model,

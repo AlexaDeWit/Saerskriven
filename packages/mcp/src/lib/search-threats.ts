@@ -8,6 +8,7 @@ import {
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import { z } from 'zod';
+import { defaultedFileSentence } from './path-arguments.js';
 import {
   readNamed,
   readingSchema,
@@ -86,7 +87,8 @@ export const searchThreatsDescription = [
   'Find the threats recorded in one Saerskriven threat model. Each match carries the threat number and id, its title, where it stands, how bad it is, its category, the ids of the elements it attaches to, whether it applies to the model as a whole (`appliesToModel`), and its flags. The order is the register order the model holds them in.',
   flagsDescription,
   'Use this to find the threats of one element, of one diagram, of one category, of one severity, or of one status, and to get the number of a threat you mean to read in full. Use saer_get_threat for one whole record with its mitigations and assumptions, and saer_coverage for what the model has not analyzed at all.',
-  'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. `status`, `severity`, `category`, `diagram` and `element` each keep only the threats matching them. `query` is text looked for, without case, in the title, the description, and the title and prose of each mitigation linked to the threat.',
+  defaultedFileSentence,
+  '`status`, `severity`, `category`, `diagram` and `element` each keep only the threats matching them. `query` is text looked for, without case, in the title, the description, and the title and prose of each mitigation linked to the threat.',
   '`response_format` is `concise` by default and carries no record text. `detailed` adds the description and the linked mitigation and assumption records of each threat, which is the bulk of a register, so filter before asking for it.',
   '`offset` skips that many matches, for the next page of a listing cut at its limit, which names the offset to pass.',
   'This tool never writes. No edit renumbers a threat, and no two threats hold one number, so a number read here stays the handle for that threat as long as the model holds that threat.',

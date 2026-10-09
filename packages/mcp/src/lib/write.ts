@@ -22,15 +22,17 @@ import {
 } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { z } from 'zod';
-import { fileArgumentSchema } from './inspect.js';
+import { fileArgumentSchema } from './path-arguments.js';
 import { readingSchema, renderReading } from './reading.js';
 import { revisionOf } from './revision.js';
 import {
   confined,
+  namedModel,
   reasonOf,
   renderWorkspaceFailure,
-  withinRoot,
+  resultPath,
   type ModelWorkspace,
+  type NamedModel,
   type ReadModelFile,
 } from './workspace.js';
 
@@ -106,8 +108,8 @@ export function renderWriteReport(report: WriteReport): readonly string[] {
 
 /**
  * `model` as a new native YAML file at the path a call names, refused where
- * the path is outside the root or taken. `carried` divergences come before
- * the codec's own.
+ * the path is outside every permitted directory or taken. `carried`
+ * divergences come before the codec's own.
  */
 export function createdModel(
   workspace: ModelWorkspace,
@@ -119,7 +121,7 @@ export function createdModel(
     confined(workspace, requested),
     Either.mapLeft(renderWorkspaceFailure),
     Either.flatMap((path) => {
-      const file = withinRoot(workspace, path);
+      const file = resultPath(workspace, path);
       return pipe(
         serialized(file, () => saerskrivenYamlCodec.write(model)),
         Either.flatMap((written) =>
@@ -164,15 +166,17 @@ export function renderWriteFailure(failure: WriteFailure): readonly string[] {
   });
 }
 
-/** The file a call names, or the default the server carries. */
+/**
+ * The file a call names, or the default the server carries, with the
+ * workspace {@link namedModel} holds it to.
+ */
 export function namedFile(
   workspace: ModelWorkspace,
   file: string | undefined,
-): Either.Either<string, WriteFailure> {
-  const named = file ?? workspace.defaultFile;
-  return named === undefined
-    ? Either.left(WriteFailure.NoFile({ root: workspace.root }))
-    : Either.right(named);
+): Either.Either<NamedModel, WriteFailure> {
+  return Either.fromNullable(namedModel(workspace, file), () =>
+    WriteFailure.NoFile({ root: workspace.root }),
+  );
 }
 
 /**
