@@ -83,7 +83,10 @@ only the file's own format keeps what Saerskriven does not model. A Threat
 Dragon file holds a threat only under an actor, a process, a store or a flow:
 a threat that applies to the whole model is saved under those it is on, with
 its attachment to the whole model reported as not kept, and a threat on none of
-them is reported whole and not saved. Opening a
+them is reported whole and not saved. It takes no width or height under 10
+either, so a smaller element is saved at 10 where it stands and the size it has
+is reported as not kept, even on a save back to the Threat Dragon file it was
+read from. Opening a
 file reports too, under two headings, each shown only when it has a line.
 **Converted on opening** comes first and lists what the model holds in another
 form or place than the file had it, so it can still be found in the studio: an

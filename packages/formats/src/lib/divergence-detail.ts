@@ -22,10 +22,11 @@ export type StrayKind = z.infer<typeof strayKindSchema>;
 
 /**
  * What one divergence is about, as a code and the data the code needs. A
- * parameter is a path, an identifier, a count, a format name, an element kind
- * or a text a person wrote, carried as it stands, so a reader in any language
- * phrases the entry itself. A text parameter is unbounded where its value
- * comes from a foreign file, whose vocabulary the model does not decide.
+ * parameter is a path, an identifier, a count, an extent, a format name, an
+ * element kind or a text a person wrote, carried as it stands, so a reader in
+ * any language phrases the entry itself. A text parameter is unbounded where
+ * its value comes from a foreign file, whose vocabulary the model does not
+ * decide.
  */
 export const divergenceDetailSchema = z.discriminatedUnion('code', [
   carrying('release-restamped', { from: z.string(), written: z.string() }),
@@ -52,6 +53,12 @@ export const divergenceDetailSchema = z.discriminatedUnion('code', [
   carrying('note-name-dropped', { name: z.string() }),
   coded('scope-marking-dropped'),
   carrying('cell-reshaped', { shape: z.string(), kind: elementKindSchema }),
+  carrying('size-raised', {
+    width: z.number(),
+    height: z.number(),
+    writtenWidth: z.number(),
+    writtenHeight: z.number(),
+  }),
   carrying('diagram-name-numbered', { number: z.number() }),
   carrying('cell-discarded', { shape: z.string() }),
   carrying('threat-attachment-stray', {
@@ -144,6 +151,8 @@ export function divergenceDetailText(detail: DivergenceDetail): string {
       return 'the out-of-scope marking, which the format records on the elements a threat attaches to alone';
     case 'cell-reshaped':
       return `what the source held on the ${detail.parameters.shape} cell of this id, which now draws ${kindNouns[detail.parameters.kind].article} ${kindNouns[detail.parameters.kind].noun}`;
+    case 'size-raised':
+      return `the size ${detail.parameters.width} by ${detail.parameters.height}, written as ${detail.parameters.writtenWidth} by ${detail.parameters.writtenHeight} to meet Threat Dragon's minimum`;
     case 'diagram-name-numbered':
       return `the name, which the format numbers a diagram rather than naming one, written as ${detail.parameters.number}`;
     case 'cell-discarded':

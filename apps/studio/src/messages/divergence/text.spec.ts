@@ -13,10 +13,12 @@ import { codesOf, type Model } from '@saerskriven/model';
 import {
   assumptionId,
   assumptionOf,
+  attached,
   boxAt,
   curveBoundary,
   diagramId,
   elementId,
+  flowBetween,
   mitigationId,
   mitigationOf,
   modelWith,
@@ -38,6 +40,11 @@ const model = modelWith({
   elements: [
     boxAt('archive', 0, 0, 'store', undefined, 'Paper archive'),
     { ...boxAt('note', 400, 0, 'text', undefined, 'Reminder'), text: 'Hi' },
+    flowBetween(
+      attached('archive'),
+      { kind: 'free', position: { x: 300, y: 300 } },
+      [],
+    ),
     curveBoundary(
       'perimeter',
       [
@@ -94,10 +101,16 @@ const statusDropped = (
   parameters: { status, threat, inferred },
 });
 
+const raisedSize = {
+  code: 'size-raised',
+  parameters: { width: 5, height: 9.99, writtenWidth: 10, writtenHeight: 10 },
+} satisfies DivergenceDetail;
+
 const reported: readonly DivergenceDetail[] = [
   { code: 'assumption-unrecorded' },
   { code: 'note-name-dropped', parameters: { name: 'dropped-note-name' } },
   { code: 'scope-marking-dropped' },
+  raisedSize,
   {
     code: 'threat-attachment-stray',
     parameters: { element: 'stray-element', kind: 'trust-boundary' },
@@ -363,6 +376,11 @@ describe('the subject a line names', () => {
       t('divergence.subject-text-named', { name: 'Reminder' }),
     ],
     [
+      'a named store, as an actor or a process, by its kind and name',
+      { kind: 'element', id: elementId('archive') },
+      t('divergence.subject-store-named', { name: 'Paper archive' }),
+    ],
+    [
       'an unnamed element by its kind',
       { kind: 'element', id: elementId('zone') },
       t('divergence.subject-trust-boundary'),
@@ -524,8 +542,8 @@ describe('the subject a line names', () => {
       { kind: 'diagram', id: diagramId('d') },
     ],
     [
-      'an element of a kind no report names',
-      { kind: 'element', id: elementId('archive') },
+      'a flow, the element kind no report names',
+      { kind: 'element', id: elementId('el-flow') },
     ],
   ] as const)('leaves %s to the detail, naming no id', (_, subject) => {
     expect(lineOf(divergenceOn(subject, eopCard))).toBe(eopDetail);
@@ -859,6 +877,25 @@ describe('the lines a Threat Dragon save reports for threats that apply to the m
         'Stale backups',
         t('divergence.split-into-copies', { count: 2 }),
       ),
+    ]);
+  });
+});
+
+describe('the line a Threat Dragon save reports for an element under its least size', () => {
+  const small = modelWith({
+    elements: [
+      boxAt('desk', 0, 0, 'process', { width: 5, height: 9.99 }, 'Front desk'),
+    ],
+  });
+
+  it('names the element by its kind and name, then the size it had and the size saved', () => {
+    expect(
+      shownLines(threatDragonCodec.write(small).divergences, small),
+    ).toEqual([
+      t('divergence.line', {
+        subject: t('divergence.subject-process-named', { name: 'Front desk' }),
+        detail: t('divergence.size-raised', raisedSize.parameters),
+      }),
     ]);
   });
 });

@@ -9,6 +9,12 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
   'threat-untitled': 'hot {number}',
   'subject-threat': 'Hot {number} ”{title}”',
   'subject-threat-untitled': 'Hot {number}',
+  'subject-actor': 'Aktör',
+  'subject-actor-named': 'Aktör ”{name}”',
+  'subject-process': 'Process',
+  'subject-process-named': 'Process ”{name}”',
+  'subject-store': 'Datalager',
+  'subject-store-named': 'Datalager ”{name}”',
   'subject-text': 'Text',
   'subject-text-named': 'Text ”{name}”',
   'subject-trust-boundary': 'Förtroendegräns',
@@ -29,6 +35,8 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
   },
   'note-name-dropped': 'dess namn',
   'scope-marking-dropped': 'dess markering utanför omfattningen',
+  'size-raised':
+    'dess storlek {width} × {height}, nu {writtenWidth} × {writtenHeight}',
   'threat-attachment-stray-text': 'dess koppling till texten',
   'threat-attachment-stray-text-named': 'dess koppling till texten ”{name}”',
   'threat-attachment-stray-trust-boundary':

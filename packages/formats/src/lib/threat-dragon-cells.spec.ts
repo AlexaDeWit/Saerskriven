@@ -1,7 +1,16 @@
-import { elementSchema, type Element, type Point } from '@saerskriven/model';
+import {
+  elementSchema,
+  type Element,
+  type Point,
+  type Size,
+} from '@saerskriven/model';
 import type { ThreatDragonCell } from '@saerskriven/wire-threat-dragon';
 import { renderDivergences } from './divergence.js';
-import { mergeCell, withNeededPorts } from './threat-dragon-cells.js';
+import {
+  mergeCell,
+  withNeededPorts,
+  type MergedCell,
+} from './threat-dragon-cells.js';
 import { portSides } from './threat-dragon-document.js';
 
 const elementOf = (input: unknown): Element => elementSchema.parse(input);
@@ -17,8 +26,11 @@ const named = {
 
 const store = elementOf({ kind: 'store', id: 'cell-1', ...named, ...box });
 
+const mergedOf = (element: Element, held?: ThreatDragonCell): MergedCell =>
+  mergeCell(element, held, [], 0, new Map());
+
 const cellOf = (element: Element, held?: ThreatDragonCell): ThreatDragonCell =>
-  mergeCell(element, held, [], 0, new Map()).cell;
+  mergedOf(element, held).cell;
 
 const curveThrough = (waypoints: readonly Point[]): Element =>
   elementOf({
@@ -132,12 +144,9 @@ describe('drawing an element over the cell the source document holds', () => {
   });
 
   it('draws the cell again where the element is no longer that shape', () => {
-    const merged = mergeCell(
+    const merged = mergedOf(
       elementOf({ kind: 'actor', id: 'cell-1', ...named, ...box }),
       held,
-      [],
-      0,
-      new Map(),
     );
     expect(merged.cell).toEqual({
       id: 'cell-1',
@@ -175,14 +184,10 @@ const freeFlow = (
 
 describe('a point end, which Threat Dragon types as two whole numbers', () => {
   it('writes a free flow end at the nearest whole number, and a bend as the model holds it', () => {
-    const merged = mergeCell(
+    const merged = mergedOf(
       freeFlow({ x: 880.5, y: -0.4 }, { x: -12.5, y: 7.2 }, [
         { x: 1.5, y: 2.25 },
       ]),
-      undefined,
-      [],
-      0,
-      new Map(),
     );
     expect(merged.cell).toMatchObject({
       source: { x: 881, y: 0 },
@@ -193,16 +198,12 @@ describe('a point end, which Threat Dragon types as two whole numbers', () => {
   });
 
   it('writes each end of a boundary curve at the nearest whole number, and its middle as the model holds it', () => {
-    const merged = mergeCell(
+    const merged = mergedOf(
       curveThrough([
         { x: 0.5, y: -0.4 },
         { x: 5.5, y: 5.25 },
         { x: 8.6, y: 0.2 },
       ]),
-      undefined,
-      [],
-      0,
-      new Map(),
     );
     expect(merged.cell).toMatchObject({
       source: { x: 1, y: 0 },
@@ -246,6 +247,110 @@ describe('a point end, which Threat Dragon types as two whole numbers', () => {
       vertices: [{ x: 200.25, y: 340.5 }],
       target: { x: 400, y: -300 },
     });
+  });
+});
+
+const sized = (kind: string, size: Size): Element =>
+  elementOf({
+    kind,
+    id: 'cell-1',
+    ...named,
+    name: kind === 'text' ? '' : named.name,
+    position: box.position,
+    size,
+    text: 'Reviewed in August.',
+    shape: { kind: 'box', position: box.position, size },
+  });
+
+const heldStore = (size: Size): ThreatDragonCell => ({
+  id: 'cell-1',
+  shape: 'store',
+  zIndex: 7,
+  position: box.position,
+  size,
+  tools: { name: 'button-remove' },
+  data: {
+    type: 'tm.Store',
+    name: 'Ledger',
+    description: 'Keeps the entries.',
+    hasOpenThreats: true,
+  },
+});
+
+describe('a size, of which Threat Dragon takes no width or height under 10', () => {
+  it.each([
+    ['an actor', 'actor'],
+    ['a process', 'process'],
+    ['a store', 'store'],
+    ['a note', 'text'],
+    ['a box boundary', 'trust-boundary'],
+  ])(
+    'writes %s under 10 each way at 10 where it stands, and says so once',
+    (_name, kind) => {
+      const merged = mergedOf(sized(kind, { width: 5, height: 9.99 }));
+      expect(merged.cell).toMatchObject({
+        position: box.position,
+        size: { width: 10, height: 10 },
+      });
+      expect(renderDivergences(merged.divergences)).toBe(
+        'element "cell-1": the size 5 by 9.99, written as 10 by 10 to meet Threat Dragon\'s minimum (no place in the format)',
+      );
+    },
+  );
+
+  it.each([
+    ['narrower', { width: 1, height: 60 }, { width: 10, height: 60 }],
+    ['shorter', { width: 100, height: 1 }, { width: 100, height: 10 }],
+  ])(
+    'raises the one extent of an element %s than 10, and carries both sizes',
+    (_name, size, written) => {
+      const merged = mergedOf(sized('process', size));
+      expect(merged.cell).toMatchObject({ size: written });
+      expect(merged.divergences).toEqual([
+        {
+          subject: { kind: 'element', id: 'cell-1' },
+          detail: {
+            code: 'size-raised',
+            parameters: {
+              width: size.width,
+              height: size.height,
+              writtenWidth: written.width,
+              writtenHeight: written.height,
+            },
+          },
+          reason: 'unrepresentable',
+        },
+      ]);
+    },
+  );
+
+  it('writes a size of 10 or more as the model holds it, and reports nothing', () => {
+    const merged = mergedOf(sized('store', { width: 10, height: 10.5 }));
+    expect(merged.cell).toMatchObject({ size: { width: 10, height: 10.5 } });
+    expect(merged.divergences).toEqual([]);
+  });
+
+  it('raises a size the source cell itself holds under 10, as the codec writing over it, and keeps the rest of the cell', () => {
+    const small = { width: 4, height: 60 };
+    const merged = mergedOf(sized('store', small), heldStore(small));
+    expect(merged.cell).toEqual({
+      ...heldStore(small),
+      size: { width: 10, height: 60 },
+    });
+    expect(renderDivergences(merged.divergences)).toBe(
+      'element "cell-1": the size 4 by 60, written as 10 by 60 to meet Threat Dragon\'s minimum (not repeated by the codec)',
+    );
+  });
+
+  it('reports a size an edit took under 10 as one the format cannot hold, whatever the source cell held', () => {
+    const merged = mergedOf(
+      sized('store', { width: 4, height: 60 }),
+      heldStore(box.size),
+    );
+    expect(merged.cell).toMatchObject({ size: { width: 10, height: 60 } });
+    expect(renderDivergences(merged.divergences)).toBe(
+      'element "cell-1": the size 4 by 60, written as 10 by 60 to meet Threat Dragon\'s minimum (no place in the format)',
+    );
   });
 });
 
@@ -349,7 +454,7 @@ describe('merging security facts owned by the model', () => {
 
 describe('an element carrying what the format has no place for', () => {
   it('reports a note named beside its text', () => {
-    const merged = mergeCell(
+    const merged = mergedOf(
       elementOf({
         kind: 'text',
         id: 'cell-1',
@@ -357,10 +462,6 @@ describe('an element carrying what the format has no place for', () => {
         ...box,
         text: 'Reviewed in August.',
       }),
-      undefined,
-      [],
-      0,
-      new Map(),
     );
     expect(renderDivergences(merged.divergences)).toBe(
       'element "cell-1": the name "Ledger", which the format has one text for a note and no name beside it (no place in the format)',
@@ -368,7 +469,7 @@ describe('an element carrying what the format has no place for', () => {
   });
 
   it('reports a boundary put out of scope', () => {
-    const merged = mergeCell(
+    const merged = mergedOf(
       elementOf({
         kind: 'trust-boundary',
         id: 'cell-1',
@@ -377,10 +478,6 @@ describe('an element carrying what the format has no place for', () => {
         reasonOutOfScope: 'Drawn for context alone.',
         shape: { kind: 'box', ...box },
       }),
-      undefined,
-      [],
-      0,
-      new Map(),
     );
     expect(renderDivergences(merged.divergences)).toBe(
       'element "cell-1": the out-of-scope marking, which the format records on the elements a threat attaches to alone (no place in the format)',

@@ -131,6 +131,8 @@ const noPorts: readonly NeededPort[] = [];
 
 const wholeNumbers = 0;
 
+const leastExtent = 10;
+
 const openStatus = fromThreatStatus('open');
 
 function actorCell(
@@ -152,7 +154,10 @@ function actorCell(
         type: 'tm.Actor',
       },
     },
-    divergences: reshaped(element, held, from),
+    divergences: [
+      ...reshaped(element, held, from),
+      ...raised(element, element.size, from),
+    ],
     ports: noPorts,
   };
 }
@@ -179,7 +184,10 @@ function processCell(
         type: 'tm.Process',
       },
     },
-    divergences: reshaped(element, held, from),
+    divergences: [
+      ...reshaped(element, held, from),
+      ...raised(element, element.size, from),
+    ],
     ports: noPorts,
   };
 }
@@ -207,7 +215,10 @@ function storeCell(
         type: 'tm.Store',
       },
     },
-    divergences: reshaped(element, held, from),
+    divergences: [
+      ...reshaped(element, held, from),
+      ...raised(element, element.size, from),
+    ],
     ports: noPorts,
   };
 }
@@ -264,7 +275,7 @@ function textCell(
       zIndex: zIndexOf(from, index),
       shape: 'td-text-block',
       position: element.position,
-      size: element.size,
+      size: writtenSize(element.size),
       data: {
         ...from?.data,
         name: shown === element.text ? from?.data.name : element.text,
@@ -275,6 +286,7 @@ function textCell(
     },
     divergences: [
       ...reshaped(element, held, from),
+      ...raised(element, element.size, from),
       ...unlabelled(element),
       ...unscoped(element),
     ],
@@ -296,14 +308,18 @@ function boxBoundary(
       zIndex: zIndexOf(from, index),
       shape: 'trust-boundary-box',
       position: shape.position,
-      size: shape.size,
+      size: writtenSize(shape.size),
       data: {
         ...from?.data,
         ...boundaryData(element, from),
         type: 'tm.BoundaryBox',
       },
     },
-    divergences: [...reshaped(element, held, from), ...unscoped(element)],
+    divergences: [
+      ...reshaped(element, held, from),
+      ...raised(element, shape.size, from),
+      ...unscoped(element),
+    ],
     ports: noPorts,
   };
 }
@@ -371,7 +387,14 @@ function nodeParts(
     id: element.id,
     zIndex: zIndexOf(from, index),
     position: element.position,
-    size: element.size,
+    size: writtenSize(element.size),
+  };
+}
+
+function writtenSize(size: Size): Size {
+  return {
+    width: Math.max(size.width, leastExtent),
+    height: Math.max(size.height, leastExtent),
   };
 }
 
@@ -466,6 +489,34 @@ function unscoped(element: TextElement | TrustBoundary): readonly Divergence[] {
         },
       ]
     : [];
+}
+
+function raised(
+  element: Element,
+  size: Size,
+  from: { readonly size: Size } | undefined,
+): readonly Divergence[] {
+  const written = writtenSize(size);
+  return equivalent(written, size)
+    ? []
+    : [
+        {
+          subject: { kind: 'element', id: element.id },
+          detail: {
+            code: 'size-raised',
+            parameters: {
+              width: size.width,
+              height: size.height,
+              writtenWidth: written.width,
+              writtenHeight: written.height,
+            },
+          },
+          reason:
+            from !== undefined && equivalent(from.size, size)
+              ? 'overridden'
+              : 'unrepresentable',
+        },
+      ];
 }
 
 function reshaped(

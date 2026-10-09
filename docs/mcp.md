@@ -227,9 +227,11 @@ status, title, merge of several records into one text, mitigation with neither
 title nor text, or record shared by several threats or linked to none, that the
 text cannot give back. Nor does it keep the scope of a trust boundary or a
 text note, or a text note's name, so a write reports each one it drops. It
-holds a threat only under an actor, a process, a store or a flow, so a threat
-on none of those is reported and not written, and a threat that applies to the
-model (`appliesToModel`) is written under those it names, with its model link
+takes no width or height under 10, so a write raises a smaller one to 10 where
+the element stands and reports the size the model holds. It holds a threat
+only under an actor, a process, a store or a flow, so a threat on none of
+those is reported and not written, and a threat that applies to the model
+(`appliesToModel`) is written under those it names, with its model link
 reported as dropped.
 
 `saer_create` writes a new model in the native YAML format at version 2, with

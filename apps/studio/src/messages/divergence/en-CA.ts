@@ -9,6 +9,12 @@ export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
   'threat-untitled': 'threat {number}',
   'subject-threat': 'Threat {number} "{title}"',
   'subject-threat-untitled': 'Threat {number}',
+  'subject-actor': 'Actor',
+  'subject-actor-named': 'Actor "{name}"',
+  'subject-process': 'Process',
+  'subject-process-named': 'Process "{name}"',
+  'subject-store': 'Store',
+  'subject-store-named': 'Store "{name}"',
   'subject-text': 'Text',
   'subject-text-named': 'Text "{name}"',
   'subject-trust-boundary': 'Trust boundary',
@@ -29,6 +35,8 @@ export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
   },
   'note-name-dropped': 'its name',
   'scope-marking-dropped': 'its out-of-scope marking',
+  'size-raised':
+    'its size {width} × {height}, now {writtenWidth} × {writtenHeight}',
   'threat-attachment-stray-text': 'its attachment to the text',
   'threat-attachment-stray-text-named': 'its attachment to the text "{name}"',
   'threat-attachment-stray-trust-boundary':
