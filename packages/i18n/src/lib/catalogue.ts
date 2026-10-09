@@ -1,4 +1,9 @@
-import type { Contract, MessageSpec, Sections } from './contract.js';
+import type {
+  Contract,
+  MessageSpec,
+  NoParameters,
+  Sections,
+} from './contract.js';
 import {
   defaultLocale,
   locales,
@@ -13,7 +18,12 @@ import {
 
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 
-export type ParameterName<M extends MessageSpec> = keyof M['params'] & string;
+/**
+ * The parameter names a message declares. {@link NoParameters} names none,
+ * though the keys of its index signature are every string.
+ */
+export type ParameterName<M extends MessageSpec> =
+  M['params'] extends NoParameters ? never : keyof M['params'] & string;
 
 type Entry<L extends Locale, M extends MessageSpec> = M extends {
   readonly kind: 'plural';
