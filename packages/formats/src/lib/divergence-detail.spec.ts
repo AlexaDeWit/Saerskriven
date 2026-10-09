@@ -97,6 +97,18 @@ const samples: readonly (readonly [DivergenceDetail, string])[] = [
     "the size 1 by 60, written as 10 by 60 to meet the format's minimum",
   ],
   [
+    { code: 'accents-dropped', parameters: { count: 1 } },
+    'the accent on 1 element, which the format has no key for',
+  ],
+  [
+    { code: 'accents-dropped', parameters: { count: 12 } },
+    'the accents on 12 elements, which the format has no key for',
+  ],
+  [
+    { code: 'accent-unknown', parameters: { accent: 's5' } },
+    'the accent "s5", which the model has no key for',
+  ],
+  [
     { code: 'diagram-name-numbered', parameters: { number: 4 } },
     'the name, which the format numbers a diagram rather than naming one, written as 4',
   ],

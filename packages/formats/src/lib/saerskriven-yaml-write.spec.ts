@@ -2,6 +2,7 @@ import {
   generateElementId,
   inNumberOrder,
   renameElement,
+  setAccent,
   type BoundaryShape,
   type Element,
   type Model,
@@ -249,6 +250,52 @@ describe('a Saerskriven YAML write of an assumption that applies to the model', 
     expect(
       Either.getOrThrow(readSaerskrivenYaml(result.output)).model.assumptions,
     ).toEqual(model(threats).assumptions);
+  });
+});
+
+describe('a Saerskriven YAML write of accents', () => {
+  const api = elementId('element-api');
+  const flow = elementId('element-order-flow');
+  const plain = writeSaerskrivenYaml(validModel).output;
+  const accented = Either.getOrThrow(setAccent(validModel, [api, flow], 's2'));
+  const result = writeSaerskrivenYaml(accented);
+
+  it('states the key after the scope fields on each element that holds one, and on no other', () => {
+    expect(plain).not.toContain('accent');
+    expect(result.divergences).toEqual([]);
+    const elements = listOf(
+      at(listOf(at(parseDocument(result.output), 'diagrams'))[0], 'elements'),
+    );
+    expect(
+      elements
+        .filter((element) => keysOf(element).includes('accent'))
+        .map((element) => [at(element, 'id'), at(element, 'accent')]),
+    ).toEqual([
+      [api, 's2'],
+      [flow, 's2'],
+    ]);
+    expect(
+      result.output
+        .split('\n')
+        .filter((line) => !line.includes('accent: '))
+        .join('\n'),
+    ).toBe(plain);
+    expect(result.output).toContain(
+      '        reasonOutOfScope: ""\n        accent: s2\n',
+    );
+  });
+
+  it('writes a model whose accents were cleared as it wrote the model before any was set', () => {
+    const cleared = Either.getOrThrow(
+      setAccent(accented, [api, flow], undefined),
+    );
+    expect(writeSaerskrivenYaml(cleared).output).toBe(plain);
+  });
+
+  it('reads back as the model it wrote', () => {
+    expect(Either.getOrThrow(readSaerskrivenYaml(result.output)).model).toEqual(
+      accented,
+    );
   });
 });
 

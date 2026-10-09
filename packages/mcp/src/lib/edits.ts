@@ -1,6 +1,7 @@
 import {
   OperationFailure,
   acceptedTextSchema,
+  accentSchema,
   addDiagram,
   addElement,
   boundaryShapeSchema,
@@ -20,6 +21,7 @@ import {
   renameElement,
   resizeElement,
   reverseFlow,
+  setAccent,
   setBoundaryShape,
   setFlowDirection,
   setFlowEndPosition,
@@ -53,6 +55,8 @@ import {
   isRegisterEdit,
   registerEditSchemas,
 } from './register-edits.js';
+
+const noAccent = 'none';
 
 const elementEditSchema = z.object({
   element: elementIdSchema.describe('The id of the element to edit.'),
@@ -108,6 +112,18 @@ export const modelEditSchema = z.discriminatedUnion('op', [
   elementEditSchema
     .extend(elementDetailsChangeSchema.shape)
     .extend({ op: z.literal('set_element_details') }),
+  z.object({
+    op: z.literal('set_accent'),
+    elements: z
+      .array(elementIdSchema)
+      .min(1)
+      .describe('The ids of the elements whose accent is set or cleared.'),
+    accent: z
+      .union([accentSchema, z.literal(noAccent)])
+      .describe(
+        'The accent key every named element takes, or "none" to clear theirs.',
+      ),
+  }),
   elementEditSchema.extend({
     op: z.literal('set_flow_waypoints'),
     waypoints: waypointsSchema,
@@ -269,6 +285,12 @@ function applyEdit(
       return editNote(model, edit.element, edit.text);
     case 'set_element_details':
       return setElementDetails(model, edit.element, edit);
+    case 'set_accent':
+      return setAccent(
+        model,
+        edit.elements,
+        edit.accent === noAccent ? undefined : edit.accent,
+      );
     case 'set_flow_waypoints':
       return setFlowWaypoints(model, edit.element, edit.waypoints);
     case 'set_flow_direction':

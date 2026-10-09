@@ -50,6 +50,8 @@ export const divergenceMessages = {
   'split-into-copies': plural('count'),
   'note-name-dropped': text(),
   'scope-marking-dropped': text(),
+  'accents-dropped': plural('count'),
+  'accent-unknown': text({ accent: 'text' }),
   'size-raised': text({
     width: 'number',
     height: 'number',

@@ -108,6 +108,37 @@ const withExtras = `${oneThreatYamlV1.replace(
   '    number: 1\n    likelihood: high',
 )}notes: kept nowhere\n`;
 
+const oneFlowInVersion2 = oneFlowDocument
+  .replace('formatVersion: 1', 'formatVersion: 2')
+  .replace('    mitigation: ""\n', '');
+
+const accentOn = (text: string, name: string, accent: string) =>
+  text.replace(
+    `        name: ${name}\n        description: ""\n        outOfScope: false\n        reasonOutOfScope: ""\n`,
+    (held) => `${held}        accent: ${accent}\n`,
+  );
+
+const noteWithAccent = oneFlowInVersion2.replace(
+  'threats:',
+  [
+    '      - kind: text',
+    '        id: element-4',
+    '        name: Reminder',
+    '        description: ""',
+    '        outOfScope: false',
+    '        reasonOutOfScope: ""',
+    '        accent: s1',
+    '        position:',
+    '          x: 0',
+    '          y: 200',
+    '        size:',
+    '          width: 10',
+    '          height: 10',
+    '        text: Review yearly',
+    'threats:',
+  ].join('\n'),
+);
+
 function readingOf(text: string) {
   const result = readSaerskrivenYaml(text);
   return Either.isRight(result) ? result.right : undefined;
@@ -123,6 +154,12 @@ function modelOfDocumentIn(text: string) {
   return Either.isLeft(read)
     ? undefined
     : Either.getOrUndefined(readSaerskrivenYamlDocument(read.right.source));
+}
+
+function accentsOf(text: string) {
+  return readingOf(text)?.model.diagrams[0]?.elements.map((element) =>
+    'accent' in element ? element.accent : undefined,
+  );
 }
 
 function linksOf(text: string) {
@@ -303,6 +340,71 @@ describe('a threat that states its model link', () => {
         detail: {
           code: 'key-undeclared',
           parameters: { path: 'threats.0.appliesToModel' },
+        },
+        reason: 'undeclared',
+      },
+    ]);
+  });
+});
+
+describe('an element that states an accent', () => {
+  it('holds one of the eight keys, on a node and on a flow, reporting nothing', () => {
+    const accented = accentOn(
+      accentOn(oneFlowInVersion2, 'Ledger', 's4'),
+      'Posts',
+      'l1',
+    );
+    expect(accentsOf(accented)).toEqual([undefined, 's4', 'l1']);
+    expect(readingOf(accented)?.divergences).toEqual([]);
+  });
+
+  it.each(['s5', 'strong', ''])(
+    'reads the key "%s" as no accent and reports it as narrowed, naming the element and the key',
+    (unknown) => {
+      const reading = readingOf(
+        accentOn(oneFlowInVersion2, 'Posts', JSON.stringify(unknown)),
+      );
+      expect(reading?.model.diagrams[0]?.elements[2]).not.toHaveProperty(
+        'accent',
+      );
+      expect(reading?.divergences).toEqual([
+        {
+          subject: { kind: 'element', id: 'element-3' },
+          detail: { code: 'accent-unknown', parameters: { accent: unknown } },
+          reason: 'narrowed',
+        },
+      ]);
+    },
+  );
+
+  it('loses an unknown key at the next write, which states no accent for that element', () => {
+    const reading = readingOf(accentOn(oneFlowInVersion2, 'Posts', 's5'));
+    expect(
+      reading && writeSaerskrivenYaml(reading.model, reading.source).output,
+    ).not.toContain('accent');
+  });
+
+  it('is dropped as undeclared on a canvas note, and in a version 1 file, neither of which declares the key', () => {
+    expect(readingOf(noteWithAccent)?.divergences).toEqual([
+      {
+        subject: { kind: 'model' },
+        detail: {
+          code: 'key-undeclared',
+          parameters: { path: 'diagrams.0.elements.3.accent' },
+        },
+        reason: 'undeclared',
+      },
+    ]);
+    const versionOne = readingOf(accentOn(oneFlowDocument, 'Ledger', 's4'));
+    expect(versionOne?.model.diagrams[0]?.elements[1]).not.toHaveProperty(
+      'accent',
+    );
+    expect(versionOne?.divergences).toEqual([
+      {
+        subject: { kind: 'model' },
+        detail: {
+          code: 'key-undeclared',
+          parameters: { path: 'diagrams.0.elements.1.accent' },
         },
         reason: 'undeclared',
       },

@@ -88,6 +88,8 @@ const openPlacements = {
   'assumption-unrecorded': 'save-only',
   'note-name-dropped': 'save-only',
   'scope-marking-dropped': 'save-only',
+  'accents-dropped': 'save-only',
+  'accent-unknown': 'not-shown',
   'size-raised': 'save-only',
   'threat-attachment-stray': 'save-only',
   'threat-unplaceable': 'save-only',
@@ -416,6 +418,10 @@ function lossDetail(t: Speaker, detail: ReportedDetail, held: Held): string {
       return t('divergence.note-name-dropped');
     case 'scope-marking-dropped':
       return t('divergence.scope-marking-dropped');
+    case 'accents-dropped':
+      return t('divergence.accents-dropped', detail.parameters);
+    case 'accent-unknown':
+      return t('divergence.accent-unknown', detail.parameters);
     case 'size-raised':
       return t('divergence.size-raised', detail.parameters);
     case 'threat-attachment-stray':

@@ -35,6 +35,11 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
   },
   'note-name-dropped': 'dess namn',
   'scope-marking-dropped': 'dess markering utanför omfattningen',
+  'accents-dropped': {
+    one: 'Accenten på {count} objekt',
+    other: 'Accenterna på {count} objekt',
+  },
+  'accent-unknown': 'dess accent ”{accent}”',
   'size-raised':
     'dess storlek {width} × {height}, nu {writtenWidth} × {writtenHeight}',
   'threat-attachment-stray-text': 'dess koppling till texten',

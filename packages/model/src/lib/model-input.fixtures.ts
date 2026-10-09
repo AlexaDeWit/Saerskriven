@@ -2,6 +2,7 @@ import * as fc from 'fast-check';
 import { assumptionStatusSchema, type AssumptionInput } from './assumptions.js';
 import { threatCategorySchema, type ThreatCategory } from './categories.js';
 import {
+  accentSchema,
   elementSchema,
   type ElementInput,
   type FlowEndpointInput,
@@ -110,7 +111,8 @@ const threatNumbersArbitrary = fc
  * through the model's own character rule. Category candidates are built
  * loosely and re-parsed through the union, which pairs each methodology with
  * its own categories. Threat numbers are distinct and never already
- * ascending, so a write has to reorder them. Ids are positional, references
+ * ascending, so a write has to reorder them. Every kind that takes an accent
+ * holds one or none. Ids are positional, references
  * are drawn from ids already laid out, and a flow's endpoints come from its
  * own diagram, minus the flow.
  */
@@ -189,7 +191,7 @@ function elementArbitrary(
   if (kind === 'flow') {
     return fc
       .tuple(
-        commonArbitrary(id),
+        accentedArbitrary(id),
         endpointArbitrary(siblings),
         endpointArbitrary(siblings),
         fc.array(pointArbitrary, { maxLength: 3 }),
@@ -206,7 +208,7 @@ function elementArbitrary(
   }
   if (kind === 'trust-boundary') {
     return fc
-      .tuple(commonArbitrary(id), boundaryShapeArbitrary)
+      .tuple(accentedArbitrary(id), boundaryShapeArbitrary)
       .map(([common, shape]) => ({ kind, ...common, shape }));
   }
   if (kind === 'text') {
@@ -221,8 +223,20 @@ function elementArbitrary(
       }));
   }
   return fc
-    .tuple(commonArbitrary(id), pointArbitrary, sizeArbitrary)
+    .tuple(accentedArbitrary(id), pointArbitrary, sizeArbitrary)
     .map(([common, position, size]) => ({ kind, ...common, position, size }));
+}
+
+function accentedArbitrary(id: string) {
+  return fc
+    .tuple(
+      commonArbitrary(id),
+      fc.record(
+        { accent: fc.constantFrom(...accentSchema.options) },
+        { requiredKeys: [] },
+      ),
+    )
+    .map(([common, accent]) => ({ ...common, ...accent }));
 }
 
 function commonArbitrary(id: string) {

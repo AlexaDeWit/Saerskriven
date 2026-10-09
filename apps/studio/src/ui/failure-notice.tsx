@@ -193,6 +193,9 @@ export function describeOperation(
     NotTrustBoundaryElement: ({ elementId }) => [
       t('notice.op-not-trust-boundary', { id: elementId }),
     ],
+    NotAccentable: ({ elementId }) => [
+      t('notice.op-not-accentable', { id: elementId }),
+    ],
     EmptyName: ({ elementId }) => [
       t('notice.op-empty-name', { id: elementId }),
     ],

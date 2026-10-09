@@ -1,14 +1,17 @@
-import type {
-  AssumptionInput,
-  BoundaryShapeInput,
-  DiagramInput,
-  ElementInput,
-  FlowEndpointInput,
-  MitigationInput,
-  Model,
-  ModelInput,
-  ModelMetadataInput,
-  ThreatInput,
+import {
+  accentSchema,
+  elementIdSchema,
+  type Accent,
+  type AssumptionInput,
+  type BoundaryShapeInput,
+  type DiagramInput,
+  type ElementInput,
+  type FlowEndpointInput,
+  type MitigationInput,
+  type Model,
+  type ModelInput,
+  type ModelMetadataInput,
+  type ThreatInput,
 } from '@saerskriven/model';
 import type {
   saerskrivenYamlV2WireSchema,
@@ -29,6 +32,7 @@ import {
   type ReadFailure,
   type ReadResult,
 } from './codec.js';
+import type { Divergence } from './divergence.js';
 import { parseYaml } from './parse-yaml.js';
 import {
   currentSaerskrivenYaml,
@@ -58,7 +62,9 @@ import { undeclaredDivergences } from './undeclared.js';
  * from a later release still reads. Records are mapped field by field onto
  * the model's input types, mirroring `saerskriven-yaml-write.ts`, and ids
  * cross as plain strings for `parseModel` to brand. A threat that leaves
- * `appliesToModel` out does not apply to the model.
+ * `appliesToModel` out does not apply to the model. An element whose
+ * `accent` is none of the model's keys is read with no accent and reported
+ * as `narrowed`.
  */
 export function readSaerskrivenYaml(
   text: string,
@@ -89,6 +95,7 @@ function mapDocument(
         divergences: [
           ...undeclaredDivergences(given, wire),
           ...current.divergences,
+          ...unknownAccents(current.document),
         ],
       }));
     },
@@ -129,6 +136,7 @@ function toElement(element: SaerskrivenYamlV2Element): ElementInput {
       kind: 'flow',
       ...flowProperties(element),
       ...toCommon(element),
+      ...toAccent(element),
       source: toEndpoint(element.source),
       target: toEndpoint(element.target),
       waypoints: element.waypoints,
@@ -140,6 +148,7 @@ function toElement(element: SaerskrivenYamlV2Element): ElementInput {
       kind: 'trust-boundary',
       ...boundaryProperties(element),
       ...toCommon(element),
+      ...toAccent(element),
       shape: toBoundaryShape(element.shape),
     };
   }
@@ -154,6 +163,7 @@ function toElement(element: SaerskrivenYamlV2Element): ElementInput {
   }
   const node = {
     ...toCommon(element),
+    ...toAccent(element),
     position: element.position,
     size: element.size,
   };
@@ -175,6 +185,43 @@ function toCommon(element: SaerskrivenYamlV2Element) {
     reasonOutOfScope: element.reasonOutOfScope,
   };
 }
+
+function toAccent(element: AccentedWireElement): { accent?: Accent } {
+  const accent = accentSchema.safeParse(element.accent);
+  return accent.success ? { accent: accent.data } : {};
+}
+
+function unknownAccents(document: SaerskrivenYamlV2Document): Divergence[] {
+  return document.diagrams
+    .flatMap((diagram) => diagram.elements)
+    .flatMap((element): Divergence[] => {
+      if (
+        element.kind === 'text' ||
+        element.accent === undefined ||
+        accentSchema.safeParse(element.accent).success
+      ) {
+        return [];
+      }
+      const id = elementIdSchema.safeParse(element.id);
+      return id.success
+        ? [
+            {
+              subject: { kind: 'element', id: id.data },
+              detail: {
+                code: 'accent-unknown',
+                parameters: { accent: element.accent },
+              },
+              reason: 'narrowed',
+            },
+          ]
+        : [];
+    });
+}
+
+type AccentedWireElement = Exclude<
+  SaerskrivenYamlV2Element,
+  { readonly kind: 'text' }
+>;
 
 function toEndpoint(endpoint: SaerskrivenYamlV2Endpoint): FlowEndpointInput {
   if (endpoint.kind === 'free') {

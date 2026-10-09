@@ -35,6 +35,11 @@ export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
   },
   'note-name-dropped': 'its name',
   'scope-marking-dropped': 'its out-of-scope marking',
+  'accents-dropped': {
+    one: 'The accent on {count} element',
+    other: 'The accents on {count} elements',
+  },
+  'accent-unknown': 'its accent "{accent}"',
   'size-raised':
     'its size {width} × {height}, now {writtenWidth} × {writtenHeight}',
   'threat-attachment-stray-text': 'its attachment to the text',

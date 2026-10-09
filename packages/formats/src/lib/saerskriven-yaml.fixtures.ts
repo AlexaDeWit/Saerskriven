@@ -18,8 +18,9 @@ const featureCompletePath = testDataPath('saerskriven/feature-complete.yaml');
  * canonical form: each element kind with every security fact it can state,
  * both endpoint kinds and a side of each name, both boundary shapes, a threat
  * in every status, severity and category, one of them applying to the model,
- * a mitigation in every status, and an assumption in every status, one of
- * them applying to the model.
+ * a mitigation in every status, an assumption in every status, one of them
+ * applying to the model, and a strong accent on a process and a light one on
+ * a flow.
  */
 export const featureCompleteYaml: string = committedText(
   'saerskriven/feature-complete.yaml',
@@ -89,6 +90,7 @@ export const featureCompleteYamlModel: ModelInput = {
           description: 'Takes bookings and payment.',
           outOfScope: false,
           reasonOutOfScope: '',
+          accent: 's1',
           position: {
             x: 320,
             y: 160,
@@ -166,6 +168,7 @@ export const featureCompleteYamlModel: ModelInput = {
           description: 'The booking form, sent over the internet.',
           outOfScope: false,
           reasonOutOfScope: '',
+          accent: 'l2',
           protocol: 'HTTPS',
           isEncrypted: true,
           isPublicNetwork: true,

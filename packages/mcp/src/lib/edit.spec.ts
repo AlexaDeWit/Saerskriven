@@ -946,3 +946,80 @@ describe('what set_element_details writes', () => {
     });
   }
 });
+
+const accentsOf = (
+  attempted: ReturnType<typeof attempt>,
+  file: string,
+  ids: readonly string[],
+) =>
+  elementsIn(attempted, file)
+    .filter((element) => ids.includes(element.id))
+    .map((element) => ('accent' in element ? element.accent : undefined));
+
+describe('what set_accent writes', () => {
+  it('gives every element named the key in the native file, and clears it again with none', () => {
+    const attempted = attempt();
+    const named = ['element-api', 'element-order-flow', 'element-perimeter'];
+    const before = attempted.bytes(modelFile).toString('utf8');
+    const set = attempted.edit(modelFile, revisionIn(attempted, modelFile), [
+      { op: 'set_accent', elements: named, accent: 'l2' },
+    ]);
+    expect(Either.getOrUndefined(set)?.divergences).toEqual([]);
+    expect(accentsOf(attempted, modelFile, named)).toEqual(['l2', 'l2', 'l2']);
+    attempted.edit(modelFile, revisionIn(attempted, modelFile), [
+      { op: 'set_accent', elements: named, accent: 'none' },
+    ]);
+    expect(attempted.bytes(modelFile).toString('utf8')).toBe(before);
+  });
+
+  it('refuses a batch that names a text note, saying it takes no accent', () => {
+    const attempted = attempt();
+    const refused = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [
+        {
+          op: 'set_accent',
+          elements: ['element-api', 'element-note'],
+          accent: 's1',
+        },
+      ],
+    );
+    expect(refusalOf(refused)).toContain(
+      describeOperationFailure(
+        OperationFailure.NotAccentable({
+          elementId: elementId('element-note'),
+        }),
+      ),
+    );
+  });
+
+  it('reports the accents a Threat Dragon file cannot hold once, with their count, and writes none', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      dragonFile,
+      revisionIn(attempted, dragonFile),
+      [
+        {
+          op: 'set_accent',
+          elements: ['store-archive', 'process-booking'],
+          accent: 's3',
+        },
+      ],
+    );
+    expect(
+      Either.getOrUndefined(applied)?.divergences.filter(
+        ({ detail }) => detail.code === 'accents-dropped',
+      ),
+    ).toEqual([
+      {
+        subject: { kind: 'model' },
+        detail: { code: 'accents-dropped', parameters: { count: 2 } },
+        reason: 'unrepresentable',
+      },
+    ]);
+    expect(
+      accentsOf(attempted, dragonFile, ['store-archive', 'process-booking']),
+    ).toEqual([undefined, undefined]);
+  });
+});

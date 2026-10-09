@@ -1,6 +1,8 @@
 import {
   diagramIdSchema,
   elementIdsAcross,
+  elementsAcross,
+  takesAccent,
   threatIdSchema,
   type Model,
 } from '@saerskriven/model';
@@ -49,7 +51,8 @@ import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
  * reported as `unrepresentable`: an assumption, a threat on a trust boundary
  * or a note, the model link of a threat, a note's name, an out-of-scope
  * boundary or note, a diagram's name, and a size this write raises that the
- * source cell does not hold. A diagram, cell or threat the source held and
+ * source cell does not hold. Accents are reported once for the model, with
+ * the count of elements holding one. A diagram, cell or threat the source held and
  * the model no longer does is reported as `discarded-by-edit`. Mitigation
  * texts follow `mitigationDivergences`.
  */
@@ -111,6 +114,7 @@ export function writeThreatDragon(
       ),
       ...numbering.divergences,
       ...merged.flatMap((entry) => [...entry.stamp, ...entry.divergences]),
+      ...droppedAccents(model),
       ...plan.divergences,
       ...unrecordedAssumptions(model),
       ...discarded(model, source),
@@ -174,6 +178,21 @@ function overriddenMark(
             parameters: { from, raised: mark.value },
           },
           reason: 'overridden',
+        },
+      ];
+}
+
+function droppedAccents(model: Model): readonly Divergence[] {
+  const count = elementsAcross(model.diagrams).filter(
+    (element) => takesAccent(element) && element.accent !== undefined,
+  ).length;
+  return count === 0
+    ? []
+    : [
+        {
+          subject: { kind: 'model' },
+          detail: { code: 'accents-dropped', parameters: { count } },
+          reason: 'unrepresentable',
         },
       ];
 }

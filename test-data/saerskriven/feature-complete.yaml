@@ -73,6 +73,7 @@ diagrams:
         description: Takes bookings and payment.
         outOfScope: false
         reasonOutOfScope: ""
+        accent: s1
         position:
           x: 320
           y: 160
@@ -134,6 +135,7 @@ diagrams:
         description: The booking form, sent over the internet.
         outOfScope: false
         reasonOutOfScope: ""
+        accent: l2
         protocol: HTTPS
         isEncrypted: true
         isPublicNetwork: true

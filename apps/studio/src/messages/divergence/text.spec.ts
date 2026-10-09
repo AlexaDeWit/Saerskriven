@@ -9,7 +9,7 @@ import {
 } from '@saerskriven/formats';
 import { catalogueTemplates, templateParts } from '@saerskriven/i18n';
 import { Either } from 'effect';
-import { codesOf, type Model } from '@saerskriven/model';
+import { codesOf, setAccent, type Model } from '@saerskriven/model';
 import {
   assumptionId,
   assumptionOf,
@@ -110,6 +110,8 @@ const reported: readonly DivergenceDetail[] = [
   { code: 'assumption-unrecorded' },
   { code: 'note-name-dropped', parameters: { name: 'dropped-note-name' } },
   { code: 'scope-marking-dropped' },
+  { code: 'accents-dropped', parameters: { count: 24 } },
+  { code: 'accent-unknown', parameters: { accent: 'unknown-accent' } },
   raisedSize,
   {
     code: 'threat-attachment-stray',
@@ -897,5 +899,26 @@ describe('the line a Threat Dragon save reports for an element under its least s
         detail: t('divergence.size-raised', raisedSize.parameters),
       }),
     ]);
+  });
+});
+
+describe('the line a Threat Dragon save reports for accents', () => {
+  const accented = Either.getOrThrow(
+    setAccent(
+      modelWith({
+        elements: [
+          boxAt('desk', 0, 0, 'process', undefined, 'Front desk'),
+          boxAt('archive', 200, 0, 'store', undefined, 'Paper archive'),
+        ],
+      }),
+      [elementId('desk'), elementId('archive')],
+      's1',
+    ),
+  );
+
+  it('is one line for the model, counting the elements that hold one', () => {
+    expect(
+      shownLines(threatDragonCodec.write(accented).divergences, accented),
+    ).toEqual([t('divergence.accents-dropped', { count: 2 })]);
   });
 });

@@ -40,6 +40,12 @@ export const divergenceFrCA = catalogue(divergenceMessages)('fr-CA')({
   },
   'note-name-dropped': 'son nom',
   'scope-marking-dropped': 'son marquage hors périmètre',
+  'accents-dropped': {
+    one: 'L’accentuation de {count} élément',
+    many: 'Les accentuations de {count} d’éléments',
+    other: 'Les accentuations de {count} éléments',
+  },
+  'accent-unknown': 'son accentuation « {accent} »',
   'size-raised':
     'sa taille de {width} × {height}, désormais {writtenWidth} × {writtenHeight}',
   'threat-attachment-stray-text': 'son rattachement au texte',

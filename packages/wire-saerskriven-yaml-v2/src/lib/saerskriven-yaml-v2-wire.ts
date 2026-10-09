@@ -19,7 +19,11 @@ const elementBaseSchema = z.object({
   reasonOutOfScope: z.string(),
 });
 
-const nodeBaseSchema = elementBaseSchema.extend({
+const accentedBaseSchema = elementBaseSchema.extend({
+  accent: z.string().optional(),
+});
+
+const nodeBaseSchema = accentedBaseSchema.extend({
   position: pointSchema,
   size: sizeSchema,
 });
@@ -64,7 +68,7 @@ const endpointSchema = z.discriminatedUnion('kind', [
   freeEndpointSchema,
 ]);
 
-const flowSchema = elementBaseSchema.extend({
+const flowSchema = accentedBaseSchema.extend({
   kind: z.literal('flow'),
   protocol: z.string().optional(),
   isEncrypted: z.boolean().optional(),
@@ -92,14 +96,16 @@ const boundaryShapeSchema = z.discriminatedUnion('kind', [
   curveBoundaryShapeSchema,
 ]);
 
-const trustBoundarySchema = elementBaseSchema.extend({
+const trustBoundarySchema = accentedBaseSchema.extend({
   kind: z.literal('trust-boundary'),
   containedElements: z.array(z.string()).optional(),
   crossingFlows: z.array(z.string()).optional(),
   shape: boundaryShapeSchema,
 });
 
-const textSchema = nodeBaseSchema.extend({
+const textSchema = elementBaseSchema.extend({
+  position: pointSchema,
+  size: sizeSchema,
   kind: z.literal('text'),
   text: z.string(),
 });
@@ -247,7 +253,12 @@ const metadataSchema = z.object({
   contributors: z.array(z.string()),
 });
 
-/** Version 2 declares optional additions without defaults. The codec reports unknown keys and defines absence. */
+/**
+ * Version 2 declares optional additions without defaults. The codec reports
+ * unknown keys and defines absence. An element's `accent` is text rather than
+ * an enumerated vocabulary, so a file holding a key from a later release
+ * still reads, and the codec decides which keys it knows.
+ */
 export const saerskrivenYamlV2WireSchema = z.object({
   formatVersion: z.literal(2),
   metadata: metadataSchema,

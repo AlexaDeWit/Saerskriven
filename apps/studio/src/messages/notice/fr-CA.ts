@@ -96,6 +96,7 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
   'op-not-flow': 'L’élément {id} n’est pas un flux.',
   'op-not-trust-boundary':
     'L’élément {id} n’est pas une frontière de confiance.',
+  'op-not-accentable': 'L’élément {id} ne prend pas d’accentuation.',
   'op-empty-name': 'L’élément {id} ne peut pas rester sans nom.',
   'op-element-character':
     'Le texte de l’élément {id} contient un caractère que le modèle n’accepte pas.',
