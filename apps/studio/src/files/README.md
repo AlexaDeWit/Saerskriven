@@ -85,8 +85,8 @@ Which document a write merges onto decides whether what Saerskriven does not
 model survives, so the document a read retained rides in the store beside the
 file's name ([the store](../store/README.md)). Saving in the format a model was
 read from merges onto it. Saving in any other format has nothing to merge onto,
-so the codec projects, which is where a loss report comes from. A read reports
-too: a wire schema drops every key it does not declare, and the retained
+so the codec projects, which is where most of a loss report comes from. A read
+reports too: a wire schema drops every key it does not declare, and the retained
 document has lost them as well, so no later save can say what became of them.
 An open marks each loss it lists as not shown that `keptByWriteBack` says a
 save to the same file keeps, and each report names its subjects from the model it opened or saved. An open

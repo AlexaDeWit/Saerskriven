@@ -152,7 +152,7 @@ export function divergenceDetailText(detail: DivergenceDetail): string {
     case 'cell-reshaped':
       return `what the source held on the ${detail.parameters.shape} cell of this id, which now draws ${kindNouns[detail.parameters.kind].article} ${kindNouns[detail.parameters.kind].noun}`;
     case 'size-raised':
-      return `the size ${detail.parameters.width} by ${detail.parameters.height}, written as ${detail.parameters.writtenWidth} by ${detail.parameters.writtenHeight} to meet Threat Dragon's minimum`;
+      return `the size ${detail.parameters.width} by ${detail.parameters.height}, written as ${detail.parameters.writtenWidth} by ${detail.parameters.writtenHeight} to meet the format's minimum`;
     case 'diagram-name-numbered':
       return `the name, which the format numbers a diagram rather than naming one, written as ${detail.parameters.number}`;
     case 'cell-discarded':

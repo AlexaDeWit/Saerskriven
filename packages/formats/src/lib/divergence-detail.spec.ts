@@ -87,14 +87,14 @@ const samples: readonly (readonly [DivergenceDetail, string])[] = [
         writtenHeight: 10,
       },
     },
-    "the size 5 by 9.99, written as 10 by 10 to meet Threat Dragon's minimum",
+    "the size 5 by 9.99, written as 10 by 10 to meet the format's minimum",
   ],
   [
     {
       code: 'size-raised',
       parameters: { width: 1, height: 60, writtenWidth: 10, writtenHeight: 60 },
     },
-    "the size 1 by 60, written as 10 by 60 to meet Threat Dragon's minimum",
+    "the size 1 by 60, written as 10 by 60 to meet the format's minimum",
   ],
   [
     { code: 'diagram-name-numbered', parameters: { number: 4 } },

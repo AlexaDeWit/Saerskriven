@@ -131,7 +131,7 @@ const noPorts: readonly NeededPort[] = [];
 
 const wholeNumbers = 0;
 
-const leastExtent = 10;
+const leastWrittenExtent = 10;
 
 const openStatus = fromThreatStatus('open');
 
@@ -393,8 +393,8 @@ function nodeParts(
 
 function writtenSize(size: Size): Size {
   return {
-    width: Math.max(size.width, leastExtent),
-    height: Math.max(size.height, leastExtent),
+    width: Math.max(size.width, leastWrittenExtent),
+    height: Math.max(size.height, leastWrittenExtent),
   };
 }
 

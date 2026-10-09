@@ -293,7 +293,7 @@ describe('a size, of which Threat Dragon takes no width or height under 10', () 
         size: { width: 10, height: 10 },
       });
       expect(renderDivergences(merged.divergences)).toBe(
-        'element "cell-1": the size 5 by 9.99, written as 10 by 10 to meet Threat Dragon\'s minimum (no place in the format)',
+        'element "cell-1": the size 5 by 9.99, written as 10 by 10 to meet the format\'s minimum (no place in the format)',
       );
     },
   );
@@ -338,7 +338,7 @@ describe('a size, of which Threat Dragon takes no width or height under 10', () 
       size: { width: 10, height: 60 },
     });
     expect(renderDivergences(merged.divergences)).toBe(
-      'element "cell-1": the size 4 by 60, written as 10 by 60 to meet Threat Dragon\'s minimum (not repeated by the codec)',
+      'element "cell-1": the size 4 by 60, written as 10 by 60 to meet the format\'s minimum (not repeated by the codec)',
     );
   });
 
@@ -349,7 +349,7 @@ describe('a size, of which Threat Dragon takes no width or height under 10', () 
     );
     expect(merged.cell).toMatchObject({ size: { width: 10, height: 60 } });
     expect(renderDivergences(merged.divergences)).toBe(
-      'element "cell-1": the size 4 by 60, written as 10 by 60 to meet Threat Dragon\'s minimum (no place in the format)',
+      'element "cell-1": the size 4 by 60, written as 10 by 60 to meet the format\'s minimum (no place in the format)',
     );
   });
 });

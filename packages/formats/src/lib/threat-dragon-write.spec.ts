@@ -97,6 +97,14 @@ const shrunk = underTen.reduce(
 const isRaisedSize = ({ detail }: Divergence): boolean =>
   detail.code === 'size-raised';
 
+const raisedLine = (
+  id: string,
+  held: string,
+  written: string,
+  reason = 'no place in the format',
+): string =>
+  `element "${id}": the size ${held}, written as ${written} to meet the format's minimum (${reason})`;
+
 const boxesOf = (text: string) =>
   Object.fromEntries(
     (documentOf(text).detail.diagrams[0]?.cells ?? []).flatMap((cell) =>
@@ -268,11 +276,11 @@ describe('projecting elements under the 10 Threat Dragon takes as its least widt
     expect(
       renderDivergences(written.divergences.filter(isRaisedSize)).split('\n'),
     ).toEqual([
-      'element "element-clerk": the size 1 by 80, written as 10 by 80 to meet Threat Dragon\'s minimum (no place in the format)',
-      'element "element-ledger": the size 5 by 9.99, written as 10 by 10 to meet Threat Dragon\'s minimum (no place in the format)',
-      'element "element-vault": the size 160 by 1, written as 160 by 10 to meet Threat Dragon\'s minimum (no place in the format)',
-      'element "element-zone": the size 3 by 3, written as 10 by 10 to meet Threat Dragon\'s minimum (no place in the format)',
-      'element "element-note": the size 2 by 2, written as 10 by 10 to meet Threat Dragon\'s minimum (no place in the format)',
+      raisedLine('element-clerk', '1 by 80', '10 by 80'),
+      raisedLine('element-ledger', '5 by 9.99', '10 by 10'),
+      raisedLine('element-vault', '160 by 1', '160 by 10'),
+      raisedLine('element-zone', '3 by 3', '10 by 10'),
+      raisedLine('element-note', '2 by 2', '10 by 10'),
     ]);
     expect(
       written.divergences.filter((divergence) => !isRaisedSize(divergence)),
@@ -323,7 +331,12 @@ describe('writing back a file whose own cell is under 10 across', () => {
 
   it('reports the size it wrote over, and nothing once the file holds 10', () => {
     expect(renderDivergences(written.divergences)).toBe(
-      'element "cell-small": the size 4 by 60, written as 10 by 60 to meet Threat Dragon\'s minimum (not repeated by the codec)',
+      raisedLine(
+        'cell-small',
+        '4 by 60',
+        '10 by 60',
+        'not repeated by the codec',
+      ),
     );
     const again = threatDragonReading(written.output);
     expect(
