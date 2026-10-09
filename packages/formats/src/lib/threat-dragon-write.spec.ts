@@ -1,7 +1,8 @@
-import type { ModelInput } from '@saerskriven/model';
-import { parsedFixture } from '@saerskriven/model/fixtures';
+import { moveElement, type Model, type ModelInput } from '@saerskriven/model';
+import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
 import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
+import { Either } from 'effect';
 import { renderDivergences } from './divergence.js';
 import { threatDragonJsonSchema } from './corpus.fixtures.js';
 import { threatsOf } from './threat-dragon-document.js';
@@ -21,6 +22,11 @@ const validate = new Ajv({ allowUnionTypes: true }).compile(
   threatDragonJsonSchema,
 );
 
+const validated = (output: string) => ({
+  valid: validate(JSON.parse(output) as unknown),
+  errors: validate.errors,
+});
+
 const documentOf = (text: string): ThreatDragonDocument =>
   threatDragonReading(text).source;
 
@@ -32,6 +38,9 @@ const featureComplete = threatDragonReading(featureCompleteText);
 const richer = parsedFixture(richerThanFormatFixture);
 
 const projected = threatDragonCodec.write(richer);
+
+const movedByHalf = (id: string): Model =>
+  Either.getOrThrow(moveElement(richer, elementId(id), { x: 0.5, y: 0.5 }));
 
 const merged = threatDragonCodec.write(richer, richerThanFormatSource);
 
@@ -101,11 +110,20 @@ describe('projecting a model the format is smaller than', () => {
   });
 
   it('writes a file Threat Dragon validates as one of its own', () => {
-    expect({
-      valid: validate(JSON.parse(projected.output) as unknown),
-      errors: validate.errors,
-    }).toEqual({ valid: true, errors: null });
+    expect(validated(projected.output)).toEqual({ valid: true, errors: null });
   });
+
+  it.each([
+    ['a free flow end', 'element-post'],
+    ['a boundary curve', 'element-perimeter'],
+  ])(
+    'writes one it validates with %s moved half a unit, and reports no more',
+    (_name, id) => {
+      const written = threatDragonCodec.write(movedByHalf(id));
+      expect(validated(written.output)).toEqual({ valid: true, errors: null });
+      expect(written.divergences).toEqual(projected.divergences);
+    },
+  );
 
   it('nests the one threat two elements share under each of them', () => {
     const cells = documentOf(projected.output).detail.diagrams[0]?.cells ?? [];
@@ -227,10 +245,7 @@ describe('merging a model onto the document it is written over', () => {
   });
 
   it('writes a file Threat Dragon validates as one of its own', () => {
-    expect({
-      valid: validate(JSON.parse(merged.output) as unknown),
-      errors: validate.errors,
-    }).toEqual({ valid: true, errors: null });
+    expect(validated(merged.output)).toEqual({ valid: true, errors: null });
   });
 });
 

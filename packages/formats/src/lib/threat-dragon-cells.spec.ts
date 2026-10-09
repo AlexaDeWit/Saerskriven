@@ -1,4 +1,4 @@
-import { elementSchema, type Element } from '@saerskriven/model';
+import { elementSchema, type Element, type Point } from '@saerskriven/model';
 import type { ThreatDragonCell } from '@saerskriven/wire-threat-dragon';
 import { renderDivergences } from './divergence.js';
 import { mergeCell, withNeededPorts } from './threat-dragon-cells.js';
@@ -155,6 +155,84 @@ describe('drawing an element over the cell the source document holds', () => {
     expect(renderDivergences(merged.divergences)).toBe(
       'element "cell-1": what the source held on the store cell of this id, which now draws an actor (removed by an edit)',
     );
+  });
+});
+
+const freeFlow = (
+  source: Point,
+  target: Point,
+  waypoints: readonly Point[] = [],
+): Element =>
+  elementOf({
+    kind: 'flow',
+    id: 'cell-1',
+    ...named,
+    source: { kind: 'free', position: source },
+    target: { kind: 'free', position: target },
+    waypoints,
+    bidirectional: false,
+  });
+
+describe('a point end, which Threat Dragon types as two whole numbers', () => {
+  it('writes a free flow end at the nearest whole number, and a bend as the model holds it', () => {
+    const merged = mergeCell(
+      freeFlow({ x: 880.5, y: -0.4 }, { x: -12.6, y: 7.2 }, [
+        { x: 1.5, y: 2.25 },
+      ]),
+      undefined,
+      [],
+      0,
+      new Map(),
+    );
+    expect(merged.cell).toMatchObject({
+      source: { x: 881, y: 0 },
+      target: { x: -13, y: 7 },
+      vertices: [{ x: 1.5, y: 2.25 }],
+    });
+    expect(merged.divergences).toEqual([]);
+  });
+
+  it('writes each end of a boundary curve at the nearest whole number, and its middle as the model holds it', () => {
+    const merged = mergeCell(
+      elementOf({
+        kind: 'trust-boundary',
+        id: 'cell-1',
+        ...named,
+        shape: {
+          kind: 'curve',
+          waypoints: [
+            { x: 0.5, y: -0.4 },
+            { x: 5.5, y: 5.25 },
+            { x: 8.6, y: 0.2 },
+          ],
+        },
+      }),
+      undefined,
+      [],
+      0,
+      new Map(),
+    );
+    expect(merged.cell).toMatchObject({
+      source: { x: 1, y: 0 },
+      vertices: [{ x: 5.5, y: 5.25 }],
+      target: { x: 9, y: 0 },
+    });
+    expect(merged.divergences).toEqual([]);
+  });
+
+  it('rounds an end the source cell itself holds between two whole numbers', () => {
+    const drawn = freeFlow({ x: 880.5, y: -60 }, { x: 10, y: 10 });
+    const held: ThreatDragonCell = {
+      id: 'cell-1',
+      shape: 'flow',
+      source: { x: 880.5, y: -60 },
+      target: { x: 10, y: 10 },
+      data: { type: 'tm.Flow', name: 'Ledger' },
+    };
+    expect(cellOf(drawn, held)).toMatchObject({
+      source: { x: 881, y: -60 },
+      target: { x: 10, y: 10 },
+    });
   });
 });
 

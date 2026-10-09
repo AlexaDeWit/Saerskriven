@@ -1,18 +1,19 @@
-import type {
-  Actor,
-  BoxBoundaryShape,
-  CurveBoundaryShape,
-  Element,
-  ElementId,
-  Flow,
-  FlowEndpoint,
-  Point,
-  Process,
-  Side,
-  Size,
-  Store,
-  TextElement,
-  TrustBoundary,
+import {
+  storedNumber,
+  type Actor,
+  type BoxBoundaryShape,
+  type CurveBoundaryShape,
+  type Element,
+  type ElementId,
+  type Flow,
+  type FlowEndpoint,
+  type Point,
+  type Process,
+  type Side,
+  type Size,
+  type Store,
+  type TextElement,
+  type TrustBoundary,
 } from '@saerskriven/model';
 import type {
   ThreatDragonCell,
@@ -342,17 +343,18 @@ function curvePoints(
   shape: CurveBoundaryShape,
 ): { source: Point; target: Point; vertices: Point[] | undefined } {
   const waypoints = shape.waypoints;
-  const drawn =
-    from === undefined
-      ? undefined
-      : [from.source, ...(from.vertices ?? []), from.target];
-  return from !== undefined && equivalent(drawn, waypoints)
-    ? { source: from.source, target: from.target, vertices: from.vertices }
-    : {
-        source: { ...waypoints[0] },
-        target: { ...waypoints[waypoints.length - 1] },
-        vertices: waypoints.slice(1, -1),
-      };
+  const unmoved =
+    from !== undefined &&
+    equivalent([from.source, ...(from.vertices ?? []), from.target], waypoints);
+  return {
+    source: wholePoint(waypoints[0]),
+    target: wholePoint(waypoints[waypoints.length - 1]),
+    vertices: unmoved ? from.vertices : waypoints.slice(1, -1),
+  };
+}
+
+function wholePoint(point: Point): Point {
+  return { x: storedNumber(point.x, 0), y: storedNumber(point.y, 0) };
 }
 
 function zIndexOf(
@@ -416,15 +418,7 @@ function preservedEndpoint(
   ports: PortSides,
 ): ProjectedEndpoint {
   if (wanted.kind === 'free') {
-    return {
-      endpoint:
-        from !== undefined &&
-        !isAnchored(from) &&
-        equivalent(from, wanted.position)
-          ? from
-          : { ...wanted.position },
-      ports: noPorts,
-    };
+    return { endpoint: wholePoint(wanted.position), ports: noPorts };
   }
   if (
     from !== undefined &&
