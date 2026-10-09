@@ -69,6 +69,7 @@ describe('a root URI as a file on this machine', () => {
   it.each([
     ['a file URI naming another machine', 'file://fileserver/srv/models'],
     ['a URI of another scheme', 'https://localhost/srv/models'],
+    ['a URI of another scheme naming no host', 'vscode-vfs:///srv/models'],
     ['a path that is no URI', '/srv/models'],
   ])('passes over %s', (_what, uri) => {
     expect(localFileUrl(uri)).toBeUndefined();
