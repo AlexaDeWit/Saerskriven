@@ -1,5 +1,5 @@
 import {
-  storedNumber,
+  storedPoint,
   type Actor,
   type BoxBoundaryShape,
   type CurveBoundaryShape,
@@ -128,6 +128,8 @@ type ProjectedEndpoint = {
 type NodePorts = NonNullable<ThreatDragonNode['ports']>;
 
 const noPorts: readonly NeededPort[] = [];
+
+const wholeNumbers = 0;
 
 const openStatus = fromThreatStatus('open');
 
@@ -347,14 +349,10 @@ function curvePoints(
     from !== undefined &&
     equivalent([from.source, ...(from.vertices ?? []), from.target], waypoints);
   return {
-    source: wholePoint(waypoints[0]),
-    target: wholePoint(waypoints[waypoints.length - 1]),
+    source: storedPoint(waypoints[0], wholeNumbers),
+    target: storedPoint(waypoints[waypoints.length - 1], wholeNumbers),
     vertices: unmoved ? from.vertices : waypoints.slice(1, -1),
   };
-}
-
-function wholePoint(point: Point): Point {
-  return { x: storedNumber(point.x, 0), y: storedNumber(point.y, 0) };
 }
 
 function zIndexOf(
@@ -418,7 +416,10 @@ function preservedEndpoint(
   ports: PortSides,
 ): ProjectedEndpoint {
   if (wanted.kind === 'free') {
-    return { endpoint: wholePoint(wanted.position), ports: noPorts };
+    return {
+      endpoint: storedPoint(wanted.position, wholeNumbers),
+      ports: noPorts,
+    };
   }
   if (
     from !== undefined &&

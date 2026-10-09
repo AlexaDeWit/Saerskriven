@@ -10,6 +10,7 @@ export {
   decimalsSchema,
   fixedNumber,
   storedNumber,
+  storedPoint,
   type Decimals,
 } from './lib/decimals.js';
 export * from './lib/elements.js';

@@ -20,6 +20,14 @@ const store = elementOf({ kind: 'store', id: 'cell-1', ...named, ...box });
 const cellOf = (element: Element, held?: ThreatDragonCell): ThreatDragonCell =>
   mergeCell(element, held, [], 0, new Map()).cell;
 
+const curveThrough = (waypoints: readonly Point[]): Element =>
+  elementOf({
+    kind: 'trust-boundary',
+    id: 'cell-1',
+    ...named,
+    shape: { kind: 'curve', waypoints },
+  });
+
 describe('drawing an element the source document holds no cell for', () => {
   it.each([
     ['actor', 'actor', 'tm.Actor'],
@@ -66,19 +74,11 @@ describe('drawing an element the source document holds no cell for', () => {
   it('draws a boundary curve through its ends and its middle', () => {
     expect(
       cellOf(
-        elementOf({
-          kind: 'trust-boundary',
-          id: 'cell-1',
-          ...named,
-          shape: {
-            kind: 'curve',
-            waypoints: [
-              { x: 0, y: 0 },
-              { x: 5, y: 5 },
-              { x: 9, y: 0 },
-            ],
-          },
-        }),
+        curveThrough([
+          { x: 0, y: 0 },
+          { x: 5, y: 5 },
+          { x: 9, y: 0 },
+        ]),
       ),
     ).toMatchObject({
       shape: 'trust-boundary-curve',
@@ -176,7 +176,7 @@ const freeFlow = (
 describe('a point end, which Threat Dragon types as two whole numbers', () => {
   it('writes a free flow end at the nearest whole number, and a bend as the model holds it', () => {
     const merged = mergeCell(
-      freeFlow({ x: 880.5, y: -0.4 }, { x: -12.6, y: 7.2 }, [
+      freeFlow({ x: 880.5, y: -0.4 }, { x: -12.5, y: 7.2 }, [
         { x: 1.5, y: 2.25 },
       ]),
       undefined,
@@ -194,19 +194,11 @@ describe('a point end, which Threat Dragon types as two whole numbers', () => {
 
   it('writes each end of a boundary curve at the nearest whole number, and its middle as the model holds it', () => {
     const merged = mergeCell(
-      elementOf({
-        kind: 'trust-boundary',
-        id: 'cell-1',
-        ...named,
-        shape: {
-          kind: 'curve',
-          waypoints: [
-            { x: 0.5, y: -0.4 },
-            { x: 5.5, y: 5.25 },
-            { x: 8.6, y: 0.2 },
-          ],
-        },
-      }),
+      curveThrough([
+        { x: 0.5, y: -0.4 },
+        { x: 5.5, y: 5.25 },
+        { x: 8.6, y: 0.2 },
+      ]),
       undefined,
       [],
       0,
@@ -232,6 +224,27 @@ describe('a point end, which Threat Dragon types as two whole numbers', () => {
     expect(cellOf(drawn, held)).toMatchObject({
       source: { x: 881, y: -60 },
       target: { x: 10, y: 10 },
+    });
+  });
+
+  it('rounds each end of a curve the source cell itself holds between two whole numbers, and leaves its middle', () => {
+    const held: ThreatDragonCell = {
+      id: 'cell-1',
+      shape: 'trust-boundary-curve',
+      source: { x: 0.5, y: 300 },
+      vertices: [{ x: 200.25, y: 340.5 }],
+      target: { x: 400, y: -299.5 },
+      data: { type: 'tm.Boundary', name: 'Ledger' },
+    };
+    const drawn = curveThrough([
+      { x: 0.5, y: 300 },
+      { x: 200.25, y: 340.5 },
+      { x: 400, y: -299.5 },
+    ]);
+    expect(cellOf(drawn, held)).toMatchObject({
+      source: { x: 1, y: 300 },
+      vertices: [{ x: 200.25, y: 340.5 }],
+      target: { x: 400, y: -300 },
     });
   });
 });

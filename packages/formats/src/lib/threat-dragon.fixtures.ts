@@ -880,9 +880,9 @@ export const unmodelledFixture: ThreatDragonDocument = {
  * Dragon ships, a note carrying a name beside its text, an out-of-scope
  * trust boundary, a diagram named rather than numbered, a titled mitigation
  * record, which the format's one text per threat narrows, and an assumption
- * record the format keeps none of. Every extent is 10 or more and every
- * coordinate is whole, which is what Threat Dragon's own JSON Schema demands
- * of a diagram it will open.
+ * record the format keeps none of. Every extent is 10 or more, and the free
+ * flow end and each end of the boundary curve are whole, which is what Threat
+ * Dragon's own JSON Schema demands of a diagram it will open.
  */
 export const richerThanFormatFixture: ModelInput = {
   metadata: {
