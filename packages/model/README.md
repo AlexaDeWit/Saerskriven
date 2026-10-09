@@ -92,9 +92,9 @@ for geometry given as it is stored, so they keep a stored number the count
 would round, where `moveElement` by a zero offset and `resizeElement` to the
 size held round it. The model holds no count of its own: the caller names one.
 `fixedNumber` writes a number at a count of decimals, `storedNumber` rounds
-one and `decimalsOf` counts the decimals one is written with, which is the
-count that stores it unchanged. The canvas package's `svgNumber` writes
-through the first.
+one, `storedPoint` rounds both coordinates of a point, and `decimalsOf` counts
+the decimals a number is written with, which is the count that stores it
+unchanged. The canvas package's `svgNumber` writes through the first.
 
 A diagram's threats are the ones referencing an element drawn on it, which
 `threatsOnDiagrams` reads for one diagram or several. A threat attached to no

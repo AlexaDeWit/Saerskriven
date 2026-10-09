@@ -42,9 +42,11 @@ projects and keeps none, and no codec keeps an `undeclared` key.
 ## Divergences
 
 A divergence is a place a file and the model do not correspond exactly, or a
-written file and the source it was merged onto. Reads and writes return one
-list of them, and an empty list is the aligned case. The subjects, the reasons
-and the terminal escaping of `renderDivergences` are in
+written file and the source it was merged onto. Coordinates are compared at
+the precision the format holds, so a coordinate a write rounds to fit the
+format is not a divergence. Reads and writes return one list of them, and an
+empty list is the aligned case. The subjects, the reasons and the terminal
+escaping of `renderDivergences` are in
 [`divergence.ts`](src/lib/divergence.ts).
 
 An entry names its subject, its reason and a `detail`: a code from a closed

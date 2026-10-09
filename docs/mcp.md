@@ -219,7 +219,9 @@ process killed between the two, or a removal the system refuses, leaves a
 it is safe.
 
 What the format cannot hold comes back in the result's divergences rather than
-as a refusal. A Threat Dragon file keeps no assumption and one mitigation text
+as a refusal,
+[a rounded coordinate aside](../packages/formats/README.md#divergences). A
+Threat Dragon file keeps no assumption and one mitigation text
 per threat, so a write to one reports every assumption, and every mitigation
 status, title, merge of several records into one text, mitigation with neither
 title nor text, or record shared by several threats or linked to none, that the

@@ -1,18 +1,19 @@
-import type {
-  Actor,
-  BoxBoundaryShape,
-  CurveBoundaryShape,
-  Element,
-  ElementId,
-  Flow,
-  FlowEndpoint,
-  Point,
-  Process,
-  Side,
-  Size,
-  Store,
-  TextElement,
-  TrustBoundary,
+import {
+  storedPoint,
+  type Actor,
+  type BoxBoundaryShape,
+  type CurveBoundaryShape,
+  type Element,
+  type ElementId,
+  type Flow,
+  type FlowEndpoint,
+  type Point,
+  type Process,
+  type Side,
+  type Size,
+  type Store,
+  type TextElement,
+  type TrustBoundary,
 } from '@saerskriven/model';
 import type {
   ThreatDragonCell,
@@ -127,6 +128,8 @@ type ProjectedEndpoint = {
 type NodePorts = NonNullable<ThreatDragonNode['ports']>;
 
 const noPorts: readonly NeededPort[] = [];
+
+const wholeNumbers = 0;
 
 const openStatus = fromThreatStatus('open');
 
@@ -342,17 +345,14 @@ function curvePoints(
   shape: CurveBoundaryShape,
 ): { source: Point; target: Point; vertices: Point[] | undefined } {
   const waypoints = shape.waypoints;
-  const drawn =
-    from === undefined
-      ? undefined
-      : [from.source, ...(from.vertices ?? []), from.target];
-  return from !== undefined && equivalent(drawn, waypoints)
-    ? { source: from.source, target: from.target, vertices: from.vertices }
-    : {
-        source: { ...waypoints[0] },
-        target: { ...waypoints[waypoints.length - 1] },
-        vertices: waypoints.slice(1, -1),
-      };
+  const unmoved =
+    from !== undefined &&
+    equivalent([from.source, ...(from.vertices ?? []), from.target], waypoints);
+  return {
+    source: storedPoint(waypoints[0], wholeNumbers),
+    target: storedPoint(waypoints[waypoints.length - 1], wholeNumbers),
+    vertices: unmoved ? from.vertices : waypoints.slice(1, -1),
+  };
 }
 
 function zIndexOf(
@@ -417,12 +417,7 @@ function preservedEndpoint(
 ): ProjectedEndpoint {
   if (wanted.kind === 'free') {
     return {
-      endpoint:
-        from !== undefined &&
-        !isAnchored(from) &&
-        equivalent(from, wanted.position)
-          ? from
-          : { ...wanted.position },
+      endpoint: storedPoint(wanted.position, wholeNumbers),
       ports: noPorts,
     };
   }
