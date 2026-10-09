@@ -51,6 +51,8 @@ describe('id schemas', () => {
 });
 
 describe('id generators', () => {
+  const mintedShape = /^[a-df-hjkmnp-t][0-9a-hjkmnp-tv-z]{7}$/;
+
   it('produce ids their schemas accept', () => {
     expect(elementIdSchema.safeParse(generateElementId()).success).toBe(true);
     expect(diagramIdSchema.safeParse(generateDiagramId()).success).toBe(true);
@@ -61,6 +63,18 @@ describe('id generators', () => {
     expect(assumptionIdSchema.safeParse(generateAssumptionId()).success).toBe(
       true,
     );
+  });
+
+  it.each([
+    ['element', generateElementId],
+    ['diagram', generateDiagramId],
+    ['threat', generateThreatId],
+    ['mitigation', generateMitigationId],
+    ['assumption', generateAssumptionId],
+  ])('mint %s ids of the 8-character shape', (_kind, generate) => {
+    for (let draw = 0; draw < 50; draw += 1) {
+      expect(generate()).toMatch(mintedShape);
+    }
   });
 });
 

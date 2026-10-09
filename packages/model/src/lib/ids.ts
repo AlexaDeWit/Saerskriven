@@ -64,34 +64,47 @@ export const assumptionIdSchema = acceptedTextSchema
 /** Branded assumption id. */
 export type AssumptionId = z.infer<typeof assumptionIdSchema>;
 
-const fresh = <Schema extends z.ZodType>(schema: Schema): z.infer<Schema> =>
-  schema.parse(crypto.randomUUID());
+const leadingAlphabet = 'abcdfghjkmnpqrst';
+const trailingAlphabet = '0123456789abcdefghjkmnpqrstvwxyz';
+
+const fresh = <Schema extends z.ZodType>(schema: Schema): z.infer<Schema> => {
+  const [lead, ...rest] = crypto.getRandomValues(new Uint8Array(8));
+  const characters = [
+    leadingAlphabet.charAt(lead & (leadingAlphabet.length - 1)),
+    ...rest.map((byte) =>
+      trailingAlphabet.charAt(byte & (trailingAlphabet.length - 1)),
+    ),
+  ];
+  return schema.parse(characters.join(''));
+};
 
 /**
- * Generates a fresh element id as a UUID. Parsing accepts any id the schema
- * does. Requires a secure context:
- * crypto.randomUUID is undefined on plain-http browser pages.
+ * Generates a fresh element id: 8 lowercase characters, 39 random bits,
+ * matching `^[a-df-hjkmnp-t][0-9a-hjkmnp-tv-z]{7}$`. The first character is a
+ * letter other than `e`, so a plain YAML scalar is never read back as a
+ * number (`1e5`). `i`, `l`, `o` and `u` are left out of the alphabet as
+ * look-alikes. The other generators share this shape.
  */
 export function generateElementId(): ElementId {
   return fresh(elementIdSchema);
 }
 
-/** Generates a fresh diagram id as a UUID, on the terms of {@link generateElementId}. */
+/** Generates a fresh diagram id, in the shape of {@link generateElementId}. */
 export function generateDiagramId(): DiagramId {
   return fresh(diagramIdSchema);
 }
 
-/** Generates a fresh threat id as a UUID, on the terms of {@link generateElementId}. */
+/** Generates a fresh threat id, in the shape of {@link generateElementId}. */
 export function generateThreatId(): ThreatId {
   return fresh(threatIdSchema);
 }
 
-/** Generates a fresh mitigation id as a UUID, on the terms of {@link generateElementId}. */
+/** Generates a fresh mitigation id, in the shape of {@link generateElementId}. */
 export function generateMitigationId(): MitigationId {
   return fresh(mitigationIdSchema);
 }
 
-/** Generates a fresh assumption id as a UUID, on the terms of {@link generateElementId}. */
+/** Generates a fresh assumption id, in the shape of {@link generateElementId}. */
 export function generateAssumptionId(): AssumptionId {
   return fresh(assumptionIdSchema);
 }

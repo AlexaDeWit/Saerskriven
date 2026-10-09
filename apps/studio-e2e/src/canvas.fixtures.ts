@@ -169,24 +169,29 @@ export const centreOf = async (target: Locator): Promise<Point> => {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 };
 
-/** Clicks an SVG label at its page-side centre instead of the misplaced WebKit driver box. */
-export const clickSvgText = async (
-  target: Locator,
-  clickCount = 1,
-): Promise<void> => {
-  await expect(target).toBeVisible();
-  await canvasSettled(target.page());
-  const at = await centreOf(target);
-  expect(await reachesAt(target, at), 'the SVG text is covered').toBe(true);
-  await target.page().mouse.click(at.x, at.y, { clickCount });
-};
-
 /** Whether the topmost element at a screen point is `target` or inside it. */
 export const reachesAt = (target: Locator, at: Point): Promise<boolean> =>
   target.evaluate(
     (node, point) => node.contains(document.elementFromPoint(point.x, point.y)),
     at,
   );
+
+/** Clicks an SVG label on its first line, because a label wrapped onto two lines has a gap at its centre. The point comes from the label's page rect, not the misplaced WebKit driver box. */
+export const clickSvgText = async (
+  target: Locator,
+  clickCount = 1,
+): Promise<void> => {
+  await expect(target).toBeVisible();
+  await canvasSettled(target.page());
+  const label = await screenBoxOf(target);
+  const lines = Math.max(await target.locator('tspan').count(), 1);
+  const at = {
+    x: label.x + label.width / 2,
+    y: label.y + label.height / (2 * lines),
+  };
+  expect(await reachesAt(target, at), 'the SVG text is covered').toBe(true);
+  await target.page().mouse.click(at.x, at.y, { clickCount });
+};
 
 /** Finds an uncovered click position relative to the target. Avoids the race between Playwright scrolling and React Flow resetting scroll. */
 export const clearPositionOn = async (target: Locator): Promise<Point> => {
