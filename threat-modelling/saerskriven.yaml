@@ -377,7 +377,7 @@ diagrams:
         name: Agent and its harness
         description: "An agent reaching Saerskriven through the MCP server, issue #46. Its context holds whatever it has read, model files among that."
         outOfScope: true
-        reasonOutOfScope: The harness that runs the agent belongs to whoever is running it. Saerskriven trusts nothing it sends and models only its own side of the connection.
+        reasonOutOfScope: The harness that runs the agent belongs to whoever is running it. Saerskriven trusts nothing it sends but the list of directories a stdio server started without `--root` asks it for, and models only its own side of the connection.
         position:
           x: 30
           y: 190
