@@ -475,6 +475,7 @@ describe('DiagramCanvas', () => {
       'right',
       'ArrowLeft',
     ],
+    ['that would make an actor shorter than it is placed', 'top', 'ArrowDown'],
   ] as const)(
     'moves, resizes and says nothing, and records no undo step, for an arrow key on a resize control %s',
     (_, from, key) => {
@@ -665,11 +666,11 @@ describe('DiagramCanvas', () => {
     render(<DiagramCanvas />);
     const before = readerBox();
 
-    fireEvent.keyDown(resizeControl('top'), { key: 'ArrowDown' });
+    fireEvent.keyDown(resizeControl('left'), { key: 'ArrowRight' });
 
     expect(readerBox()).toEqual({
-      position: { x: 0, y: 5 },
-      size: { width: 120, height: 55 },
+      position: { x: 5, y: 0 },
+      size: { width: 115, height: 60 },
     });
     act(() => {
       dispatch(Action.Undo());

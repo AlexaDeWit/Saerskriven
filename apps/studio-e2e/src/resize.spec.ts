@@ -5,12 +5,22 @@ import {
   type Locator,
   type Page,
 } from '@playwright/test';
-import { boxAt, curveBoundary, modelWith } from '@saerskriven/model/fixtures';
+import { minimumNodeExtent } from '@saerskriven/canvas';
+import { strokeWidths } from '@saerskriven/canvas/tokens';
+import { saerskrivenYamlCodec } from '@saerskriven/formats';
+import {
+  boxAt,
+  curveBoundary,
+  elementIn,
+  modelWith,
+} from '@saerskriven/model/fixtures';
 import {
   type Box,
   boxOf,
+  canvasSettled,
   centreOf,
   dragBy,
+  elementNodes,
   onScreen,
   type Point,
   pointHandles,
@@ -26,12 +36,18 @@ import {
   viewportZoom,
 } from './canvas.fixtures.js';
 import {
+  expandPane,
+  nodeNamed,
+  openFallback,
   openModelDocument,
   openPlaceholder,
+  openText,
   placeholder,
   runFromMenu,
+  savedModel,
   selectByKeyboard,
   selectNode,
+  threatPanel,
   toolButton,
   undoOffered,
 } from './studio.fixtures.js';
@@ -77,6 +93,85 @@ const shrinkingCases = [
   ['bottom', { x: 0, y: -pastMinimumInsideViewport }, 'height'],
   ['left', { x: pastMinimumInsideViewport, y: 0 }, 'width'],
 ] as const;
+
+const floorSize = { width: minimumNodeExtent, height: minimumNodeExtent };
+
+const floorSpan = minimumNodeExtent - strokeWidths.outline * 2;
+
+const boxesAtTheFloor = [
+  ['an actor', boxAt('el-floor', 0, 0, 'actor', floorSize, 'Floor')],
+  ['a process', boxAt('el-floor', 0, 0, 'process', floorSize, 'Floor')],
+  ['a store', boxAt('el-floor', 0, 0, 'store', floorSize, 'Floor')],
+  [
+    'a note',
+    { ...boxAt('el-floor', 0, 0, 'text', floorSize, 'Floor'), text: 'Floor' },
+  ],
+  [
+    'a boundary box',
+    {
+      ...curveBoundary('el-floor', [], 'Floor'),
+      shape: { kind: 'box', position: { x: 0, y: 0 }, size: floorSize },
+    },
+  ],
+] as const;
+
+const archAtTheFloor = curveBoundary(
+  'el-floor',
+  [
+    { x: 0, y: floorSpan },
+    { x: floorSpan / 2, y: 0 },
+    { x: floorSpan, y: floorSpan },
+  ],
+  'Floor',
+);
+
+const chip = {
+  drawn: /^Chip, actor/u,
+  size: { width: 20, height: 20 },
+} as const;
+
+const chipModel = modelWith({
+  elements: [boxAt('el-chip', 0, 0, 'actor', chip.size, 'Chip')],
+});
+
+const selectAloneAtFullZoom = async (
+  page: Page,
+  element: unknown,
+): Promise<Locator> => {
+  await openModelDocument(page, modelWith({ elements: [element] }));
+  await page.getByRole('button', { name: 'Reset zoom to 100%' }).click();
+  await canvasSettled(page);
+  const node = elementNodes(page);
+  await node.focus();
+  await page.keyboard.press('Enter');
+  await expect(node).toHaveClass(/selected/u);
+  await expandPane(page);
+  await threatPanel(page)
+    .getByRole('button', { name: 'Close threats', exact: true })
+    .click();
+  await expect(threatPanel(page)).toHaveCount(0);
+  await canvasSettled(page);
+  expect(await viewportZoom(page)).toBe(1);
+  await expect(node).toHaveClass(/selected/u);
+  return node;
+};
+
+const pressInputs = ['mouse', 'touch'] as const;
+
+const pressedStillAtCentre = async (
+  page: Page,
+  control: Locator,
+  session: CDPSession | undefined,
+): Promise<void> => {
+  if (session === undefined) {
+    await pressOn(page, control);
+    await page.mouse.up();
+  } else {
+    const at = await centreOf(control);
+    await touchDrag(session, at, at);
+  }
+  await expect(control).toBeFocused();
+};
 
 const sideControl = (node: Locator, side: string, of = 'Actor'): Locator =>
   node.getByRole('button', {
@@ -167,17 +262,19 @@ test('the glyph follows the selection bounds during a resize drag', async ({
 });
 
 test('each side control stops at the minimum size', async ({ page }) => {
-  await openPlaceholder(page);
-  const node = await selectNode(page, placeholder.actor);
+  await openModelDocument(page, kioskModel);
+  const node = await selectNode(page, kiosk.drawn);
   const before = await boxOf(node);
 
   for (const [side, offset, changed] of shrinkingCases) {
     await test.step(side, async () => {
-      const control = sideControl(node, side);
+      const control = sideControl(node, side, kiosk.name);
       await expect(control).toBeVisible();
 
       await dragBy(page, control, offset);
-      await expect.poll(async () => (await boxOf(node))[changed]).toBe(10);
+      await expect
+        .poll(async () => (await boxOf(node))[changed])
+        .toBe(minimumNodeExtent);
 
       expectFixedOpposite(side, before, await boxOf(node));
 
@@ -195,13 +292,123 @@ test('a no-op resize at the minimum leaves later geometry settled', async ({
   const right = sideControl(node, 'right');
 
   await dragBy(page, right, { x: -400, y: 0 });
-  await expect.poll(async () => (await boxOf(node)).width).toBe(10);
+  await expect
+    .poll(async () => (await boxOf(node)).width)
+    .toBe(minimumNodeExtent);
   await pressOn(page, right);
   await page.mouse.up();
 
   await runFromMenu(page, 'Undo');
-  await expect.poll(async () => (await boxOf(node)).width).toBeGreaterThan(10);
+  await expect
+    .poll(async () => (await boxOf(node)).width)
+    .toBeGreaterThan(minimumNodeExtent);
   expect(await glyphWidthOf(node)).toBe((await boxOf(node)).width);
+});
+
+for (const [kind, element] of boxesAtTheFloor) {
+  for (const input of pressInputs) {
+    test(
+      `at the floor every resize control of ${kind} takes a ${input} press at its centre`,
+      { tag: '@phone' },
+      async ({ page }) => {
+        const session =
+          input === 'touch' ? await touchSession(page) : undefined;
+        const node = await selectAloneAtFullZoom(page, element);
+        expect(await boxOf(node)).toMatchObject(floorSize);
+        const controls = node.locator('.react-flow__resize-control > button');
+        await expect(controls).toHaveCount(8);
+
+        for (const control of await controls.all()) {
+          await pressedStillAtCentre(page, control, session);
+        }
+
+        expect(await boxOf(node)).toMatchObject(floorSize);
+        await session?.detach();
+      },
+    );
+  }
+}
+
+for (const input of pressInputs) {
+  test(
+    `at the floor each corner handle of a curve boundary takes a ${input} press at its centre`,
+    { tag: '@phone' },
+    async ({ page }) => {
+      const session = input === 'touch' ? await touchSession(page) : undefined;
+      const curve = await selectAloneAtFullZoom(page, archAtTheFloor);
+      expect(await boxOf(curve)).toMatchObject(floorSize);
+      const corners = curve.locator(
+        '.react-flow__resize-control.handle > button',
+      );
+      await expect(corners).toHaveCount(4);
+
+      for (const corner of await corners.all()) {
+        await pressedStillAtCentre(page, corner, session);
+      }
+
+      expect(await boxOf(curve)).toMatchObject(floorSize);
+      await session?.detach();
+    },
+  );
+}
+
+test('a curve boundary stops at the floor by pointer and by arrow key', async ({
+  page,
+}) => {
+  await openModelDocument(page, perimeterModel);
+  const curve = await selectByKeyboard(page, perimeter.drawn);
+  const right = sideControl(curve, 'right', perimeter.name);
+  await onScreen(right);
+  const widthOf = async (): Promise<number> => (await boxOf(curve)).width;
+
+  await dragBy(page, right, { x: -pastMinimumInsideViewport, y: 0 });
+  await expect.poll(widthOf).toBe(minimumNodeExtent);
+
+  await right.focus();
+  await right.press('ArrowLeft');
+  await right.press('ArrowRight');
+  await expect.poll(widthOf).toBe(minimumNodeExtent + 5);
+  await right.press('Shift+ArrowLeft');
+  await expect.poll(widthOf).toBe(minimumNodeExtent);
+});
+
+test('an element under the floor in a file keeps its size through a save and an edit, and the controls only grow it', async ({
+  page,
+}) => {
+  await openFallback(page);
+  await openText(
+    page,
+    'chip.yaml',
+    saerskrivenYamlCodec.write(chipModel).output,
+  );
+  await expect(nodeNamed(page, chip.drawn)).toBeVisible();
+  await page.getByRole('button', { name: 'Reset zoom to 100%' }).click();
+  const node = await selectByKeyboard(page, chip.drawn);
+  const read = await boxOf(node);
+  expect(read).toMatchObject(chip.size);
+  const right = sideControl(node, 'right', 'Chip');
+  const corner = sideControl(node, 'bottom right corner', 'Chip');
+
+  await right.focus();
+  await right.press('ArrowLeft');
+  await dragBy(page, corner.locator('..'), { x: -15, y: -15 });
+  await expect(corner).toBeFocused();
+  expect(await boxOf(node)).toEqual(read);
+  expect(await undoOffered(page)).toBe(false);
+
+  await node.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(async () => (await boxOf(node)).x).toBe(read.x + 5);
+  expect(elementIn(await savedModel(page), 'el-chip')).toMatchObject({
+    position: { x: read.x + 5, y: read.y },
+    size: chip.size,
+  });
+
+  await right.focus();
+  await right.press('ArrowRight');
+  await expect
+    .poll(async () => (await boxOf(node)).width)
+    .toBe(chip.size.width + 5);
 });
 
 test('a press on a control without movement records no edit at a fractional size', async ({

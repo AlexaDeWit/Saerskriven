@@ -19,7 +19,14 @@ export const resizeControlPositions = [
 export type ResizeControlPosition = (typeof resizeControlPositions)[number];
 
 /** The extent at which resize controls stop shrinking a larger node. */
-export const minimumNodeExtent = 10;
+export const minimumNodeExtent = 60;
+
+/**
+ * The extent at which {@link scaledCurvePoints} stops shrinking a larger
+ * boundary curve. A typed size reaches it, since the resize controls stop at
+ * {@link minimumNodeExtent} first.
+ */
+export const minimumCurveExtent = 10;
 
 export const keyboardResizeStep = 5;
 
@@ -161,9 +168,10 @@ export function nodeAtSize(node: CanvasNode, size: Size): CanvasNode {
 }
 
 /**
- * Scales points into `box`, allowing for the boundary stroke and
- * {@link minimumResizeExtent}. Keeps coordinates exact on a fixed side.
- * An axis the points do not span only moves.
+ * Scales points into `box`, allowing for the boundary stroke. An axis shrinks
+ * to {@link minimumCurveExtent} and no further, and one already under it keeps
+ * its extent. Keeps coordinates exact on a fixed side. An axis the points do
+ * not span only moves.
  */
 export function scaledCurvePoints(
   points: readonly Point[],
@@ -199,7 +207,8 @@ function scaledAxis(
   if (keepsStart && keepsEnd) {
     return (value) => value;
   }
-  const extent = Math.max(boxExtent, minimumResizeExtent(current)) - margin * 2;
+  const extent =
+    Math.max(boxExtent, Math.min(current, minimumCurveExtent)) - margin * 2;
   const factor = span === 0 ? 1 : extent / span;
   if (keepsStart) {
     return (value) => low + (value - low) * factor;

@@ -76,12 +76,12 @@ describe('box placement gestures', () => {
     });
 
     act(() => {
-      result.current.pointerMove(primaryPointer({ x: 180, y: 140 }, onPane));
+      result.current.pointerMove(primaryPointer({ x: 180, y: 50 }, onPane));
     });
     const shown = boxPreview(result.current);
     expect(shown).toMatchObject({
-      position: { x: 101, y: 81 },
-      size: { width: 78, height: 58 },
+      position: { x: 101, y: 19 },
+      size: { width: 78, height: 60 },
     });
 
     act(() => {
@@ -204,12 +204,12 @@ describe('box placement gestures', () => {
         primaryPointer({ x: 300, y: 280 }, { ...onPane, pointerId: 2 }),
       );
       result.current.pointerMove(
-        primaryPointer({ x: 180, y: 140 }, { ...onPane, pointerId: 1 }),
+        primaryPointer({ x: 180, y: 170 }, { ...onPane, pointerId: 1 }),
       );
     });
     expect(boxPreview(result.current)).toMatchObject({
       position: { x: 101, y: 81 },
-      size: { width: 78, height: 58 },
+      size: { width: 78, height: 88 },
     });
 
     act(() => {
@@ -221,7 +221,7 @@ describe('box placement gestures', () => {
 
     act(() => {
       result.current.pointerCancel(
-        primaryPointer({ x: 180, y: 140 }, { ...onPane, pointerId: 1 }),
+        primaryPointer({ x: 180, y: 170 }, { ...onPane, pointerId: 1 }),
       );
     });
     expect(result.current.preview).toBeUndefined();

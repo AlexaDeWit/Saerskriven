@@ -47,18 +47,10 @@ type RemovalCascade = {
 
 /**
  * Places and selects one element, stored at the decimals a gesture made with
- * `input` keeps, then opens its inline editor when asked.
+ * `input` keeps, then opens its inline editor.
  */
-export function placeElement(
-  element: Element,
-  input: GestureInput,
-  openNameField = true,
-): boolean {
-  return placed(
-    element,
-    input,
-    element.kind === 'text' ? 'note' : openNameField ? 'name' : undefined,
-  );
+export function placeElement(element: Element, input: GestureInput): boolean {
+  return placed(element, input, element.kind === 'text' ? 'note' : 'name');
 }
 
 /** Places a trust-boundary curve through its committed waypoints, stored at the decimals a gesture made with `input` keeps. */
@@ -416,7 +408,7 @@ function added(action: Action, elementId: ElementId): void {
 function placed(
   element: Element,
   input: GestureInput,
-  editor: 'name' | 'note' | undefined,
+  editor: 'name' | 'note',
 ): boolean {
   const diagramId = activeDiagramId(modelStore.getState());
   if (
@@ -433,11 +425,7 @@ function placed(
   }
   const elementId = element.id;
   dispatch(Action.Select({ elementIds: [elementId] }));
-  if (editor !== undefined) {
-    dispatch(Action.InlineEditing({ editor: { kind: editor, elementId } }));
-  } else {
-    focusElement(elementId);
-  }
+  dispatch(Action.InlineEditing({ editor: { kind: editor, elementId } }));
   return true;
 }
 

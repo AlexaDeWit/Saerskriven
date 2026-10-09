@@ -265,14 +265,16 @@ The card's second row holds Select, Actor, Process, Store, Trust boundary,
 Trust boundary curve, Note and Hand. A tooltip names each tool's shortcuts.
 
 - A click with an element tool places its default size under the pointer, and
-  a drag draws the box between opposite corners, at least one unit wide and
-  high. A drag under four screen pixels places the default.
+  a drag draws the box from the pressed corner to the pointer. The box is at
+  least sixty units wide and high: a shorter drag keeps the pressed corner and
+  grows toward the pointer, and the preview shows the size that will be
+  placed. A drag under four screen pixels places the default.
 - A process draws an ellipse filling its box, a circle when the box is square.
   Its name wraps to the width of the rectangle inside the ellipse, so a wider
   process takes more of its name on each line.
 - Enter places the default at the centre of the view.
 - A placed element arrives selected with a placeholder name ("New actor", "New
-  flow"), and its name field opens where it fits. A Note opens its text.
+  flow"), and its name field opens. A Note opens its text.
 - The tool returns to Select after one placement. Double-click a tool to lock
   it for repeated placement, and press Escape to unlock it and return to
   Select.
@@ -321,14 +323,16 @@ was, with no undo step. Escape also clears the selection, as it does anywhere.
 A selected element carries a line on each side and a handle at each corner.
 Drag a side to change one axis or a corner to change both, with the opposite
 side fixed. Focus a control and press an arrow key to move that edge five
-units, or twenty with Shift. The resize controls stop shrinking at ten units.
-An element made smaller in Position and size or in a file keeps its size
-until it is grown. An arrow key the focused control cannot use changes
-nothing: Up or Down on the
-left or right line, Left or Right on the top or bottom line, or a key that
-would shrink a width or height already at ten units or less. On a trust
-boundary curve the same controls scale its points
-([Trust boundaries](#trust-boundaries)).
+units, or twenty with Shift. The resize controls stop shrinking at sixty
+units. That is the height an actor, a process or a store is placed at, so the
+controls make none of them shorter than it is placed. An element made smaller
+in Position and size or in a file keeps its size until it is grown. While a
+width or height is under sixty units the controls only grow it, so Undo or
+Position and size makes it smaller again. An arrow key the focused control
+cannot use changes nothing: Up or Down on the left or right line, Left or
+Right on the top or bottom line, or a key that would shrink a width or height
+already at sixty units or less. On a trust boundary curve the same controls
+scale its points ([Trust boundaries](#trust-boundaries)).
 
 While an element with a threat badge is selected, the badge steps out past its
 top-right corner, so the handle there stays on the corner, and it draws above
@@ -445,7 +449,7 @@ for editing, the **Trust boundary** card, in the Reconnect flow card's place,
 holds **Switch boundary shape**, an icon of the two Trust boundary tools' shapes,
 the box over the curve, with its name and shortcut in a tooltip. It turns a box
 into the arch the Trust boundary curve tool draws in that box, and a curve into
-the box around its points, at least ten units each way. A box at least ten
+the box around its points, at least sixty units each way. A box at least sixty
 units each way, turned into a curve and back, is the same box.
 The boundary keeps its name, its threats and the elements and flows it declares.
 
@@ -470,9 +474,11 @@ curve stays close to its shape.
 A selected curve also carries a box's side lines and corner handles around its
 points, each corner handle just outside its corner so that a point there keeps
 its own handle, and so that its threat badge, unlike an element's, stays on the
-corner while the curve is selected. Dragging a control, or pressing an arrow key
-on a focused one, scales every point against the opposite side or corner as one
-undo step, and the boundary keeps its name and its threats. Width and height in
+corner while the curve is selected. Where a point's handle lies over a side
+line, the point's handle takes the press. Dragging a control, or pressing an
+arrow key on a focused one, scales every point against the opposite side or
+corner as one undo step, and the boundary keeps its name and its threats. The
+controls stop at sixty units, as they do on an element. Width and height in
 Position and size scale the points the same way, to no less than ten units. A
 curve whose points all lie on one horizontal or vertical line has only the two
 side lines that lengthen it, and the form shows only the width or the height

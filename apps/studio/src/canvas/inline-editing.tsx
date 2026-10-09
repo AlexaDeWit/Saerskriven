@@ -83,9 +83,6 @@ type InlineFieldProps = {
   readonly refuse?: (label: Said, text: string) => TextRefusal | undefined;
 };
 
-/** A one-line name opens in place only when its box fits a field in both dimensions. */
-export const nameFieldExtent = lineHeight(wrappedTextStyles.label.fontSize);
-
 /** The store's inline editor replaces the corresponding node text. */
 export const editingNodeTypes = {
   actor: EditingNodeBody,
