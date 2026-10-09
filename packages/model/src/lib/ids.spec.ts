@@ -64,6 +64,22 @@ describe('id generators', () => {
   });
 });
 
+describe('id generators, shape', () => {
+  const mintedShape = /^[a-df-hjkmnp-t][0-9a-hjkmnp-tv-z]{7}$/;
+
+  it.each([
+    ['element', generateElementId],
+    ['diagram', generateDiagramId],
+    ['threat', generateThreatId],
+    ['mitigation', generateMitigationId],
+    ['assumption', generateAssumptionId],
+  ])('mint a %s id of the 8-character shape', (_kind, generate) => {
+    for (let draw = 0; draw < 50; draw += 1) {
+      expect(generate()).toMatch(mintedShape);
+    }
+  });
+});
+
 describe('id brands', () => {
   it('keeps branded ids apart at compile time', () => {
     const elementId: ElementId = generateElementId();

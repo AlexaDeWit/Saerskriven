@@ -1,4 +1,5 @@
 import {
+  generateElementId,
   inNumberOrder,
   renameElement,
   type BoundaryShape,
@@ -272,6 +273,30 @@ describe('a Saerskriven YAML write of a flow left unlabelled', () => {
     expect(result.divergences).toEqual([]);
     expect(Either.getOrThrow(readSaerskrivenYaml(result.output)).model).toEqual(
       unlabelled,
+    );
+  });
+});
+
+describe('a Saerskriven YAML write of a model holding a minted id', () => {
+  const minted = generateElementId();
+  const model = parsedFixture(
+    JSON.parse(
+      JSON.stringify(validModelFixture).replaceAll(
+        'element-order-flow',
+        minted,
+      ),
+    ),
+  );
+  const result = writeSaerskrivenYaml(model);
+
+  it('writes the id as a plain scalar', () => {
+    expect(result.output).toContain(`id: ${minted}\n`);
+    expect(result.output).not.toMatch(new RegExp(`["']${minted}["']`));
+  });
+
+  it('reads the id back', () => {
+    expect(Either.getOrThrow(readSaerskrivenYaml(result.output)).model).toEqual(
+      model,
     );
   });
 });
