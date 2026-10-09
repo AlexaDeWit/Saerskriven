@@ -46,7 +46,7 @@ overrides:
 minimumReleaseAge: 10080
 
 catalog:
-  mermaid: 11.16.1
+  mermaid: 11.17.2
   # axe-core driven through Playwright: the runtime half of the studio's
   # accessibility gate, catching contrast, focus order and computed roles
   # that static analysis cannot see.
@@ -184,6 +184,3 @@ catalog:
   # a pure reducer. React Flow carries a zustand 4 copy of its own for its
   # internal store, which is its business and no version this workspace uses.
   zustand: ^5.0.15
-minimumReleaseAgeExclude:
-  # Renovate security update: mermaid@11.16.1
-  - mermaid@11.16.1
