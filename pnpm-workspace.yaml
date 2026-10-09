@@ -46,6 +46,10 @@ overrides:
 minimumReleaseAge: 10080
 
 catalog:
+  # Development only. One spec in @saerskriven/render parses the diagrams the
+  # Markdown export emits, so this pin is the grammar that check proves: 12,
+  # which GitHub's viewer rendered with on 2026-10-09. Nothing checks the 11
+  # grammar, which GitLab still defaulted to on that date.
   mermaid: 12.1.0
   # axe-core driven through Playwright: the runtime half of the studio's
   # accessibility gate, catching contrast, focus order and computed roles
