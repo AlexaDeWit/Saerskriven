@@ -241,7 +241,7 @@ function mcpCommand(program: Command, state: ParseState): void {
     )
     .option(
       '--root <dir>',
-      'the directory the server may read, default the working directory',
+      'the one directory the server reads, default the working directory and those the host lists',
     )
     .option('--file <path>', 'the model a tool call reads when it names none')
     .option('--http', 'serve Streamable HTTP on 127.0.0.1 instead of stdio')

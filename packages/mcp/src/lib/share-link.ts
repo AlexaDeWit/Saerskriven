@@ -11,7 +11,7 @@ import {
 } from '@saerskriven/formats/share-link';
 import { Either } from 'effect';
 import { z } from 'zod';
-import { fileArgumentSchema } from './inspect.js';
+import { defaultedFileSentence, fileArgumentSchema } from './path-arguments.js';
 import { prefaced } from './preface.js';
 import {
   readNamed,
@@ -59,7 +59,8 @@ export type SharedLink = WithBlocks<ShareLinkResult>;
 export const shareLinkDescription = [
   `Write one Saerskriven threat model as a share link: an address on the hosted studio, ${hostedStudioUrl}, that opens the model in a browser with nothing installed.`,
   'The link carries the whole model, every element, threat, mitigation and assumption in it, and anyone who sees the link can read all of it. Nothing can take a link back once it is sent, since the model travels in the link itself, and a chat, a ticket, an email or a browser history keeps it for as long as it keeps anything. Call this only when the person you are working for asks for a link, and hand the link to them rather than posting it anywhere they did not name.',
-  'Pass `file` as a path relative to the server root, or leave it out where the server was started with a default model. This tool takes no other argument.',
+  defaultedFileSentence,
+  'This tool takes no other argument.',
   `The result holds the whole link once: alone on the last line of a text block of its own, after the text block that describes it, and nowhere else. The structured content gives its \`length\` and not the link. A link can be very long: usually thousands of characters, and up to ${String(shareLinkLimit)} for a large model. All of it lands in your context, so call this once, when the link is about to be handed over. Do not call it to read a model, which saer_inspect and the search tools answer in a fraction of the context.`,
   'A model whose link would be longer than that comes back as an error result saying to send the file instead, and a file that does not read comes back as an error result too. The link holds the model as the native YAML format writes it, so what the file and the model do not correspond on is not in the link either, and the result lists it. This tool writes no file and reaches no network.',
 ].join(' ');

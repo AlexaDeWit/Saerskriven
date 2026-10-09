@@ -33,7 +33,7 @@ import {
 import {
   readModelFile,
   renderWorkspaceFailure,
-  withinRoot,
+  resultPath,
   type ModelWorkspace,
   type ReadModelFile,
 } from './workspace.js';
@@ -108,7 +108,7 @@ export function editModel(
     ),
     Either.flatMap((read) =>
       Either.mapLeft(
-        unchangedSince(withinRoot(workspace, read.path), args.revision, read),
+        unchangedSince(resultPath(workspace, read.path), args.revision, read),
         renderWriteFailure,
       ),
     ),
@@ -158,7 +158,7 @@ function saved(
   model: Model,
   batch: Pick<EditResult, 'applied' | 'culled' | 'culledThreats'>,
 ): Either.Either<EditResult, readonly string[]> {
-  const file = withinRoot(workspace, read.path);
+  const file = resultPath(workspace, read.path);
   return pipe(
     serialized(file, () => writeThrough(model, retainedSource(read.read))),
     Either.flatMap((written) =>

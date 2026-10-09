@@ -11,7 +11,7 @@ import { z } from 'zod';
 import {
   readModelFile,
   renderWorkspaceFailure,
-  withinRoot,
+  resultPath,
   type ModelWorkspace,
 } from './workspace.js';
 
@@ -55,7 +55,7 @@ export function readNamed(
     : Either.mapBoth(readModelFile(workspace, named), {
         onLeft: renderWorkspaceFailure,
         onRight: (read) => ({
-          file: withinRoot(workspace, read.path),
+          file: resultPath(workspace, read.path),
           format: read.read.format,
           revision: read.revision,
           model: read.read.model,

@@ -12,7 +12,7 @@ import {
   renderElement,
   type ElementOnDiagram,
 } from './element-rows.js';
-import { fileArgumentSchema } from './inspect.js';
+import { fileArgumentSchema } from './path-arguments.js';
 import {
   PromptFailure,
   briefDataReminder,

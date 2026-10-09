@@ -4,21 +4,84 @@
 so an agent host launches the same executable you would run by hand:
 
 ```sh
-saer mcp --root . --file threat-model.yaml
+saer mcp --file threat-model.yaml
 ```
 
-`--root` is the directory the server may read, and defaults to the working
-directory. A path a tool call names is resolved through every symbolic link
-before it is compared against the root, and one that lands outside is refused
-as a tool result carrying the path it resolved to. `--file` names the model a
-tool call reads when it names none.
+The root is the directory the server is started in. `--file` names the model a
+tool call reads when it names none, and a relative path means the root.
+
+A path a tool call names is resolved through every symbolic link, and has to
+land inside the root or inside a directory the host lists
+([which directories the server reads](#which-directories-the-server-reads)).
+One that lands anywhere else is refused as a tool result naming the path it
+resolved to, the root, and the directories the host listed or why it listed
+none.
+
+`--root <dir>` names the root and pins the server to it: the host is never
+asked, and no path outside that directory is read or written.
 
 Standard output carries the protocol and nothing else, so anything the server
 has to report goes to standard error, where a host shows it.
 
 The protocol revision is 2026-07-28, and a 2025-era client is served with the
-same tools and results. The server holds no session and no parsed model: every
-call names its file and reads it again.
+same tools and results. The server holds no session, no parsed model and no
+list of the host's directories: every call names its file and reads it again.
+
+## Which directories the server reads
+
+A stdio server started without `--root` follows its host. A call whose paths
+stay under the root is answered at once. A call with a path that leaves the
+root is answered with a request for the host's directory list (MCP roots), and
+the host sends the call again with the list. A 2025-era client is sent a
+`roots/list` request in the middle of the call instead. Nothing is read or
+written before the list arrives. The path is then accepted where it lands
+inside the root or one listed directory.
+
+- The list comes from the host process, never from a tool argument, so nothing
+  an agent passes widens it.
+- A listed entry counts when it is a `file://` URI that resolves, through
+  every symbolic link, to a directory that exists. Any other entry is ignored.
+- The host is asked on every call that leaves the root. A directory added to
+  the session is reachable on the next call, with no restart, and one taken
+  away is gone on the next.
+- A result names a file outside the root by its absolute path, and every tool
+  takes that spelling back.
+- A file's `revision`, and the rule that a new file takes only a free path,
+  hold in every directory.
+- `--file`, a relative path and the listing `saer_inspect` answers with stay
+  on the root.
+
+Three servers read their root alone, and each says why when it refuses a path:
+
+- One started with `--root`. It never asks the host, and ignores a directory
+  list sent to it anyway.
+- One started with `--http`, which does the same
+  ([serving over Streamable HTTP](#serving-over-streamable-http)).
+- One whose host declares no roots.
+
+A host that answers with no usable list is refused after that one round.
+
+| Host        | What the server reads beyond its root                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| Claude Code | Every directory added with `/add-dir`, `--add-dir` or `additionalDirectories`                  |
+| Codex       | Nothing. Codex declares no roots, so `--root` is the only way to choose the directory it reads |
+
+Any other host is followed where it declares roots. The 2026-07-28 revision
+deprecates roots, and a host that stops declaring them leaves the server on
+its root.
+
+### What the host's permissions cover
+
+The server takes its directories from the host and nothing else. It is a
+process of its own, so the host's file permission rules, its sandbox and its
+auto mode classifier do not apply to what the server reads or writes.
+
+What the host does decide is each tool call. A permission rule matches a tool
+and not its arguments, so an allow rule on `saer_edit`, `saer_create`,
+`saer_import` or `saer_render_diagram` covers every directory the server may
+write in: the root and every directory the host lists. Leave the approval
+prompt on those tools, or start the server with `--root`, where that is wider
+than you mean.
 
 ## A model file is untrusted input
 
@@ -45,11 +108,14 @@ entry in its `config.toml`, which `saer mcp install` writes as
 
 Thirteen tools are registered: eight that read a model, one that draws one,
 one that writes one as a share link, and three that write one to a file. Every
-tool that reads, draws, shares or edits a model takes `file` as a path relative
-to the root, or reads the `--file` default where a call names none.
-`saer_create` takes `file` as the path to write, and `saer_import` takes `file`
-as the source and `target` as the path to write. Neither falls back to
-`--file`. Every result that names a model file carries `revision`, a SHA-256
+tool that reads, draws, shares or edits a model takes `file` as a path,
+relative to the root or absolute, or reads the `--file` default where a call
+names none. `saer_create` takes `file` as the path to write, and `saer_import`
+takes `file` as the source and `target` as the path to write. Neither falls
+back to `--file`. Each of those paths, and the `out` of `saer_render_diagram`,
+leaves the root only for a directory the host lists
+([which directories the server reads](#which-directories-the-server-reads)).
+Every result that names a model file carries `revision`, a SHA-256
 over the file's bytes that a later write quotes back: for `saer_create` and
 `saer_import`, that is the file written. The candidates listing `saer_inspect`
 answers with, where it has no file to read, carries no `revision`.
@@ -140,8 +206,9 @@ its longer edge unless `width` asks for fewer, with the text of the result
 naming every flow endpoint the drawing left out. MCP hosts take PNG and not
 SVG. It rasterizes through the same module and faces `saer render --format png`
 uses, so an install missing either refuses with the reason named. Given `out`,
-it also writes the PNG to a free path under the root and returns it as a
-resource link. It replaces no file and writes no model.
+it also writes the PNG to a free path, under the root or a directory the host
+lists, and returns it as a resource link. It replaces no file and writes no
+model.
 
 ### Sharing
 
@@ -482,7 +549,13 @@ and `data.uri` naming the URI. A diagram this install cannot draw fails with
 `-32603`, and `saer_render_diagram` names the reason.
 
 Two prompts build a request for the agent out of a model. Both take `file`,
-which falls back to `--file` as a tool's does.
+which falls back to `--file` as a tool's does, and which leaves the root as a
+tool's does: the prompt is answered first with the request for the host's
+directory list. A prompt has no refused result, so a `file` outside every
+permitted directory fails as any unreadable model does, with error `-32602`
+and no list of directories. A host that does not send a prompt again with its
+list gets no prompt for a file outside the root, which the tools still read.
+Claude Code's answer was checked for tool calls and not for prompts.
 
 - `stride_pass` takes `element`, an id or an exact name, and lays out that
   element, its flows, the stores those flows reach and the threats already
@@ -514,9 +587,12 @@ saer mcp --http --token-file .saer-token --port 7300 --file threat-model.yaml
 `--token-file` is required with `--http`, and `--port` and `--token-file` are
 refused without it. The server listens on `127.0.0.1` and nowhere else,
 whatever the flags say, and answers `POST` on `/mcp`. `--port` picks the port,
-and without it the system picks one. `--root` and `--file` mean what they mean
-over stdio. The standalone executable is granted network access to
-`127.0.0.1` alone.
+and without it the system picks one. `--file` means what it means over stdio.
+An HTTP server reads its root alone, the directory it was started in or the
+one `--root` names: it never asks for the host's directory list, and ignores
+one sent anyway, since over HTTP that list would come from whoever holds the
+token. The standalone executable is granted network access to `127.0.0.1`
+alone.
 
 Every start mints a new bearer token and writes it to the token file and
 nowhere else: it is never printed, logged or put in an error. The file is
@@ -579,7 +655,12 @@ a project entry relies on that: Claude Code and Codex start it in the project
 directory. For a host that may start it anywhere else, or for a user-level
 entry that should reach one repository only, add
 `"--root", "/absolute/path/to/project"` to the arguments by hand, since
-`install` writes no `--root`. `--file` is relative to the root.
+`install` writes no `--root`. An entry carrying `--root` reads that directory
+alone. An entry without it follows the host
+([which directories the server reads](#which-directories-the-server-reads)):
+in Claude Code a directory added with `/add-dir` is reachable on the next
+call, and in Codex, which declares no roots, the server stays on its root.
+`--file` is relative to the root.
 
 This is the Claude Code entry `--print` writes for `--file threat-model.yaml`,
 in `.mcp.json`. Run `--print` for the entry of any other host.

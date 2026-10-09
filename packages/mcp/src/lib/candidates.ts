@@ -1,7 +1,7 @@
 import { Either } from 'effect';
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { extensionOf, withinRoot, type ModelWorkspace } from './workspace.js';
+import { extensionOf, resultPath, type ModelWorkspace } from './workspace.js';
 
 /**
  * Every file under the root with a model extension, sorted by path. The
@@ -27,7 +27,7 @@ export function candidateFiles(workspace: ModelWorkspace): {
         if (entry.isDirectory()) {
           next.push(path);
         } else if (entry.isFile() && modelExtensions.has(extensionOf(path))) {
-          found.push(withinRoot(workspace, path));
+          found.push(resultPath(workspace, path));
         }
       }
     }

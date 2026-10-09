@@ -29,20 +29,26 @@ import {
 } from '@saerskriven/mcp/fixtures';
 import { testDataPath } from '@saerskriven/model/fixtures';
 import {
+  existsSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { pathToFileURL } from 'node:url';
 import { readAnyFormat } from '@saerskriven/formats';
 import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
 import { Either } from 'effect';
 import { join } from 'node:path';
 import {
+  hostBlindServers,
   httpProcess,
   sessionOpeners,
+  stdioOpener,
+  type SessionHost,
   type SessionOpener,
 } from './mcp-session.fixtures.js';
 import {
@@ -147,6 +153,34 @@ const calls = async (session: McpSession) => {
     stale,
     reread: structuredOf(reread, getThreatResultSchema).threat,
     reinspected: readingOf(reinspected),
+  };
+};
+
+const scratch = (name: string): string =>
+  realpathSync(mkdtempSync(join(tmpdir(), `saerskriven-cli-${name}-`)));
+
+const hosted = () => {
+  const launch = scratch('launch');
+  const granted = scratch('granted');
+  const answer = { roots: [{ uri: pathToFileURL(granted).href }] };
+  const tally = { asked: 0 };
+  const host: SessionHost = {
+    cwd: launch,
+    roots: () => {
+      tally.asked += 1;
+      return answer;
+    },
+  };
+  return {
+    host,
+    answer,
+    tally,
+    file: join(granted, 'model.yaml'),
+    remove: () => {
+      for (const directory of [launch, granted]) {
+        rmSync(directory, { recursive: true, force: true });
+      }
+    },
   };
 };
 
@@ -530,6 +564,78 @@ for (const runner of runners) {
       spawnTimeout,
     );
   }
+  register(
+    titleOf(runner, 'the directories saer mcp reads beyond its root'),
+    () => {
+      for (const era of eras) {
+        it(`follows the host over stdio where no --root is given, in the ${era} era`, async () => {
+          const { host, tally, file, remove } = hosted();
+          const session = await stdioOpener.open(runner, ['mcp'], era, host);
+          try {
+            const created = await session.client.callTool({
+              name: 'saer_create',
+              arguments: { file, title: 'Granted' },
+            });
+            const reading = readingOf(
+              await session.client.callTool({
+                name: 'saer_inspect',
+                arguments: { file },
+              }),
+            );
+            expect(created.isError).toBeFalsy();
+            expect({
+              era: session.client.getProtocolEra(),
+              file: reading.file,
+              revision: reading.revision,
+              asked: tally.asked,
+            }).toEqual({
+              era,
+              file,
+              revision: revisionOf(readFileSync(file)),
+              asked: 2,
+            });
+          } finally {
+            await session.end();
+            remove();
+          }
+        });
+      }
+
+      for (const server of hostBlindServers) {
+        it(`never asks the host over ${server.name}, and reads no answer sent anyway`, async () => {
+          const { host, answer, tally, file, remove } = hosted();
+          const session = await server.opener.open(
+            runner,
+            server.args(host.cwd),
+            'modern',
+            host,
+          );
+          const call = { name: 'saer_create', arguments: { file, title: 'x' } };
+          try {
+            const results = [
+              await session.client.callTool(call),
+              await session.client.request({
+                method: 'tools/call',
+                params: { ...call, inputResponses: { roots: answer } },
+              }),
+            ];
+            expect(results.map((result) => result.isError)).toEqual([
+              true,
+              true,
+            ]);
+            expect({ asked: tally.asked, written: existsSync(file) }).toEqual({
+              asked: 0,
+              written: false,
+            });
+          } finally {
+            await session.end();
+            remove();
+          }
+        });
+      }
+    },
+    spawnTimeout,
+  );
   register(
     titleOf(runner, 'saer mcp as a process'),
     () => {

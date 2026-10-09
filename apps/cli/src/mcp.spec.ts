@@ -24,12 +24,22 @@ const served = (root: string) => {
 };
 
 describe('what the mcp subcommand is given', () => {
-  it('reads the working directory as the root where none is named', () => {
+  it('reads the working directory as the root where none is named, and follows the host from it', () => {
     expect(mcpOptionsSchema.parse({})).toEqual({
       root: process.cwd(),
+      reach: 'host',
       file: undefined,
       http: undefined,
     });
+  });
+
+  it('pins the server to a root it is given, and holds an HTTP server to its root either way', () => {
+    const overHttp = { http: true, tokenFile: 'token' };
+    expect(
+      [{ root: 'elsewhere' }, overHttp, { ...overHttp, root: 'elsewhere' }].map(
+        (given) => mcpOptionsSchema.parse(given).reach,
+      ),
+    ).toEqual(['pinned', 'http', 'http']);
   });
 
   it('refuses a port or a token file without --http', () => {

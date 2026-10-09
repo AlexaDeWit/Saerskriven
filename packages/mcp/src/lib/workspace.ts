@@ -15,19 +15,43 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { revisionOf } from './revision.js';
 
 /**
+ * What the host adds to the root for one call. `Pinned` and `OverHttp` are a
+ * server that never asks, and `Unasked` one that follows the host on a call
+ * that stayed under the root. The rest are a call that left it: the host
+ * declares no roots, its answer carried no list, or it listed these real
+ * paths.
+ */
+export type HostDirectories = Data.TaggedEnum<{
+  Pinned: {};
+  OverHttp: {};
+  Unasked: {};
+  Undeclared: {};
+  Unanswered: {};
+  Listed: { readonly directories: readonly string[] };
+}>;
+
+/**
+ * Constructor for {@link HostDirectories}, plus Effect's `$is` and `$match`
+ * helpers.
+ */
+export const HostDirectories = Data.taggedEnum<HostDirectories>();
+
+/**
  * Where the server may read, and which model it reads when a tool names no
  * file. Both paths are real paths, resolved through every symbolic link when
- * the workspace opens.
+ * the workspace opens. `host` is the one part that differs between calls.
  */
 export type ModelWorkspace = {
   readonly root: string;
   readonly defaultFile: string | undefined;
+  readonly host: HostDirectories;
 };
 
 /**
  * Why the server has no model to work with. A `path` or `requested` is the
  * spelling the call used, so a result names what the next call may pass.
- * `resolved` is the absolute path a refused one landed on.
+ * `resolved` is the absolute path a refused one landed on, and `host` what
+ * the host had added to the root when it was refused.
  */
 export type WorkspaceFailure = Data.TaggedEnum<{
   NoRoot: { readonly root: string; readonly reason: string };
@@ -35,6 +59,7 @@ export type WorkspaceFailure = Data.TaggedEnum<{
     readonly requested: string;
     readonly resolved: string;
     readonly root: string;
+    readonly host: HostDirectories;
   };
   Unreadable: { readonly path: string; readonly reason: string };
   Unread: {
@@ -63,55 +88,77 @@ export type ReadModelFile = {
   readonly read: DetectedRead;
 };
 
-/** What the `mcp` invocation asked the server to work over. */
+/**
+ * Whether a call may leave the root: `host` for a directory the host lists,
+ * and never for a root that was `pinned` or a server reached over `http`.
+ */
+export type Reach = 'host' | 'pinned' | 'http';
+
+/**
+ * What the `mcp` invocation asked the server to work over. A request naming
+ * no `reach` is pinned to its root.
+ */
 export type WorkspaceRequest = {
   readonly root: string;
   readonly file?: string;
+  readonly reach?: Reach;
 };
 
 /**
  * The workspace an invocation describes, or why it cannot be opened. A root
  * that does not resolve, and a default file outside the root, are refused
- * here rather than at the first tool call.
+ * here rather than at the first tool call. The default file is held to the
+ * root whether or not the server follows the host.
  */
 export function openWorkspace(
   request: WorkspaceRequest,
 ): Either.Either<ModelWorkspace, WorkspaceFailure> {
   return Either.flatMap(rootOf(request.root), (root) =>
-    defaulting(root, request.file),
+    defaulting(
+      {
+        root,
+        defaultFile: undefined,
+        host: hostAsOpened[request.reach ?? 'pinned'],
+      },
+      request.file,
+    ),
   );
 }
 
 /**
- * A requested path as the absolute path it resolves to inside the root, or
- * the refusal naming where it landed. Every path this server reads or writes
- * passes through here. Symbolic links are followed on the deepest ancestor
- * that exists, so a path whose last segments do not exist yet resolves too,
- * and a link inside the root pointing out of it is refused.
+ * A requested path as the absolute path it resolves to, inside the root or a
+ * directory the host listed for this call, or the refusal naming where it
+ * landed. Every path this server reads or writes passes through here. A
+ * relative path is resolved against the root. Symbolic links are followed on
+ * the deepest ancestor that exists, so a path whose last segments do not
+ * exist yet resolves too, and a link pointing out of every permitted
+ * directory is refused.
  */
 export function confined(
   workspace: ModelWorkspace,
   requested: string,
 ): Either.Either<string, WorkspaceFailure> {
   const resolved = realPathOf(resolve(workspace.root, requested));
-  return resolved === workspace.root ||
-    resolved.startsWith(workspace.root + sep)
+  return permittedDirectories(workspace).some((directory) =>
+    holds(directory, resolved),
+  )
     ? Either.right(resolved)
     : Either.left(
         WorkspaceFailure.OutsideRoot({
           requested,
           resolved,
           root: workspace.root,
+          host: workspace.host,
         }),
       );
 }
 
 /**
- * The text of a file a tool call names, confined to the root. The entry is
- * measured before it is read: anything but a regular file is refused, so a
- * FIFO cannot block the synchronous read, a file past the shared text bound
- * costs a `stat` rather than its length in memory, and a failed `stat`
- * refuses.
+ * The text of a file a tool call names, held to the directories
+ * {@link confined} permits. The entry is measured before it is read: anything
+ * but a regular file is refused, so a FIFO cannot block the synchronous read,
+ * a file past the shared text bound costs a `stat` rather than its length in
+ * memory, and a failed `stat` refuses.
  */
 export function readTextFile(
   workspace: ModelWorkspace,
@@ -149,9 +196,13 @@ export function readModelFile(
   );
 }
 
-/** The path a result names a file by, relative to the root. */
-export function withinRoot(workspace: ModelWorkspace, path: string): string {
-  return relative(workspace.root, path);
+/**
+ * The path a result names a file by: relative to the root for a file under
+ * it, and absolute for one in a directory the host listed. A later call
+ * passing either spelling back reaches the same file.
+ */
+export function resultPath(workspace: ModelWorkspace, path: string): string {
+  return holds(workspace.root, path) ? relative(workspace.root, path) : path;
 }
 
 /** Why the server has no model, as the lines a tool result carries. */
@@ -162,9 +213,12 @@ export function renderWorkspaceFailure(
     NoRoot: ({ root, reason }) => [
       `The root ${quotedForTerminal(root)} cannot be used: ${escapedForTerminal(reason)}.`,
     ],
-    OutsideRoot: ({ requested, resolved, root }) => [
-      `The file ${quotedForTerminal(requested)} is outside the root this server may read.`,
+    OutsideRoot: ({ requested, resolved, root, host }) => [
+      HostDirectories.$is('Listed')(host)
+        ? `The file ${quotedForTerminal(requested)} is outside every directory this server may read.`
+        : `The file ${quotedForTerminal(requested)} is outside the root this server may read.`,
       `It resolves to ${quotedForTerminal(resolved)}, and the root is ${quotedForTerminal(root)}.`,
+      ...hostLines(host),
     ],
     Unreadable: ({ path, reason }) => [
       `The file ${quotedForTerminal(path)} cannot be read: ${escapedForTerminal(reason)}.`,
@@ -200,16 +254,52 @@ function rootOf(root: string): Either.Either<string, WorkspaceFailure> {
 }
 
 function defaulting(
-  root: string,
+  empty: ModelWorkspace,
   file: string | undefined,
 ): Either.Either<ModelWorkspace, WorkspaceFailure> {
-  const empty: ModelWorkspace = { root, defaultFile: undefined };
   return file === undefined
     ? Either.right(empty)
     : Either.map(confined(empty, file), (defaultFile): ModelWorkspace => ({
-        root,
+        ...empty,
         defaultFile,
       }));
+}
+
+const hostAsOpened: Readonly<Record<Reach, HostDirectories>> = {
+  host: HostDirectories.Unasked(),
+  pinned: HostDirectories.Pinned(),
+  http: HostDirectories.OverHttp(),
+};
+
+function permittedDirectories(workspace: ModelWorkspace): readonly string[] {
+  return HostDirectories.$is('Listed')(workspace.host)
+    ? [workspace.root, ...workspace.host.directories]
+    : [workspace.root];
+}
+
+function holds(directory: string, path: string): boolean {
+  return path === directory || path.startsWith(directory + sep);
+}
+
+function hostLines(host: HostDirectories): readonly string[] {
+  return HostDirectories.$match(host, {
+    Pinned: () => [
+      'The server was started with --root, so it reads that directory alone.',
+    ],
+    OverHttp: () => ['Over HTTP the server reads its root alone.'],
+    Unasked: () => [],
+    Undeclared: () => [
+      'The host lists no directories, so the server reads its root alone.',
+    ],
+    Unanswered: () => [
+      'The host was asked for its directories and sent no list.',
+    ],
+    Listed: ({ directories }) => [
+      directories.length === 0
+        ? 'The host lists no directory the server can use.'
+        : `The host lists ${directories.map(quotedForTerminal).join(', ')}.`,
+    ],
+  });
 }
 
 function realPathOf(path: string): string {
