@@ -10,10 +10,10 @@ catalogs:
       specifier: ^4.13.0
       version: 4.13.0
     '@modelcontextprotocol/client':
-      specifier: ^2.0.0
+      specifier: ^2.2.0
       version: 2.2.0
     '@modelcontextprotocol/server':
-      specifier: ^2.0.0
+      specifier: ^2.2.0
       version: 2.2.0
     '@myriaddreamin/typst-ts-web-compiler':
       specifier: 0.7.0
