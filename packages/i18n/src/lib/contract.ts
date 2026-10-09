@@ -7,7 +7,7 @@ export type ParameterKind = 'text' | 'number' | 'list' | 'node';
 
 export type ParameterShape = { readonly [name: string]: ParameterKind };
 
-type NoParameters = Record<never, ParameterKind>;
+type NoParameters = {};
 
 export type TextMessage<P extends ParameterShape = ParameterShape> = {
   readonly kind: 'text';
