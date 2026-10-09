@@ -36,18 +36,22 @@ import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
  * for the side. An end the model leaves unpinned is written with no port.
  * A free flow end and each end of a boundary curve are written at the
  * nearest whole number, the only kind Threat Dragon's schema admits there,
- * so one the source holds between two whole numbers is rewritten.
+ * so one the source holds between two whole numbers is rewritten. A width or
+ * a height under 10, the least that schema admits, is written as 10 with the
+ * position left where the model holds it.
  *
  * The codec stamps release 2.6.2 and reports a different source stamp as
  * `overridden`. Threat and diagram numbers, and the `threatTop` and
  * `diagramTop` marks, follow `planThreats` and `numberDiagrams`, and a mark
- * this write moves is reported as `overridden`. Neither issuing a number nor
- * rounding an end is a divergence. What the format cannot hold is reported
- * as `unrepresentable`: an assumption, a threat on a trust boundary or a
- * note, the model link of a threat, a note's name, an out-of-scope boundary
- * or note, and a diagram's name. A diagram, cell or threat the source held
- * and the model no longer does is reported as `discarded-by-edit`.
- * Mitigation texts follow `mitigationDivergences`.
+ * this write moves is reported as `overridden`, as is a size it raises
+ * where the source cell holds the size the model does. Neither issuing a
+ * number nor rounding an end is a divergence. What the format cannot hold is
+ * reported as `unrepresentable`: an assumption, a threat on a trust boundary
+ * or a note, the model link of a threat, a note's name, an out-of-scope
+ * boundary or note, a diagram's name, and a size this write raises that the
+ * source cell does not hold. A diagram, cell or threat the source held and
+ * the model no longer does is reported as `discarded-by-edit`. Mitigation
+ * texts follow `mitigationDivergences`.
  */
 export function writeThreatDragon(
   model: Model,

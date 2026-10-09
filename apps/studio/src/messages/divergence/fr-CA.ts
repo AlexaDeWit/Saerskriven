@@ -13,6 +13,12 @@ export const divergenceFrCA = catalogue(divergenceMessages)('fr-CA')({
   'threat-untitled': 'la menace {number}',
   'subject-threat': 'Menace {number} « {title} »',
   'subject-threat-untitled': 'Menace {number}',
+  'subject-actor': 'Acteur',
+  'subject-actor-named': 'Acteur « {name} »',
+  'subject-process': 'Processus',
+  'subject-process-named': 'Processus « {name} »',
+  'subject-store': 'Magasin de données',
+  'subject-store-named': 'Magasin de données « {name} »',
   'subject-text': 'Texte',
   'subject-text-named': 'Texte « {name} »',
   'subject-trust-boundary': 'Frontière de confiance',
@@ -34,6 +40,8 @@ export const divergenceFrCA = catalogue(divergenceMessages)('fr-CA')({
   },
   'note-name-dropped': 'son nom',
   'scope-marking-dropped': 'son marquage hors périmètre',
+  'size-raised':
+    'sa taille de {width} × {height}, désormais {writtenWidth} × {writtenHeight}',
   'threat-attachment-stray-text': 'son rattachement au texte',
   'threat-attachment-stray-text-named': 'son rattachement au texte « {name} »',
   'threat-attachment-stray-trust-boundary':

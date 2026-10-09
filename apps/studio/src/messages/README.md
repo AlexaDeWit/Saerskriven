@@ -42,8 +42,8 @@ headings: converted, where the model holds the value in another form or place
 than the file had it, or not shown, where the model has no place for the value
 or holds it less exactly. A code cannot be added without a place, and the
 command line and the MCP server print neither heading. A line names its subject
-as the studio shows it: a threat by number and title, a text or a trust
-boundary by its name, a mitigation by its title, and a record without a title
+as the studio shows it: a threat by number and title, an element other than a
+flow by its name, a mitigation by its title, and a record without a title
 by its kind and the threat it is on. An import's line names the record it made:
 the threat the divergence carries, or the mitigation copy on that threat, or
 else the first record `importedFrom` finds for the source record it names. A

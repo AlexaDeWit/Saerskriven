@@ -78,6 +78,25 @@ const samples: readonly (readonly [DivergenceDetail, string])[] = [
     'what the source held on the actor cell of this id, which now draws a trust boundary',
   ],
   [
+    {
+      code: 'size-raised',
+      parameters: {
+        width: 5,
+        height: 9.99,
+        writtenWidth: 10,
+        writtenHeight: 10,
+      },
+    },
+    "the size 5 by 9.99, written as 10 by 10 to meet the format's minimum",
+  ],
+  [
+    {
+      code: 'size-raised',
+      parameters: { width: 1, height: 60, writtenWidth: 10, writtenHeight: 60 },
+    },
+    "the size 1 by 60, written as 10 by 60 to meet the format's minimum",
+  ],
+  [
     { code: 'diagram-name-numbered', parameters: { number: 4 } },
     'the name, which the format numbers a diagram rather than naming one, written as 4',
   ],

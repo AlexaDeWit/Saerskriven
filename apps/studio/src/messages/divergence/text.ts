@@ -88,6 +88,7 @@ const openPlacements = {
   'assumption-unrecorded': 'save-only',
   'note-name-dropped': 'save-only',
   'scope-marking-dropped': 'save-only',
+  'size-raised': 'save-only',
   'threat-attachment-stray': 'save-only',
   'threat-unplaceable': 'save-only',
   'threat-model-link-dropped': 'save-only',
@@ -244,9 +245,9 @@ function subjectText(
       return undefined;
     case 'element': {
       const element = held.elements.get(subject.id);
-      return element?.kind === 'text' || element?.kind === 'trust-boundary'
-        ? elementSubject(t, element)
-        : undefined;
+      return element === undefined || element.kind === 'flow'
+        ? undefined
+        : elementSubject(t, element);
     }
     case 'threat': {
       const threat = held.threats.get(subject.id);
@@ -330,7 +331,7 @@ function mitigationMadeFrom(
 
 function elementSubject(
   t: Speaker,
-  element: Extract<Element, { readonly kind: 'text' | 'trust-boundary' }>,
+  element: Exclude<Element, { readonly kind: 'flow' }>,
 ): string {
   return isEmptyName(element.name)
     ? t(`divergence.subject-${element.kind}`)
@@ -415,6 +416,8 @@ function lossDetail(t: Speaker, detail: ReportedDetail, held: Held): string {
       return t('divergence.note-name-dropped');
     case 'scope-marking-dropped':
       return t('divergence.scope-marking-dropped');
+    case 'size-raised':
+      return t('divergence.size-raised', detail.parameters);
     case 'threat-attachment-stray':
       return strayAttachment(t, detail.parameters, held);
     case 'threat-unplaceable':

@@ -1,9 +1,22 @@
-import { moveElement, type Model, type ModelInput } from '@saerskriven/model';
-import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
-import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
+import {
+  moveElement,
+  resizeElement,
+  type Model,
+  type ModelInput,
+  type Size,
+} from '@saerskriven/model';
+import {
+  elementId,
+  elementIn,
+  parsedFixture,
+} from '@saerskriven/model/fixtures';
+import type {
+  ThreatDragonCell,
+  ThreatDragonDocument,
+} from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
-import { renderDivergences } from './divergence.js';
+import { renderDivergences, type Divergence } from './divergence.js';
 import { threatDragonJsonSchema } from './corpus.fixtures.js';
 import { threatsOf } from './threat-dragon-document.js';
 import {
@@ -33,6 +46,31 @@ const documentOf = (text: string): ThreatDragonDocument =>
 const numbersIn = (document: ThreatDragonDocument): (number | undefined)[] =>
   allThreats(document).map((threat) => threat.number);
 
+const drawing = (
+  title: string,
+  cells: ThreatDragonCell[],
+  contributors: readonly string[] = [],
+): ThreatDragonDocument => ({
+  version: '2.6.2',
+  summary: { title },
+  detail: {
+    contributors: contributors.map((name) => ({ name })),
+    diagramTop: 1,
+    reviewer: '',
+    threatTop: 1,
+    diagrams: [
+      {
+        id: 0,
+        title: 'One',
+        diagramType: 'STRIDE',
+        thumbnail: './public/content/images/thumbnail.stride.jpg',
+        version: '2.6.2',
+        cells,
+      },
+    ],
+  },
+});
+
 const featureComplete = threatDragonReading(featureCompleteText);
 
 const richer = parsedFixture(richerThanFormatFixture);
@@ -41,6 +79,40 @@ const projected = threatDragonCodec.write(richer);
 
 const movedByHalf = (id: string): Model =>
   Either.getOrThrow(moveElement(richer, elementId(id), { x: 0.5, y: 0.5 }));
+
+const underTen: readonly (readonly [id: string, size: Size])[] = [
+  ['element-clerk', { width: 1, height: 80 }],
+  ['element-ledger', { width: 5, height: 9.99 }],
+  ['element-vault', { width: 160, height: 1 }],
+  ['element-zone', { width: 3, height: 3 }],
+  ['element-note', { width: 2, height: 2 }],
+];
+
+const shrunk = underTen.reduce(
+  (model, [id, size]) =>
+    Either.getOrThrow(resizeElement(model, elementId(id), size)),
+  richer,
+);
+
+const isRaisedSize = ({ detail }: Divergence): boolean =>
+  detail.code === 'size-raised';
+
+const raisedLine = (
+  id: string,
+  held: string,
+  written: string,
+  reason = 'no place in the format',
+): string =>
+  `element "${id}": the size ${held}, written as ${written} to meet the format's minimum (${reason})`;
+
+const boxesOf = (text: string) =>
+  Object.fromEntries(
+    (documentOf(text).detail.diagrams[0]?.cells ?? []).flatMap((cell) =>
+      'size' in cell
+        ? [[cell.id, { position: cell.position, size: cell.size }]]
+        : [],
+    ),
+  );
 
 const merged = threatDragonCodec.write(richer, richerThanFormatSource);
 
@@ -164,6 +236,112 @@ describe('projecting a model the format is smaller than', () => {
     expect(document.version).toBe('2.6.2');
     expect(document.detail.threatTop).toBe(9);
     expect(document.detail.diagramTop).toBe(2);
+  });
+});
+
+describe('projecting elements under the 10 Threat Dragon takes as its least width and height', () => {
+  const held = structuredClone(shrunk);
+  const written = threatDragonCodec.write(shrunk);
+
+  it('writes a file Threat Dragon validates as one of its own', () => {
+    expect(validated(written.output)).toEqual({ valid: true, errors: null });
+  });
+
+  it('writes each extent under 10 as 10, and every position as the model holds it', () => {
+    expect(boxesOf(written.output)).toEqual({
+      'element-clerk': {
+        position: { x: 40, y: 40 },
+        size: { width: 10, height: 80 },
+      },
+      'element-ledger': {
+        position: { x: 320, y: 40 },
+        size: { width: 10, height: 10 },
+      },
+      'element-vault': {
+        position: { x: 600, y: 40 },
+        size: { width: 160, height: 10 },
+      },
+      'element-zone': {
+        position: { x: 560, y: 10 },
+        size: { width: 10, height: 10 },
+      },
+      'element-note': {
+        position: { x: 40, y: 240 },
+        size: { width: 10, height: 10 },
+      },
+    });
+  });
+
+  it('names each element it raised once, beside what the projection reports anyway', () => {
+    expect(
+      renderDivergences(written.divergences.filter(isRaisedSize)).split('\n'),
+    ).toEqual([
+      raisedLine('element-clerk', '1 by 80', '10 by 80'),
+      raisedLine('element-ledger', '5 by 9.99', '10 by 10'),
+      raisedLine('element-vault', '160 by 1', '160 by 10'),
+      raisedLine('element-zone', '3 by 3', '10 by 10'),
+      raisedLine('element-note', '2 by 2', '10 by 10'),
+    ]);
+    expect(
+      written.divergences.filter((divergence) => !isRaisedSize(divergence)),
+    ).toEqual(projected.divergences);
+  });
+
+  it('leaves the model as it was', () => {
+    expect(shrunk).toEqual(held);
+  });
+
+  it('reads back at the sizes it wrote, which a write of that reading reports nothing of', () => {
+    const back = threatDragonReading(written.output);
+    expect(elementIn(back.model, 'element-ledger')).toMatchObject({
+      size: { width: 10, height: 10 },
+    });
+    expect(
+      threatDragonCodec
+        .write(back.model, back.source)
+        .divergences.filter(isRaisedSize),
+    ).toEqual([]);
+  });
+});
+
+describe('writing back a file whose own cell is under 10 across', () => {
+  const held: ThreatDragonCell = {
+    id: 'cell-small',
+    shape: 'process',
+    zIndex: 3,
+    position: { x: 12.5, y: 20 },
+    size: { width: 4, height: 60 },
+    attrs: {
+      body: { stroke: '#333333', strokeWidth: 1.5, strokeDasharray: null },
+    },
+    data: { type: 'tm.Process', name: 'Held small', hasOpenThreats: false },
+  };
+  const read = threatDragonReading(
+    JSON.stringify(drawing('Held small', [held])),
+  );
+  const written = threatDragonCodec.write(read.model, read.source);
+
+  it('raises it in a file Threat Dragon validates, and keeps the rest of the cell', () => {
+    expect(validated(written.output)).toEqual({ valid: true, errors: null });
+    expect(documentOf(written.output).detail.diagrams[0]?.cells?.[0]).toEqual({
+      ...held,
+      size: { width: 10, height: 60 },
+    });
+  });
+
+  it('reports the size it wrote over, and nothing once the file holds 10', () => {
+    expect(renderDivergences(written.divergences)).toBe(
+      raisedLine(
+        'cell-small',
+        '4 by 60',
+        '10 by 60',
+        'not repeated by the codec',
+      ),
+    );
+    const again = threatDragonReading(written.output);
+    expect(
+      threatDragonCodec.write(again.model, again.source).divergences,
+    ).toEqual([]);
   });
 });
 
@@ -327,52 +505,37 @@ describe('merging curves, notes, cards and translated labels', () => {
 });
 
 describe('a merge onto a document an edit has moved out from under', () => {
-  const source: ThreatDragonDocument = {
-    version: '2.6.2',
-    summary: { title: 'Edited' },
-    detail: {
-      contributors: [{ name: 'Alexandra de Wit' }],
-      diagramTop: 1,
-      reviewer: '',
-      threatTop: 1,
-      diagrams: [
-        {
-          id: 0,
-          title: 'One',
-          diagramType: 'STRIDE',
-          thumbnail: './public/content/images/thumbnail.stride.jpg',
-          version: '2.6.2',
-          cells: [
+  const source = drawing(
+    'Edited',
+    [
+      {
+        id: 'element-one',
+        shape: 'actor',
+        zIndex: 3,
+        position: { x: 10, y: 10 },
+        size: { width: 100, height: 60 },
+        data: {
+          type: 'tm.Actor',
+          name: 'Was an actor',
+          hasOpenThreats: true,
+          threats: [
             {
-              id: 'element-one',
-              shape: 'actor',
-              zIndex: 3,
-              position: { x: 10, y: 10 },
-              size: { width: 100, height: 60 },
-              data: {
-                type: 'tm.Actor',
-                name: 'Was an actor',
-                hasOpenThreats: true,
-                threats: [
-                  {
-                    id: 'threat-held',
-                    number: 1,
-                    title: 'Held by the file',
-                    modelType: 'STRIDE',
-                    type: 'Spoofing',
-                    status: 'Open',
-                    severity: 'High',
-                    description: '',
-                    mitigation: '',
-                  },
-                ],
-              },
+              id: 'threat-held',
+              number: 1,
+              title: 'Held by the file',
+              modelType: 'STRIDE',
+              type: 'Spoofing',
+              status: 'Open',
+              severity: 'High',
+              description: '',
+              mitigation: '',
             },
           ],
         },
-      ],
-    },
-  };
+      },
+    ],
+    ['Alexandra de Wit'],
+  );
 
   const edited = parsedFixture({
     metadata: {
@@ -493,26 +656,10 @@ const element = (id: string) => ({
 });
 
 describe('a threat an edit detached from one of the cells holding it', () => {
-  const source: ThreatDragonDocument = {
-    version: '2.6.2',
-    summary: { title: 'Detached' },
-    detail: {
-      contributors: [],
-      diagramTop: 1,
-      reviewer: '',
-      threatTop: 1,
-      diagrams: [
-        {
-          id: 0,
-          title: 'One',
-          diagramType: 'STRIDE',
-          thumbnail: './public/content/images/thumbnail.stride.jpg',
-          version: '2.6.2',
-          cells: [cell('cell-a', '7', false), cell('cell-b', '9', true)],
-        },
-      ],
-    },
-  };
+  const source = drawing('Detached', [
+    cell('cell-a', '7', false),
+    cell('cell-b', '9', true),
+  ]);
 
   const detached = parsedFixture({
     metadata: {

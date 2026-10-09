@@ -263,7 +263,8 @@ says where the two differ. What the published schema does pin, and what a
 written file therefore has to carry, is
 `contributors`, `diagramTop`, `reviewer` and `threatTop` on the detail, a
 `thumbnail` and a `version` on every diagram, and a `zIndex` and a
-`data.hasOpenThreats` on every cell.
+`data.hasOpenThreats` on every cell, with a `size` of at least 10 each way and
+whole numbers in a `source` or `target` that is a point.
 
 | File                                  | Upstream path                                           | MD5                                |
 | ------------------------------------- | ------------------------------------------------------- | ---------------------------------- |

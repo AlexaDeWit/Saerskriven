@@ -44,10 +44,12 @@ projects and keeps none, and no codec keeps an `undeclared` key.
 A divergence is a place a file and the model do not correspond exactly, or a
 written file and the source it was merged onto. Coordinates are compared at
 the precision the format holds, so a coordinate a write rounds to fit the
-format is not a divergence. Reads and writes return one list of them, and an
-empty list is the aligned case. The subjects, the reasons and the terminal
-escaping of `renderDivergences` are in
-[`divergence.ts`](src/lib/divergence.ts).
+format is not a divergence. A size a write raises is one, since the element
+reads back larger than the model holds it: Threat Dragon takes no width or
+height under 10, so its write raises a smaller one to 10 and reports the
+element once. Reads and writes return one list of them, and an empty list is
+the aligned case. The subjects, the reasons and the terminal escaping of
+`renderDivergences` are in [`divergence.ts`](src/lib/divergence.ts).
 
 An entry names its subject, its reason and a `detail`: a code from a closed
 set with the data that code needs, in
