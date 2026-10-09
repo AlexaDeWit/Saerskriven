@@ -64,7 +64,7 @@ export const assumptionIdSchema = acceptedTextSchema
 /** Branded assumption id. */
 export type AssumptionId = z.infer<typeof assumptionIdSchema>;
 
-const leadingAlphabet = 'abcdfghjkmnpqrst';
+const leadingAlphabet = 'qrst';
 const trailingAlphabet = '0123456789abcdefghjkmnpqrstvwxyz';
 
 const fresh = <Schema extends z.ZodType>(schema: Schema): z.infer<Schema> => {
