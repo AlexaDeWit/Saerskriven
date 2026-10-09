@@ -83,7 +83,8 @@
     // Every update type waits for Dependency Dashboard approval, so the
     // `packageManager` field moves in a reviewed change that pairs it with the
     // flake, and `pmOnFail: error` in pnpm-workspace.yaml reds a mismatch.
-    // pnpm 12 waits on nixpkgs packaging it at all.
+    // pnpm 12 is a flake change as well: nixos-26.05 carries it as
+    // `pkgs.pnpm_12`, and `pkgs.pnpm`, which the flake names, stays on 11.
     {
       matchPackageNames: ['pnpm'],
       dependencyDashboardApproval: true,
