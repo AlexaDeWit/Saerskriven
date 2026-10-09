@@ -68,7 +68,7 @@ const leadingAlphabet = 'abcdfghjkmnpqrst';
 const trailingAlphabet = '0123456789abcdefghjkmnpqrstvwxyz';
 
 const fresh = <Schema extends z.ZodType>(schema: Schema): z.infer<Schema> => {
-  const [lead = 0, ...rest] = crypto.getRandomValues(new Uint8Array(8));
+  const [lead, ...rest] = crypto.getRandomValues(new Uint8Array(8));
   const characters = [
     leadingAlphabet.charAt(lead & (leadingAlphabet.length - 1)),
     ...rest.map((byte) =>
@@ -83,7 +83,7 @@ const fresh = <Schema extends z.ZodType>(schema: Schema): z.infer<Schema> => {
  * matching `^[a-df-hjkmnp-t][0-9a-hjkmnp-tv-z]{7}$`. The first character is a
  * letter other than `e`, so a plain YAML scalar is never read back as a
  * number (`1e5`). `i`, `l`, `o` and `u` are left out of the alphabet as
- * look-alikes. Needs no secure context. The other generators share this shape.
+ * look-alikes. The other generators share this shape.
  */
 export function generateElementId(): ElementId {
   return fresh(elementIdSchema);
