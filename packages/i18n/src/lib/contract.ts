@@ -7,7 +7,8 @@ export type ParameterKind = 'text' | 'number' | 'list' | 'node';
 
 export type ParameterShape = { readonly [name: string]: ParameterKind };
 
-type NoParameters = Record<never, ParameterKind>;
+/** The shape of a message that takes no parameters: no name has a kind. */
+export type NoParameters = { readonly [name: string]: never };
 
 export type TextMessage<P extends ParameterShape = ParameterShape> = {
   readonly kind: 'text';
@@ -52,7 +53,7 @@ type Counted<P extends ParameterShape, C extends string> = P & {
  */
 export function plural<const C extends string>(
   count: C,
-): PluralMessage<Counted<NoParameters, C>, C>;
+): PluralMessage<{ readonly [K in C]: 'number' }, C>;
 export function plural<const C extends string, const P extends ParameterShape>(
   count: C,
   params: P,

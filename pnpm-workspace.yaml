@@ -46,7 +46,11 @@ overrides:
 minimumReleaseAge: 10080
 
 catalog:
-  mermaid: 11.16.1
+  # Development only. One spec in @saerskriven/render parses the diagrams the
+  # Markdown export emits, so this pin is the grammar that check proves: 12,
+  # which GitHub's viewer rendered with on 2026-10-09. Nothing checks the 11
+  # grammar, which GitLab still defaulted to on that date.
+  mermaid: 12.1.0
   # axe-core driven through Playwright: the runtime half of the studio's
   # accessibility gate, catching contrast, focus order and computed roles
   # that static analysis cannot see.
@@ -54,12 +58,17 @@ catalog:
   # The MCP client, used by the specs alone: the stdio harness drives the
   # packaged CLI and the in-memory transport drives the server object in
   # process. Held as one wave with the server package below, which it shares
-  # a @modelcontextprotocol/core pin with.
-  '@modelcontextprotocol/client': ^2.0.0
+  # a @modelcontextprotocol/core pin with, and Renovate proposes the two in
+  # one group (renovate.json5). The floor is 2.2.0: the 2.0 and 2.1 clients
+  # could send stored OAuth credentials to an authorization server the MCP
+  # server named (GHSA-6qxp-vccf-f47h). No spec here constructs an OAuth
+  # provider, and the floor keeps those releases out of a resolve all the same.
+  '@modelcontextprotocol/client': ^2.2.0
   # The MCP server SDK, protocol revision 2026-07-28 (issue #46). The split
   # 2.0 packages replace the monolithic @modelcontextprotocol/sdk, whose 1.x
-  # line implements the 2025 revisions only.
-  '@modelcontextprotocol/server': ^2.0.0
+  # line implements the 2025 revisions only. The floor follows the client's,
+  # since each of the two pins the core they share to its own exact version.
+  '@modelcontextprotocol/server': ^2.2.0
   # The Typst compiler as a WebAssembly module, which is what puts PDF output
   # inside the CLI's single executable: no browser, no native addon, and
   # nothing fetched at run time (issue #34). The node compiler package of the
@@ -83,7 +92,7 @@ catalog:
   '@playwright/test': 1.59.1
   '@radix-ui/react-icons': ^1.3.2
   '@swc-node/register': 1.12.1
-  '@swc/core': 1.16.2
+  '@swc/core': 1.16.13
   '@swc/helpers': 0.5.23
   '@testing-library/dom': 10.4.2
   '@testing-library/react': 16.3.3
@@ -138,10 +147,10 @@ catalog:
   nx: 23.2.1
   # Pinned exactly: a pre-1.0 oxfmt bump may reformat the tree, so it happens
   # only in a reviewed PR. Renovate proposes the bumps.
-  oxfmt: 0.70.0
+  oxfmt: 0.71.0
   # Pinned exactly: oxlint minors add rules, so a range bump could redden CI
   # outside a reviewed PR. Renovate proposes the bumps.
-  oxlint: 1.85.0
+  oxlint: 1.86.0
   # tsgolint bundles its own typescript-go checker, so it does not care about
   # the catalog's typescript version.
   oxlint-tsgolint: 7.0.2003
@@ -184,6 +193,3 @@ catalog:
   # a pure reducer. React Flow carries a zustand 4 copy of its own for its
   # internal store, which is its business and no version this workspace uses.
   zustand: ^5.0.15
-minimumReleaseAgeExclude:
-  # Renovate security update: mermaid@11.16.1
-  - mermaid@11.16.1
