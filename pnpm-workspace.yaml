@@ -54,9 +54,10 @@ catalog:
   # The MCP client, used by the specs alone: the stdio harness drives the
   # packaged CLI and the in-memory transport drives the server object in
   # process. Held as one wave with the server package below, which it shares
-  # a @modelcontextprotocol/core pin with. The floor is 2.2.0: the 2.0 and 2.1
-  # clients could send stored OAuth credentials to an authorization server the
-  # MCP server named (GHSA-6qxp-vccf-f47h). No spec here constructs an OAuth
+  # a @modelcontextprotocol/core pin with, and Renovate proposes the two in
+  # one group (renovate.json5). The floor is 2.2.0: the 2.0 and 2.1 clients
+  # could send stored OAuth credentials to an authorization server the MCP
+  # server named (GHSA-6qxp-vccf-f47h). No spec here constructs an OAuth
   # provider, and the floor keeps those releases out of a resolve all the same.
   '@modelcontextprotocol/client': ^2.2.0
   # The MCP server SDK, protocol revision 2026-07-28 (issue #46). The split

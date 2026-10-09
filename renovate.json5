@@ -77,6 +77,16 @@
       dependencyDashboardApproval: true,
     },
 
+    // The MCP client and server each pin @modelcontextprotocol/core to their
+    // own exact version, so one moving alone leaves two cores in the tree.
+    // One grouped PR for a scheduled update. A security update is outside
+    // the group: Renovate raises it for the vulnerable package alone, and the
+    // other package joins it by hand.
+    {
+      matchPackageNames: ['@modelcontextprotocol/*'],
+      groupName: 'mcp sdk',
+    },
+
     // pnpm must not move independently of `pkgs.pnpm`, which Renovate cannot
     // bump in step: nixpkgs tracks a branch, so the flake's pnpm arrives
     // through the lock refresh above rather than as a version this proposes.
