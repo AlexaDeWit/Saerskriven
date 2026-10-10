@@ -100,7 +100,13 @@ its class and font size, and `severityToneClass` names each severity's tone.
 Nothing in the sheet is faded, so every ink is drawn at the ratio
 `tokens.spec.ts` measures for it. An out-of-scope element is marked by round
 dots on its outline, where an outline in scope is solid and a trust boundary's
-is dashed. A note has no outline, so while it is out of scope its glyph draws
+is dashed. An [accent](../../docs/studio.md#accents) is paint alone: the
+layout carries an element's key to its glyph, which marks its group with the
+classes of `accentClassNames`, and no box, bound or flow name placement reads
+it. The slot colours and tints are palette roles like any other. The studio's
+sheet always carries the accent rules, and `renderCanvasStylesheet` writes
+them only for a drawing that holds an accent, so a drawing without one keeps
+the sheet it had. A note has no outline, so while it is out of scope its glyph draws
 a dotted frame `noteFrameOffset` outside its box, clear of the selection frame
 and focus ring the studio draws inside the box. `drawnBounds` holds the frame,
 and a flow's block is held clear of it.
@@ -140,8 +146,8 @@ The bytes are pinned once, by the SVG goldens of
 [`packages/render`](../render/README.md#the-goldens), which draws these glyphs.
 The diagrams this suite lays out whole, for its element count and label
 placement checks, are `committedDiagrams` on `@saerskriven/model/fixtures`:
-`test-data/every-glyph.model.json` and the two diagrams of
-`test-data/two-diagrams.model.json`. They live under `test-data` because
+`test-data/every-glyph.model.json`, the two diagrams of
+`test-data/two-diagrams.model.json`, and `test-data/accents.model.json`. They live under `test-data` because
 `packages/render` draws them too and cannot import this package's spec
 fixtures, which no entry point exports.
 

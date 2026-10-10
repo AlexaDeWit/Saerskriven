@@ -40,11 +40,14 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `viewport.ts`, `view-commands.tsx`                                                              | The zoom limits, the canvas area left of the pane and the viewport that fits a box into it, and the hooks applying them                                    |
 | `focus-pan.tsx`                                                                                 | The shortest pan that brings the focused item's ring, or a bend being placed, into the viewport, asked for by Tab focus and by an arrow-key move or resize |
 | `toolbox.tsx`, `zoom-cluster.tsx`, `stroke-glyph.tsx`                                           | The tool modes on the chrome card, the zoom controls, and the stroke icon the toolbox and the selection cards draw                                         |
+| `accent-bar.tsx`                                                                                | The accent swatches on the chrome card, which give the selection an accent key or clear it                                                                 |
 
 The shell mounts `toolbox.tsx` as row two of its chrome card
-(`../app/chrome.tsx`), and hangs `canvas-announcement.tsx` and
-`flow-target-chooser.tsx` under that card. None of the three reads a React Flow
-hook, which is what lets the shell host them.
+(`../app/chrome.tsx`) and `accent-bar.tsx` as row three, and hangs
+`canvas-announcement.tsx` and `flow-target-chooser.tsx` under that card. None
+of the four reads a React Flow hook, which is what lets the shell host them.
+The accent bar draws its swatches from the token properties with its own
+styles, so it does not depend on the canvas sheet being mounted.
 
 ## Mounting
 

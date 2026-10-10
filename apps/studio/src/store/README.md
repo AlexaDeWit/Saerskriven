@@ -42,7 +42,8 @@ host provides.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. A model edit
   carries one operation and its arguments, so an unlink that removes a record
   from its last reference is one undo step. `MoveElements` and
-  `RemoveElements` fold the matching operation over one ID array, and
+  `RemoveElements` fold the matching operation over one ID array, `SetAccent`
+  hands its ID array to the one operation that takes several, and
   `InsertFragment` and `ArrangeElements` apply a paste or an arrangement
   atomically, before history records the result. `AddDiagram` appends a
   diagram and shows it, the one edit that moves the view as well as the model.
