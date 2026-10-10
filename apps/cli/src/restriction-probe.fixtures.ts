@@ -1,10 +1,12 @@
 import { spawnSync } from 'node:child_process';
+import { createPrivateKey } from 'node:crypto';
 import { createSocket } from 'node:dgram';
 import { lookup } from 'node:dns/promises';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { connect, createServer, type NetConnectOpts } from 'node:net';
 import { dirname, join } from 'node:path';
 import { getAsset } from 'node:sea';
+import { pathToFileURL } from 'node:url';
 import { Worker } from 'node:worker_threads';
 
 declare const WebAssembly: {
@@ -18,7 +20,22 @@ type Outcome = { readonly allowed: boolean; readonly code: string | null };
 
 type Attempt = () => Promise<unknown>;
 
-const [, , role, tcpPort, unixPath, readPath, writePath] = process.argv;
+const roles = ['probe', 'wait'];
+
+const [role, tcpPort, unixPath, readPath, writePath] = process.argv.slice(
+  process.argv.findIndex(
+    (argument, index) => index > 1 && roles.includes(argument),
+  ),
+);
+
+if (role === 'wait') {
+  process.stdout.write('waiting\n');
+  process.stdin.pipe(process.stdout);
+  await new Promise((resolve) => {
+    process.stdin.once('end', resolve);
+  });
+  process.exit(0);
+}
 
 if (
   role !== 'probe' ||
@@ -31,6 +48,8 @@ if (
 }
 
 const loopback = '127.0.0.1';
+
+const absent = (name: string): string => join(dirname(writePath), name);
 
 const codeOf = (error: unknown): string | null => {
   if (!(error instanceof Error)) {
@@ -106,7 +125,7 @@ const channels: Readonly<Record<string, Attempt>> = {
     }),
   addon: () => {
     const addon = { exports: {} };
-    process.dlopen(addon, join(dirname(writePath), 'absent.node'));
+    process.dlopen(addon, absent('absent.node'));
     return Promise.resolve(addon);
   },
   wasi: async () => {
@@ -118,6 +137,20 @@ const channels: Readonly<Record<string, Attempt>> = {
     inspector.open(0, loopback, false);
     inspector.close();
   },
+  ffi: () => {
+    const ffi = process.getBuiltinModule('node:ffi');
+    return ffi !== undefined &&
+      'dlopen' in ffi &&
+      typeof ffi.dlopen === 'function'
+      ? Promise.resolve(Reflect.apply(ffi.dlopen, ffi, [absent('absent.so')]))
+      : Promise.reject(new Error('this Node has no node:ffi'));
+  },
+  opensslStore: () =>
+    Promise.resolve(
+      Reflect.apply(createPrivateKey, undefined, [
+        pathToFileURL(absent('absent.pem')),
+      ]),
+    ),
 };
 
 const sumModule = new Uint8Array([
@@ -143,4 +176,6 @@ for (const [channel, start] of Object.entries(channels)) {
   attempts[channel] = await attempted(start);
 }
 
-process.stdout.write(`${JSON.stringify({ permitted, attempts })}\n`);
+process.stdout.write(
+  `${JSON.stringify({ execArgv: process.execArgv, permitted, attempts })}\n`,
+);

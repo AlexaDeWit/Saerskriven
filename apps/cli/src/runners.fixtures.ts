@@ -125,3 +125,12 @@ export function modulesNamedIn(bundle: string): {
  * about a second and a half on an unloaded runner.
  */
 export const spawnTimeout = 30_000;
+
+/**
+ * How long the hook that packages the restriction probe and runs it is given,
+ * past the root `vitest.shared.mts` sets. The packaging copies a Node binary
+ * of about 150 MB and injects the probe into it, and the hook then starts the
+ * result once per invocation, which together took twelve seconds on a host at
+ * load 15.
+ */
+export const probePackagingTimeout = 60_000;

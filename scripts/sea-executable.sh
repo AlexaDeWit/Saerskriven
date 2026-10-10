@@ -56,16 +56,37 @@ if [ -d "${tree}/assets" ]; then
 fi
 readonly assets
 
-# execArgv is the restriction: the permission model with file reads and
-# writes granted and nothing else, so the network, child processes, workers,
-# native addons, WASI, FFI and the inspector are refused. execArgvExtension
-# keeps NODE_OPTIONS and --node-options from adding a grant.
+# The restriction. Of the permission flags this Node has, the two for files
+# are granted and every other is denied by name. A denial is needed, and not
+# only the absence of a grant, because Node also reads a configuration file
+# that any argument names (--experimental-config-file) and applies its
+# permission section. It parses execArgv after that file, so a denial here
+# wins over a grant there.
+readonly denied=(addons child-process ffi fs-vfs inspector net openssl-store
+  wasi worker)
+known="$("${SAERSKRIVEN_SEA_NODE}" --help |
+  { grep -o -- '--allow-[a-z-]*' || true; } | LC_ALL=C sort -u | tr '\n' ' ')"
+listed="$(printf -- '--allow-%s\n' fs-read fs-write "${denied[@]}" |
+  LC_ALL=C sort | tr '\n' ' ')"
+if [ "${known}" != "${listed}" ]; then
+  echo "the packaging Node has the permission flags: ${known}" >&2
+  echo "and $0 grants or denies: ${listed}" >&2
+  echo "Grant or deny each by name before building, so that a scope a" >&2
+  echo "Node bump added is not left to a configuration file to grant." >&2
+  exit 1
+fi
+denials="$(printf '%s\n' "${denied[@]}" | jq -R '"--no-allow-" + .' | jq -s .)"
+readonly denials
+
+# execArgvExtension keeps NODE_OPTIONS and --node-options out of the
+# arguments Node parses.
 readonly config="${scratch}/sea-config.json"
 jq -n \
   --arg main "${entry}" \
   --arg executable "${runtime}" \
   --arg output "${output}" \
   --argjson assets "${assets}" \
+  --argjson denials "${denials}" \
   '{
     main: $main,
     mainFormat: "module",
@@ -75,7 +96,9 @@ jq -n \
     useSnapshot: false,
     useCodeCache: false,
     assets: $assets,
-    execArgv: ["--permission", "--allow-fs-read=*", "--allow-fs-write=*"],
+    execArgv: (
+      ["--permission", "--allow-fs-read=*", "--allow-fs-write=*"] + $denials
+    ),
     execArgvExtension: "none"
   }' >"${config}"
 
