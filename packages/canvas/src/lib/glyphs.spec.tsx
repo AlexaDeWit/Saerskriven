@@ -4,7 +4,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { badgeExtent, type ThreatBadge } from './badges.js';
-import { edgeNamed, nodeNamed, specMarks } from './canvas.fixtures.js';
+import {
+  accentsLayout,
+  edgeNamed,
+  nodeNamed,
+  specMarks,
+} from './canvas.fixtures.js';
 import { flowLabelPlacements } from './flow-labels.js';
 import { segmentMeetsBox, type Box } from './geometry.js';
 import {
@@ -16,6 +21,7 @@ import {
 } from './glyphs.js';
 import type { CanvasEdge, CanvasNode } from './layout.js';
 import {
+  accentClassNames,
   boundaryStrokeWidth,
   canvasClassNames,
   wrappedTextStyles,
@@ -219,6 +225,93 @@ describe('FlowGlyph', () => {
   it('badges a flow the open threats name', () => {
     expect(flowOf('el-request')).toContain(canvasClassNames.badge);
     expect(flowOf('el-write')).not.toContain(canvasClassNames.badge);
+  });
+});
+
+const accented = (id: string): string => {
+  const node = accentsLayout.nodes.find((candidate) => candidate.id === id);
+  const edge = accentsLayout.edges.find((candidate) => candidate.id === id);
+  if (node !== undefined) {
+    return drawn(node);
+  }
+  if (edge !== undefined) {
+    return renderToStaticMarkup(<FlowGlyph marks={specMarks} edge={edge} />);
+  }
+  throw new Error(`No element ${id} in the accents layout`);
+};
+
+const group = (...classes: readonly string[]): string =>
+  `<g class="${[canvasClassNames.element, ...classes].join(' ')}">`;
+
+const fromText = (markup: string): string =>
+  markup.slice(markup.indexOf('<text'));
+
+describe('an accented glyph', () => {
+  const { slot1, slot2, slot3, slot4, strong, tinted, storeBand } =
+    accentClassNames;
+
+  it.each([
+    ['ac-strong-1', [slot1, strong]],
+    ['ac-strong-2', [slot2, strong]],
+    ['ac-strong-3', [slot3, strong]],
+    ['ac-strong-4', [slot4, strong]],
+    ['ac-light-1', [slot1]],
+    ['ac-light-2', [slot2]],
+    ['ac-light-3', [slot3]],
+    ['ac-light-4', [slot4]],
+    ['ac-flow-strong', [slot1, strong]],
+    ['ac-flow-light', [slot3]],
+    ['ac-zone-strong', [slot3, strong]],
+    ['ac-zone-light', [slot2]],
+    ['ac-edge-strong', [slot4, strong]],
+    ['ac-out-strong', [canvasClassNames.outOfScope, slot2, strong]],
+    ['ac-flow-out', [canvasClassNames.outOfScope, slot2, strong]],
+    ['ac-plain', []],
+    ['ac-flow-plain', []],
+    ['ac-note', []],
+  ] as const)(
+    'marks the group of %s with its slot, and its strength where strong',
+    (id, classes) => {
+      expect(accented(id)).toContain(group(...classes));
+    },
+  );
+
+  it('marks the fill of a strong actor and a strong process for the tint, and of no light one', () => {
+    expect(accented('ac-strong-1')).toContain(
+      `class="${canvasClassNames.shape} ${canvasClassNames.actor} ${tinted}"`,
+    );
+    expect(accented('ac-strong-2')).toContain(
+      `class="${canvasClassNames.shape} ${canvasClassNames.process} ${tinted}"`,
+    );
+    for (const id of ['ac-light-1', 'ac-light-2', 'ac-light-3', 'ac-plain']) {
+      expect(accented(id)).not.toContain(tinted);
+    }
+  });
+
+  it('draws a strong store the band its tint fills, under its two lines, and a light store none', () => {
+    const store = accented('ac-strong-3');
+    const band = `<rect class="${storeBand} ${tinted}" width="140" height="70"`;
+    expect(store).toContain(band);
+    expect(store.indexOf(band)).toBeLessThan(store.indexOf('<line'));
+    expect(accented('ac-light-3')).not.toContain(storeBand);
+  });
+
+  it('leaves a trust boundary and a flow unfilled, whatever their strength', () => {
+    for (const id of ['ac-zone-strong', 'ac-edge-strong', 'ac-flow-strong']) {
+      expect(accented(id)).not.toContain(tinted);
+    }
+  });
+
+  it('draws the name and the badge of an accented element as it draws them with no accent', () => {
+    const node = accentsLayout.nodes.find(
+      (candidate) => candidate.id === 'ac-badged',
+    );
+    if (node === undefined || node.kind === 'text') {
+      throw new Error('The accents layout holds no badged process');
+    }
+    const { accent: _accent, ...plain } = node;
+    expect(node.badge).toBeDefined();
+    expect(fromText(drawn(node))).toBe(fromText(drawn(plain)));
   });
 });
 

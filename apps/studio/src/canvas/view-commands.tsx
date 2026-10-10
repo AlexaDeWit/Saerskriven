@@ -5,12 +5,15 @@ import type { ViewCommands } from '../commands/surface.js';
 import { activeDiagramId, modelAsOpened } from '../store/selectors.js';
 import { modelStore, useModelStore } from '../store/store.js';
 import { currentLayout, selectionBounds } from './layout.js';
-import { clearOfPanel, fitViewport } from './viewport.js';
+import { fitArea, fitViewport } from './viewport.js';
 
-/** View commands use the measured pane coverage for explicit fitting. */
-export function useViewCommands(panelCover = 0): ViewCommands {
+/**
+ * View commands fit the area left of the measured pane coverage and below
+ * the chrome card's measured bottom edge.
+ */
+export function useViewCommands(panelCover = 0, cardBottom = 0): ViewCommands {
   const flow = useReactFlow();
-  const fit = useCanvasFit(panelCover);
+  const fit = useCanvasFit(panelCover, cardBottom);
   const width = useStore((state) => state.width);
   const height = useStore((state) => state.height);
 
@@ -23,7 +26,7 @@ export function useViewCommands(panelCover = 0): ViewCommands {
         const state = modelStore.getState();
         const viewport = fitViewport(
           selectionBounds(currentLayout(state), state.selection),
-          clearOfPanel({ width, height }, panelCover),
+          fitArea({ width, height }, panelCover, cardBottom),
         );
         if (viewport !== undefined) {
           void flow.setViewport(viewport);
@@ -39,13 +42,18 @@ export function useViewCommands(panelCover = 0): ViewCommands {
         fit?.();
       },
     }),
-    [fit, flow, width, height, panelCover],
+    [fit, flow, width, height, panelCover, cardBottom],
   );
 }
 
-/** Fits each newly opened model once, and each diagram switched to. */
-export function FitOnOpen() {
-  const fit = useCanvasFit();
+/**
+ * Fits each newly opened model once, and each diagram switched to, below the
+ * chrome card's bottom edge. It reserves the card alone, never a pane.
+ */
+export function FitOnOpen({
+  cardBottom = 0,
+}: { readonly cardBottom?: number } = {}) {
+  const fit = useCanvasFit(0, cardBottom);
   const opened = useModelStore(modelAsOpened);
   const diagram = useModelStore(activeDiagramId);
   const fitted = useRef<{
@@ -66,7 +74,10 @@ export function FitOnOpen() {
   return null;
 }
 
-function useCanvasFit(panelCover = 0): (() => void) | undefined {
+function useCanvasFit(
+  panelCover: number,
+  cardBottom: number,
+): (() => void) | undefined {
   const flow = useReactFlow();
   const bounds = useModelStore((state) => currentLayout(state).bounds);
   const width = useStore((state) => state.width);
@@ -75,12 +86,12 @@ function useCanvasFit(panelCover = 0): (() => void) | undefined {
   return useMemo(() => {
     const viewport = fitViewport(
       bounds,
-      clearOfPanel({ width, height }, panelCover),
+      fitArea({ width, height }, panelCover, cardBottom),
     );
     return viewport === undefined
       ? undefined
       : () => {
           void flow.setViewport(viewport);
         };
-  }, [bounds, flow, height, width, panelCover]);
+  }, [bounds, flow, height, width, panelCover, cardBottom]);
 }

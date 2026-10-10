@@ -159,10 +159,16 @@ function useCanvasKeyboardText(): CanvasKeyboardText {
   }, [t]);
 }
 
-/** The controlled diagram canvas and its floating editing controls. */
+/**
+ * The controlled diagram canvas and its floating editing controls. An opening
+ * fit keeps the diagram below `cardBottom`, the chrome card's bottom edge in
+ * the canvas's own pixels.
+ */
 export function DiagramCanvas({
+  cardBottom = 0,
   paneCoverage,
 }: {
+  readonly cardBottom?: number;
   readonly paneCoverage?: readonly [number, (cover: number) => void];
 } = {}) {
   const snapping = useSnap();
@@ -445,7 +451,7 @@ export function DiagramCanvas({
         <FlowBlockSurface onReady={setBlockSurface} />
         <FlowBendControls bends={bends} panelCover={panelCover} />
         <CurvePointControls points={points} />
-        <FitOnOpen />
+        <FitOnOpen cardBottom={cardBottom} />
         <FocusPan />
         <FlowFocusPaint />
         <KeyboardMoveMessage ref={keyboardMove} />

@@ -1,5 +1,6 @@
 import {
   inNumberOrder,
+  type AccentableElement,
   type Assumption,
   type BoundaryShape,
   type Diagram,
@@ -67,8 +68,9 @@ export function writeSaerskrivenYaml(
  * The model as a current-version document, threats in number order and every
  * other list in the model's order. Records are mapped field by field,
  * mirroring `saerskriven-yaml-read.ts`. A threat's `appliesToModel` is stated
- * only where it is true, so a model that never used it writes the bytes it
- * wrote before the key existed.
+ * only where it is true and an element's `accent` only where it holds one, so
+ * a model that never used either writes the bytes it wrote before the key
+ * existed.
  */
 export function writeSaerskrivenYamlDocument(
   model: Model,
@@ -109,6 +111,7 @@ function toWireElement(element: Element): SaerskrivenYamlV2Element {
       kind: 'flow',
       ...flowProperties(element),
       ...toWireCommon(element),
+      ...toWireAccent(element),
       source: toWireEndpoint(element.source),
       target: toWireEndpoint(element.target),
       waypoints: element.waypoints,
@@ -120,6 +123,7 @@ function toWireElement(element: Element): SaerskrivenYamlV2Element {
       kind: 'trust-boundary',
       ...boundaryProperties(element),
       ...toWireCommon(element),
+      ...toWireAccent(element),
       shape: toWireBoundaryShape(element.shape),
     };
   }
@@ -134,6 +138,7 @@ function toWireElement(element: Element): SaerskrivenYamlV2Element {
   }
   const node = {
     ...toWireCommon(element),
+    ...toWireAccent(element),
     position: element.position,
     size: element.size,
   };
@@ -154,6 +159,10 @@ function toWireCommon(element: Element) {
     outOfScope: element.outOfScope,
     reasonOutOfScope: element.reasonOutOfScope,
   };
+}
+
+function toWireAccent(element: AccentableElement): { accent?: string } {
+  return element.accent === undefined ? {} : { accent: element.accent };
 }
 
 function toWireEndpoint(endpoint: FlowEndpoint): SaerskrivenYamlV2Endpoint {

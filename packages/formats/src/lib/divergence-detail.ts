@@ -52,6 +52,8 @@ export const divergenceDetailSchema = z.discriminatedUnion('code', [
   carrying('threat-discarded', { title: z.string() }),
   carrying('note-name-dropped', { name: z.string() }),
   coded('scope-marking-dropped'),
+  carrying('accents-dropped', { count: z.number() }),
+  carrying('accent-unknown', { accent: z.string() }),
   carrying('cell-reshaped', { shape: z.string(), kind: elementKindSchema }),
   carrying('size-raised', {
     width: z.number(),
@@ -149,6 +151,10 @@ export function divergenceDetailText(detail: DivergenceDetail): string {
       return `the name "${detail.parameters.name}", which the format has one text for a note and no name beside it`;
     case 'scope-marking-dropped':
       return 'the out-of-scope marking, which the format records on the elements a threat attaches to alone';
+    case 'accents-dropped':
+      return `${detail.parameters.count === 1 ? 'the accent on 1 element' : `the accents on ${detail.parameters.count} elements`}, which the format has no key for`;
+    case 'accent-unknown':
+      return `the accent "${detail.parameters.accent}", which the model has no key for`;
     case 'cell-reshaped':
       return `what the source held on the ${detail.parameters.shape} cell of this id, which now draws ${kindNouns[detail.parameters.kind].article} ${kindNouns[detail.parameters.kind].noun}`;
     case 'size-raised':

@@ -48,6 +48,7 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
       - `description`: text
       - `outOfScope`: boolean
       - `reasonOutOfScope`: text
+      - `accent`: optional, one of `s1`, `s2`, `s3`, `s4`, `l1`, `l2`, `l3`, `l4`
       - `position`: object
         - `x`: number, -1000000 or more, 1000000 or less
         - `y`: number, -1000000 or more, 1000000 or less
@@ -61,6 +62,7 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
       - `description`: text
       - `outOfScope`: boolean
       - `reasonOutOfScope`: text
+      - `accent`: optional, one of `s1`, `s2`, `s3`, `s4`, `l1`, `l2`, `l3`, `l4`
       - `position`: object
         - `x`: number, -1000000 or more, 1000000 or less
         - `y`: number, -1000000 or more, 1000000 or less
@@ -77,6 +79,7 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
       - `description`: text
       - `outOfScope`: boolean
       - `reasonOutOfScope`: text
+      - `accent`: optional, one of `s1`, `s2`, `s3`, `s4`, `l1`, `l2`, `l3`, `l4`
       - `position`: object
         - `x`: number, -1000000 or more, 1000000 or less
         - `y`: number, -1000000 or more, 1000000 or less
@@ -94,6 +97,7 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
       - `description`: text
       - `outOfScope`: boolean
       - `reasonOutOfScope`: text
+      - `accent`: optional, one of `s1`, `s2`, `s3`, `s4`, `l1`, `l2`, `l3`, `l4`
       - `protocol`: optional, text
       - `isEncrypted`: optional, boolean
       - `isPublicNetwork`: optional, boolean
@@ -124,6 +128,7 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
       - `description`: text
       - `outOfScope`: boolean
       - `reasonOutOfScope`: text
+      - `accent`: optional, one of `s1`, `s2`, `s3`, `s4`, `l1`, `l2`, `l3`, `l4`
       - `containedElements`: optional, list of ElementId (text, at least 2 characters)
       - `crossingFlows`: optional, list of ElementId (text, at least 2 characters)
       - `shape`: one of 2, told apart by `kind`

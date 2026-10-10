@@ -61,7 +61,7 @@
   stroke-width: var(--saer-cue-flow-selection);
 }
 
-/* Preserve the dotted pitch-to-weight ratio, 5 over 2, through both cues. */
+/* Preserve the dotted pitch-to-weight ratio through both cues. */
 .canvas
   :global(
     .react-flow__edge:hover .saer-diagram-out-of-scope .saer-diagram-shape
@@ -72,14 +72,63 @@
       .saer-diagram-out-of-scope
       .saer-diagram-shape
   ) {
-  stroke-dasharray: 0 calc(var(--saer-cue-flow-hover) * 2.5);
+  stroke-dasharray: 0
+    calc(var(--saer-cue-flow-hover) * var(--saer-dot-pitch-ratio));
 }
 
 .canvas
   :global(
     .react-flow__edge.selected .saer-diagram-out-of-scope .saer-diagram-shape
   ) {
-  stroke-dasharray: 0 calc(var(--saer-cue-flow-selection) * 2.5);
+  stroke-dasharray: 0
+    calc(var(--saer-cue-flow-selection) * var(--saer-dot-pitch-ratio));
+}
+
+/* A strong accent rests at the selection weight, so its own cues sit above it. */
+.canvas
+  :global(
+    .react-flow__edge:hover .saer-diagram-accent-strong .saer-diagram-shape
+  ),
+.canvas
+  :global(
+    .react-flow__edge:has([data-flow-block-hovered])
+      .saer-diagram-accent-strong
+      .saer-diagram-shape
+  ) {
+  stroke-width: var(--saer-cue-strong-flow-hover);
+}
+
+.canvas
+  :global(
+    .react-flow__edge.selected .saer-diagram-accent-strong .saer-diagram-shape
+  ) {
+  stroke-width: var(--saer-cue-strong-flow-selection);
+}
+
+.canvas
+  :global(
+    .react-flow__edge:hover
+      .saer-diagram-out-of-scope.saer-diagram-accent-strong
+      .saer-diagram-shape
+  ),
+.canvas
+  :global(
+    .react-flow__edge:has([data-flow-block-hovered])
+      .saer-diagram-out-of-scope.saer-diagram-accent-strong
+      .saer-diagram-shape
+  ) {
+  stroke-dasharray: 0
+    calc(var(--saer-cue-strong-flow-hover) * var(--saer-dot-pitch-ratio));
+}
+
+.canvas
+  :global(
+    .react-flow__edge.selected
+      .saer-diagram-out-of-scope.saer-diagram-accent-strong
+      .saer-diagram-shape
+  ) {
+  stroke-dasharray: 0
+    calc(var(--saer-cue-strong-flow-selection) * var(--saer-dot-pitch-ratio));
 }
 
 /* A boundary takes the pointer on its outline, name and resize control. */

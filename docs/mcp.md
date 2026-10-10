@@ -310,6 +310,7 @@ status, title, merge of several records into one text, mitigation with neither
 title nor text, or record shared by several threats or linked to none, that the
 text cannot give back. Nor does it keep the scope of a trust boundary or a
 text note, or a text note's name, so a write reports each one it drops. It
+keeps no accent, so a write reports once how many elements held one. It
 takes no width or height under 10, so a write raises a smaller one to 10 where
 the element stands and reports the size the model holds. It holds a threat
 only under an actor, a process, a store or a flow, so a threat on none of
@@ -377,12 +378,32 @@ independent: setting `outOfScope` to false keeps the reason.
 }
 ```
 
+`set_accent` gives one or more elements an
+[accent](saerskriven-yaml.md#accents), or clears theirs. `elements` lists
+their ids and `accent` is one of `s1` to `s4` (strong), `l1` to `l4` (light),
+or `none` to clear. An accent draws attention to an element and means nothing
+to the model: a light key draws its outline, or a flow's or a trust
+boundary's line, in one of four palette colours, and a strong key draws it
+heavier and tints the fill. The list is one edit, so a text note in it, which
+takes no accent, or an id the model does not hold, refuses the batch.
+`add_element` accepts `accent` on every kind but a text note.
+`saer_render_diagram` draws accents, and only the native YAML format saves
+them.
+
+```json
+{
+  "op": "set_accent",
+  "elements": ["process-id", "flow-id"],
+  "accent": "s1"
+}
+```
+
 `rename_element` changes the name alone, on any kind, and refuses an empty
 name, or one of white space alone, on every kind but a flow: on a flow, `""`
 or white space alone leaves it unlabelled, stored as an empty name, as
 `add_element` does.
 `edit_note` changes a text note's text alone, empty text included, and refuses
-any other kind. `set_element_properties`, `set_element_details`,
+any other kind. `set_element_properties`, `set_element_details`, `set_accent`,
 `rename_element` and `edit_note` leave the element at its place in its
 diagram's element list.
 

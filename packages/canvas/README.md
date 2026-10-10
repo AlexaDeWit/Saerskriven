@@ -104,6 +104,16 @@ is dashed. A note has no outline, so while it is out of scope its glyph draws
 a dotted frame `noteFrameOffset` outside its box, clear of the selection frame
 and focus ring the studio draws inside the box. `drawnBounds` holds the frame,
 and a flow's block is held clear of it.
+
+An [accent](../../docs/studio.md#accents) is paint alone: the layout carries
+an element's key to its glyph, which marks its group with the classes of
+`accentClassNames`, and no box, bound or flow name placement reads it. The
+slot colours and tints are palette roles like any other. The studio's sheet
+always carries the accent rules, and `renderCanvasStylesheet` writes them only
+for a drawing that holds an accent, so a drawing without one keeps the sheet
+it had. It mixes each tint from the theme's element colour, so a themed
+drawing keeps a name readable on one.
+
 [`render-theme.ts`](src/lib/render-theme.ts): `renderThemeSchema` and
 `defaultRenderTheme` are the theme headless output is drawn with, and
 `badgeTextColour` resolves a badge's lettering under it.
@@ -140,8 +150,8 @@ The bytes are pinned once, by the SVG goldens of
 [`packages/render`](../render/README.md#the-goldens), which draws these glyphs.
 The diagrams this suite lays out whole, for its element count and label
 placement checks, are `committedDiagrams` on `@saerskriven/model/fixtures`:
-`test-data/every-glyph.model.json` and the two diagrams of
-`test-data/two-diagrams.model.json`. They live under `test-data` because
+`test-data/every-glyph.model.json`, the two diagrams of
+`test-data/two-diagrams.model.json`, and `test-data/accents.model.json`. They live under `test-data` because
 `packages/render` draws them too and cannot import this package's spec
 fixtures, which no entry point exports.
 

@@ -15,6 +15,7 @@ import {
   flowBlockOf,
   screenBoxOf,
   screenshotPixels,
+  viewportZoom,
   type Point,
   type Box,
 } from './canvas.fixtures.js';
@@ -34,6 +35,24 @@ import { commandChord } from './chords.fixtures.js';
 
 const actorName = /^Customer\sbrowser, actor/u;
 const flowName = /^Submit order, flow/u;
+
+const zoomWhereTextPaintsSolid = 1.1;
+
+const openEveryGlyphWhereTextPaintsSolid = async (
+  page: Page,
+): Promise<void> => {
+  await openEveryGlyph(page);
+  const { width, height } = page.viewportSize() ?? { width: 1280, height: 720 };
+  const grow = zoomWhereTextPaintsSolid / (await viewportZoom(page));
+  if (grow > 1) {
+    await page.setViewportSize({ width, height: Math.ceil(height * grow) });
+    await page.getByRole('button', { name: 'Fit to view' }).click();
+    await canvasSettled(page);
+  }
+  expect(await viewportZoom(page)).toBeGreaterThanOrEqual(
+    zoomWhereTextPaintsSolid,
+  );
+};
 
 const systemColours = (page: Page) =>
   page.evaluate(() => {
@@ -205,7 +224,7 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.addInitScript((mode) => {
         localStorage.setItem('saerskrivenColourMode', mode);
       }, appearance);
-      await openEveryGlyph(page);
+      await openEveryGlyphWhereTextPaintsSolid(page);
       const colours = await systemColours(page);
       await expect(page.locator('.react-flow__background')).toBeHidden();
       const actor = nodeNamed(page, actorName);

@@ -24,6 +24,9 @@ import {
 } from './element-properties.js';
 import {
   elementSchema,
+  takesAccent,
+  type Accent,
+  type AccentableElement,
   type Element,
   type ElementDetailsChange,
   type FlowEndpoint,
@@ -81,6 +84,12 @@ export type EditNoteFailure = Extract<
 export type SetElementDetailsFailure = Extract<
   OperationFailure,
   { _tag: 'UnknownElement' | 'RefusedCharacter' }
+>;
+
+/** The failures {@link setAccent} can produce. */
+export type SetAccentFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownElement' | 'NotAccentable' }
 >;
 
 /** The failures {@link setElementProperties} can produce. */
@@ -327,6 +336,28 @@ export function setElementDetails(
 }
 
 /**
+ * Gives every element `elementIds` names the accent `accent`, or clears
+ * theirs where it is undefined, in one model. An id naming no element, or a
+ * canvas note, which takes no accent, refuses the whole edit. Where every
+ * element named already holds `accent`, the same model comes back.
+ */
+export function setAccent(
+  model: Model,
+  elementIds: readonly ElementId[],
+  accent: Accent | undefined,
+): Either.Either<Model, SetAccentFailure> {
+  return [...new Set(elementIds)].reduce<
+    Either.Either<Model, SetAccentFailure>
+  >(
+    (outcome, elementId) =>
+      Either.flatMap(outcome, (current) =>
+        withAccentOn(current, elementId, accent),
+      ),
+    Either.right(model),
+  );
+}
+
+/**
  * Validates a property edit for the existing element kind. Unknown values
  * clear only explicitly named fields. The edited element's text and its
  * relationship targets are validated, and every field the patch does not name
@@ -381,6 +412,38 @@ export function setElementProperties(
         : Either.left(failure);
     },
   );
+}
+
+function withAccentOn(
+  model: Model,
+  elementId: ElementId,
+  accent: Accent | undefined,
+): Either.Either<Model, SetAccentFailure> {
+  return Either.flatMap(
+    locatedElement(model, elementId),
+    ({ diagramIndex, element }): Either.Either<Model, SetAccentFailure> => {
+      if (!takesAccent(element)) {
+        return Either.left(OperationFailure.NotAccentable({ elementId }));
+      }
+      return Either.right(
+        element.accent === accent
+          ? model
+          : withElement(model, diagramIndex, accented(element, accent)),
+      );
+    },
+  );
+}
+
+function accented(
+  element: AccentableElement,
+  accent: Accent | undefined,
+): AccentableElement {
+  if (accent !== undefined) {
+    return { ...element, accent };
+  }
+  const cleared = { ...element };
+  delete cleared.accent;
+  return cleared;
 }
 
 function refusedCharacter(

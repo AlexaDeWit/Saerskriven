@@ -1,6 +1,7 @@
 import {
   moveElement,
   resizeElement,
+  setAccent,
   type Model,
   type ModelInput,
   type Size,
@@ -96,6 +97,9 @@ const shrunk = underTen.reduce(
 
 const isRaisedSize = ({ detail }: Divergence): boolean =>
   detail.code === 'size-raised';
+
+const isDroppedAccents = ({ detail }: Divergence): boolean =>
+  detail.code === 'accents-dropped';
 
 const raisedLine = (
   id: string,
@@ -301,6 +305,41 @@ describe('projecting elements under the 10 Threat Dragon takes as its least widt
         .write(back.model, back.source)
         .divergences.filter(isRaisedSize),
     ).toEqual([]);
+  });
+});
+
+describe('writing a model that holds accents', () => {
+  const accentedIds = ['element-clerk', 'element-post', 'element-zone'];
+  const accented = Either.getOrThrow(
+    setAccent(
+      Either.getOrThrow(setAccent(richer, accentedIds.map(elementId), 's1')),
+      [elementId('element-ledger')],
+      'l3',
+    ),
+  );
+  it.each([
+    ['a projection', undefined, projected],
+    ['a merge', richerThanFormatSource, merged],
+  ])(
+    'writes %s as it writes the model without them, and reports them once for the model with their count',
+    (_, source, plain) => {
+      const written = threatDragonCodec.write(accented, source);
+      expect(written.output).toBe(plain.output);
+      expect(
+        renderDivergences(written.divergences.filter(isDroppedAccents)),
+      ).toBe(
+        'model: the accents on 4 elements, which the format has no key for (no place in the format)',
+      );
+      expect(
+        written.divergences.filter(
+          (divergence) => !isDroppedAccents(divergence),
+        ),
+      ).toEqual(plain.divergences);
+    },
+  );
+
+  it('reports nothing about accents for a model that holds none', () => {
+    expect(projected.divergences.filter(isDroppedAccents)).toEqual([]);
   });
 });
 

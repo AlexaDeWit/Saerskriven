@@ -1,5 +1,8 @@
 import {
   elementsAcross,
+  takesAccent,
+  type Accent,
+  type AccentableElement,
   type Diagram,
   type DiagramId,
   type Element,
@@ -106,6 +109,40 @@ export function selectedElementRecord(state: State): Element | undefined {
 /** The selected element IDs, in selection order. */
 export function selectedElements(state: State): readonly ElementId[] {
   return state.selection;
+}
+
+/** The selected elements of a kind that takes an accent, in selection order. */
+export function accentableSelection(
+  state: State,
+): readonly AccentableElement[] {
+  const selected = new Set<string>(state.selection);
+  const held = new Map(
+    elementsAcross(state.present.diagrams)
+      .filter((element) => selected.has(element.id))
+      .map((element) => [element.id, element]),
+  );
+  return state.selection.flatMap((elementId) => {
+    const element = held.get(elementId);
+    return element !== undefined && takesAccent(element) ? [element] : [];
+  });
+}
+
+/**
+ * What the selection's accent is, over the selected elements that take one:
+ * the key they all hold, `none` where none of them holds one, `mixed` where
+ * they differ, and `inactive` where no selected element takes an accent.
+ */
+export function selectionAccent(
+  state: State,
+): Accent | 'none' | 'mixed' | 'inactive' {
+  const accents = new Set(
+    accentableSelection(state).map((element) => element.accent ?? 'none'),
+  );
+  const [only] = accents;
+  if (only === undefined) {
+    return 'inactive';
+  }
+  return accents.size === 1 ? only : 'mixed';
 }
 
 /** Whether the one selected element has a name a field can open, which a text note has not. */

@@ -1,6 +1,8 @@
 import {
   decimalsOf,
   storedNumber,
+  type Accent,
+  type AccentableElement,
   type Diagram,
   type Element,
   type ElementId,
@@ -26,17 +28,18 @@ import { boundaryStrokeWidth } from './stylesheet.js';
 import { settledCurveNames, type CurveNameSide } from './text-placement.js';
 
 /**
- * A laid-out element: its model box, its badge, and for a boundary curve its
- * waypoints in the node's own coordinates and a box grown by the stroke
- * width, so the stroke falls inside the node.
+ * A laid-out element: its model box, its badge, its accent where it holds
+ * one, and for a boundary curve its waypoints in the node's own coordinates
+ * and a box grown by the stroke width, so the stroke falls inside the node.
+ * An accent is paint alone: no box, bound or label placement reads it.
  */
 export type CanvasNode =
-  | (CanvasNodeBase & { readonly kind: 'actor' })
-  | (CanvasNodeBase & { readonly kind: 'process' })
-  | (CanvasNodeBase & { readonly kind: 'store' })
+  | (AccentableNodeBase & { readonly kind: 'actor' })
+  | (AccentableNodeBase & { readonly kind: 'process' })
+  | (AccentableNodeBase & { readonly kind: 'store' })
   | (CanvasNodeBase & { readonly kind: 'text'; readonly text: string })
-  | (CanvasNodeBase & { readonly kind: 'boundary-box' })
-  | (CanvasNodeBase & {
+  | (AccentableNodeBase & { readonly kind: 'boundary-box' })
+  | (AccentableNodeBase & {
       readonly kind: 'boundary-curve';
       readonly waypoints: readonly Point[];
       readonly nameSide: CurveNameSide | undefined;
@@ -56,6 +59,7 @@ export type CanvasEdgeGeometry = {
   readonly id: ElementId;
   readonly name: string;
   readonly outOfScope: boolean;
+  readonly accent?: Accent;
   readonly badge: ThreatBadge | undefined;
   readonly source: Point;
   readonly target: Point;
@@ -165,7 +169,7 @@ export function canvasNodeOf(
   if (element.kind === 'text') {
     return { ...base, kind: 'text', text: element.text };
   }
-  return { ...base, kind: element.kind };
+  return { ...base, ...accentOf(element), kind: element.kind };
 }
 
 type CanvasNodeBase = {
@@ -176,6 +180,8 @@ type CanvasNodeBase = {
   readonly size: Size;
   readonly badge: ThreatBadge | undefined;
 };
+
+type AccentableNodeBase = CanvasNodeBase & { readonly accent?: Accent };
 
 type ResolvedEndpoint =
   | PlacedEndpoint
@@ -202,6 +208,7 @@ function boundaryNode(
     id: element.id,
     name: element.name,
     outOfScope: element.outOfScope,
+    ...accentOf(element),
     badge,
   };
   if (element.shape.kind === 'curve') {
@@ -232,6 +239,10 @@ function boundaryNode(
     position: element.shape.position,
     size: element.shape.size,
   };
+}
+
+function accentOf(element: AccentableElement): { readonly accent?: Accent } {
+  return element.accent === undefined ? {} : { accent: element.accent };
 }
 
 const noExtent = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
@@ -271,6 +282,7 @@ function placeFlow(
       id: flow.id,
       name: flow.name,
       outOfScope: flow.outOfScope,
+      ...accentOf(flow),
       badge: badges.get(flow.id),
       source: anchors.source.point,
       target: anchors.target.point,

@@ -1,4 +1,10 @@
-import type { Model, Point } from '@saerskriven/model';
+import {
+  setAccent,
+  takesAccent,
+  type Model,
+  type Point,
+} from '@saerskriven/model';
+import { Either } from 'effect';
 import {
   attached,
   curveBoundary,
@@ -10,6 +16,8 @@ import {
 import { badgeExtent } from './badges.js';
 import { drawnBounds } from './bounds.js';
 import {
+  accentsLayout,
+  accentsModel,
   edgeNamed,
   everyGlyphLayout,
   everyGlyphModel,
@@ -249,6 +257,64 @@ describe('layoutDiagram', () => {
       unplaced: [],
       bounds: { x: 0, y: 0, width: 0, height: 0 },
     });
+  });
+});
+
+const accentsOf = (items: readonly { readonly id: string }[]) =>
+  Object.fromEntries(
+    items.flatMap((item) => ('accent' in item ? [[item.id, item.accent]] : [])),
+  );
+
+const withoutAccents = (items: readonly object[]) =>
+  items.map((item) =>
+    Object.fromEntries(
+      Object.entries(item).filter(([key]) => key !== 'accent'),
+    ),
+  );
+
+describe('layoutDiagram, an accent', () => {
+  it('carries the key of each element and flow that holds one, and no key for the rest', () => {
+    expect(accentsOf(accentsLayout.nodes)).toEqual({
+      'ac-zone-strong': 's3',
+      'ac-zone-light': 'l2',
+      'ac-edge-strong': 's4',
+      'ac-zone-out': 'l1',
+      'ac-strong-1': 's1',
+      'ac-strong-2': 's2',
+      'ac-strong-3': 's3',
+      'ac-strong-4': 's4',
+      'ac-light-1': 'l1',
+      'ac-light-2': 'l2',
+      'ac-light-3': 'l3',
+      'ac-light-4': 'l4',
+      'ac-badged': 's1',
+      'ac-out-strong': 's2',
+      'ac-out-light': 'l4',
+    });
+    expect(accentsOf(accentsLayout.edges)).toEqual({
+      'ac-flow-strong': 's1',
+      'ac-flow-both': 's4',
+      'ac-flow-light': 'l3',
+      'ac-flow-badged': 'l1',
+      'ac-flow-out': 's2',
+    });
+    expect(accentsOf(everyGlyphLayout.nodes)).toEqual({});
+  });
+
+  it('is paint alone: the diagram lays out as it does with every accent cleared, every flow name where it was', () => {
+    const cleared = Either.getOrThrow(
+      setAccent(
+        accentsModel,
+        accentsModel.diagrams[0].elements
+          .filter(takesAccent)
+          .map((element) => element.id),
+        undefined,
+      ),
+    );
+    const plain = layoutOf(cleared);
+    expect(withoutAccents(accentsLayout.nodes)).toEqual(plain.nodes);
+    expect(withoutAccents(accentsLayout.edges)).toEqual(plain.edges);
+    expect(accentsLayout.bounds).toEqual(plain.bounds);
   });
 });
 

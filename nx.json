@@ -54,8 +54,10 @@
     "studioE2eFixtures": [
       "{workspaceRoot}/test-data/otm/**/*",
       "{workspaceRoot}/test-data/every-glyph.model.json",
+      "{workspaceRoot}/test-data/accents.model.json",
       "{workspaceRoot}/test-data/two-diagrams.model.json",
       "{workspaceRoot}/test-data/saerskriven/two-diagrams.yaml",
+      "{workspaceRoot}/test-data/saerskriven/feature-complete.yaml",
       "{workspaceRoot}/test-data/threat-dragon/feature-complete.json",
       "{workspaceRoot}/test-data/render/two-diagrams-storefront.snapshot.svg",
       "{workspaceRoot}/test-data/render/two-diagrams-storefront.snapshot.png",

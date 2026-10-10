@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="10 12 1040 636" width="1040" height="636"><title>Every accent</title><rect x="10" y="12" width="1040" height="636" fill="#F9F6F0"></rect><style>.saer-diagram-element {
+  font-family: "Liberation Sans";
+}
+.saer-diagram-shape {
+  fill: #FAF8F2;
+  stroke: #38342E;
+  stroke-width: 2;
+}
+.saer-diagram-actor {
+  fill: #EAE5DA;
+}
+.saer-diagram-process {
+  fill: #E7E9E1;
+}
+.saer-diagram-store {
+  fill: none;
+  stroke-width: 2.5;
+}
+.saer-diagram-boundary-box,
+.saer-diagram-boundary-curve {
+  fill: none;
+  stroke: #6B655C;
+  stroke-width: 2;
+  stroke-dasharray: 8 6;
+}
+.saer-diagram-note-frame {
+  fill: none;
+}
+.saer-diagram-label {
+  fill: #38342E;
+  font-size: 10px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.saer-diagram-note {
+  fill: #6B655C;
+  font-size: 12px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.saer-diagram-flow {
+  fill: none;
+}
+.saer-diagram-flow-arrow {
+  fill: #38342E;
+  stroke: none;
+}
+.saer-diagram-flow-label {
+  fill: #6B655C;
+  font-size: 10px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.saer-diagram-flow-backing {
+  fill: #F9F6F0;
+  stroke: none;
+}
+.saer-diagram-out-of-scope .saer-diagram-shape {
+  stroke: #6B655C;
+  stroke-dasharray: 0 5;
+  stroke-linecap: round;
+}
+.saer-diagram-out-of-scope .saer-diagram-flow-arrow {
+  fill: #6B655C;
+}
+.saer-diagram-badge {
+  stroke: #FAF8F2;
+  stroke-width: 3;
+}
+.saer-diagram-badge-count {
+  fill: #FAF8F2;
+  stroke: none;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.saer-diagram-badge-primary .saer-diagram-badge-count {
+  font-size: 11px;
+}
+.saer-diagram-badge-secondary .saer-diagram-badge-count {
+  font-size: 9px;
+}
+.saer-diagram-badge-mark {
+  fill: #FAF8F2;
+  stroke: none;
+  font-size: 9px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.saer-diagram-badge-flag {
+  stroke-linejoin: round;
+}
+.saer-diagram-tone-critical {
+  fill: #C14339;
+}
+.saer-diagram-tone-high {
+  fill: #A85E1D;
+}
+.saer-diagram-tone-medium {
+  fill: #46788A;
+}
+.saer-diagram-tone-low {
+  fill: #4B6B50;
+}
+.saer-diagram-tone-neutral {
+  fill: #756E63;
+}
+.saer-diagram-tone-flag {
+  fill: #38342E;
+}
+
+.saer-diagram-accent-1 .saer-diagram-shape {
+  stroke: #AA6A89;
+}
+.saer-diagram-accent-1 .saer-diagram-flow-arrow {
+  fill: #AA6A89;
+}
+.saer-diagram-accent-1 .saer-diagram-tinted {
+  fill: #EDE1E1;
+}
+.saer-diagram-accent-2 .saer-diagram-shape {
+  stroke: #9370CE;
+}
+.saer-diagram-accent-2 .saer-diagram-flow-arrow {
+  fill: #9370CE;
+}
+.saer-diagram-accent-2 .saer-diagram-tinted {
+  fill: #EAE2EC;
+}
+.saer-diagram-accent-3 .saer-diagram-shape {
+  stroke: #93814F;
+}
+.saer-diagram-accent-3 .saer-diagram-flow-arrow {
+  fill: #93814F;
+}
+.saer-diagram-accent-3 .saer-diagram-tinted {
+  fill: #EAE5D8;
+}
+.saer-diagram-accent-4 .saer-diagram-shape {
+  stroke: #5C8A8F;
+}
+.saer-diagram-accent-4 .saer-diagram-flow-arrow {
+  fill: #5C8A8F;
+}
+.saer-diagram-accent-4 .saer-diagram-tinted {
+  fill: #E1E6E2;
+}
+.saer-diagram-store-band {
+  stroke: none;
+}
+.saer-diagram-accent-strong .saer-diagram-shape {
+  stroke-width: 3;
+}
+.saer-diagram-accent-strong .saer-diagram-boundary-box,
+.saer-diagram-accent-strong .saer-diagram-boundary-curve {
+  stroke-width: 3.5;
+}
+.saer-diagram-accent-strong .saer-diagram-flow {
+  stroke-width: 4;
+}
+.saer-diagram-out-of-scope.saer-diagram-accent-strong .saer-diagram-shape {
+  stroke-dasharray: 0 7.5;
+}
+.saer-diagram-out-of-scope.saer-diagram-accent-strong .saer-diagram-boundary-box,
+.saer-diagram-out-of-scope.saer-diagram-accent-strong .saer-diagram-boundary-curve {
+  stroke-dasharray: 0 8.75;
+}
+.saer-diagram-out-of-scope.saer-diagram-accent-strong .saer-diagram-flow {
+  stroke-dasharray: 0 10;
+}
+
+.saer-diagram-tone-low { fill: #4B6B50; stroke: #4B6B50; stroke-width: 3; }
+.saer-diagram-tone-low ~ .saer-diagram-badge-count, .saer-diagram-tone-low ~ .saer-diagram-badge-mark { fill: #FAF8F2; }
+.saer-diagram-tone-medium { fill: #46788A; stroke: #46788A; stroke-width: 3; }
+.saer-diagram-tone-medium ~ .saer-diagram-badge-count, .saer-diagram-tone-medium ~ .saer-diagram-badge-mark { fill: #FAF8F2; }
+.saer-diagram-tone-high { fill: #A85E1D; stroke: #A85E1D; stroke-width: 3; }
+.saer-diagram-tone-high ~ .saer-diagram-badge-count, .saer-diagram-tone-high ~ .saer-diagram-badge-mark { fill: #FAF8F2; }
+.saer-diagram-tone-critical { fill: #C14339; stroke: #C14339; stroke-width: 3; }
+.saer-diagram-tone-critical ~ .saer-diagram-badge-count, .saer-diagram-tone-critical ~ .saer-diagram-badge-mark { fill: #FAF8F2; }
+.saer-diagram-tone-neutral { fill: #756E63; stroke: #756E63; stroke-width: 3; }
+.saer-diagram-tone-neutral ~ .saer-diagram-badge-count, .saer-diagram-tone-neutral ~ .saer-diagram-badge-mark { fill: #FAF8F2; }
+.saer-diagram-tone-flag { fill: #38342E; stroke: #38342E; stroke-width: 3; }
+.saer-diagram-tone-flag ~ .saer-diagram-badge-count, .saer-diagram-tone-flag ~ .saer-diagram-badge-mark { fill: #FAF8F2; }</style><g transform="translate(540, 20)"><g class="saer-diagram-element saer-diagram-accent-3 saer-diagram-accent-strong"><rect class="saer-diagram-shape saer-diagram-boundary-box" width="480" height="150"></rect><text class="saer-diagram-label" x="240" y="11"><tspan x="240" dy="0">Strong boundary</tspan></text></g></g><g transform="translate(20, 220)"><g class="saer-diagram-element saer-diagram-accent-2"><rect class="saer-diagram-shape saer-diagram-boundary-box" width="480" height="150"></rect><text class="saer-diagram-label" x="240" y="11"><tspan x="240" dy="0">Light boundary</tspan></text></g></g><g transform="translate(18, 398)"><g class="saer-diagram-element saer-diagram-accent-4 saer-diagram-accent-strong"><path class="saer-diagram-shape saer-diagram-boundary-curve" d="M 2 22 C 58.667 18.667 228.667 0.333 342 2 C 455.333 3.667 568.667 30.333 682 32 C 795.333 33.667 965.333 15.333 1022 12"></path><text class="saer-diagram-label" x="342.287" y="-17.483"><tspan x="342.287" dy="0">Strong curve</tspan></text></g></g><g transform="translate(540, 440)"><g class="saer-diagram-element saer-diagram-out-of-scope saer-diagram-accent-1"><rect class="saer-diagram-shape saer-diagram-boundary-box" width="480" height="150"></rect><text class="saer-diagram-label" x="240" y="11"><tspan x="240" dy="0">Out-of-scope boundary</tspan></text></g></g><g transform="translate(60, 60)"><g class="saer-diagram-element saer-diagram-accent-1 saer-diagram-accent-strong"><rect class="saer-diagram-shape saer-diagram-actor saer-diagram-tinted" width="140" height="70"></rect><text class="saer-diagram-label" x="70" y="35"><tspan x="70" dy="0">Strong 1</tspan></text></g></g><g transform="translate(320, 50)"><g class="saer-diagram-element saer-diagram-accent-2 saer-diagram-accent-strong"><ellipse class="saer-diagram-shape saer-diagram-process saer-diagram-tinted" cx="70" cy="45" rx="70" ry="45"></ellipse><text class="saer-diagram-label" x="70" y="45"><tspan x="70" dy="0">Strong 2</tspan></text></g></g><g transform="translate(580, 60)"><g class="saer-diagram-element saer-diagram-accent-3 saer-diagram-accent-strong"><rect class="saer-diagram-store-band saer-diagram-tinted" width="140" height="70"></rect><line class="saer-diagram-shape saer-diagram-store" x1="0" y1="0" x2="140" y2="0"></line><line class="saer-diagram-shape saer-diagram-store" x1="0" y1="70" x2="140" y2="70"></line><text class="saer-diagram-label" x="70" y="35"><tspan x="70" dy="0">Strong 3</tspan></text></g></g><g transform="translate(840, 60)"><g class="saer-diagram-element saer-diagram-accent-4 saer-diagram-accent-strong"><rect class="saer-diagram-shape saer-diagram-actor saer-diagram-tinted" width="140" height="70"></rect><text class="saer-diagram-label" x="70" y="35"><tspan x="70" dy="0">Strong 4</tspan></text></g></g><g transform="translate(60, 260)"><g class="saer-diagram-element saer-diagram-accent-1"><rect class="saer-diagram-shape saer-diagram-actor" width="140" height="70"></rect><text class="saer-diagram-label" x="70" y="35"><tspan x="70" dy="0">Light 1</tspan></text></g></g><g transform="translate(320, 250)"><g class="saer-diagram-element saer-diagram-accent-2"><ellipse class="saer-diagram-shape saer-diagram-process" cx="70" cy="45" rx="70" ry="45"></ellipse><text class="saer-diagram-label" x="70" y="45"><tspan x="70" dy="0">Light 2</tspan></text></g></g><g transform="translate(580, 260)"><g class="saer-diagram-element saer-diagram-accent-3"><line class="saer-diagram-shape saer-diagram-store" x1="0" y1="0" x2="140" y2="0"></line><line class="saer-diagram-shape saer-diagram-store" x1="0" y1="70" x2="140" y2="70"></line><text class="saer-diagram-label" x="70" y="35"><tspan x="70" dy="0">Light 3</tspan></text></g></g><g transform="translate(840, 260)"><g class="saer-diagram-element saer-diagram-accent-4"><rect class="saer-diagram-shape saer-diagram-actor" width="140" height="70"></rect><text class="saer-diagram-label" x="70" y="35"><tspan x="70" dy="0">Light 4</tspan></text></g></g><g transform="translate(60, 480)"><g class="saer-diagram-element"><rect class="saer-diagram-shape saer-diagram-actor" width="140" height="70"></rect><text class="saer-diagram-label" x="70" y="35"><tspan x="70" dy="0">No accent</tspan></text></g></g><g transform="translate(320, 470)"><g class="saer-diagram-element saer-diagram-accent-1 saer-diagram-accent-strong"><ellipse class="saer-diagram-shape saer-diagram-process saer-diagram-tinted" cx="70" cy="45" rx="70" ry="45"></ellipse><text class="saer-diagram-label" x="70" y="38.75"><tspan x="70" dy="0">Strong, with</tspan><tspan x="70" dy="12.5">threats</tspan></text><g class="saer-diagram-badge" transform="translate(140, 0)"><g class="saer-diagram-badge-primary"><circle class="saer-diagram-tone-high" r="13"></circle><text class="saer-diagram-badge-count" y="-3">2</text><text class="saer-diagram-badge-mark" y="7.5">H</text></g></g></g></g><g transform="translate(580, 480)"><g class="saer-diagram-element saer-diagram-out-of-scope saer-diagram-accent-2 saer-diagram-accent-strong"><rect class="saer-diagram-store-band saer-diagram-tinted" width="140" height="70"></rect><line class="saer-diagram-shape saer-diagram-store" x1="0" y1="0" x2="140" y2="0"></line><line class="saer-diagram-shape saer-diagram-store" x1="0" y1="70" x2="140" y2="70"></line><text class="saer-diagram-label" x="70" y="35"><tspan x="70" dy="0">Out of scope, strong</tspan></text></g></g><g transform="translate(840, 480)"><g class="saer-diagram-element saer-diagram-out-of-scope saer-diagram-accent-4"><rect class="saer-diagram-shape saer-diagram-actor" width="140" height="70"></rect><text class="saer-diagram-label" x="70" y="35"><tspan x="70" dy="0">Out of scope, light</tspan></text></g></g><g transform="translate(60, 600)"><g class="saer-diagram-element"><text class="saer-diagram-note" x="150" y="20"><tspan x="150" dy="0">A note takes no accent.</tspan></text></g></g><g class="saer-diagram-element saer-diagram-accent-1 saer-diagram-accent-strong"><path class="saer-diagram-shape saer-diagram-flow" d="M 200 95 L 320 95"></path><path class="saer-diagram-flow-arrow" d="M 320 95 L 302 102 L 302 88 Z"></path><rect class="saer-diagram-flow-backing" x="217.75" y="86" width="68.5" height="18"></rect><text class="saer-diagram-flow-label" x="252" y="95"><tspan x="252" dy="0">Strong flow</tspan></text></g><g class="saer-diagram-element saer-diagram-accent-4 saer-diagram-accent-strong"><path class="saer-diagram-shape saer-diagram-flow" d="M 720 95 L 840 95"></path><path class="saer-diagram-flow-arrow" d="M 840 95 L 822 102 L 822 88 Z"></path><path class="saer-diagram-flow-arrow" d="M 720 95 L 738 88 L 738 102 Z"></path><rect class="saer-diagram-flow-backing" x="729.25" y="67" width="101.5" height="18"></rect><text class="saer-diagram-flow-label" x="780" y="76"><tspan x="780" dy="0">Strong, both ways</tspan></text></g><g class="saer-diagram-element saer-diagram-accent-3"><path class="saer-diagram-shape saer-diagram-flow" d="M 200 295 L 320 295"></path><path class="saer-diagram-flow-arrow" d="M 320 295 L 302 302 L 302 288 Z"></path><rect class="saer-diagram-flow-backing" x="224.5" y="286" width="63" height="18"></rect><text class="saer-diagram-flow-label" x="256" y="295"><tspan x="256" dy="0">Light flow</tspan></text></g><g class="saer-diagram-element saer-diagram-accent-1"><path class="saer-diagram-shape saer-diagram-flow" d="M 720 295 L 840 295"></path><path class="saer-diagram-flow-arrow" d="M 840 295 L 822 302 L 822 288 Z"></path><rect class="saer-diagram-flow-backing" x="722.75" y="257" width="98.5" height="34"></rect><g class="saer-diagram-badge" transform="translate(739.75, 274)"><g class="saer-diagram-badge-primary"><circle class="saer-diagram-tone-critical" r="13"></circle><text class="saer-diagram-badge-count" y="-3">1</text><text class="saer-diagram-badge-mark" y="7.5">C</text></g></g><text class="saer-diagram-flow-label" x="787" y="267.75"><tspan x="787" dy="0">Light, with</tspan><tspan x="787" dy="12.5">a threat</tspan></text></g><g class="saer-diagram-element"><path class="saer-diagram-shape saer-diagram-flow" d="M 200 515 L 320 515"></path><path class="saer-diagram-flow-arrow" d="M 320 515 L 302 522 L 302 508 Z"></path><rect class="saer-diagram-flow-backing" x="231.25" y="506" width="57.5" height="18"></rect><text class="saer-diagram-flow-label" x="260" y="515"><tspan x="260" dy="0">No accent</tspan></text></g><g class="saer-diagram-element saer-diagram-out-of-scope saer-diagram-accent-2 saer-diagram-accent-strong"><path class="saer-diagram-shape saer-diagram-flow" d="M 720 515 L 840 515"></path><path class="saer-diagram-flow-arrow" d="M 840 515 L 822 522 L 822 508 Z"></path><rect class="saer-diagram-flow-backing" x="721" y="487" width="118" height="18"></rect><text class="saer-diagram-flow-label" x="780" y="496"><tspan x="780" dy="0">Out of scope, strong</tspan></text></g></svg>

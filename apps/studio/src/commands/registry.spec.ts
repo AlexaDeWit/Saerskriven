@@ -19,6 +19,7 @@ import {
   pressesContextualShortcut,
 } from './contextual-shortcuts.js';
 import {
+  accentCommands,
   commandById,
   commandFor,
   commands,
@@ -73,7 +74,7 @@ const press = (
 });
 
 describe('the command registry', () => {
-  it('leaves the export, share and diagram-switcher commands without shortcuts', () => {
+  it('leaves the export, share, diagram-switcher and accent commands without shortcuts', () => {
     expect(
       commands
         .filter((command) => command.shortcuts.length === 0)
@@ -88,6 +89,8 @@ describe('the command registry', () => {
       'share',
       'new-diagram',
       'rename-diagram',
+      'accent-none',
+      ...Object.values(accentCommands),
     ]);
   });
 

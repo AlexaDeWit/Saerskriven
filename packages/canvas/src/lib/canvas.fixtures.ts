@@ -61,6 +61,17 @@ export const everyGlyphModel: Model = committedModel('every-glyph.model.json');
 /** The every-glyph diagram laid out. */
 export const everyGlyphLayout = layoutOf(everyGlyphModel);
 
+/**
+ * The model that draws every accent: each of the eight keys on a kind that
+ * takes one, a strong and a light trust boundary and flow, an accent on an
+ * out-of-scope store, actor, flow and boundary, one under a badge, and an
+ * element, a flow and a note with none.
+ */
+export const accentsModel: Model = committedModel('accents.model.json');
+
+/** The every-accent diagram laid out. */
+export const accentsLayout = layoutOf(accentsModel);
+
 /** Badge marks unlike any locale's, so a spec sees the marks it passed drawn. */
 export const specMarks: BadgeMarks = {
   severity: {

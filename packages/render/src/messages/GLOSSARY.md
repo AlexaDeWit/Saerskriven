@@ -256,7 +256,14 @@ and unconfirmed.
 | credentials     | justificatifs d’identité | autentiseringsuppgifter | fr `identifiants` | [CCCS: GIJIA][cccs-gijia], [CERT-SE][cert-se-v13]                 |
 | authentication  | authentification         | autentisering           |                   | [Lund terminology][lund]                                          |
 | protocol        | protocole                | protokoll               |                   | ordinary usage                                                    |
+| accent          | accentuation (f.)        | accent (common)         |                   | unconfirmed, see the note                                         |
 
+- **accent:** the studio's word for the visual mark it puts on an element,
+  not a security term. French takes the noun of the interface term
+  `couleur d'accentuation`, since `accent` alone reads as a diacritic, and
+  Swedish the first part of `accentfärg`. Neither was checked against the GDT
+  or a Swedish term bank, so both are unconfirmed. A strong one is `forte` and
+  `stark`, a light one `légère` and `lätt`.
 - **credentials:** in the GDT's usage an `identifiant` is the user name alone,
   one part of a credential. The Canadian Centre for Cyber Security writes
   `justificatifs d'identité`.

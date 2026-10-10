@@ -7,6 +7,7 @@ import {
   svgNumber,
   xmlSafeText,
   type CanvasBounds,
+  type CanvasLayout,
   type UnplacedEndpoint,
 } from '@saerskriven/canvas';
 import type { Locale } from '@saerskriven/i18n';
@@ -32,7 +33,9 @@ export type SvgDocument = {
  * a `title` carrying the diagram's title, the themed background, a `style`
  * element resolving the theme to values, and the glyphs in painting order,
  * ending in a newline. Its badges letter `locale`'s marks. The viewBox is the
- * canvas's drawn bounds grown by 8 on every side. The document references
+ * canvas's drawn bounds grown by 8 on every side. The `style` element carries
+ * the accent rules only where an element or a flow of the diagram holds an
+ * accent. The document references
  * nothing outside itself, and its bytes depend on the model and the locale
  * alone, painting order included. The title goes through `xmlSafeText` as the
  * glyphs' text does, since a model built in memory can carry characters its
@@ -61,7 +64,7 @@ export function renderSvg(
         height={svgNumber(box.height)}
         fill={theme.colours.background}
       />
-      <style>{renderCanvasStylesheet(theme)}</style>
+      <style>{renderCanvasStylesheet(theme, holdsAccent(layout))}</style>
       <DiagramGlyphs layout={layout} marks={renderTerms(locale).marks} />
     </svg>,
   );
@@ -71,6 +74,13 @@ export function renderSvg(
     height: box.height,
     unplaced: layout.unplaced,
   };
+}
+
+function holdsAccent(layout: CanvasLayout): boolean {
+  return (
+    layout.nodes.some((node) => node.kind !== 'text' && 'accent' in node) ||
+    layout.edges.some((edge) => 'accent' in edge)
+  );
 }
 
 function grown(bounds: CanvasBounds): CanvasBounds {

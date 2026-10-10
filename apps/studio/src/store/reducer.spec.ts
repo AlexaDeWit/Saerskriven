@@ -117,6 +117,10 @@ const applied: ActionsByTag<ModelActionTag> = {
     elementId: processElement,
     change: { description: 'Edits the models.' },
   }),
+  SetAccent: Action.SetAccent({
+    elementIds: [processElement, actorElement],
+    accent: 's2',
+  }),
   AddDiagram: Action.AddDiagram({
     diagram: { id: secondDiagram, title: 'Second', elements: [] },
   }),
@@ -280,6 +284,10 @@ const refused: ActionsByTag<ModelActionTag> = {
   SetElementDetails: Action.SetElementDetails({
     elementId: elementId('element-missing'),
     change: { outOfScope: true },
+  }),
+  SetAccent: Action.SetAccent({
+    elementIds: [processElement, elementId('element-missing')],
+    accent: 's2',
   }),
   AddDiagram: Action.AddDiagram({
     diagram: { id: mainDiagram, title: 'Again', elements: [] },
@@ -1031,6 +1039,52 @@ describe('the element details', () => {
     expect(
       reduce(noteStart, refused.SetElementDetails).lastFailure,
     ).toMatchObject({ failure: { _tag: 'UnknownElement' } });
+  });
+});
+
+const accentsOf = (state: State) =>
+  [processElement, actorElement, noteElement].map((id) => {
+    const element = elementById(state, id);
+    return element !== undefined && 'accent' in element
+      ? element.accent
+      : undefined;
+  });
+
+describe('an accent', () => {
+  const accented = reduce(noteStart, applied.SetAccent);
+
+  it('reaches every element named as one undo step, and clears as another', () => {
+    expect(accentsOf(accented)).toEqual(['s2', 's2', undefined]);
+    expect(accented.past).toHaveLength(1);
+    const cleared = reduce(
+      accented,
+      Action.SetAccent({
+        elementIds: [processElement, actorElement],
+        accent: undefined,
+      }),
+    );
+    expect(accentsOf(cleared)).toEqual([undefined, undefined, undefined]);
+    expect(cleared.present).toEqual(noteStart.present);
+    expect(reduce(cleared, Action.Undo()).present).toBe(accented.present);
+    expect(reduce(accented, Action.Undo()).present).toBe(noteStart.present);
+  });
+
+  it('keeps history alone where every element named already holds the key', () => {
+    expect(reduce(accented, applied.SetAccent)).toBe(accented);
+  });
+
+  it('records a note as the model names it, leaving the model alone', () => {
+    const refusedNote = reduce(
+      noteStart,
+      Action.SetAccent({
+        elementIds: [processElement, noteElement],
+        accent: 'l1',
+      }),
+    );
+    expect(refusedNote.present).toBe(noteStart.present);
+    expect(refusedNote.lastFailure).toMatchObject({
+      failure: { _tag: 'NotAccentable' },
+    });
   });
 });
 

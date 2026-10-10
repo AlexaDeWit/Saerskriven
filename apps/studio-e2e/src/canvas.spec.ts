@@ -16,6 +16,7 @@ import {
 } from './canvas.fixtures.js';
 import {
   beforeCanvas,
+  beforeCanvasOverSelection,
   canvasSurface,
   handleOn,
   nodeNamed,
@@ -77,7 +78,7 @@ test('the selection moves between an element and a flow, either way', async ({
     /selected/u,
   );
 
-  await beforeCanvas(page).focus();
+  await beforeCanvasOverSelection(page).focus();
   await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
   await expect(selectedFlow).toHaveCount(1);

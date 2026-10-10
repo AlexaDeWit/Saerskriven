@@ -71,6 +71,7 @@ export const noticeMessages = {
   'op-not-note': text(id),
   'op-not-flow': text(id),
   'op-not-trust-boundary': text(id),
+  'op-not-accentable': text(id),
   'op-empty-name': text(id),
   'op-element-character': text(id),
   'op-model-title-character': text(),

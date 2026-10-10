@@ -79,6 +79,7 @@ export {
 } from './lib/resizing.js';
 export { DiagramGlyphs } from './lib/scene.js';
 export {
+  accentClassNames,
   canvasClassNames,
   canvasInteractionClassNames,
   renderCanvasStylesheet,

@@ -88,6 +88,8 @@ const openPlacements = {
   'assumption-unrecorded': 'save-only',
   'note-name-dropped': 'save-only',
   'scope-marking-dropped': 'save-only',
+  'accents-dropped': 'save-only',
+  'accent-unknown': 'not-shown',
   'size-raised': 'save-only',
   'threat-attachment-stray': 'save-only',
   'threat-unplaceable': 'save-only',
@@ -245,9 +247,7 @@ function subjectText(
       return undefined;
     case 'element': {
       const element = held.elements.get(subject.id);
-      return element === undefined || element.kind === 'flow'
-        ? undefined
-        : elementSubject(t, element);
+      return element && elementSubject(t, element);
     }
     case 'threat': {
       const threat = held.threats.get(subject.id);
@@ -329,10 +329,7 @@ function mitigationMadeFrom(
   return mitigation && mitigationSubject(t, mitigation, held, detail);
 }
 
-function elementSubject(
-  t: Speaker,
-  element: Exclude<Element, { readonly kind: 'flow' }>,
-): string {
+function elementSubject(t: Speaker, element: Element): string {
   return isEmptyName(element.name)
     ? t(`divergence.subject-${element.kind}`)
     : t(`divergence.subject-${element.kind}-named`, { name: element.name });
@@ -416,6 +413,10 @@ function lossDetail(t: Speaker, detail: ReportedDetail, held: Held): string {
       return t('divergence.note-name-dropped');
     case 'scope-marking-dropped':
       return t('divergence.scope-marking-dropped');
+    case 'accents-dropped':
+      return t('divergence.accents-dropped', detail.parameters);
+    case 'accent-unknown':
+      return t('divergence.accent-unknown', detail.parameters);
     case 'size-raised':
       return t('divergence.size-raised', detail.parameters);
     case 'threat-attachment-stray':

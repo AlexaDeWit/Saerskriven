@@ -33,6 +33,7 @@ import {
   replaceThreat,
   resizeElement,
   reverseFlow,
+  setAccent,
   setBoundaryShape,
   setFlowDirection,
   setFlowEndPosition,
@@ -64,6 +65,8 @@ export function reduce(state: State, action: Action): State {
       edited(state, setElementProperties(state.present, elementId, properties)),
     SetElementDetails: ({ elementId, change }) =>
       edited(state, setElementDetails(state.present, elementId, change)),
+    SetAccent: ({ elementIds, accent }) =>
+      edited(state, setAccent(state.present, elementIds, accent)),
     InsertFragment: ({ diagramId, fragment }) =>
       edited(state, insertFragment(state.present, diagramId, fragment)),
     ReconnectFlow: ({ elementId, side, endpointId, anchor }) =>

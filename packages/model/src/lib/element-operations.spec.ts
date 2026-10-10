@@ -22,6 +22,7 @@ import {
   removeElement,
   renameElement,
   resizeElement,
+  setAccent,
   setElementDetails,
 } from './element-operations.js';
 import { elementSchema, type Element } from './elements.js';
@@ -1001,6 +1002,61 @@ describe('setElementDetails', () => {
   });
 });
 
+describe('setAccent', () => {
+  const api = elementId('element-api');
+  const flow = elementId('element-order-flow');
+  const perimeter = elementId('element-perimeter');
+  const everyAccentableKind = withNote.diagrams[0].elements
+    .filter((element) => element.kind !== 'text')
+    .map((element) => element.id);
+
+  it('gives every element named the one key in one model, keeping their other fields and their order', () => {
+    const next = modelOf(setAccent(withNote, everyAccentableKind, 's2'));
+    expect(elementIds(next)).toEqual(elementIds(withNote));
+    expect(next.diagrams[0].elements).toEqual(
+      withNote.diagrams[0].elements.map((element) =>
+        element.kind === 'text' ? element : { ...element, accent: 's2' },
+      ),
+    );
+  });
+
+  it('clears the accent to an absent key, so a cleared model equals one never accented', () => {
+    const accented = modelOf(setAccent(validModel, [api, flow], 'l4'));
+    const cleared = modelOf(setAccent(accented, [flow, api], undefined));
+    expect(cleared).toEqual(validModel);
+    expect(Object.hasOwn(elementIn(cleared, api), 'accent')).toBe(false);
+  });
+
+  it('replaces a held accent, and leaves the elements it does not name as they were', () => {
+    const accented = modelOf(setAccent(validModel, [api, perimeter], 's1'));
+    const next = modelOf(setAccent(accented, [api], 'l3'));
+    expect(elementIn(next, api)).toMatchObject({ accent: 'l3' });
+    expect(elementIn(next, perimeter)).toBe(elementIn(accented, perimeter));
+  });
+
+  it('returns the same model where every element named already holds the key, or none to clear', () => {
+    const accented = modelOf(setAccent(validModel, [api], 's1'));
+    expect(modelOf(setAccent(accented, [api, api], 's1'))).toBe(accented);
+    expect(modelOf(setAccent(validModel, [api, flow], undefined))).toBe(
+      validModel,
+    );
+    expect(modelOf(setAccent(validModel, [], 's1'))).toBe(validModel);
+  });
+
+  it('refuses the whole edit over a canvas note, which takes no accent', () => {
+    expect(errorOf(setAccent(withNote, [api, note.id], 's1'))).toEqual(
+      OperationFailure.NotAccentable({ elementId: note.id }),
+    );
+  });
+
+  it('fails on an unknown element', () => {
+    const ghost = elementId('element-ghost');
+    expect(errorOf(setAccent(validModel, [api, ghost], 's1'))).toEqual(
+      OperationFailure.UnknownElement({ elementId: ghost }),
+    );
+  });
+});
+
 describe('element operations', () => {
   operationContract({
     addElement: {
@@ -1080,6 +1136,19 @@ describe('element operations', () => {
           description: 'Seen on review.',
           outOfScope: true,
         }),
+    },
+    setAccent: {
+      input: validModel,
+      run: (model) =>
+        setAccent(
+          model,
+          [elementId('element-api'), elementId('element-order-flow')],
+          's3',
+        ),
+    },
+    'setAccent clearing': {
+      input: modelOf(setAccent(validModel, [elementId('element-api')], 's3')),
+      run: (model) => setAccent(model, [elementId('element-api')], undefined),
     },
   });
 });

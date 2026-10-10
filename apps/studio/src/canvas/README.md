@@ -40,11 +40,14 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `viewport.ts`, `view-commands.tsx`                                                              | The zoom limits, the canvas area left of the pane and the viewport that fits a box into it, and the hooks applying them                                    |
 | `focus-pan.tsx`                                                                                 | The shortest pan that brings the focused item's ring, or a bend being placed, into the viewport, asked for by Tab focus and by an arrow-key move or resize |
 | `toolbox.tsx`, `zoom-cluster.tsx`, `stroke-glyph.tsx`                                           | The tool modes on the chrome card, the zoom controls, and the stroke icon the toolbox and the selection cards draw                                         |
+| `accent-bar.tsx`                                                                                | The accent swatches on the chrome card, which give the selection an accent key or clear it                                                                 |
 
 The shell mounts `toolbox.tsx` as row two of its chrome card
-(`../app/chrome.tsx`), and hangs `canvas-announcement.tsx` and
-`flow-target-chooser.tsx` under that card. None of the three reads a React Flow
-hook, which is what lets the shell host them.
+(`../app/chrome.tsx`) and `accent-bar.tsx` as row three, and hangs
+`canvas-announcement.tsx` and `flow-target-chooser.tsx` under that card. None
+of the four reads a React Flow hook, which is what lets the shell host them.
+The accent bar draws its swatches from the token properties with its own
+styles, so it does not depend on the canvas sheet being mounted.
 
 ## Mounting
 
@@ -226,16 +229,26 @@ filter uses the system `Highlight` colour.
 
 ## The view
 
-`fitViewport` in `viewport.ts` fits a box into the canvas extent with padding
-for the floating controls, within `zoomLimits`. React Flow's default minimum
-zoom of 0.5 cannot fit a large model. `FitOnOpen` fits from inside
-React Flow, which holds the canvas extent, whenever `modelAsOpened` returns a
-new model or the diagram on screen changes. That selector returns the present
-model only while both history stacks are empty, so an open, a close or another
-tab's open fits again, while an edit or a save moves nothing. Opening fits the
-full canvas extent. The fit commands use `clearOfPanel`, the area left of the
-pane's measured coverage, and the `panelCover` token sets only the pane's
-default width.
+`fitViewport` in `viewport.ts` centres a box in a `FitArea`, within
+`zoomLimits`. React Flow's default minimum zoom of 0.5 cannot fit a large
+model. `FitOnOpen` fits from inside React Flow, which holds the canvas extent,
+whenever `modelAsOpened` returns a new model or the diagram on screen changes.
+That selector returns the present model only while both history stacks are
+empty, so an open, a close or another tab's open fits again, while an edit or
+a save moves nothing.
+
+`fitArea` is what a fit draws in: the canvas left of the pane's measured
+coverage, with 64 pixels clear at the left, right and bottom edges and
+`cardGap` clear under the chrome card's bottom edge. The shell measures that
+edge with the card (`../app/chrome.tsx`), holds it in state beside the pane
+coverage, and hands it to the view commands and to `FitOnOpen`, so a fit
+follows the height the card has. Until the first measurement arrives the edge
+is `unmeasuredCardBottom`, under which no fit has room, so the opening fit
+waits for the card and is made once. A measured card that leaves no height
+under it is left out, and the fit takes the whole canvas. Opening reserves the
+card alone, and the fit commands reserve the card and the pane. A notice under
+the card moves no fit. The `panelCover` token sets only the pane's default
+width.
 
 `FocusPan` in `focus-pan.tsx` pans to bring the focused item's ring into the
 viewport, React Flow's container box. Nothing over the canvas plays a part: a

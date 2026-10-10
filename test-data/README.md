@@ -30,6 +30,8 @@ source change.
 | `render/two-diagrams-storefront.snapshot.png` | `packages/render` | `apps/cli`, `apps/studio-e2e`, `scripts/release/install-smoke.sh` |
 | `render/two-diagrams-fulfilment.snapshot.svg` | `packages/render` | `apps/cli`                                                        |
 | `render/two-diagrams-fulfilment.snapshot.png` | `packages/render` | `apps/cli`                                                        |
+| `render/accents.snapshot.svg`                 | `packages/render` | no other suite                                                    |
+| `render/accents.snapshot.png`                 | `packages/render` | no other suite                                                    |
 | `render/two-diagrams.snapshot.typ`            | `packages/render` | `apps/studio-e2e`                                                 |
 | `render/two-diagrams.register.snapshot.md`    | `packages/render` | `apps/cli`, `apps/studio-e2e`                                     |
 
@@ -44,10 +46,11 @@ no target writes them. They are read as follows:
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `every-glyph.model.json`                  | `packages/canvas`, `packages/render`, `apps/studio-e2e`                                                                         |
 | `two-diagrams.model.json`                 | `packages/canvas`, `packages/render`, `packages/formats`, `apps/studio-e2e`                                                     |
+| `accents.model.json`                      | `packages/canvas`, `packages/render`, `apps/studio-e2e`                                                                         |
 | `saerskriven/two-diagrams.yaml`           | `packages/formats`, `packages/mcp`, `apps/cli`, `apps/studio-e2e`, `scripts/package-cli.sh`, `scripts/release/install-smoke.sh` |
 | `render/two-diagrams.snapshot.pdf.sha256` | `apps/cli`, `apps/studio-e2e`, `scripts/release/install-smoke.sh`                                                               |
 | `threat-dragon/feature-complete.json`     | `packages/formats`, `packages/mcp`, `apps/cli`, `apps/studio`, `apps/studio-e2e`                                                |
-| `saerskriven/feature-complete.yaml`       | `packages/formats`, `apps/cli`, `apps/studio`                                                                                   |
+| `saerskriven/feature-complete.yaml`       | `packages/formats`, `apps/cli`, `apps/studio`, `apps/studio-e2e`                                                                |
 | `saerskriven/v0.2.1.yaml`                 | `packages/formats`, `nix/check.nix`                                                                                             |
 | `saerskriven/saerskriven-v0.3.0.yaml`     | `packages/formats`                                                                                                              |
 | `studio/recovery-v0.4.0.json`             | `apps/studio`                                                                                                                   |
@@ -86,7 +89,7 @@ A version 2 Saerskriven YAML file written by hand in the writer's canonical
 form, using every field, enum value and union variant
 `@saerskriven/wire-saerskriven-yaml-v2` declares. `packages/formats` reads it
 as the model it states and writes it back to the byte, `apps/cli` validates
-it, and `apps/studio` opens and saves it.
+it, `apps/studio` opens and saves it, and `apps/studio-e2e` opens it.
 
 ## `saerskriven/two-diagrams.yaml`
 
@@ -162,6 +165,16 @@ by a `mitigated` threat with a proposed mitigation draws the flag-only mark.
 Canvas and render tests parse it, render draws its goldens, and
 `apps/studio-e2e` measures badge clearance on it.
 
+## `accents.model.json`
+
+A model written to draw every [accent](../docs/studio.md#accents): each of the
+eight keys on an actor, a process or a store, a strong and a light trust
+boundary and flow, a strong curve boundary, a flow that runs both ways, an
+accent on a store, an actor, a flow and a boundary out of scope, one on a
+process and one on a flow under a threat badge, and an actor, a flow and a
+note with none. Canvas and render tests parse it, render draws its goldens,
+and `apps/studio-e2e` opens it.
+
 ## `two-diagrams.model.json`
 
 A hand-written model of a small shop on two diagrams, `storefront` and
@@ -194,6 +207,8 @@ Standalone SVG documents from `packages/render`, one per entry of
 `committedDiagrams`:
 
 - `every-glyph.snapshot.svg`: the diagram in `every-glyph.model.json`.
+- `accents.snapshot.svg`: the diagram in `accents.model.json`, the one golden
+  whose stylesheet carries the accent rules.
 - `two-diagrams-storefront.snapshot.svg` and
   `two-diagrams-fulfilment.snapshot.svg`: the two diagrams of
   `two-diagrams.model.json`. A model of more than one diagram names each

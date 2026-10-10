@@ -59,6 +59,25 @@ export type Palette = {
   readonly toneLow: Colour;
   /** No severity assessed, a warm grey. */
   readonly toneNeutral: Colour;
+  /**
+   * Accent slot 1, a pink: the outline of an element that holds it, and the
+   * line of a flow or a trust boundary. A slot means nothing but itself.
+   */
+  readonly slot1: Colour;
+  /** Accent slot 2, a purple. */
+  readonly slot2: Colour;
+  /** Accent slot 3, a sand. */
+  readonly slot3: Colour;
+  /** Accent slot 4, a cyan. */
+  readonly slot4: Colour;
+  /** The opaque fill inside a strong accent of slot 1, under the element's name. */
+  readonly slot1Tint: Colour;
+  /** The fill inside a strong accent of slot 2. */
+  readonly slot2Tint: Colour;
+  /** The fill inside a strong accent of slot 3. */
+  readonly slot3Tint: Colour;
+  /** The fill inside a strong accent of slot 4. */
+  readonly slot4Tint: Colour;
 };
 
 /**
@@ -70,7 +89,14 @@ export type Palette = {
  * needs 4.5 and a control's outline 3. The fifth severity, which the starting
  * palette lacks, is the olive of the primary action, and the grid line is a
  * warm taupe measured on a band, 1.3 to 1.6 on the canvas ground, since it is
- * worse for being darker.
+ * worse for being darker. Accent slots 1, 2 and 4 are the dark table's colours
+ * with their channels scaled down in steps of 4% until the outline clears 3 on
+ * the canvas ground, on every fill of an element and on its own tint. Slot 3
+ * is the maintainer's choice (#828): the dark table's sand with its hue and
+ * its HSL saturation kept and its lightness lowered, which clears the same
+ * floor. By {@link channelDistance} slot 3 measures 41 from the warm grey and
+ * slot 4 measures 29 from the slate blue. A tint is {@link accentTint} of the
+ * slot over the panel fill.
  */
 export const lightPalette = {
   surfaceApp: '#F0EDE5',
@@ -92,13 +118,24 @@ export const lightPalette = {
   toneMedium: '#46788A',
   toneLow: '#4B6B50',
   toneNeutral: '#756E63',
+  slot1: '#AA6A89',
+  slot2: '#9370CE',
+  slot3: '#93814F',
+  slot4: '#5C8A8F',
+  slot1Tint: '#EDE1E1',
+  slot2Tint: '#EAE2EC',
+  slot3Tint: '#EAE5D8',
+  slot4Tint: '#E1E6E2',
 } as const satisfies Palette;
 
 /**
  * The dark palette: the same hues over warm ink grounds, measured against the
  * same floors, its hairline lightened so it clears 3 on the wash a process is
  * filled with. The studio takes it under the system's dark preference, and
- * the headless render stays on the light table.
+ * the headless render stays on the light table. The four accent slots are the
+ * maintainer's own choice for this ground (#828), and a tint is the slot mixed
+ * 24% into the actor wash. Slot 4 sits 10 degrees of hue from the slate blue
+ * of severity medium and 61 from it by {@link channelDistance}.
  */
 export const darkPalette = {
   surfaceApp: '#282522',
@@ -120,6 +157,14 @@ export const darkPalette = {
   toneMedium: '#5F95A8',
   toneLow: '#6B8A82',
   toneNeutral: '#9A9185',
+  slot1: '#D988AF',
+  slot2: '#AD84F2',
+  slot3: '#CABD99',
+  slot4: '#80BFC6',
+  slot1Tint: '#5F474D',
+  slot2Tint: '#54465D',
+  slot3Tint: '#5B5448',
+  slot4Tint: '#495552',
 } as const satisfies Palette;
 
 /**
@@ -158,18 +203,31 @@ export const canvasType = {
  * Every stroke the drawing lays down, in user units. One weight carries an
  * element's outline, a trust boundary's dashes and a flow's line. A store's
  * two lines are heavier, being its whole glyph. The badge ring is drawn in a
- * ground colour, cutting the mark out of what lies beneath.
+ * ground colour, cutting the mark out of what lies beneath. A strong accent
+ * draws an outline, a trust boundary's dashes and a flow's line heavier, the
+ * lines with no fill to tint the most.
  */
 export const strokeWidths = {
   outline: 2,
   store: 2.5,
   badgeRing: 3,
+  strongOutline: 3,
+  strongBoundary: 3.5,
+  strongFlow: 4,
 } as const;
+
+/**
+ * The pitch of an out-of-scope outline's dots over its stroke width, so the
+ * dots stay apart at every weight a cue or a strong accent draws them at.
+ */
+export const dotPitchRatio = 2.5;
 
 const cueWidths = {
   selection: 3,
   flowHover: 3,
   flowSelection: 4,
+  strongFlowHover: 5,
+  strongFlowSelection: 6,
 } as const;
 
 /**
@@ -248,7 +306,7 @@ export const focusRing = {
 /** Default threat pane coverage with its outer inset, in screen pixels. */
 export const panelCover = 472;
 
-const chromeCard = '5rem';
+const chromeCard = '7.875rem';
 
 const scrollCue = '1.5rem';
 
@@ -272,6 +330,14 @@ const colourProperties = {
   toneMedium: '--saer-colour-tone-medium',
   toneLow: '--saer-colour-tone-low',
   toneNeutral: '--saer-colour-tone-neutral',
+  slot1: '--saer-colour-slot-1',
+  slot2: '--saer-colour-slot-2',
+  slot3: '--saer-colour-slot-3',
+  slot4: '--saer-colour-slot-4',
+  slot1Tint: '--saer-colour-slot-1-tint',
+  slot2Tint: '--saer-colour-slot-2-tint',
+  slot3Tint: '--saer-colour-slot-3-tint',
+  slot4Tint: '--saer-colour-slot-4-tint',
 } as const satisfies Record<keyof Palette, string>;
 
 /**
@@ -298,11 +364,16 @@ const colourBlock = (palette: Palette, indent: string): string => {
  * `data-saer-colour-mode`. `color-scheme` rides along, so scrollbars and native
  * controls follow the same preference. The headless render reads none of it.
  *
- * Each `--saer-cue-*` width sits a step above the outline weight, so a selection
- * reads without colour, and at most one step past the heaviest stroke, so a
- * flow does not swell past its arrowhead. A selected flow is heavier than a
- * hovered one, and each width is a pixel length that a CSS border and an SVG
- * stroke read alike.
+ * Each `--saer-cue-*` width sits above the weight its line rests at, so a
+ * selection reads without colour. A plain flow rests at the outline weight and
+ * is one step heavier under the pointer and two once selected. A flow under a
+ * strong accent rests at that selection weight, so its own two cues are one
+ * and two steps above it. The heaviest of them is under half the width of an
+ * arrowhead, so no flow swells past its own. Each width is a pixel length that
+ * a CSS border and an SVG stroke read alike. `--saer-stroke-outline` and
+ * `--saer-stroke-strong-outline` are the canvas's two outline weights, and
+ * `--saer-dot-pitch-ratio` is {@link dotPitchRatio}, for chrome that draws an
+ * element and for a cue that keeps an out-of-scope line's dots apart.
  * `--saer-chrome-block-size` is a placeholder the studio's chrome card
  * overwrites with its measured height, since its tool row can wrap.
  * `--saer-scroll-cue-size` is the strip a listbox lays over an edge its
@@ -340,6 +411,12 @@ ${colourBlock(lightPalette, '  ')}
   --saer-cue-selection: ${cueWidths.selection}px;
   --saer-cue-flow-hover: ${cueWidths.flowHover}px;
   --saer-cue-flow-selection: ${cueWidths.flowSelection}px;
+  --saer-cue-strong-flow-hover: ${cueWidths.strongFlowHover}px;
+  --saer-cue-strong-flow-selection: ${cueWidths.strongFlowSelection}px;
+
+  --saer-stroke-outline: ${strokeWidths.outline}px;
+  --saer-stroke-strong-outline: ${strokeWidths.strongOutline}px;
+  --saer-dot-pitch-ratio: ${dotPitchRatio};
 
   --saer-resize-handle-size: ${String(resizeHandle.size)}px;
   --saer-scroll-cue-size: ${scrollCue};
@@ -384,6 +461,26 @@ const relativeLuminance = (colour: Colour): number => {
 export function contrastRatio(one: Colour, other: Colour): number {
   const [first, second] = [relativeLuminance(one), relativeLuminance(other)];
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
+const lightTintShare = 0.16;
+
+/**
+ * The tint a strong accent fills an element with on a light palette: `slot`
+ * mixed 16% into `fill`, channel by channel. The light table's tints are this
+ * over its panel fill. A themed drawing's are this over the theme's own
+ * element colour, so a name the theme can be read in on that colour can be
+ * read on the tint.
+ */
+export function accentTint(fill: Colour, slot: Colour): Colour {
+  const [from, to] = [channels(fill), channels(slot)];
+  const mixed = from.map((channel, at) =>
+    Math.round(channel * (1 - lightTintShare) + to[at] * lightTintShare)
+      .toString(16)
+      .toUpperCase()
+      .padStart(2, '0'),
+  );
+  return `#${mixed.join('')}`;
 }
 
 /**

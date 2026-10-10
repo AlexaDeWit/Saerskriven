@@ -46,6 +46,24 @@ describe('actorSchema', () => {
   });
 });
 
+describe('accent', () => {
+  it('is held by every kind but a canvas note, whose parse drops one', () => {
+    const accented = elementSchema.options
+      .filter((option) => Object.hasOwn(option.shape, 'accent'))
+      .map((option) => option.shape.kind.value);
+    expect(accented).toEqual([
+      'actor',
+      'process',
+      'store',
+      'flow',
+      'trust-boundary',
+    ]);
+    expect(
+      elementSchema.parse({ ...actor, kind: 'text', text: '', accent: 's1' }),
+    ).not.toHaveProperty('accent');
+  });
+});
+
 describe('flowEndpointSchema', () => {
   it('parses an attached endpoint pinned to a side, and refuses a side that is not one', () => {
     expect(

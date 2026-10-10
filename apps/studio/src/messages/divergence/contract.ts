@@ -33,6 +33,8 @@ export const divergenceMessages = {
   'subject-process-named': text(name),
   'subject-store': text(),
   'subject-store-named': text(name),
+  'subject-flow': text(),
+  'subject-flow-named': text(name),
   'subject-text': text(),
   'subject-text-named': text(name),
   'subject-trust-boundary': text(),
@@ -50,6 +52,8 @@ export const divergenceMessages = {
   'split-into-copies': plural('count'),
   'note-name-dropped': text(),
   'scope-marking-dropped': text(),
+  'accents-dropped': plural('count'),
+  'accent-unknown': text({ accent: 'text' }),
   'size-raised': text({
     width: 'number',
     height: 'number',

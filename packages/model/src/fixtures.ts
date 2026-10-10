@@ -181,6 +181,7 @@ export const committedDiagrams: readonly {
     file: 'two-diagrams.model.json',
     diagram: 1,
   },
+  { name: 'every accent', file: 'accents.model.json', diagram: 0 },
 ];
 
 /** The element of any diagram under the id, throwing where none is. */

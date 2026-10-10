@@ -1,3 +1,4 @@
+import { accentParts, type Accent } from '@saerskriven/model';
 import { announce } from '../canvas/announcements.js';
 import { arrangeSelected } from '../canvas/arrangement.js';
 import { startBendInsertion } from '../canvas/bend-insertion.js';
@@ -13,6 +14,7 @@ import {
   stepDiagram,
 } from '../canvas/diagrams.js';
 import {
+  accentSelected,
   removeSelected,
   renameSelected,
   reverseSelectedFlow,
@@ -52,6 +54,7 @@ export const commandGroups = [
   'commands.group-view',
   'commands.group-diagram',
   'commands.group-tools',
+  'commands.group-accent',
   'commands.group-help',
 ] as const satisfies readonly CommandMessageId[];
 
@@ -125,6 +128,31 @@ const toolCommand = <const Id extends string>({
     group: 'commands.group-tools',
     run: () => {
       selectTool(tool);
+    },
+  });
+
+const accentCommand = <const Id extends string>({
+  id,
+  accent,
+}: Pick<Built<Id>, 'id'> & {
+  readonly accent: Accent | undefined;
+}): Built<Id> =>
+  command({
+    id,
+    label:
+      accent === undefined
+        ? 'commands.label-accent-none'
+        : {
+            id: accentParts[accent].strong
+              ? 'commands.label-accent-strong'
+              : 'commands.label-accent-light',
+            slot: accentParts[accent].slot,
+          },
+    group: 'commands.group-accent',
+    shortcuts: [],
+    when: 'commands.when-accent-bar',
+    run: () => {
+      accentSelected(accent);
     },
   });
 
@@ -576,6 +604,15 @@ export const commandTable = {
     when: 'commands.when-outside-fields-and-menus',
     tool: 'boundary-curve',
   }),
+  'accent-none': accentCommand({ id: 'accent-none', accent: undefined }),
+  'accent-s1': accentCommand({ id: 'accent-s1', accent: 's1' }),
+  'accent-s2': accentCommand({ id: 'accent-s2', accent: 's2' }),
+  'accent-s3': accentCommand({ id: 'accent-s3', accent: 's3' }),
+  'accent-s4': accentCommand({ id: 'accent-s4', accent: 's4' }),
+  'accent-l1': accentCommand({ id: 'accent-l1', accent: 'l1' }),
+  'accent-l2': accentCommand({ id: 'accent-l2', accent: 'l2' }),
+  'accent-l3': accentCommand({ id: 'accent-l3', accent: 'l3' }),
+  'accent-l4': accentCommand({ id: 'accent-l4', accent: 'l4' }),
   'shortcut-reference': command({
     id: 'shortcut-reference',
     label: 'commands.label-shortcut-reference',

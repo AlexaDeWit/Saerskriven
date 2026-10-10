@@ -47,9 +47,13 @@ the precision the format holds, so a coordinate a write rounds to fit the
 format is not a divergence. A size a write raises is one, since the element
 reads back larger than the model holds it: Threat Dragon takes no width or
 height under 10, so its write raises a smaller one to 10 and reports the
-element once. Reads and writes return one list of them, and an empty list is
-the aligned case. The subjects, the reasons and the terminal escaping of
-`renderDivergences` are in [`divergence.ts`](src/lib/divergence.ts).
+element once. An [accent](../../docs/saerskriven-yaml.md#accents) is one too
+wherever it is lost: a Threat Dragon write holds none and reports them once
+for the model, with the count of elements holding one, and a native read
+reports an element whose `accent` is none of the model's keys. Reads and
+writes return one list of them, and an empty list is the aligned case. The
+subjects, the reasons and the terminal escaping of `renderDivergences` are in
+[`divergence.ts`](src/lib/divergence.ts).
 
 An entry names its subject, its reason and a `detail`: a code from a closed
 set with the data that code needs, in

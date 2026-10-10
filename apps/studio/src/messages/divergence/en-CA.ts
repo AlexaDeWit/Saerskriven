@@ -15,6 +15,8 @@ export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
   'subject-process-named': 'Process "{name}"',
   'subject-store': 'Store',
   'subject-store-named': 'Store "{name}"',
+  'subject-flow': 'Flow',
+  'subject-flow-named': 'Flow "{name}"',
   'subject-text': 'Text',
   'subject-text-named': 'Text "{name}"',
   'subject-trust-boundary': 'Trust boundary',
@@ -35,6 +37,11 @@ export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
   },
   'note-name-dropped': 'its name',
   'scope-marking-dropped': 'its out-of-scope marking',
+  'accents-dropped': {
+    one: 'The accent on {count} element',
+    other: 'The accents on {count} elements',
+  },
+  'accent-unknown': 'its accent "{accent}"',
   'size-raised':
     'its size {width} × {height}, now {writtenWidth} × {writtenHeight}',
   'threat-attachment-stray-text': 'its attachment to the text',

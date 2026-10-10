@@ -22,17 +22,27 @@ import {
 } from '../store/store.fixtures.js';
 import { canvasModel, openCanvas, requestFlow } from './canvas.fixtures.js';
 import { FitOnOpen, useViewCommands } from './view-commands.js';
+import { unmeasuredCardBottom } from './viewport.js';
 
-const unfitted = 'transform: translate(0px, 0px) scale(1)';
+const unfitted = 'transform: translate(0px,0px) scale(1);';
 
 const transform = (): string =>
   document.querySelector('.react-flow__viewport')?.getAttribute('style') ?? '';
 
-const Harness = () => (
+const Harness = ({ cardBottom }: { readonly cardBottom?: number }) => (
   <ReactFlow edges={[]} nodes={[]}>
-    <FitOnOpen />
+    <FitOnOpen cardBottom={cardBottom} />
   </ReactFlow>
 );
+
+const pastTheCanvas = 10_000;
+
+const movedFrom = async (before: string): Promise<string> => {
+  await waitFor(() => {
+    expect(transform()).not.toBe(before);
+  });
+  return transform();
+};
 
 const fitted = async (): Promise<string> => {
   await waitFor(() => {
@@ -41,9 +51,15 @@ const fitted = async (): Promise<string> => {
   return transform();
 };
 
-function ViewControls({ cover = 0 }: { readonly cover?: number }) {
+function ViewControls({
+  cover = 0,
+  cardBottom = 0,
+}: {
+  readonly cover?: number;
+  readonly cardBottom?: number;
+}) {
   const snapping = useSnap();
-  const view = useViewCommands(cover);
+  const view = useViewCommands(cover, cardBottom);
   return (
     <CommandSurfaceProvider surface={{ ...recordingSurface().surface, view }}>
       <CommandButton command="fit-selection" />
@@ -66,6 +82,34 @@ describe('FitOnOpen', () => {
     render(<Harness />);
 
     expect(await fitted()).not.toBe(unfitted);
+  });
+
+  it('waits for the card to be measured, then fits below it, lower than it fits with no card', async () => {
+    const { rerender, unmount } = render(
+      <Harness cardBottom={unmeasuredCardBottom} />,
+    );
+    const waiting = transform();
+    await act(() => new Promise((settle) => setTimeout(settle, 50)));
+    expect(transform()).toBe(waiting);
+
+    rerender(<Harness cardBottom={120} />);
+    const below = await movedFrom(waiting);
+    unmount();
+    modelStore.setState(initialState(canvasModel), true);
+    render(<Harness />);
+
+    expect(await movedFrom(waiting)).not.toBe(below);
+  });
+
+  it('fits the whole canvas where a measured card leaves no room under it', async () => {
+    const { rerender } = render(<Harness cardBottom={unmeasuredCardBottom} />);
+    const waiting = transform();
+
+    rerender(<Harness cardBottom={pastTheCanvas} />);
+
+    await waitFor(() => {
+      expect(transform()).not.toBe(waiting);
+    });
   });
 
   it('fits again for a file opened over the model on screen', async () => {
@@ -119,6 +163,12 @@ describe('FitOnOpen', () => {
     expect(transform()).toBe(first);
   });
 });
+
+const controlsUnder = (cardBottom: number) => (
+  <ReactFlow width={1000} height={600} edges={[]} nodes={[]}>
+    <ViewControls cardBottom={cardBottom} />
+  </ReactFlow>
+);
 
 describe('useViewCommands', () => {
   it('fits a selected flow and resets zoom without editing the document or its history', async () => {
@@ -177,6 +227,33 @@ describe('useViewCommands', () => {
     await waitFor(() => {
       expect(transform()).not.toBe(narrow);
     });
+    expect(modelStore.getState()).toBe(before);
+  });
+
+  it('refits the selection and the diagram when the card grows, without changing the document', async () => {
+    openCanvas([requestFlow]);
+    const before = modelStore.getState();
+    const { rerender } = render(controlsUnder(97));
+    fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
+    const selection = await fitted();
+    fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }));
+    await waitFor(() => {
+      expect(transform()).not.toBe(selection);
+    });
+    const diagram = transform();
+
+    rerender(controlsUnder(138));
+    fireEvent.click(screen.getByRole('button', { name: 'Fit selection' }));
+    await waitFor(() => {
+      expect(transform()).not.toBe(diagram);
+    });
+    expect(transform()).not.toBe(selection);
+    const lowered = transform();
+    fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }));
+    await waitFor(() => {
+      expect(transform()).not.toBe(lowered);
+    });
+    expect(transform()).not.toBe(diagram);
     expect(modelStore.getState()).toBe(before);
   });
 });

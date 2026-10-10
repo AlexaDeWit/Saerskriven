@@ -8,6 +8,43 @@ import {
 import { elementIdSchema } from './ids.js';
 import { acceptedTextSchema } from './text.js';
 
+/**
+ * The keys an element is accented by: a strength, `s` for strong or `l` for
+ * light, and one of four palette slots. A key names no colour and carries no
+ * meaning. Each palette decides how a slot is drawn.
+ */
+export const accentSchema = z.enum([
+  's1',
+  's2',
+  's3',
+  's4',
+  'l1',
+  'l2',
+  'l3',
+  'l4',
+]);
+
+/** An accent key. */
+export type Accent = z.infer<typeof accentSchema>;
+
+/** One of the four palette slots an accent key names. */
+export type AccentSlot = 1 | 2 | 3 | 4;
+
+/** The strength and the palette slot each accent key names. */
+export const accentParts = {
+  s1: { strong: true, slot: 1 },
+  s2: { strong: true, slot: 2 },
+  s3: { strong: true, slot: 3 },
+  s4: { strong: true, slot: 4 },
+  l1: { strong: false, slot: 1 },
+  l2: { strong: false, slot: 2 },
+  l3: { strong: false, slot: 3 },
+  l4: { strong: false, slot: 4 },
+} as const satisfies Record<
+  Accent,
+  { readonly strong: boolean; readonly slot: AccentSlot }
+>;
+
 const elementBaseSchema = z.object({
   id: elementIdSchema,
   name: acceptedTextSchema,
@@ -16,7 +53,11 @@ const elementBaseSchema = z.object({
   reasonOutOfScope: acceptedTextSchema,
 });
 
-const nodeBaseSchema = elementBaseSchema.extend({
+const accentableBaseSchema = elementBaseSchema.extend({
+  accent: accentSchema.optional(),
+});
+
+const nodeBaseSchema = accentableBaseSchema.extend({
   position: pointSchema,
   size: sizeSchema,
 });
@@ -55,8 +96,10 @@ export const storeSchema = nodeBaseSchema.extend({
 /** Store element. */
 export type Store = z.infer<typeof storeSchema>;
 
-/** Canvas note with separate content and outline name. */
-export const textSchema = nodeBaseSchema.extend({
+/** Canvas note with separate content and outline name. It takes no accent. */
+export const textSchema = elementBaseSchema.extend({
+  position: pointSchema,
+  size: sizeSchema,
   kind: z.literal('text'),
   text: acceptedTextSchema,
 });
@@ -91,7 +134,7 @@ export type FlowEndpoint = z.infer<typeof flowEndpointSchema>;
 export type FlowEndpointInput = z.input<typeof flowEndpointSchema>;
 
 /** Flow direction is required. Absent security facts and relationship lists remain unknown. */
-export const flowSchema = elementBaseSchema.extend({
+export const flowSchema = accentableBaseSchema.extend({
   kind: z.literal('flow'),
   protocol: acceptedTextSchema.optional(),
   isEncrypted: z.boolean().optional(),
@@ -139,7 +182,7 @@ export type BoundaryShape = z.infer<typeof boundaryShapeSchema>;
 export type BoundaryShapeInput = z.input<typeof boundaryShapeSchema>;
 
 /** Declared relationships are independent of geometry and remain unknown when absent. */
-export const trustBoundarySchema = elementBaseSchema.extend({
+export const trustBoundarySchema = accentableBaseSchema.extend({
   kind: z.literal('trust-boundary'),
   containedElements: z.array(elementIdSchema).optional(),
   crossingFlows: z.array(elementIdSchema).optional(),
@@ -170,6 +213,14 @@ export type Element = z.infer<typeof elementSchema>;
 
 /** Any diagram element as {@link elementSchema} accepts it. */
 export type ElementInput = z.input<typeof elementSchema>;
+
+/** An element of a kind that takes an accent: every kind but a canvas note. */
+export type AccentableElement = Exclude<Element, { readonly kind: 'text' }>;
+
+/** Whether `element` is of a kind that takes an accent. */
+export function takesAccent(element: Element): element is AccentableElement {
+  return element.kind !== 'text';
+}
 
 /** The `kind` an element carries: {@link elementSchema}'s own discriminators. */
 export const elementKindSchema = z.enum([

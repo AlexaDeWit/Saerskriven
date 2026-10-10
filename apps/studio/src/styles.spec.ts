@@ -1,5 +1,6 @@
 import { repositoryRoot } from '@saerskriven/model/fixtures';
 import {
+  accentClassNames,
   canvasClassNames,
   canvasInteractionClassNames,
   themedCanvasStylesheet,
@@ -97,6 +98,7 @@ describe('the diagram class names', () => {
   it('spells each one in the studio and canvas sources as the canvas maps declare it', () => {
     const declared = new Set<string>([
       ...Object.values(canvasClassNames),
+      ...Object.values(accentClassNames),
       ...Object.values(canvasInteractionClassNames),
     ]);
     const spelled = sources.flatMap((source) =>

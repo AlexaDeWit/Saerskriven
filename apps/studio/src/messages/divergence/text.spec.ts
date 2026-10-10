@@ -9,7 +9,7 @@ import {
 } from '@saerskriven/formats';
 import { catalogueTemplates, templateParts } from '@saerskriven/i18n';
 import { Either } from 'effect';
-import { codesOf, type Model } from '@saerskriven/model';
+import { codesOf, setAccent, type Model } from '@saerskriven/model';
 import {
   assumptionId,
   assumptionOf,
@@ -110,6 +110,8 @@ const reported: readonly DivergenceDetail[] = [
   { code: 'assumption-unrecorded' },
   { code: 'note-name-dropped', parameters: { name: 'dropped-note-name' } },
   { code: 'scope-marking-dropped' },
+  { code: 'accents-dropped', parameters: { count: 24 } },
+  { code: 'accent-unknown', parameters: { accent: 'unknown-accent' } },
   raisedSize,
   {
     code: 'threat-attachment-stray',
@@ -381,6 +383,11 @@ describe('the subject a line names', () => {
       t('divergence.subject-store-named', { name: 'Paper archive' }),
     ],
     [
+      'a named flow by its kind and name',
+      { kind: 'element', id: elementId('el-flow') },
+      t('divergence.subject-flow-named', { name: 'Flow' }),
+    ],
+    [
       'an unnamed element by its kind',
       { kind: 'element', id: elementId('zone') },
       t('divergence.subject-trust-boundary'),
@@ -540,10 +547,6 @@ describe('the subject a line names', () => {
     [
       'a diagram, which no report names',
       { kind: 'diagram', id: diagramId('d') },
-    ],
-    [
-      'a flow, the element kind no report names',
-      { kind: 'element', id: elementId('el-flow') },
     ],
   ] as const)('leaves %s to the detail, naming no id', (_, subject) => {
     expect(lineOf(divergenceOn(subject, eopCard))).toBe(eopDetail);
@@ -896,6 +899,69 @@ describe('the line a Threat Dragon save reports for an element under its least s
         subject: t('divergence.subject-process-named', { name: 'Front desk' }),
         detail: t('divergence.size-raised', raisedSize.parameters),
       }),
+    ]);
+  });
+});
+
+describe('the line a Threat Dragon save reports for accents', () => {
+  const accented = Either.getOrThrow(
+    setAccent(
+      modelWith({
+        elements: [
+          boxAt('desk', 0, 0, 'process', undefined, 'Front desk'),
+          boxAt('archive', 200, 0, 'store', undefined, 'Paper archive'),
+        ],
+      }),
+      [elementId('desk'), elementId('archive')],
+      's1',
+    ),
+  );
+
+  it('is one line for the model, counting the elements that hold one', () => {
+    expect(
+      shownLines(threatDragonCodec.write(accented).divergences, accented),
+    ).toEqual([t('divergence.accents-dropped', { count: 2 })]);
+  });
+});
+
+const flowTo = (id: string, name: string, y: number) => ({
+  ...flowBetween(
+    attached('archive'),
+    { kind: 'free', position: { x: 300, y } },
+    [],
+  ),
+  id,
+  name,
+});
+
+const unknownAccentOn = (id: string): Divergence => ({
+  subject: { kind: 'element', id: elementId(id) },
+  detail: { code: 'accent-unknown', parameters: { accent: 's5' } },
+  reason: 'narrowed',
+});
+
+describe('the lines an open reports for flows holding an accent this release does not know', () => {
+  const flows = modelWith({
+    elements: [
+      boxAt('archive', 0, 0, 'store', undefined, 'Paper archive'),
+      flowTo('flow-named', 'Requests', 100),
+      flowTo('flow-bare', '', 200),
+    ],
+  });
+
+  it('names each flow by its kind and name, so two flows are two lines and not one line counted twice', () => {
+    const detail = t('divergence.accent-unknown', { accent: 's5' });
+    expect(
+      shownLines(
+        [unknownAccentOn('flow-named'), unknownAccentOn('flow-bare')],
+        flows,
+      ),
+    ).toEqual([
+      t('divergence.line', {
+        subject: t('divergence.subject-flow-named', { name: 'Requests' }),
+        detail,
+      }),
+      t('divergence.line', { subject: t('divergence.subject-flow'), detail }),
     ]);
   });
 });

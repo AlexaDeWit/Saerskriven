@@ -262,6 +262,16 @@ export const editVariants: readonly {
     ],
   },
   {
+    op: 'set_accent',
+    edits: [
+      {
+        op: 'set_accent',
+        elements: ['element-api', 'element-order-flow'],
+        accent: 's1',
+      },
+    ],
+  },
+  {
     op: 'set_flow_waypoints',
     edits: [
       {

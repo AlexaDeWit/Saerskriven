@@ -165,13 +165,19 @@ type DistanceLabelId =
   | 'commands.key-move-selection'
   | 'commands.key-resize-selection';
 
+type SlotLabelId =
+  | 'commands.label-accent-strong'
+  | 'commands.label-accent-light';
+
 /**
  * What a shortcut is called: a message of the `commands` section, or one of
- * the few that name a distance, with the distance.
+ * the few that name a distance or an accent slot, with the distance or the
+ * slot.
  */
 export type ShortcutLabel =
-  | Exclude<CommandMessageId, DistanceLabelId>
-  | { readonly id: DistanceLabelId; readonly units: number };
+  | Exclude<CommandMessageId, DistanceLabelId | SlotLabelId>
+  | { readonly id: DistanceLabelId; readonly units: number }
+  | { readonly id: SlotLabelId; readonly slot: number };
 
 /** A registered or contextual shortcut as the reference lists it. */
 export type ShortcutEntry = {
@@ -189,7 +195,9 @@ export function shortcutLabelText(
   if (typeof label === 'string') {
     return t(label);
   }
-  return t(label.id, { units: label.units });
+  return 'units' in label
+    ? t(label.id, { units: label.units })
+    : t(label.id, { slot: label.slot });
 }
 
 /** A shortcut spelled for a person, whole and one alternative at a time, and for assistive technology. */

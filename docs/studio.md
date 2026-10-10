@@ -19,7 +19,8 @@ server or exported documents.
 ## The window
 
 The canvas fills the window. One card centred at the top holds the menu
-button, the diagram switcher joined to it, and the tool modes. The threat panel
+button, the diagram switcher joined to it, the tool modes, and under them the
+[accent bar](#accents). The threat panel
 floats over the right edge while something is selected, and the zoom controls
 float at the bottom right. Notices hang under the card: a refused edit, file or
 link, what a save or an open could not keep, and the link Share copied. Each
@@ -511,6 +512,47 @@ shop", "Flow between Shopper and Web shop" for a flow that runs both ways, or
 "a free point" for an end attached to nothing. Every other element keeps a
 name, and its field refuses an empty one.
 
+## Accents
+
+An accent draws attention to an element or a flow: one path through a diagram
+during a discussion, or the parts a copy of a diagram is kept to show. It
+means nothing to the model: no rule reads it and no threat depends on it.
+
+The card's third row is the accent bar: no accent, four strong accents and
+four light ones, each drawn as an element holding it. Select one or more
+elements or flows and press a swatch. Every selected actor, process, store,
+trust boundary and flow takes it, as one undo step. A Note takes no accent,
+and one in the selection is left as it is. The pressed swatch is the accent
+the selection holds, and none is pressed where the selected elements differ.
+The row is inactive while nothing that takes an accent is selected.
+
+Strong and light share four colours, numbered 1 to 4:
+
+- A light accent draws the element's outline in the colour, at its usual
+  weight.
+- A strong accent draws the outline heavier and fills the element with a tint
+  of the colour. A store, which has no fill, takes the tint as a band between
+  its two lines.
+- A flow and a trust boundary have no fill, so the line carries the accent:
+  in the colour for a light one, and heavier too for a strong one. A flow's
+  arrowhead takes the colour.
+
+An element out of scope keeps its dots, in the accent's colour. Names, badges
+and flow names are drawn as they are without an accent, and so are the
+selection frame and the focus ring. Light and dark each have their own four
+colours, so an accent is the same number in both and not the same shade.
+Under a system contrast theme no accent colour is drawn: a strong accent
+keeps its heavier line, and a light one looks like no accent.
+
+An exported SVG, PNG or PDF draws accents in the light appearance's colours.
+The Mermaid diagrams of a Markdown export draw none. Copy, paste and
+duplicate keep an element's accent. Only the Saerskriven YAML format saves
+accents ([the `accent` key](saerskriven-yaml.md#accents)): a Threat Dragon
+save drops them and reports how many.
+
+While the selection holds something that takes an accent, Tab passes the nine
+swatches after the tools and before the diagram.
+
 ## Copy, cut, paste and duplicate
 
 Copy takes the selected elements, the attached ends of selected flows, flows
@@ -572,13 +614,15 @@ and leave the file unmodified.
 
 ## The view
 
-Opening a model, or switching to another diagram, fits the diagram to the
-window. **Fit to view** and **Fit selection** fit the area left of the open
-threat panel. The zoom controls show the current percentage, and pressing it
-resets the zoom to 100%. Selecting or dropping an element does not move the
-view. Tab onto an item outside the viewport, and an arrow key that moves the
-selected element out of it, bring the item back inside by the shortest pan
-([Accessibility](#accessibility)).
+Opening a model, or switching to another diagram, centres the diagram in the
+space below the top card, so nothing opens behind the card. **Fit to view** and
+**Fit selection** centre in that same space, less what the open threat panel
+covers. A tall diagram opens smaller than the window alone would allow, since
+the card's height and a gap under it come off the room. The zoom controls show
+the current percentage, and pressing it resets the zoom to 100%. Selecting or
+dropping an element does not move the view. Tab onto an item outside the
+viewport, and an arrow key that moves the selected element out of it, bring the
+item back inside by the shortest pan ([Accessibility](#accessibility)).
 
 Scrolling pans in both directions and a trackpad pinch zooms. Holding Control
 (or Command on macOS) turns scrolling into zoom. A touch drag pans in Select. A
@@ -748,8 +792,10 @@ dashed one is a trust boundary, and a dotted one is out of scope: a trust
 boundary out of scope is dotted in place of its dashes. A flow out of scope
 has its line dotted and drawn in the muted ink, and its arrowhead filled with
 it. A Note, which has no outline, takes a dotted frame just outside its box
-while it is out of scope. Names and badges are drawn as they are in scope. The
-dots are a pattern, not a colour, so they survive forced colours.
+while it is out of scope. Names and badges are drawn as they are in scope. An
+[accent](#accents) on an element or a flow out of scope draws the dots and the
+arrowhead in its own colour in place of the muted ink. The dots are a pattern,
+not a colour, so they survive forced colours.
 
 ### Security properties
 
@@ -863,8 +909,9 @@ Enter on a focused element selects it, and a second Enter edits its name.
 
 ## Accessibility
 
-Tab reaches the card, then the diagram's flows and elements, every flow before
-every element, then the threat register while it is open, then the panel. Where
+Tab reaches the card, its [accent bar](#accents) last and only while the bar is
+active, then the diagram's flows and elements, every flow before every element,
+then the threat register while it is open, then the panel. Where
 the register covers the panel, in a window too narrow for both, Tab skips the
 panel until the register closes.
 

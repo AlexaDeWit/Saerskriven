@@ -1,11 +1,14 @@
 # The Saerskriven YAML format
 
-Saerskriven's own file format, version 2. Everything the internal model holds has
-a place in the file and everything the file holds has a place in the model, so
-reading a version 2 file and writing it back changes nothing and neither
-direction reports a divergence. A version 1 file still reads, through the
-migration [Reading](#reading) describes. The other format Saerskriven reads,
-Threat Dragon v2 JSON, is somebody else's shape and does not have that
+Saerskriven's own file format, version 2. Everything the internal model holds
+has a place in the file, and everything this release declares for the file has
+a place in the model, so a version 2 file this release wrote reads and writes
+back with nothing changed and no divergence reported in either direction. A
+file from a later release can hold more, and what this release has no place
+for it drops and reports: a key it does not declare ([Reading](#reading)), and
+an accent it does not know ([Accents](#accents)). A version 1 file still
+reads, through the migration Reading describes. The other format Saerskriven
+reads, Threat Dragon v2 JSON, is somebody else's shape and does not have that
 property.
 
 Each version is declared by a package of one zod schema that imports nothing
@@ -90,19 +93,21 @@ processes, stores and flows, and the relationship lists (`trustBoundaryIds`,
 emits, stated `bidirectional` on every flow, one-way ones included, so the
 rule above for a later key holds from version 2 on.
 
-Version 2 has grown by one: a threat's `appliesToModel`. A threat applies to
-the model as a whole, to the elements it names, or to both, as an assumption
-applies to the model, to threats, or to both. An assumption's `appliesToModel`
-is required, because the first release of version 2 declared it. A threat's is
-optional, and a threat that leaves it out does not apply to the model. The
-model holds the flag on every threat, and a write states it only on a threat
-that applies to the model, under the rule above for a key added after a
-version's first release. A `false` written by hand is therefore removed by the
-next save. The studio sets a threat's flag under the threat's
+Version 2 has grown by two keys. The first is a threat's `appliesToModel`. A
+threat applies to the model as a whole, to the elements it names, or to both,
+as an assumption applies to the model, to threats, or to both. An assumption's
+`appliesToModel` is required, because the first release of version 2 declared
+it. A threat's is optional, and a threat that leaves it out does not apply to
+the model. The model holds the flag on every threat, and a write states it
+only on a threat that applies to the model, under the rule above for a key
+added after a version's first release. A `false` written by hand is therefore
+removed by the next save. The studio sets a threat's flag under the threat's
 [attached elements](studio.md#attached-elements) and an assumption's on
 [the model panel](studio.md#the-model-panel). `saer_edit` sets either through
 the operations that link a [threat](mcp.md#threats) or an
 [assumption](mcp.md#mitigations-and-assumptions) to the model and unlink it.
+
+The second is an element's `accent`, which [Accents](#accents) describes.
 
 Everything else is breaking: a rename, a type change, a removal, or a new key
 whose absence means nothing. That takes a new `formatVersion`, and a new
@@ -237,6 +242,31 @@ The original model retains its full lists.
 
 The studio edits these values under **Security properties**
 ([using the studio](studio.md#security-properties)).
+
+## Accents
+
+An actor, a process, a store, a flow or a trust boundary may state `accent`,
+one of eight keys: `s1` to `s4` for a strong accent and `l1` to `l4` for a
+light one, over four palette slots. A key names a slot and never a colour.
+[The studio](studio.md#accents) and an exported drawing decide how a slot is
+drawn, and the model reads no meaning into one. A Note states none.
+
+The key arrived after version 2's first release, so a write states it only on
+an element that holds an accent, as `accent: s1` after `reasonOutOfScope`, and
+a file with none is written as it was before the key existed.
+
+`accent` is text in the wire schema, not an enumerated vocabulary, so the
+refusal of an unknown enumerated value does not reach it. A text that is none
+of the eight keys reads as no accent and is reported as a `narrowed`
+divergence naming the element and the text, so a file holding a key a later
+release adds still opens. The next save writes no accent for that element. A
+value that is not text is refused at its path, as any mistyped key is. On a
+Note, and in a version 1 file, `accent` is an undeclared key: dropped, and
+reported as one.
+
+A release of version 2 from before the key reads the file, drops each
+`accent`, reports it as `undeclared` with its path, and writes the file
+without it at its next save.
 
 ## Ordering
 
