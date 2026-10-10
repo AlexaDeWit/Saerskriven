@@ -20,6 +20,7 @@ import {
   boxOf,
   canvasSettled,
   centreOf,
+  clearPositionOn,
   dragBy,
   elementNodes,
   onScreen,
@@ -310,18 +311,26 @@ test('a no-op resize at the minimum leaves later geometry settled', async ({
 for (const [kind, element] of boxesAtTheFloor) {
   for (const input of pressInputs) {
     test(
-      `at the floor every resize control of ${kind} takes a ${input} press at its centre`,
+      `at the floor each corner handle of ${kind} takes a ${input} press at its centre, and each side control is covered there but not all over`,
       { tag: '@phone' },
       async ({ page }) => {
         const session =
           input === 'touch' ? await touchSession(page) : undefined;
         const node = await selectAloneAtFullZoom(page, element);
         expect(await boxOf(node)).toMatchObject(floorSize);
-        const controls = node.locator('.react-flow__resize-control > button');
-        await expect(controls).toHaveCount(8);
+        const corners = node.locator(
+          '.react-flow__resize-control.handle > button',
+        );
+        const sides = node.locator('.react-flow__resize-control.line > button');
+        await expect(corners).toHaveCount(4);
+        await expect(sides).toHaveCount(4);
 
-        for (const control of await controls.all()) {
-          await pressedStillAtCentre(page, control, session);
+        for (const corner of await corners.all()) {
+          await pressedStillAtCentre(page, corner, session);
+        }
+        for (const side of await sides.all()) {
+          expect(await reachesAt(side, await centreOf(side))).toBe(false);
+          await clearPositionOn(side);
         }
 
         expect(await boxOf(node)).toMatchObject(floorSize);

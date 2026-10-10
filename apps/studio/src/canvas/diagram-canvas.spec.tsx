@@ -471,13 +471,13 @@ describe('DiagramCanvas', () => {
   it.each([
     ['off its axis, and says nothing', 'top', 'ArrowLeft', ''],
     [
-      'that would shrink the element under its minimum size, and says the size is kept',
+      'that would narrow the element under its minimum size, and says the size is kept',
       'right',
       'ArrowLeft',
       t('canvas.size-kept'),
     ],
     [
-      'that would make an actor shorter than its default height, and says the size is kept',
+      'that would shorten the element under its minimum size, and says the size is kept',
       'top',
       'ArrowDown',
       t('canvas.size-kept'),
@@ -490,7 +490,7 @@ describe('DiagramCanvas', () => {
         Action.ResizeElement({
           elementId: actorElement,
           offset: { x: 0, y: 0 },
-          size: { ...readerBox().size, width: minimumNodeExtent },
+          size: { width: minimumNodeExtent, height: minimumNodeExtent },
           decimals: undefined,
         }),
       );
@@ -668,16 +668,16 @@ describe('DiagramCanvas', () => {
     expect(modelStore.getState().past).toEqual([curvedCanvasModel]);
   });
 
-  it('shrinks in the reverse direction and undo restores the full box', () => {
+  it('shrinks an actor of the default height from the top by key, and undo restores the full box', () => {
     openCanvas([actorElement]);
     render(<DiagramCanvas />);
     const before = readerBox();
 
-    fireEvent.keyDown(resizeControl('left'), { key: 'ArrowRight' });
+    fireEvent.keyDown(resizeControl('top'), { key: 'ArrowDown' });
 
     expect(readerBox()).toEqual({
-      position: { x: 5, y: 0 },
-      size: { width: 115, height: 60 },
+      position: { x: 0, y: 5 },
+      size: { width: 120, height: 55 },
     });
     act(() => {
       dispatch(Action.Undo());
