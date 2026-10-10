@@ -41,4 +41,33 @@ if INSTALL_SMOKE_CORRUPT=true /bin/bash "$assets/install.sh"; then
   exit 1
 fi
 [ "$("$destination" --version)" = "$first" ]
-printf 'Native installer smoke passed for %s on %s.\n' "$first" "$(uname -s)"
+
+# The installed executable validates a model and writes the committed PNG and
+# PDF bytes, with nothing on standard error.
+fixture=test-data/saerskriven/two-diagrams.yaml
+goldens=test-data/render
+summary="$("$destination" validate "$fixture" 2>"$scratch/stderr")"
+[ "$summary" = 'saerskriven-yaml: 2 diagrams, 25 elements, 10 threats' ] || {
+  echo "saer validate printed: $summary" >&2
+  exit 1
+}
+"$destination" render "$fixture" --format png --diagram storefront \
+  --out "$scratch/storefront.png" 2>>"$scratch/stderr"
+cmp "$scratch/storefront.png" "$goldens/two-diagrams-storefront.snapshot.png"
+"$destination" render "$fixture" --format pdf --out "$scratch/model.pdf" \
+  2>>"$scratch/stderr"
+if command -v sha256sum >/dev/null 2>&1; then
+  pdf_hash="$(sha256sum <"$scratch/model.pdf")"
+else
+  pdf_hash="$(shasum -a 256 <"$scratch/model.pdf")"
+fi
+[ "${pdf_hash%% *}" = "$(cat "$goldens/two-diagrams.snapshot.pdf.sha256")" ] || {
+  echo "saer render --format pdf wrote ${pdf_hash%% *}, not the committed hash." >&2
+  exit 1
+}
+[ ! -s "$scratch/stderr" ] || {
+  echo 'saer wrote to standard error:' >&2
+  cat "$scratch/stderr" >&2
+  exit 1
+}
+printf 'Native installer smoke passed for %s on %s %s.\n' "$first" "$(uname -s)" "$(uname -m)"

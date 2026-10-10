@@ -66,6 +66,15 @@
       "{workspaceRoot}/test-data/render/two-diagrams.snapshot.typ",
       "{workspaceRoot}/test-data/render/two-diagrams.snapshot.pdf.sha256"
     ],
+    // What scripts/sea-executable.sh builds an executable from: the script
+    // and the pins the flake hands it by path.
+    "executablePackaging": [
+      "{workspaceRoot}/scripts/sea-executable.sh",
+      { "env": "SAERSKRIVEN_SEA_NODE" },
+      { "env": "SAERSKRIVEN_NODE_RUNTIMES" },
+      { "env": "SAERSKRIVEN_RCODESIGN" },
+      { "env": "SAERSKRIVEN_UNSHARE" }
+    ],
     // The fixtures the tools projects under scripts share. The file sits
     // outside both project roots, so each names it here and in its tsconfig.
     "toolsFixtures": ["{workspaceRoot}/scripts/tools.fixtures.mts"],

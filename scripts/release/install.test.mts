@@ -13,7 +13,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { test } from 'node:test';
 import {
   linkTools,
@@ -21,16 +21,20 @@ import {
   workspaceRoot,
 } from '../tools.fixtures.mts';
 
-const payload = '#!/bin/sh\necho executed > "$HOME/executed"\n';
+const payload = '#!/bin/sh\necho "$0" "$@" >> "$HOME/started"\n';
 const digest = createHash('sha256').update(payload).digest('hex');
 const targets = [
   ['Linux', 'x86_64', 'x86_64-unknown-linux-gnu'],
   ['Linux', 'aarch64', 'aarch64-unknown-linux-gnu'],
-  ['Darwin', 'x86_64', 'x86_64-apple-darwin'],
   ['Darwin', 'arm64', 'aarch64-apple-darwin'],
 ] as const;
 
-const fixture = (os = 'Linux', arch = 'x86_64', sha = 'sha256sum') => {
+const fixture = (
+  os = 'Linux',
+  arch = 'x86_64',
+  sha = 'sha256sum',
+  executable = payload,
+) => {
   const directory = temporaryWorkspace();
   const bin = join(directory, 'tools');
   const home = join(directory, 'user home');
@@ -40,7 +44,7 @@ const fixture = (os = 'Linux', arch = 'x86_64', sha = 'sha256sum') => {
     mkdirSync(path, { recursive: true });
   writeFileSync(join(directory, 'package.json'), '{"version":"1.2.3"}');
   for (const [, , target] of targets) {
-    writeFileSync(join(releases, `saer-1.2.3-${target}`), payload);
+    writeFileSync(join(releases, `saer-1.2.3-${target}`), executable);
   }
   writeFileSync(
     join(releases, 'saer-1.2.3-x86_64-pc-windows-msvc.exe'),
@@ -71,6 +75,11 @@ const fixture = (os = 'Linux', arch = 'x86_64', sha = 'sha256sum') => {
   writeFileSync(
     join(bin, 'id'),
     '#!/usr/bin/env bash\nprintf "%s\\n" "${INSTALL_TEST_UID:-1000}"\n',
+    { mode: 0o755 },
+  );
+  writeFileSync(
+    join(bin, 'sysctl'),
+    '#!/usr/bin/env bash\n[ "$*" = "-n hw.optional.arm64" ] && [ -n "${INSTALL_TEST_ARM64-}" ] || exit 1\nprintf "%s\\n" "$INSTALL_TEST_ARM64"\n',
     { mode: 0o755 },
   );
   writeFileSync(
@@ -157,7 +166,7 @@ if (process.env.INSTALL_TEST_FAILURE === 'attestation') process.exit(1);
 };
 
 for (const [os, arch, target] of targets) {
-  void test(`installs verified ${target} bytes without executing them`, () => {
+  void test(`installs verified ${target} bytes, starting them once on Linux alone`, () => {
     const probe = fixture(os, arch, os === 'Darwin' ? 'shasum' : 'sha256sum');
     const result = probe.run();
     assert.equal(result.status, 0, result.stderr);
@@ -166,7 +175,25 @@ for (const [os, arch, target] of targets) {
     assert.equal(lstatSync(probe.destination).isSymbolicLink(), false);
     assert.equal(readlinkSync(probe.compatibility), 'saer');
     assert.equal(readFileSync(probe.compatibility, 'utf8'), payload);
-    assert.equal(existsSync(join(probe.home, 'executed')), false);
+    const started = join(probe.home, 'started');
+    if (os === 'Linux') {
+      const [startedFile, ...others] = readFileSync(started, 'utf8')
+        .trimEnd()
+        .split(' --version');
+      assert.deepEqual(others, ['']);
+      assert.ok(startedFile);
+      assert.equal(basename(startedFile), 'saer');
+      assert.match(
+        basename(dirname(startedFile)),
+        /^\.saerskriven-install\.[A-Za-z0-9]{8}$/u,
+      );
+      assert.equal(
+        dirname(dirname(startedFile)),
+        join(probe.home, '.local/bin'),
+      );
+    } else {
+      assert.equal(existsSync(started), false);
+    }
     assert.match(probe.calls(), new RegExp(`saer-1.2.3-${target}`, 'u'));
     assert.match(result.stdout, /PATH/u);
     assert.deepEqual(readdirSync(probe.temp), []);
@@ -194,6 +221,94 @@ void test('packaging pins the installer tag and includes its digest in SHA256SUM
       `${createHash('sha256').update(installer).digest('hex')}  install.sh\n`,
     ),
   );
+});
+
+const installedNames = (home: string): string[] =>
+  readdirSync(join(home, '.local/bin'));
+
+void test('a Linux executable that does not start replaces nothing and says what it needs', () => {
+  const probe = fixture(
+    'Linux',
+    'x86_64',
+    'sha256sum',
+    '#!/bin/sh\nexit 127\n',
+  );
+  probe.previous();
+  const result = probe.run();
+  assert.notEqual(result.status, 0);
+  for (const named of [
+    'glibc 2.28',
+    'libstdc++',
+    'libatomic',
+    'docs/nix.md',
+    'Nothing in',
+  ]) {
+    assert.ok(result.stderr.includes(named), named);
+  }
+  assert.equal(result.stdout.includes('Installed'), false);
+  assert.equal(readFileSync(probe.destination, 'utf8'), 'previous executable');
+  assert.equal(readlinkSync(probe.compatibility), 'saer');
+  assert.deepEqual(installedNames(probe.home), ['saer', 'saerskriven']);
+  assert.deepEqual(readdirSync(probe.temp), []);
+});
+
+void test('a Linux executable that does not start leaves a fresh machine without one', () => {
+  const probe = fixture(
+    'Linux',
+    'x86_64',
+    'sha256sum',
+    '#!/bin/sh\nexit 127\n',
+  );
+  assert.notEqual(probe.run().status, 0);
+  assert.deepEqual(installedNames(probe.home), []);
+});
+
+void test('a Linux executable that does not start leaves a legacy saerskriven as it was', () => {
+  const probe = fixture(
+    'Linux',
+    'x86_64',
+    'sha256sum',
+    '#!/bin/sh\nexit 127\n',
+  );
+  mkdirSync(join(probe.home, '.local/bin'), { recursive: true });
+  writeFileSync(probe.compatibility, 'legacy executable');
+  assert.notEqual(probe.run().status, 0);
+  assert.equal(lstatSync(probe.compatibility).isSymbolicLink(), false);
+  assert.equal(readFileSync(probe.compatibility, 'utf8'), 'legacy executable');
+  assert.deepEqual(installedNames(probe.home), ['saerskriven']);
+});
+
+void test('a destination that runs no program is named as one, not as missing libraries', () => {
+  const probe = fixture(
+    'Linux',
+    'x86_64',
+    'sha256sum',
+    '#!/bin/sh\nexit 126\n',
+  );
+  const result = probe.run();
+  assert.notEqual(result.status, 0);
+  assert.ok(result.stderr.includes('--bin-dir'));
+  assert.equal(result.stderr.includes('libatomic'), false);
+  assert.deepEqual(installedNames(probe.home), []);
+});
+
+void test('an Intel Mac is pointed at the last release built for it, before downloading', () => {
+  const answers: Record<string, string>[] = [{}, { INSTALL_TEST_ARM64: '0' }];
+  for (const answer of answers) {
+    const probe = fixture('Darwin', 'x86_64', 'shasum');
+    const result = probe.run([], answer);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /releases\/tag\/v0\.8\.3/u);
+    assert.equal(probe.calls(), '');
+  }
+});
+
+void test('a translated shell on Apple silicon installs the arm64 executable', () => {
+  const probe = fixture('Darwin', 'x86_64', 'shasum');
+  const result = probe.run([], { INSTALL_TEST_ARM64: '1' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(probe.calls(), /saer-1\.2\.3-aarch64-apple-darwin/u);
+  assert.equal(readFileSync(probe.destination, 'utf8'), payload);
 });
 
 const asset = 'saer-1.2.3-x86_64-unknown-linux-gnu';

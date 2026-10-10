@@ -200,10 +200,11 @@ as TS6305.
 `@types/node` declares the Web Storage globals unconditionally, so
 `localStorage` and `sessionStorage` type-check in both of the CLI's
 programs, and the build program's `lib.webworker` also admits
-`importScripts`. Node, the CLI's development and test runtime, leaves all
-three undefined. The deno-compiled executable defines the Web Storage pair
-([Building the executables](docs/build.md) covers the split), but no
-runtime's main thread defines the worker-only `importScripts`. A
+`importScripts`. Node 24, the CLI's development and test runtime, leaves all
+three undefined. The Node 26 inside the executable defines `sessionStorage`,
+and a read of `localStorage` there answers undefined and writes a warning to
+standard error ([Building the executables](docs/build.md) covers the split),
+but no runtime's main thread defines the worker-only `importScripts`. A
 `no-restricted-globals` override in `.oxlintrc.json` refuses all three in
 `apps/cli/**`, where the type program cannot.
 

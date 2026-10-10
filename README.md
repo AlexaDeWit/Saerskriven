@@ -84,7 +84,7 @@ fixture.
 | [The Saerskriven YAML format](docs/saerskriven-yaml.md)       | The native file format and its compatibility contract                                  |
 | [Using the studio](docs/studio.md)                            | Drawing, editing threats and records, files including OTM and TM-BOM, and the keyboard |
 | [Render themes and embedded registers](docs/render-themes.md) | Appearance overrides, website badges, heading controls                                 |
-| [The MCP server](docs/mcp.md)                                 | `saer mcp`: tools, resources, HTTP, host registration                                  |
+| [The MCP server](docs/mcp.md)                                 | `saer mcp`: tools, resources, prompts, host registration                               |
 | [Nix](docs/nix.md)                                            | Consuming the released CLI from a flake                                                |
 | [Building the executables](docs/build.md)                     | Packaging, the WebAssembly modules, reproducible builds                                |
 | [Cutting a release](docs/release.md)                          | The release procedure and the website deployment                                       |
@@ -93,15 +93,20 @@ fixture.
 
 The CLI ships as one executable per platform, attached to every
 [release](https://github.com/AlexaDeWit/Saerskriven/releases). It carries its own
-runtime, so there is nothing else to install: no node, no npm, no browser.
+runtime: no node, no npm and no browser has to be installed. On Linux it needs
+three system libraries, which [the next section](#macos-and-linux) names.
 
 | Executable                                  | Platform              |
 | ------------------------------------------- | --------------------- |
 | `saer-<version>-x86_64-unknown-linux-gnu`   | Linux, Intel or AMD   |
 | `saer-<version>-aarch64-unknown-linux-gnu`  | Linux, 64-bit ARM     |
-| `saer-<version>-x86_64-apple-darwin`        | macOS, Intel          |
 | `saer-<version>-aarch64-apple-darwin`       | macOS, Apple silicon  |
 | `saer-<version>-x86_64-pc-windows-msvc.exe` | Windows, Intel or AMD |
+
+No executable is built for an Intel Mac. v0.8.3 is the last release with one,
+and the `install.sh` on
+[its page](https://github.com/AlexaDeWit/Saerskriven/releases/tag/v0.8.3)
+installs it.
 
 ### macOS and Linux
 
@@ -110,7 +115,15 @@ The installer selects your platform and checks the executable against its
 embedded SHA-256 before installing it as `~/.local/bin/saer`.
 The compatibility command `saerskriven` is a symbolic link to `saer`.
 It needs Bash, curl, and either `sha256sum` (Linux) or `shasum` (macOS).
-Linux executables require glibc. Alpine Linux's musl is not supported.
+
+A Linux executable needs glibc 2.28 or newer (Debian 10, Ubuntu 20.04, RHEL 8
+and later), libstdc++ and libatomic. A slim container image may lack
+libatomic: its package is `libatomic1` on Debian and Ubuntu and `libatomic` on
+Fedora and RHEL. On Linux the installer starts the new executable once before
+it installs it. When that fails it names these libraries and changes nothing,
+so a previous installation stays as it was. Alpine Linux's musl is not
+supported. Where the libraries cannot be installed, the
+[Nix package](docs/nix.md) brings its own.
 
 Download the script to a file, inspect it, then run it as your own user:
 
@@ -170,9 +183,11 @@ gh attestation verify install.sh --repo AlexaDeWit/Saerskriven \
 
 Add `--source-digest` with the signed tag's commit to require that commit too.
 
-On macOS the executables are unsigned. If Gatekeeper blocks a verified download,
+On macOS the executable carries an ad hoc signature and is not notarised. If
+Gatekeeper blocks a verified download,
 `xattr -d com.apple.quarantine ~/.local/bin/saer` removes its quarantine
-attribute. The installer does not change Gatekeeper settings or execute the download.
+attribute. The installer does not change Gatekeeper settings, and on macOS it
+does not execute the download.
 
 ### Other installation methods
 
@@ -275,11 +290,11 @@ code 2, with a message giving both lengths: send the file itself instead. The
 executable carries the brotli module the link is compressed with, so `share`
 needs no network. No flag points a link at another host.
 
-| Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0         | The command did what it was asked.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| 1         | Saerskriven read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                                                                                                                                                                                                                                                                                                              |
-| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, a stream refused the output, a pipe whose reader closed aside, `mcp --http` cannot listen on its port, or a projection could not be produced from a model Saerskriven accepted, which is the PDF typesetter or the PNG rasterizer refusing the document, a share link longer than a link may hold, or an install missing the files a projection reads. |
+| Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0         | The command did what it was asked.                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 1         | Saerskriven read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                                                                                                                                                                                                                                                                      |
+| 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, a stream refused the output, a pipe whose reader closed aside, or a projection could not be produced from a model Saerskriven accepted, which is the PDF typesetter or the PNG rasterizer refusing the document, a share link longer than a link may hold, or an install missing the files a projection reads. |
 
 Errors go to standard error, path-precise where a schema refused something,
 and no failure prints a stack trace.
@@ -294,7 +309,7 @@ connecting one.
 
 ## Development
 
-Nix with flakes provides the toolchain (node, pnpm, deno). With
+Nix with flakes provides the toolchain (node, pnpm). With
 [direnv](https://direnv.net/), `cd` into the checkout and it loads itself.
 
 The flake decides the pnpm version and `packageManager` in

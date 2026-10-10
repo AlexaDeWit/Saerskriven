@@ -22,6 +22,13 @@ bump**: a `fix:` subject is a patch, `feat:` a minor, and a `!` in it or a
 While the workspace is on a `0.x` line nx shifts each of those down one
 step, so a breaking change moves the minor and a feature the patch.
 
+The text of a `BREAKING CHANGE:` footer is what the release notes print under
+the change. The renderer keeps every line that follows it up to a line of
+three or more hyphens, so a footer is followed by a line of four hyphens
+(`----`) before the trailers: git takes a line of exactly three for the start
+of a patch, which hides the trailers from `git interpret-trailers --parse` and
+drops them in a `git format-patch` then `git am`.
+
 ## Why a person runs most of it
 
 The repository's rulesets set the shape:
@@ -53,7 +60,7 @@ the owner signs the tag. Publication starts after the tag exists.
 Pull requests rehearse the release through artifact creation and attestation.
 The same jobs run on ordinary main, tag, and manual CI runs:
 
-- Build and test the host CLI, then compile all five targets twice and compare
+- Build and test the host CLI, then package all four targets twice and compare
   their bytes. Package `install.sh` with the release tag and every binary's
   SHA-256 embedded. Check the host version and every executable and installer
   checksum.
@@ -64,10 +71,14 @@ The same jobs run on ordinary main, tag, and manual CI runs:
   ref, and commit.
 - Require those stages in `CI gate` before publication can run.
 
-Native Linux and macOS smoke jobs use the packaged installer with the system
-Bash and tools, without Nix or Node. They replace the download transport with
-local release assets, run the installed CLI, repeat the install, and confirm
-that a corrupted download leaves the installed version unchanged.
+Native smoke jobs on Linux x64, Linux arm64 and macOS arm64 use the packaged
+installer with the system Bash and tools, without Nix or Node. They replace the
+download transport with local release assets, run the installed CLI, repeat the
+install, and confirm that a corrupted download leaves the installed version
+unchanged. Each then validates a model with the installed executable and
+compares the PNG and the PDF it renders with the committed goldens, so each of
+those three executables runs on a machine of its own kind. Nothing runs the
+Windows executable.
 
 Fork and Dependabot PRs still build and validate the artifacts. GitHub gives
 them read-only tokens, so they cannot generate attestations. The gate accepts

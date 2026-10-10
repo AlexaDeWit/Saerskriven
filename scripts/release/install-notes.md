@@ -18,5 +18,6 @@ It needs Bash, curl, and `sha256sum` or `shasum`. It does not need a development
 environment or sudo.
 
 See the [installation instructions](https://github.com/@REPOSITORY@/blob/@RELEASE_TAG@/README.md#install)
-for PATH setup, a custom directory, and optional verification of the installer
-and binary attestations with the GitHub CLI.
+for the platforms, what a Linux system has to provide, PATH setup, a custom
+directory, and optional verification of the installer and binary attestations
+with the GitHub CLI.

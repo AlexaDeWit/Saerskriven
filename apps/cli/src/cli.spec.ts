@@ -56,6 +56,20 @@ describe('the arguments as the outcome they ask for', () => {
     });
   });
 
+  it.each(['--http', '--port', '--token-file'])(
+    'refuses %s on mcp as a flag it does not know',
+    async (flag) => {
+      const outcome = await runCli(['mcp', flag]);
+      expect({ code: outcome.code, out: outcome.out }).toEqual({
+        code: 2,
+        out: '',
+      });
+      expect(outcome.err.split('\n')[0]).toEqual(
+        `error: unknown option '${flag}'`,
+      );
+    },
+  );
+
   it('refuses a command it does not know', async () => {
     await expect(runCli(['nope'])).resolves.toEqual({
       code: 2,

@@ -19,17 +19,23 @@ export type Runner = {
 /** Where the esbuild target writes the bundle a runner runs under node. */
 export const bundlePath = join(repositoryRoot, 'apps/cli/dist/saer.js');
 
-const hostTarget = (): string | undefined => {
-  const probe = spawnSync('deno', ['eval', 'console.log(Deno.build.target)'], {
-    encoding: 'utf8',
-  });
-  return probe.status === 0 ? probe.stdout.trim() : undefined;
+const releaseTargets: Readonly<Record<string, string>> = {
+  'linux-x64': 'x86_64-unknown-linux-gnu',
+  'linux-arm64': 'aarch64-unknown-linux-gnu',
 };
+
+/**
+ * The release target of this host. The packaging script runs on Linux alone,
+ * so anywhere else this is a name no executable carries.
+ */
+export const hostTarget =
+  releaseTargets[`${process.platform}-${process.arch}`] ??
+  'unknown-host-target';
 
 const executablePath = join(
   repositoryRoot,
   'dist/cli',
-  `saer-${cliVersion}-${hostTarget() ?? 'unknown-host-target'}`,
+  `saer-${cliVersion}-${hostTarget}`,
 );
 
 const bundleRunner: Runner = {
@@ -50,9 +56,9 @@ export const compiledRunner: Runner = {
 };
 
 /**
- * Both ways a release is run: the bundle under node, and the executable
- * `deno compile` produced. A spec that names this table covers both, and
- * skips the compiled one where the packaging target has not run.
+ * Both ways a release is run: the bundle under node, and the single
+ * executable the packaging script built. A spec that names this table covers
+ * both, and skips the compiled one where the packaging target has not run.
  */
 export const runners: readonly Runner[] = [bundleRunner, compiledRunner];
 
@@ -82,6 +88,34 @@ export function text(runner: Runner, args: readonly string[]) {
   };
 }
 
+const moduleReference =
+  /(?:(?<required>require\(\s*)|\bfrom\s*|\bimport\s*\(?\s*)["'](?:node:)?(?<module>[a-z_\d]+)(?:\/[a-z_\d/]+)?["']/gu;
+
+/**
+ * The modules a bundle's text names, each without its `node:` prefix and its
+ * subpath, in two sets by how the reference is written: `required` for a
+ * `require` call, which esbuild writes as `__require` for a CommonJS
+ * dependency, and `imported` for a static, side-effect, re-exporting or
+ * dynamic import. The text is matched and not parsed, so a reference inside
+ * a comment or a string counts too.
+ */
+export function modulesNamedIn(bundle: string): {
+  readonly imported: ReadonlySet<string>;
+  readonly required: ReadonlySet<string>;
+} {
+  const references = [...bundle.matchAll(moduleReference)].map((match) => ({
+    name: match.groups?.module ?? '',
+    required: match.groups?.required !== undefined,
+  }));
+  const named = (required: boolean): ReadonlySet<string> =>
+    new Set(
+      references
+        .filter((reference) => reference.required === required)
+        .map((reference) => reference.name),
+    );
+  return { imported: named(false), required: named(true) };
+}
+
 /**
  * How long a spec that runs the packaged CLI is given, past the root
  * `vitest.shared.mts` sets. Such a spec spawns node on the bundle, so it
@@ -91,3 +125,12 @@ export function text(runner: Runner, args: readonly string[]) {
  * about a second and a half on an unloaded runner.
  */
 export const spawnTimeout = 30_000;
+
+/**
+ * How long the hook that packages the restriction probe and runs it is given,
+ * past the root `vitest.shared.mts` sets. The packaging copies a Node binary
+ * of about 150 MB and injects the probe into it, and the hook then starts the
+ * result once per invocation, which together took twelve seconds on a host at
+ * load 15.
+ */
+export const probePackagingTimeout = 60_000;

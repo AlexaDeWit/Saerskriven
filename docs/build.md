@@ -6,17 +6,21 @@ runs inside `nix develop` on Linux.
 
 ## Packaging the CLI
 
-`pnpm nx compile @saerskriven/cli` builds and bundles the CLI, then compiles the
+`pnpm nx compile @saerskriven/cli` builds and bundles the CLI, then packages the
 host executable. The `saer.js` bundle inlines every workspace package and
 dependency and carries the version from the root manifest.
-`--configuration=all` compiles every release target.
+`--configuration=all` packages every release target.
 
 The `compile` target runs [`scripts/package-cli.sh`](../scripts/package-cli.sh),
-which uses `deno compile` and can cross-compile every target from one Linux
-machine. It runs the host executable five times: once for its version, once
-to validate `test-data/saerskriven/two-diagrams.yaml`, once each to render
-that model to PDF and to PNG, and once to write it as a share link. Deno is a
-packaging tool only. Node stays the development and test runtime.
+which builds each executable as a Node
+[single executable application](https://nodejs.org/api/single-executable-applications.html)
+and builds every target on one Linux machine: `x86_64-unknown-linux-gnu`,
+`aarch64-unknown-linux-gnu`, `aarch64-apple-darwin` and
+`x86_64-pc-windows-msvc`. It runs the host executable five times: once for its
+version, once to validate `test-data/saerskriven/two-diagrams.yaml`, once each
+to render that model to PDF and to PNG, and once to write it as a share link.
+Node 26 packages an executable and is the runtime inside it. Node 24 stays the
+development and test runtime.
 
 The `test-compiled` target puts the CLI's scenario table through that
 executable. It hashes the `compile` output, and Nx stores and restores
@@ -25,11 +29,10 @@ every pull request and on every main, tag and manual run.
 
 ### What an executable carries
 
-Anything not inlined into the bundle by esbuild, and not passed to
-`deno compile --include <path>` in the packaging script, does not exist for a
-user who has only the executable. The code reaches an included file at run
-time through `import.meta.dirname`. `apps/cli/dist/assets` is that directory,
-and it holds four kinds of file.
+Anything not inlined into the bundle by esbuild, and not embedded by the
+packaging script, does not exist for a user who has only the executable.
+`apps/cli/dist/assets` is the directory the build gathers those files in, and
+it holds four kinds of file.
 
 - **The Typst WebAssembly module**, copied out of the node_modules of
   `@saerskriven/render`, the package that declares the compiler, and pinned by
@@ -48,14 +51,24 @@ None of these is committed. `apps/cli/src/pdf.ts` reads them back at run time
 and hands the bytes to `@saerskriven/render/pdf`, which reads no file, so the
 studio can compile the same document in a browser from bytes of its own.
 
+Inside an executable the files are single executable assets, keyed
+`assets/<name>`, and `apps/cli/src/assets.ts` reads them through `node:sea`,
+where under node it reads the directory beside the bundle. A directory named
+`assets` beside an installed executable is never read. Node has a second
+route, a virtual file system that serves the same assets to `node:fs`. It is
+not used: Node 26 marks it "Stability: 1.0 - Early development", and under the
+permission model it needs a grant of its own, `--allow-fs-vfs`. The asset API
+rests on the single executable feature alone, which Node 26 marks
+"Stability: 1.1 - Active development".
+
 Two checks stop a fontless or compiler-less executable. `fontIn` in
 `apps/cli/esbuild.config.mts` stops a build whose `SAERSKRIVEN_FONTS_DIR` is
 missing one of the five pinned faces, so a build outside the flake shell names
 the missing variable. The packaging script's PDF render is the second: an
-executable compiled without the Typst module, or with no `.ttf` beside it,
+executable packaged without the Typst module, or with no `.ttf` beside it,
 writes no PDF (`apps/cli/src/pdf.ts` refuses a fontless install rather than
 typesetting a document with no text), so the `%PDF-` test fails. Its PNG
-render and its share link stop an executable compiled without the rasterizer
+render and its share link stop an executable packaged without the rasterizer
 or the brotli module the same way.
 
 ## The WebAssembly modules
@@ -184,64 +197,208 @@ rasterizer, and both refuse a build that has no module.
 
 ## The runtime inside an executable
 
-About 33 MB of every executable is the denort runtime `deno compile` embeds.
-It is not the compiler, so the flake's deno pin does not cover it, and deno
-would fetch it per target from `dl.deno.land` at build time. These controls
-replace that:
+Every executable is an official Node binary with the bundle and the assets
+injected into it by `node --build-sea`.
+[`scripts/sea-executable.sh`](../scripts/sea-executable.sh) builds one, and it
+is the one home of the configuration every executable ships under. These
+controls decide what goes in:
 
-- **The runtimes are pinned by hash.** `flake.nix` holds one SHA-256 per
-  target in `denortHashes` and assembles the five zips into the `DENO_DIR`
-  layout deno reads before reaching for the network. The script refuses a
-  target with no pin.
-- **A compile has no network.** `scripts/package-cli.sh` runs every
-  `deno compile` under `unshare -rn`, passes `--no-remote`, `--no-npm` and
-  `--cached-only`, and refuses to run where no network namespace can be made.
-  The workflow sets `DENO_NO_UPDATE_CHECK` and `DENO_NO_PROMPT`. A runtime
-  that is not pinned fails the compile instead of becoming a download.
-- **The output is a function of the staged tree's bytes, names, times and
-  modes.** `deno compile` records every embedded file's name, modification
-  time and executable bit, so the script stages the bundle as a fixed
-  `saer.js` beside the assets, stamps every file to the epoch and mode 644 and
-  every directory to mode 755, and compiles that. It compiles every target
-  into two directories, staging the repeat tree with another time and mode on
-  purpose, and fails unless the two are byte for byte the same, so a dropped
-  stamp shows up on a pull request.
-- **The inputs are printed.** The script's last lines are the bundle's
-  SHA-256, then each staged font's, their licence's, the rasterizer's and the
-  brotli module's, then the `SHA256SUMS` it wrote for the executables, so a
-  nixpkgs bump that redraws a glyph shows in a run's log.
+- **The binaries are pinned by hash.** `flake.nix` holds one SHA-256 per
+  target in `nodeRuntimePins`, each the hash that the Node release publishes
+  in its signed `SHASUMS256.txt`. It fetches the four from `nodejs.org` and
+  takes `bin/node` alone out of each archive. The script refuses a target with
+  no pin.
+- **The packaging Node and the embedded Node are one version.** Node requires
+  the binary that builds a single executable and the binary it injects into to
+  be one version, so the flake takes the version in the four URLs from the
+  `nodejs-slim_26` it packages with.
+- **A build has no network.** The script runs every `node --build-sea`, and
+  the signing of the macOS executable, under `unshare -rn`, and refuses to run
+  where no network namespace can be made. A binary that is not pinned fails
+  the build instead of becoming a download.
+- **The output is a function of the staged files' bytes and names.** The
+  configuration names the bundle and the assets by paths relative to the
+  staged tree, in sorted order, because an absolute path to the bundle would
+  be embedded. `scripts/package-cli.sh` builds every target from two staged
+  trees whose times and modes differ, and fails unless the two executables are
+  byte for byte the same.
+- **The macOS executable is signed ad hoc, on Linux.** `--build-sea` removes
+  the Mach-O signature and macOS on Apple silicon runs no unsigned code, so
+  the script signs with `rcodesign`, with no certificate and the identifier
+  `saer`. The signature is among the compared bytes. It is not a Developer ID
+  signature, and nothing is notarised.
+- **The inputs are printed.** The packaging script's last lines are the
+  bundle's SHA-256, then each staged font's, their licence's, the rasterizer's
+  and the brotli module's, then the `SHA256SUMS` it wrote for the executables,
+  so a nixpkgs bump that redraws a glyph shows in a run's log.
 
-One host property reaches the output: deno's metadata records
-`vfs_case_sensitivity`, its probe of the filesystem it compiled on, which every
-Linux checkout reports as `s`. A case-insensitive mount would change it.
+Each Linux build prints one line from the library Node injects with,
+`LIEF doesn't know the section name for note: 'UNKNOWN'`. The executable it
+writes runs.
 
 `scripts/package-cli.sh` refuses to run on macOS or Windows, since a network
 namespace is a Linux facility, and outside the flake shell, which sets the
 pins. A Linux checkout, VM or container is enough to build every target.
 
-### Bumping deno
+Three of the four executables run in CI, each on a runner of its own kind
+through the [installer smoke](release.md#the-procedure): Linux x64, Linux
+arm64 and macOS arm64. Nothing runs the Windows executable.
 
-The URL version is `pkgs.deno.version`, so a nixpkgs bump moves all five URLs
-while the hashes stay behind, and the build fails on a hash mismatch rather
-than pairing a runtime with a compiler of another version. Renovate does not
-know about this fetch, so replace the hashes by hand:
+### What an executable may do
+
+Every executable starts Node with its
+[permission model](https://nodejs.org/api/permissions.html) on.
+[`scripts/sea-executable.sh`](../scripts/sea-executable.sh) holds the
+arguments it starts with, and they say three things:
+
+- File reads and file writes are granted, whole.
+- Every other permission flag of the pinned Node is denied by name: the
+  network, child processes, worker threads, native addons, WASI, FFI, the
+  inspector, OpenSSL STORE loaders, and the mounting of a virtual file system.
+- `execArgvExtension` is `none`, so Node reads neither `NODE_OPTIONS` nor a
+  `--node-options` argument.
+
+With the network denied Node refuses a connection, `fetch`, a name lookup, a
+listening socket, a datagram socket and a Unix socket. WebAssembly needs no
+grant, and neither does the environment.
+
+The denials are by name because the absence of a grant is not enough. Node
+reads four arguments in a command line before `saer` does:
+`--experimental-config-file` and `--experimental-default-config-file`
+wherever they stand, even after a `--`, and `--env-file` and
+`--env-file-if-exists` up to a `--`. A configuration file may hold a
+`permission` section, and Node applies it. Node parses the executable's own
+arguments after that file, so a denial there wins over a grant in the file,
+where a flag the arguments left unmentioned would stay granted.
+
+The rest of what those four arguments do is Node's and not ours. A
+configuration file's `test` and `watch` sections change nothing in an
+executable, a `bench` section stops it, and the variables of an environment
+file do not reach `saer`. A named file that is missing stops the command with
+Node's own message and exit code 9, as
+`saer --env-file=absent validate model.yaml` does (`--env-file-if-exists`
+prints a line and goes on), and so does every command while
+`NODE_REPL_EXTERNAL_MODULE` is set. Node leaves the arguments in the command
+line, so `saer` then refuses them as arguments it does not know.
+
+One variable is outside what the restriction claims. Node reads the OpenSSL
+configuration that `OPENSSL_CONF` names when it starts, before the permission
+model and outside it, and an engine entry in that file names a library for
+OpenSSL to load into the process. That stands beside the dynamic loader's own
+variables, such as `LD_PRELOAD`: whoever sets the environment of the person
+running `saer` can already load code into it, and the restriction is a guard
+rail against errors of our own implementation, which sets neither.
+
+This is a second guard rail against errors of our own implementation, such as
+a render path that came to fetch a file or to start a program. It is not a
+defence against a compromised dependency or against hostile code inside the
+executable. Node calls its permission model a "seat belt" for trusted code,
+and its security policy says the model is designed "**not** to act as a
+security boundary against intentional misuse or a compromised process"
+([`SECURITY.md`](https://github.com/nodejs/node/blob/v26.11.0/SECURITY.md#permission-model-boundaries---permission)).
+The bundle run under node carries no restriction at all.
+
+The model also refuses a few calls whatever the grants: under it `fsync`,
+`fdatasync`, `fchmod`, `fchown` and `futimes` throw `ERR_ACCESS_DENIED`, and
+so does a write given the `flush` option, which is the likeliest way a writer
+would come to one. The bundle calls none of them and passes no `flush`. A
+writer that came to either would fail in the executable alone, where only the
+compiled scenario table would show it.
+
+`apps/cli/src/restriction.spec.ts` packages a probe with the same script, and
+so under the same arguments, and holds each channel to its refusal. It runs
+the probe as built, with every grant in `NODE_OPTIONS`, with every grant in a
+`--node-options` argument, and with a configuration file that grants every
+other permission flag of the packaging Node, named as the last argument, as
+the first, after a `--`, and as the `node.config.json` of the working
+directory.
+It also sends a waiting probe `SIGUSR1`, which opens the inspector of a Node
+that allows it, and requires no listener and no word on standard error. Every
+attempt stays on the machine: a connection goes to a loopback listener the
+spec holds, which must see none. The probe also has to read and write a file,
+read an asset and run WebAssembly, so a probe that did not start cannot pass.
+The spec runs in the `test-compiled` target and in no other.
+
+A Node that adds a permission flag stops the build: the script compares the
+flags `node --help` lists with the ones it grants or denies, and refuses to
+package until each is one or the other. Node's main branch has `--allow-env`,
+which 26.11 does not: under it a process starts without the environment
+variables it was not granted.
+
+### What a Linux executable needs
+
+The Linux executables are dynamically linked, as the official Node binaries
+are. The [README](../README.md#macos-and-linux) states what a system has to
+provide, and it is the one statement of it. Its source is Node's
+[`BUILDING.md`](https://github.com/nodejs/node/blob/v26.11.0/BUILDING.md#official-binary-platforms-and-toolchains),
+which gives the floor of the official binaries and says that since Node 25
+they need the libatomic runtime. To read what a built executable asks for:
 
 ```sh
-version=$(nix develop --command deno eval 'console.log(Deno.version.deno)')
-for target in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu \
-              x86_64-apple-darwin aarch64-apple-darwin \
-              x86_64-pc-windows-msvc; do
-  url="https://dl.deno.land/release/v${version}/denort-${target}.zip"
-  base32=$(nix-prefetch-url --quiet "$url")
-  echo "${target} $(nix hash convert --hash-algo sha256 --to sri "$base32")"
+readelf -d dist/cli/saer-<version>-x86_64-unknown-linux-gnu | grep NEEDED
+objdump -T dist/cli/saer-<version>-x86_64-unknown-linux-gnu |
+  grep -o 'GLIBC_[0-9.]*' | sort -V -u | tail -1
+```
+
+On Node 26.11.0 both Linux executables name `libatomic.so.1`, `libstdc++.so.6`,
+`libgcc_s.so.1` and glibc's `libc`, `libm`, `libdl` and `libpthread`, and
+reference no version above `GLIBC_2.28` and `GLIBCXX_3.4.21`, which is at or
+under the floor Node states. A system that cannot provide them uses the
+[Nix package](nix.md), which brings its own loader and libraries.
+
+### Bumping Node
+
+The flake names two Nodes. `nodejs_24` is the development and test runtime,
+and nothing here moves it. `nodejs-slim_26` packages the executables, and the
+version in the four URLs is its version, so a nixpkgs bump that moves Node 26
+moves all four URLs while the hashes stay behind. From then on every
+`nix develop` fails with a hash mismatch, because the binaries are an input of
+every shell, until the four hashes are replaced. Renovate does not know about
+this fetch, so replace them by hand, from the checksums the release publishes.
+None of this needs the shell:
+
+```sh
+version="v$(nix eval --inputs-from . --raw nixpkgs#nodejs-slim_26.version)"
+curl -q --fail --silent --show-error --location --remote-name \
+  "https://nodejs.org/dist/${version}/SHASUMS256.txt"
+for file in "node-${version}-linux-x64.tar.xz" \
+            "node-${version}-linux-arm64.tar.xz" \
+            "node-${version}-darwin-arm64.tar.xz" win-x64/node.exe; do
+  hex=$(awk -v file="$file" '$2 == file { print $1 }' SHASUMS256.txt)
+  echo "${file} $(nix hash convert --hash-algo sha256 --to sri "$hex")"
 done
 ```
 
-Paste the five into `denortHashes`, then run
-`nix develop --command pnpm nx compile @saerskriven/cli --configuration=all`
-and confirm it compiles offline. A new target needs an entry there before the
-script will build it. A deno bump can also change the payload format the Nix
-package patches ([Nix](nix.md#linux-compatibility-and-execution-coverage)).
+`SHASUMS256.txt.sig` beside that file is a release key's signature over it,
+which Node's README says how to
+[verify](https://github.com/nodejs/node#verifying-binaries). Paste the four
+into `nodeRuntimePins` in `flake.nix`, each beside the target its file is
+for. `nix develop` enters again once they match. Then run
+`nix develop --command pnpm nx compile @saerskriven/cli --configuration=all`,
+which packages every target offline, and
+`nix develop --command pnpm nx test-compiled @saerskriven/cli`. A new target
+needs an entry in `nodeRuntimePins` before the script will build it.
+
+What a bump can change, and where to look:
+
+- **The permission flags.** `scripts/sea-executable.sh` stops the build when
+  the new Node has a flag it neither grants nor denies: add it to the
+  denials, or grant it if `saer` loses what it gates, and add a row for it to
+  the probe. A flag that takes a value, as the `--allow-env` on Node's main
+  branch does, is granted with the value we mean or left out, never negated
+  with `--no-`, and the build's comparison stops on it until the script lists
+  it. Read the release notes of every Node in between for single executable
+  applications and the permission model, which Node 26 still develops.
+- **What a Linux executable needs.** Read it off the built executables
+  [as above](#what-a-linux-executable-needs). "glibc 2.28" is written in
+  `README.md`, in the message of `scripts/release/install.sh` and in the
+  test of that message in `scripts/release/install.test.mts`.
+- **The version in this page.** The two links into Node's repository above
+  name `v26.11.0`, and so do the sentences that say what was measured on it.
+- **The Web Storage globals** that [CODING.md](../CODING.md#build-targets)
+  records for the runtime inside an executable.
+
+A new Node major is a change of the attribute `flake.nix` names.
 
 ## Rebuilding a released executable
 
@@ -255,7 +412,7 @@ nix develop --command pnpm install --frozen-lockfile
 nix develop --command pnpm nx compile @saerskriven/cli
 ```
 
-The default shell is enough: `flake.nix` puts the denort pins and the font path
+The default shell is enough: `flake.nix` puts the Node pins and the font path
 in every shell, and `.#ci` is the shell CI happens to enter. Compare the host
 target's line with the release's `SHA256SUMS`. Every CI run prints the same
 hashes, so a runner build and a local build can be compared from the logs.
@@ -264,5 +421,5 @@ A mismatch belongs to one step, and the hashes printed above the sums say
 which. A bundle hash that already differs puts it in the esbuild build: the
 checkout is not the tag, or the toolchain is not the flake's. A font hash that
 differs puts it in the flake's nixpkgs revision. A matching bundle and matching
-fonts under a differing executable puts it in `deno compile`: the denort pins
+fonts under a differing executable puts it in the packaging: the Node pins
 moved, or something environment-dependent has reached the output.

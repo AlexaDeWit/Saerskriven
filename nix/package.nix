@@ -15,8 +15,8 @@ in stdenvNoCC.mkDerivation {
   };
 
   dontUnpack = true;
-  # Fixup would strip the payload or move Deno's trailer away from EOF.
-  # On macOS it would also change the signed Mach-O bytes.
+  # The release bytes are kept but for the loader and the run path below.
+  # Fixup would strip them, and on macOS change the signed Mach-O bytes.
   dontFixup = true;
   nativeBuildInputs = lib.optionals stdenvNoCC.hostPlatform.isLinux [ patchelf ];
 
@@ -24,18 +24,25 @@ in stdenvNoCC.mkDerivation {
     runHook preInstall
     mkdir -p "$out/bin"
   '' + lib.optionalString stdenvNoCC.hostPlatform.isLinux ''
-    # Deno 2.8.3 uses libsui 0.12.6's EOF-relative payload trailer.
-    # Patch only the ELF runtime, then restore the payload and its trailer.
-    # See docs/nix.md for the format and the failed alternatives.
+    # A release up to v0.8.3, which nix/release.json pins, was built with
+    # Deno and ends in a payload its runtime finds relative to EOF, behind a
+    # 16-byte trailer. patchelf would move it, so the ELF before it is
+    # patched alone. A Node single executable holds its payload in an ELF
+    # note and is patched whole. The trailer branch leaves with that pin
+    # (docs/nix.md, Updating the release pin).
     read -r magic name_hash < <(tail -c 16 "$src" | od --endian=little -An -tx4 -N8)
-    read -r payload_size < <(tail -c 8 "$src" | od --endian=little -An -tu8)
     file_size=$(stat -c %s "$src")
-    if [ "$magic" != 0000501e ] || [ "$name_hash" != 000002a7 ] \
-      || [ "$payload_size" -le 16 ] || [ "$payload_size" -ge "$file_size" ]; then
-      echo "Unsupported Saerskriven ELF payload trailer. Review the release's Deno format." >&2
-      exit 1
+    payload_size=0
+    if [ "$magic" = 0000501e ] && [ "$name_hash" = 000002a7 ]; then
+      read -r payload_size < <(tail -c 8 "$src" | od --endian=little -An -tu8)
+      if [ "$payload_size" -le 16 ] || [ "$payload_size" -ge "$file_size" ]; then
+        echo "Unsupported Saerskriven ELF payload trailer." >&2
+        exit 1
+      fi
     fi
     head -c "$((file_size - payload_size))" "$src" > "$out/bin/saer"
+    # glibc's loader and libraries, and GCC's libstdc++, libatomic and
+    # libgcc_s, from the caller's nixpkgs.
     patchelf \
       --set-interpreter "${stdenv.cc.bintools.dynamicLinker}" \
       --set-rpath "${lib.makeLibraryPath [ stdenv.cc.libc stdenv.cc.cc.lib ]}" \

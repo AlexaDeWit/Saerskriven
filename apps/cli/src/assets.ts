@@ -3,18 +3,22 @@ import { ledBy } from '@saerskriven/render/png';
 import { Either } from 'effect';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { getAsset, getAssetKeys, isSea } from 'node:sea';
 
 const fontFile = /\.ttf$/u;
+
+const embeddedPrefix = 'assets/';
 
 const loadedModules = new Map<string, Uint8Array>();
 
 const loaded = new Map<string, WasmAssets>();
 
 /**
- * Where the executable carries what a projection reads: the WebAssembly
- * modules and the fonts, beside the bundle rather than beside the sources,
- * because `deno compile --include` puts that directory into the executable
- * and `import.meta.dirname` is how the code inside one reaches it.
+ * Where a projection's WebAssembly modules and fonts are: the `assets`
+ * directory beside the bundle. A single executable has no such directory.
+ * The packaging script embeds the same files in it under `assets/<name>`,
+ * and a read of this path is answered from those, never from a directory
+ * beside the executable.
  */
 export const runtimeAssets = join(import.meta.dirname, 'assets');
 
@@ -43,7 +47,7 @@ export function wasmModule(
     return Either.right(known);
   }
   const found = Either.try({
-    try: (): Uint8Array => readFileSync(path),
+    try: (): Uint8Array => bytesOf(directory, name),
     catch: reasonOf,
   });
   if (Either.isRight(found)) {
@@ -99,9 +103,7 @@ function lettered(
     Either.try({
       try: (): WasmAssets => ({
         wasm: listed.wasm,
-        fonts: faces.map(
-          (face) => new Uint8Array(readFileSync(join(directory, face))),
-        ),
+        fonts: faces.map((face) => new Uint8Array(bytesOf(directory, face))),
       }),
       catch: reasonOf,
     }),
@@ -122,7 +124,25 @@ function offered(
 }
 
 function facesIn(directory: string): readonly string[] {
-  const names = readdirSync(directory).filter((name) => fontFile.test(name));
+  const names = namesIn(directory).filter((name) => fontFile.test(name));
   names.sort();
   return names;
+}
+
+function embeddedIn(directory: string): boolean {
+  return isSea() && directory === runtimeAssets;
+}
+
+function bytesOf(directory: string, name: string): Uint8Array {
+  return embeddedIn(directory)
+    ? new Uint8Array(getAsset(`${embeddedPrefix}${name}`))
+    : readFileSync(join(directory, name));
+}
+
+function namesIn(directory: string): string[] {
+  return embeddedIn(directory)
+    ? getAssetKeys()
+        .filter((key) => key.startsWith(embeddedPrefix))
+        .map((key) => key.slice(embeddedPrefix.length))
+    : readdirSync(directory);
 }

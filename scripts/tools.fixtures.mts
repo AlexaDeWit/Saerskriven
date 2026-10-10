@@ -45,6 +45,11 @@ const permissionsSchema = z.record(z.string(), z.string());
 const jobSchema = z.object({
   name: z.string(),
   concurrency: concurrencySchema.optional(),
+  strategy: z
+    .object({
+      matrix: z.record(z.string(), z.array(z.unknown())).optional(),
+    })
+    .optional(),
   needs: z.union([z.string(), z.array(z.string())]).optional(),
   if: z.string().optional(),
   outputs: z.record(z.string(), z.string()).optional(),

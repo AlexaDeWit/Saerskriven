@@ -4,22 +4,12 @@ import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { fakeAssets, scratchDirectory } from './cli.fixtures.js';
-import {
-  brotliIn,
-  mcpOptionsSchema,
-  processHost,
-  rasterizerIn,
-  serveMcp,
-} from './mcp.js';
+import { brotliIn, mcpOptionsSchema, rasterizerIn, serveMcp } from './mcp.js';
 
 const served = (root: string) => {
   const input = new PassThrough();
   const output = new PassThrough();
-  const outcome = serveMcp(mcpOptionsSchema.parse({ root }), {
-    ...processHost(),
-    input,
-    output,
-  });
+  const outcome = serveMcp(mcpOptionsSchema.parse({ root }), { input, output });
   return { input, output, outcome };
 };
 
@@ -29,32 +19,15 @@ describe('what the mcp subcommand is given', () => {
       root: process.cwd(),
       reach: 'host',
       file: undefined,
-      http: undefined,
     });
   });
 
-  it('pins the server to a root it is given, and holds an HTTP server to its root either way', () => {
-    const overHttp = { http: true, tokenFile: 'token' };
-    expect(
-      [{ root: 'elsewhere' }, overHttp, { ...overHttp, root: 'elsewhere' }].map(
-        (given) => mcpOptionsSchema.parse(given).reach,
-      ),
-    ).toEqual(['pinned', 'http', 'http']);
-  });
-
-  it('refuses a port or a token file without --http', () => {
-    expect(mcpOptionsSchema.safeParse({ port: '8080' }).success).toBe(false);
-    expect(mcpOptionsSchema.safeParse({ tokenFile: 'token' }).success).toBe(
-      false,
-    );
-  });
-
-  it('refuses --http without a token file', () => {
-    expect(mcpOptionsSchema.safeParse({ http: true }).success).toBe(false);
-    expect(
-      mcpOptionsSchema.parse({ http: true, port: '8080', tokenFile: 'token' })
-        .http,
-    ).toEqual({ port: 8080, tokenFile: 'token' });
+  it('pins the server to a root it is given', () => {
+    expect(mcpOptionsSchema.parse({ root: 'elsewhere' })).toEqual({
+      root: 'elsewhere',
+      reach: 'pinned',
+      file: undefined,
+    });
   });
 });
 

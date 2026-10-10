@@ -103,10 +103,10 @@ const licenceIn = (fonts: string): string => {
 // dist/assets: the fonts and their licence, the SVG rasterizer and the brotli
 // module out of the flake, and the Typst WebAssembly module out of
 // node_modules. esbuild inlines JavaScript and nothing else, so all of it
-// arrives as files. src/assets.ts reaches them through import.meta.dirname,
-// and `deno compile --include` puts the same directory inside an executable
-// (scripts/package-cli.sh). A file that is neither inlined nor included does
-// not exist for a user who has only the executable.
+// arrives as files. src/assets.ts reads them from there, and the packaging
+// script embeds the same files in an executable (scripts/package-cli.sh). A
+// file that is neither inlined nor embedded does not exist for a user who
+// has only the executable.
 const runtimeAssets = (): readonly RuntimeAsset[] => {
   const fonts = fontsDirectory();
   return [

@@ -23,14 +23,18 @@ asked, and no path outside that directory is read or written.
 Standard output carries the protocol and nothing else, so anything the server
 has to report goes to standard error, where a host shows it.
 
+Stdio is the only transport. The server listens on no port and opens no
+network connection, so a host has to launch it as a process, and a host that
+connects to a URL cannot use it.
+
 The protocol revision is 2026-07-28, and a 2025-era client is served with the
 same tools and results. The server holds no session, no parsed model and no
 list of the host's directories: every call names its file and reads it again.
 
 ## Which directories the server reads
 
-A stdio server started without `--root` follows its host. A call whose paths
-stay under the root is answered at once. A call with a path that leaves the
+A server started without `--root` follows its host. A call whose paths stay
+under the root is answered at once. A call with a path that leaves the
 root is answered with a request for the host's directory list (MCP roots), and
 the host sends the call again with the list. A 2025-era client is sent a
 `roots/list` request in the middle of the call instead. Nothing is read or
@@ -56,12 +60,10 @@ inside the root or one listed directory.
 - `--file`, a relative path and the listing `saer_inspect` answers with stay
   on the root.
 
-Three servers read their root alone, and each says why when it refuses a path:
+Two servers read their root alone, and each says why when it refuses a path:
 
 - One started with `--root`. It never asks the host, and ignores a directory
   list sent to it anyway.
-- One started with `--http`, which does the same
-  ([serving over Streamable HTTP](#serving-over-streamable-http)).
 - One whose host declares no roots.
 
 A host that answers with no usable list is refused after that one round. A
@@ -90,8 +92,8 @@ write in: the root and every directory the host lists. Leave the approval
 prompt on those tools, or start the server with `--root`, where that is wider
 than you mean.
 
-A stdio server that follows its host takes whoever writes its standard input
-to be that host. Behind a bridge or relay that forwards another client's
+A server that follows its host takes whoever writes its standard input to be
+that host. Behind a bridge or relay that forwards another client's
 requests, start it with `--root`.
 
 ## A model file is untrusted input
@@ -617,51 +619,6 @@ fails with error `-32602`, whose message carries no text out of the model file.
 On the 2026-07-28 revision every list, every resource read and the discovery
 result carry `ttlMs: 0` and `cacheScope: "private"`, since another process can
 change the file between two calls. A 2025-era client receives neither field.
-
-## Serving over Streamable HTTP
-
-`saer mcp --http` serves the same tools over Streamable HTTP, for a host that
-connects to a URL rather than launching a process:
-
-```sh
-saer mcp --http --token-file .saer-token --port 7300 --file threat-model.yaml
-```
-
-`--token-file` is required with `--http`, and `--port` and `--token-file` are
-refused without it. The server listens on `127.0.0.1` and nowhere else,
-whatever the flags say, and answers `POST` on `/mcp`. `--port` picks the port,
-and without it the system picks one. `--file` means what it means over stdio.
-An HTTP server reads its root alone, the directory it was started in or the
-one `--root` names: it never asks for the host's directory list, and ignores
-one sent anyway, since over HTTP that list would come from whoever holds the
-token. The standalone executable is granted network access to `127.0.0.1`
-alone.
-
-Every start mints a new bearer token and writes it to the token file and
-nowhere else: it is never printed, logged or put in an error. The file is
-created new, readable by its owner alone, after whatever was at the path is
-removed, so a symbolic link there is replaced rather than written through.
-Once it is listening, the server writes the address and the token file's path
-to standard error:
-
-```text
-MCP server at http://127.0.0.1:7300/mcp
-Bearer token written to .saer-token
-```
-
-Every request has to carry the token as `Authorization: Bearer <token>`, or it
-is refused with 401. The `Host` header has to name `localhost`, `127.0.0.1` or
-`[::1]`, and an `Origin` header, where a browser sends one, has to name one of
-the same, so a page on another site cannot reach the server through DNS
-rebinding: either is refused with 403. There is no session id. The server runs
-until it receives SIGINT or SIGTERM, and exits 0.
-
-`saer mcp install` writes stdio registrations only. A host that takes an HTTP
-server needs the URL and the `Authorization` header in its own configuration,
-and the token in the file changes whenever the server restarts.
-
-What the server does not offer: a transport on any address but `127.0.0.1`,
-OAuth, or a session spanning several models or calls.
 
 ## Registering the server with a host
 

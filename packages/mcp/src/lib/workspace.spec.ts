@@ -293,7 +293,6 @@ describe('the refusal of a path outside every permitted directory', () => {
   it('adds one line of its own for each reason the host added nothing', () => {
     const reasons = [
       HostDirectories.Pinned(),
-      HostDirectories.OverHttp(),
       HostDirectories.Undeclared(),
       HostDirectories.Unanswered(),
       HostDirectories.Overlong({ entries: 65, limit: 64 }),
@@ -304,7 +303,7 @@ describe('the refusal of a path outside every permitted directory', () => {
     expect(
       new Set(reasons.map((lines) => lines.slice(2).join('\n'))).size,
     ).toBe(reasons.length);
-    expect(reasons.map((lines) => lines.length)).toEqual([3, 3, 3, 3, 3]);
+    expect(reasons.map((lines) => lines.length)).toEqual([3, 3, 3, 3]);
   });
 
   it('names how many entries the host listed and how many the server reads, where the list was too long', () => {
