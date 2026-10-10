@@ -1,3 +1,4 @@
+import type { Accent } from '@saerskriven/model';
 import type { StudioTranslator } from '../messages/catalogues.js';
 import type { Tool } from '../canvas/tools.js';
 import { commandTable, type CommandEntry } from './table.js';
@@ -33,6 +34,18 @@ export const toolCommands = {
   'boundary-curve': 'boundary-curve-tool',
   hand: 'hand-tool',
 } as const satisfies Record<Tool, CommandId>;
+
+/** The registered command that gives the selection each accent key. */
+export const accentCommands = {
+  s1: 'accent-s1',
+  s2: 'accent-s2',
+  s3: 'accent-s3',
+  s4: 'accent-s4',
+  l1: 'accent-l1',
+  l2: 'accent-l2',
+  l3: 'accent-l3',
+  l4: 'accent-l4',
+} as const satisfies Record<Accent, CommandId>;
 
 /** The command `id` names. */
 export function commandById(id: CommandId): Command {

@@ -72,7 +72,8 @@ export function CommandButton({
 
 /**
  * An icon control named by the registry's label, with its chord in a Radix
- * tooltip opening on `side`, and `description` read ahead of the chord.
+ * tooltip opening on `side`, and `description` read ahead of the chord. A
+ * command with no chord shows its label alone and declares no shortcut.
  */
 export function IconCommandButton({
   description,
@@ -93,16 +94,20 @@ export function IconCommandButton({
       <ControlTooltip
         side={side}
         content={
-          <>
-            {label} <span className={styles.chord}>{chord}</span>
-          </>
+          chord === '' ? (
+            label
+          ) : (
+            <>
+              {label} <span className={styles.chord}>{chord}</span>
+            </>
+          )
         }
       >
         <button
           {...(description === undefined
             ? {}
             : { 'aria-describedby': descriptionId })}
-          aria-keyshortcuts={keyShortcuts}
+          aria-keyshortcuts={keyShortcuts === '' ? undefined : keyShortcuts}
           aria-label={label}
           aria-pressed={pressed}
           className={className}

@@ -1,0 +1,124 @@
+.row,
+.strength {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--saer-space-1);
+}
+
+.row {
+  padding: var(--saer-space-1);
+  border-block-start: 1px solid var(--saer-colour-border);
+}
+
+/* A wider gap sets no accent, the strong keys and the light keys apart. */
+.strength {
+  margin-inline-start: var(--saer-space-1);
+}
+
+.swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--saer-radius);
+  background: none;
+}
+
+.swatch:hover:where(:not(:disabled)) {
+  background: var(--saer-colour-surface);
+}
+
+/* A swatch keeps its own colours when pressed, so the ring carries the state. */
+.swatch[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 var(--saer-focus-ring-width) var(--saer-colour-accent);
+}
+
+/* The focus ring sits outside the pressed ring, so both show at once. */
+.swatch:focus-visible {
+  outline: var(--saer-focus-ring);
+  outline-offset: 1px;
+}
+
+.swatch:disabled {
+  opacity: 0.32;
+}
+
+.glyph {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* The weights are the canvas's own: an outline, and a strong accent's. */
+.shape {
+  fill: var(--saer-colour-actor);
+  stroke: var(--saer-colour-text);
+  stroke-width: 2;
+}
+
+.glyph[data-strength='strong'] .shape {
+  stroke-width: 3;
+}
+
+.glyph[data-slot='1'] .shape {
+  stroke: var(--saer-colour-slot-1);
+}
+
+.glyph[data-slot='2'] .shape {
+  stroke: var(--saer-colour-slot-2);
+}
+
+.glyph[data-slot='3'] .shape {
+  stroke: var(--saer-colour-slot-3);
+}
+
+.glyph[data-slot='4'] .shape {
+  stroke: var(--saer-colour-slot-4);
+}
+
+.glyph[data-slot='1'][data-strength='strong'] .shape {
+  fill: var(--saer-colour-slot-1-tint);
+}
+
+.glyph[data-slot='2'][data-strength='strong'] .shape {
+  fill: var(--saer-colour-slot-2-tint);
+}
+
+.glyph[data-slot='3'][data-strength='strong'] .shape {
+  fill: var(--saer-colour-slot-3-tint);
+}
+
+.glyph[data-slot='4'][data-strength='strong'] .shape {
+  fill: var(--saer-colour-slot-4-tint);
+}
+
+/* Forced colours draw no slot colour, as the canvas does, and keep the weights. */
+@media (forced-colors: active) {
+  .shape,
+  .glyph[data-slot] .shape,
+  .glyph[data-slot][data-strength='strong'] .shape {
+    fill: Canvas;
+    stroke: ButtonText;
+  }
+
+  .swatch:disabled .shape {
+    stroke: GrayText;
+  }
+
+  .swatch[aria-pressed='true'] {
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+
+  .swatch[aria-pressed='true'] .shape {
+    fill: Highlight;
+    stroke: HighlightText;
+  }
+
+  .swatch[aria-pressed='true']:focus-visible {
+    outline-color: Highlight;
+  }
+}

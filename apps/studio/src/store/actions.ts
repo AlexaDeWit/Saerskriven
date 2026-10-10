@@ -6,6 +6,7 @@ import type {
   RetainedSource,
 } from '@saerskriven/formats';
 import type {
+  Accent,
   Assumption,
   AssumptionId,
   AssumptionStatus,
@@ -45,6 +46,10 @@ export type Action = Data.TaggedEnum<{
   SetElementDetails: {
     readonly elementId: ElementId;
     readonly change: ElementDetailsChange;
+  };
+  SetAccent: {
+    readonly elementIds: readonly ElementId[];
+    readonly accent: Accent | undefined;
   };
   AddElement: {
     readonly diagramId: DiagramId;

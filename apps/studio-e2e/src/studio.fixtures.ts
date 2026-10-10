@@ -533,6 +533,10 @@ export const cardControlsClear = async (page: Page): Promise<void> => {
 /** The Hand tool is the last persistent control before the canvas in the tab order. */
 export const beforeCanvas = (page: Page): Locator => toolButton(page, 'Hand');
 
+/** The last swatch of the accent bar, which stands between the Hand tool and the canvas in the tab order while an element or a flow is selected. */
+export const beforeCanvasOverSelection = (page: Page): Locator =>
+  page.getByRole('button', { name: 'Light accent 4', exact: true });
+
 /** Places an element at a clear canvas point with its placeholder name open for editing. */
 export const placeByClick = async (
   page: Page,

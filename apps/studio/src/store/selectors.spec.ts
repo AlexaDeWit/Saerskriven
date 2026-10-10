@@ -1,7 +1,8 @@
-import { emptyModel } from '@saerskriven/model';
+import { emptyModel, type ElementId } from '@saerskriven/model';
 import { Action } from './actions.js';
 import { reduce } from './reducer.js';
 import {
+  accentableSelection,
   activeDiagram,
   activeDiagramId,
   canRedo,
@@ -10,6 +11,7 @@ import {
   modelAsOpened,
   selectedElement,
   selectedElements,
+  selectionAccent,
   severalDiagrams,
   showingPlaceholder,
   windowTitle,
@@ -20,6 +22,7 @@ import {
   addedProcess,
   mainDiagram,
   nativeSource,
+  newNote,
   newProcess,
   processElement,
   sampleModel,
@@ -180,5 +183,50 @@ describe('windowTitle', () => {
     expect(windowTitle(opened, 'Untitled')).not.toBe(
       windowTitle(saved, 'Untitled'),
     );
+  });
+});
+
+describe('the accent of the selection', () => {
+  const note = newNote('note-plain', 'Plain');
+  const noted = reduce(
+    start,
+    Action.AddElement({
+      diagramId: mainDiagram,
+      element: note,
+      decimals: undefined,
+    }),
+  );
+  const accented = reduce(
+    noted,
+    Action.SetAccent({ elementIds: [actorElement], accent: 's3' }),
+  );
+  const selecting = (state: typeof start, ...elementIds: ElementId[]) =>
+    reduce(state, Action.Select({ elementIds }));
+
+  it.each([
+    ['nothing selected', selecting(accented), 'inactive'],
+    ['a note alone', selecting(accented, note.id), 'inactive'],
+    ['an element holding none', selecting(accented, processElement), 'none'],
+    ['an element holding a key', selecting(accented, actorElement), 's3'],
+    [
+      'a key beside a note, which takes none',
+      selecting(accented, note.id, actorElement),
+      's3',
+    ],
+    [
+      'a key beside an element holding none',
+      selecting(accented, actorElement, processElement),
+      'mixed',
+    ],
+  ] as const)('is read over %s', (_, state, expected) => {
+    expect(selectionAccent(state)).toBe(expected);
+  });
+
+  it('is asked of the selected elements that take one, in selection order', () => {
+    expect(
+      accentableSelection(
+        selecting(accented, processElement, note.id, actorElement),
+      ).map((element) => element.id),
+    ).toEqual([processElement, actorElement]);
   });
 });

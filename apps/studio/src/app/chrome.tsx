@@ -1,4 +1,5 @@
 import { useRef, type RefObject } from 'react';
+import { AccentBar } from '../canvas/accent-bar.js';
 import { CanvasAnnouncement } from '../canvas/canvas-announcement.js';
 import { FlowTargetChooser } from '../canvas/flow-target-chooser.js';
 import { Toolbox } from '../canvas/toolbox.js';
@@ -34,6 +35,7 @@ export function StudioChrome({
           triggerRef={triggerRef}
         />
         <Toolbox />
+        <AccentBar />
       </div>
       <div className={styles.below}>
         <div className={styles.reports} ref={reports}>

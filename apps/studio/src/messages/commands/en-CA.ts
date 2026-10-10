@@ -59,6 +59,9 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'label-note-tool': 'Note',
   'label-boundary-box-tool': 'Trust boundary',
   'label-boundary-curve-tool': 'Trust boundary curve',
+  'label-accent-none': 'No accent',
+  'label-accent-strong': 'Strong accent {slot}',
+  'label-accent-light': 'Light accent {slot}',
   'label-shortcut-reference': 'Keyboard shortcuts',
   'when-selection-outside-fields-and-overlays':
     'With a canvas selection, outside text fields and open overlays',
@@ -91,12 +94,15 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
     'Outside text fields. Esc cancels placement and clears selection',
   'when-hand-tool':
     'Hold the Spacebar for a temporary Hand tool outside text fields',
+  'when-accent-bar':
+    'From the accent bar, with an element or a flow other than a note selected',
   'when-outside-fields-and-menus': 'Focus is outside a text field or open menu',
   'group-file': 'File',
   'group-edit': 'Edit',
   'group-view': 'View',
   'group-diagram': 'Diagram',
   'group-tools': 'Tools',
+  'group-accent': 'Accent',
   'group-help': 'Help',
   'group-canvas-navigation': 'Canvas navigation',
   'group-canvas-editing': 'Canvas editing',

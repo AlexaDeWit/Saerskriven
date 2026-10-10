@@ -59,6 +59,9 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'label-note-tool': 'Notering',
   'label-boundary-box-tool': 'Förtroendegräns',
   'label-boundary-curve-tool': 'Förtroendegränskurva',
+  'label-accent-none': 'Ingen accent',
+  'label-accent-strong': 'Stark accent {slot}',
+  'label-accent-light': 'Lätt accent {slot}',
   'label-shortcut-reference': 'Tangentbordsgenvägar',
   'when-selection-outside-fields-and-overlays':
     'Med en markering på arbetsytan, utanför textfält och öppna menyer',
@@ -92,6 +95,8 @@ export const commandsSv = catalogue(commandMessages)('sv')({
     'Utanför textfält. Esc avbryter placeringen och tömmer markeringen',
   'when-hand-tool':
     'Håll ned blanksteg för ett tillfälligt handverktyg, utanför textfält',
+  'when-accent-bar':
+    'Från accentfältet, med ett objekt eller ett flöde som inte är en notering markerat',
   'when-outside-fields-and-menus':
     'Fokus ligger utanför textfält och öppna menyer',
   'group-file': 'Arkiv',
@@ -99,6 +104,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'group-view': 'Visa',
   'group-diagram': 'Diagram',
   'group-tools': 'Verktyg',
+  'group-accent': 'Accent',
   'group-help': 'Hjälp',
   'group-canvas-navigation': 'Navigering på arbetsytan',
   'group-canvas-editing': 'Redigering på arbetsytan',

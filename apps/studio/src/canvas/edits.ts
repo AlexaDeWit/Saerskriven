@@ -9,6 +9,7 @@ import {
 import {
   elementsAcross,
   threatHasReference,
+  type Accent,
   type Decimals,
   type Element,
   type ElementId,
@@ -18,6 +19,7 @@ import {
 } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
+  accentableSelection,
   activeDiagramId,
   elementById,
   renameable,
@@ -146,6 +148,20 @@ export function toggleBoundaryShape(): void {
         { boundary: spokenElement(t, boundary) },
       ),
     );
+  }
+}
+
+/**
+ * Gives every selected element and flow that takes an accent the key
+ * `accent`, or clears theirs where it is undefined, as one undo step. A
+ * selected note is left as it is.
+ */
+export function accentSelected(accent: Accent | undefined): void {
+  const taking = accentableSelection(modelStore.getState()).map(
+    (element) => element.id,
+  );
+  if (taking.length > 0) {
+    dispatch(Action.SetAccent({ elementIds: taking, accent }));
   }
 }
 

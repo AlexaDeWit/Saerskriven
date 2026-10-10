@@ -62,6 +62,14 @@ describe('StudioChrome', () => {
     }
   });
 
+  it('holds the accent bar as its last row, after the tools', () => {
+    render(<Chrome />);
+    const bar = screen.getByTestId('accent-bar');
+
+    expect(card().lastElementChild).toBe(bar);
+    expect(bar.previousElementSibling).toBe(screen.getByTestId('toolbox'));
+  });
+
   it('hangs the reports and the canvas announcement under the card', () => {
     render(<Chrome />);
     const held = card();
