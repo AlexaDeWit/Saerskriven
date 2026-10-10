@@ -122,6 +122,34 @@ void test('every check run builds the full release artifacts before signing', ()
   assert.ok(website?.run?.includes('pnpm nx build @saerskriven/studio'));
 });
 
+void test('the installer smoke runs each executable on a runner of its own kind', () => {
+  const smoke = workflow('ci.yml').jobs['installer-smoke'];
+  assert.deepEqual(smoke?.strategy?.matrix?.['os'], [
+    'ubuntu-latest',
+    'ubuntu-24.04-arm',
+    'macos-latest',
+  ]);
+  assert.equal(smoke.needs, 'build-test');
+  assert.ok(
+    smoke.steps?.some(({ run }) =>
+      run?.includes('scripts/release/install-smoke.sh'),
+    ),
+  );
+});
+
+void test('the Nix package is checked on the executable the run built', () => {
+  const steps = workflow('ci.yml').jobs['build-test']?.steps ?? [];
+  const built = steps.findIndex(({ run }) =>
+    run?.includes('nix/built-check.nix'),
+  );
+  assert.ok(
+    steps.findIndex(({ run }) =>
+      run?.includes('compile @saerskriven/cli --configuration=all'),
+    ) < built,
+  );
+  assert.ok(steps[built]?.run?.includes('x86_64-unknown-linux-gnu'));
+});
+
 void test('only tokens that can sign reach the attestation job', () => {
   const ci = workflow('ci.yml');
   assert.equal(

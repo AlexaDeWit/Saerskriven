@@ -84,6 +84,16 @@ jobs:
       - name: Compile every target and run the host one
         run: nix develop .#ci --command pnpm nx compile @saerskriven/cli --configuration=all
 
+      # The first step of this job checks the Nix package on the release it
+      # pins. This one checks it on the Linux x64 executable just built, so
+      # the package is proven on what the next release will hold.
+      - name: Check the Nix package on the executable just built
+        run: |
+          version="$(jq -r .version package.json)"
+          nix build --no-link --print-build-logs --option sandbox true \
+            --impure --file nix/built-check.nix --argstr version "$version" \
+            --argstr executable "$PWD/dist/cli/saer-${version}-x86_64-unknown-linux-gnu"
+
       - name: Package the installer for this release
         run: nix develop .#ci --command bash scripts/release/package-installer.sh
 
@@ -136,8 +146,9 @@ jobs:
     permissions:
       contents: read
     strategy:
-      # Each leg is the one place its executable runs natively: Linux x64,
-      # Linux arm64 and macOS arm64. A red leg says nothing about the others.
+      # Each leg runs one executable on a machine of its own kind: Linux x64,
+      # Linux arm64 and macOS arm64. The last two run nowhere else. A red leg
+      # says nothing about the others.
       fail-fast: false
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
