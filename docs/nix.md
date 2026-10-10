@@ -85,24 +85,15 @@ a sandbox that holds no host loader and no host library, so this is the route
 for a system that cannot provide them.
 
 An executable built on Node holds its payload in an ELF note, and the package
-patches it whole with `patchelf`. Releases through v0.8.3 were built with Deno
-and end in a payload their runtime finds relative to EOF,
-behind a 16-byte trailer: little-endian magic `0x501e`, the name hash `0x2a7`,
-and the payload size including the trailer. `patchelf` would move that payload,
-so where the package finds the trailer it patches the ELF before the payload
-and appends the payload unchanged. It disables later fixup so stripping changes
-neither kind. The macOS package copies the release bytes without changing its
+patches it whole with `patchelf`. It disables later fixup so stripping does not
+change the payload. The macOS package copies the release bytes without changing its
 Mach-O signature.
 
 | Nix system       | Release hashes and provenance | Execution checks                                     |
 | ---------------- | ----------------------------- | ---------------------------------------------------- |
 | `x86_64-linux`   | Verified                      | Nix sandbox locally and in the required CI build job |
-| `aarch64-linux`  | Verified                      | Not executed                                         |
-| `aarch64-darwin` | Verified                      | Not executed                                         |
-
-The other two packages have committed asset pins. This table makes no
-claim that they execute successfully. Run the check on a native host before
-relying on an untested target.
+| `aarch64-linux`  | Verified                      | Nix sandbox in the required native CI job            |
+| `aarch64-darwin` | Verified                      | Nix package check in the required native CI job      |
 
 `x86_64-darwin` has no package, because no executable is released for an Intel
 Mac after v0.8.3. A flake input locked to a revision from before that still
@@ -148,10 +139,9 @@ It computes SHA-256 from each verified asset's bytes. It replaces
 It does not execute downloaded binaries or change the workspace version.
 
 Run the package checks above, review the version and hashes, and open a PR
-for the packaging update. The first pin of a release built on Node retires
-the trailer branch of `nix/package.nix` and the sentences above that describe
-it: delete both in that change. Record each target actually executed, and keep
-untested targets marked as such.
+for the packaging update. CI runs the package check on each supported native
+system. Record each target actually executed, and keep untested targets marked
+as such.
 Do not move the signed release tag. The later packaging commit references
 already published assets, so its CI has no dependency on an unpublished
 release. No automated step commits, pushes, or merges the update.

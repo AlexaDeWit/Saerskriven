@@ -146,9 +146,7 @@ jobs:
     permissions:
       contents: read
     strategy:
-      # Each leg runs one executable on a machine of its own kind: Linux x64,
-      # Linux arm64 and macOS arm64. The last two run nowhere else. A red leg
-      # says nothing about the others.
+      # Each leg runs one executable with the system installer tools.
       fail-fast: false
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
@@ -164,6 +162,33 @@ jobs:
           path: cli
       - name: Install, upgrade and render with the system shell and tools
         run: /bin/bash scripts/release/install-smoke.sh
+
+  nix-package:
+    if: ${{ !inputs.deploy_pages }}
+    name: Nix package (${{ matrix.system }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04-arm
+            system: aarch64-linux
+          - os: macos-latest
+            system: aarch64-darwin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Nix
+        uses: ./.github/actions/setup-toolchain
+        with:
+          save-nix-store: 'false'
+      - name: Check the installed Nix CLI on the native system
+        env:
+          NIX_SYSTEM: ${{ matrix.system }}
+        run: nix build --no-link --print-build-logs --option sandbox true ".#checks.${NIX_SYSTEM}.saerskriven"
 
   rasterizer:
     if: ${{ !inputs.deploy_pages }}
@@ -487,6 +512,7 @@ jobs:
       [
         build-test,
         installer-smoke,
+        nix-package,
         static-checks,
         e2e-smoke,
         e2e-pages-floor,
@@ -502,6 +528,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           BUILD_TEST: ${{ needs.build-test.result }}
           INSTALLER_SMOKE: ${{ needs.installer-smoke.result }}
+          NIX_PACKAGE: ${{ needs.nix-package.result }}
           STATIC_CHECKS: ${{ needs.static-checks.result }}
           E2E_SMOKE: ${{ needs.e2e-smoke.result }}
           E2E_PAGES_FLOOR: ${{ needs.e2e-pages-floor.result }}
@@ -526,6 +553,12 @@ jobs:
             echo "ok      installer-smoke"
           else
             echo "FAILED  installer-smoke: $INSTALLER_SMOKE"
+            verdict=1
+          fi
+          if [ "$NIX_PACKAGE" = "success" ]; then
+            echo "ok      nix-package"
+          else
+            echo "FAILED  nix-package: $NIX_PACKAGE"
             verdict=1
           fi
           if [ "$E2E_SMOKE" = "success" ]; then

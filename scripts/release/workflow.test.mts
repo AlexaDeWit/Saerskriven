@@ -46,6 +46,7 @@ void test('publication waits for the gate, prepared website, and attestation', (
   for (const job of [
     'build-test',
     'installer-smoke',
+    'nix-package',
     'static-checks',
     'e2e-smoke',
     'e2e-pages-floor',
@@ -149,6 +150,42 @@ void test('the Nix package is checked on the executable the run built', () => {
   );
   assert.ok(steps[built]?.run?.includes('x86_64-unknown-linux-gnu'));
   assert.equal(steps[built]?.if, undefined);
+});
+
+void test('the Nix package checks cover every released native system', () => {
+  const ci = workflow('ci.yml');
+  const native = ci.jobs['nix-package'];
+  const targets = z
+    .array(z.object({ os: z.string(), system: z.string() }))
+    .parse(native?.strategy?.matrix?.['include']);
+  assert.deepEqual(targets, [
+    { os: 'ubuntu-24.04-arm', system: 'aarch64-linux' },
+    { os: 'macos-latest', system: 'aarch64-darwin' },
+  ]);
+  const release = z
+    .object({ assets: z.record(z.string(), z.unknown()) })
+    .parse(
+      JSON.parse(readFileSync(join(workspaceRoot, 'nix/release.json'), 'utf8')),
+    );
+  assert.deepEqual(
+    ['x86_64-linux', ...targets.map(({ system }) => system)].toSorted(),
+    Object.keys(release.assets).toSorted(),
+  );
+  assert.ok(
+    ci.jobs['build-test']?.steps?.some(({ run }) =>
+      run?.includes('.#checks.x86_64-linux.saerskriven'),
+    ),
+  );
+  const check = native.steps?.find(({ run }) =>
+    run?.includes('.#checks.${NIX_SYSTEM}.saerskriven'),
+  );
+  assert.equal(check?.env?.['NIX_SYSTEM'], '${{ matrix.system }}');
+  assert.ok(check?.run?.includes('--option sandbox true'));
+  assert.ok(ci.jobs['checks']?.needs?.includes('nix-package'));
+  assert.equal(
+    ci.jobs['checks']?.steps?.[0]?.env?.['NIX_PACKAGE'],
+    '${{ needs.nix-package.result }}',
+  );
 });
 
 void test('only tokens that can sign reach the attestation job', () => {
@@ -311,6 +348,7 @@ void test('source checks accept a provenance skip only on a PR with unchanged de
     EVENT_NAME: 'pull_request',
     BUILD_TEST: 'success',
     INSTALLER_SMOKE: 'success',
+    NIX_PACKAGE: 'success',
     STATIC_CHECKS: 'success',
     E2E_SMOKE: 'success',
     E2E_PAGES_FLOOR: 'success',
@@ -322,6 +360,7 @@ void test('source checks accept a provenance skip only on a PR with unchanged de
   for (const name of [
     'BUILD_TEST',
     'INSTALLER_SMOKE',
+    'NIX_PACKAGE',
     'STATIC_CHECKS',
     'E2E_SMOKE',
     'E2E_PAGES_FLOOR',
@@ -329,6 +368,12 @@ void test('source checks accept a provenance skip only on a PR with unchanged de
   ]) {
     assert.notEqual(
       verdict('checks', { ...passing, [name]: 'failure' }).status,
+      0,
+    );
+  }
+  for (const state of ['cancelled', 'skipped', '']) {
+    assert.notEqual(
+      verdict('checks', { ...passing, NIX_PACKAGE: state }).status,
       0,
     );
   }
