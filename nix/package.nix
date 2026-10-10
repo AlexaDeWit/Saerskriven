@@ -23,31 +23,15 @@ in stdenvNoCC.mkDerivation {
   installPhase = ''
     runHook preInstall
     mkdir -p "$out/bin"
+    install -m 755 "$src" "$out/bin/saer"
   '' + lib.optionalString stdenvNoCC.hostPlatform.isLinux ''
-    # Releases through v0.8.3 locate their payload from EOF, so patch their
-    # ELF separately. Node executables carry an ELF note and are patched whole.
-    read -r magic name_hash < <(tail -c 16 "$src" | od --endian=little -An -tx4 -N8)
-    file_size=$(stat -c %s "$src")
-    payload_size=0
-    if [ "$magic" = 0000501e ] && [ "$name_hash" = 000002a7 ]; then
-      read -r payload_size < <(tail -c 8 "$src" | od --endian=little -An -tu8)
-      if [ "$payload_size" -le 16 ] || [ "$payload_size" -ge "$file_size" ]; then
-        echo "Unsupported Saerskriven ELF payload trailer." >&2
-        exit 1
-      fi
-    fi
-    head -c "$((file_size - payload_size))" "$src" > "$out/bin/saer"
     # glibc's loader and libraries, and GCC's libstdc++, libatomic and
     # libgcc_s, from the caller's nixpkgs.
     patchelf \
       --set-interpreter "${stdenv.cc.bintools.dynamicLinker}" \
       --set-rpath "${lib.makeLibraryPath [ stdenv.cc.libc stdenv.cc.cc.lib ]}" \
       "$out/bin/saer"
-    tail -c "$payload_size" "$src" >> "$out/bin/saer"
-  '' + lib.optionalString stdenvNoCC.hostPlatform.isDarwin ''
-    cp "$src" "$out/bin/saer"
   '' + ''
-    chmod 755 "$out/bin/saer"
     ln -s saer "$out/bin/saerskriven"
     runHook postInstall
   '';
