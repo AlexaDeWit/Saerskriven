@@ -22,11 +22,6 @@ to render that model to PDF and to PNG, and once to write it as a share link.
 Node 26 packages an executable and is the runtime inside it. Node 24 stays the
 development and test runtime.
 
-The script compiles the executable with three permissions: to read files, to
-write files and to read the environment. It grants no network access and no
-permission to start another program, so the runtime refuses both, and no
-command needs either.
-
 The `test-compiled` target puts the CLI's scenario table through that
 executable. It hashes the `compile` output, and Nx stores and restores
 `dist/cli` even though git ignores the directory. CI builds the whole matrix on
@@ -213,12 +208,14 @@ controls decide what goes in:
   in its signed `SHASUMS256.txt`. It fetches the four from `nodejs.org` and
   takes `bin/node` alone out of each archive. The script refuses a target with
   no pin.
-- **The packaging Node and the embedded Node are one version.** `--build-sea`
-  injects only into a binary of its own version, so the flake takes the
-  version in the four URLs from the `nodejs-slim_26` it packages with.
-- **A build has no network.** The script runs every `node --build-sea` under
-  `unshare -rn` and refuses to run where no network namespace can be made. A
-  binary that is not pinned fails the build instead of becoming a download.
+- **The packaging Node and the embedded Node are one version.** Node requires
+  the binary that builds a single executable and the binary it injects into to
+  be one version, so the flake takes the version in the four URLs from the
+  `nodejs-slim_26` it packages with.
+- **A build has no network.** The script runs every `node --build-sea`, and
+  the signing of the macOS executable, under `unshare -rn`, and refuses to run
+  where no network namespace can be made. A binary that is not pinned fails
+  the build instead of becoming a download.
 - **The output is a function of the staged files' bytes and names.** The
   configuration names the bundle and the assets by paths relative to the
   staged tree, in sorted order, because an absolute path to the bundle would
@@ -250,21 +247,39 @@ arm64 and macOS arm64. Nothing runs the Windows executable.
 ### What an executable may do
 
 Every executable starts Node with its
-[permission model](https://nodejs.org/api/permissions.html) on and two grants,
-file reads and file writes:
+[permission model](https://nodejs.org/api/permissions.html) on.
+[`scripts/sea-executable.sh`](../scripts/sea-executable.sh) holds the
+arguments it starts with, and they say three things:
 
-```
---permission --allow-fs-read=* --allow-fs-write=*
-```
+- File reads and file writes are granted, whole.
+- Every other permission flag of the pinned Node is denied by name: the
+  network, child processes, worker threads, native addons, WASI, FFI, the
+  inspector, OpenSSL STORE loaders, and the mounting of a virtual file system.
+- `execArgvExtension` is `none`, so Node reads neither `NODE_OPTIONS` nor a
+  `--node-options` argument.
 
-With no other grant Node refuses the network (a connection, `fetch`, a name
-lookup, a listening socket, a datagram socket, a Unix socket), child
-processes, worker threads, native addons, WASI, FFI and the inspector.
-WebAssembly needs no grant, and neither does the environment. The
-configuration sets `execArgvExtension` to `none`, so neither `NODE_OPTIONS`
-nor a `--node-options` argument adds a grant, and an argument such as
-`--allow-net` reaches `saer` as one of its own and is refused as an unknown
-option.
+With the network denied Node refuses a connection, `fetch`, a name lookup, a
+listening socket, a datagram socket and a Unix socket. WebAssembly needs no
+grant, and neither does the environment.
+
+The denials are by name because the absence of a grant is not enough. Node
+takes four arguments out of a command line before `saer` reads it:
+`--experimental-config-file` and `--experimental-default-config-file`
+wherever they stand, even after a `--`, and `--env-file` and
+`--env-file-if-exists` up to a `--`. A configuration file may hold a
+`permission` section, and Node applies it. Node parses the executable's own
+arguments after that file, so a denial there wins over a grant in the file,
+where a flag the arguments left unmentioned would stay granted.
+
+The rest of what those four arguments do is Node's and not ours. A
+configuration file's `test` and `watch` sections change nothing in an
+executable, a `bench` section stops it, and the variables of an environment
+file do not reach `saer`. A named file that is missing stops the command with
+Node's own message and exit code 9, as
+`saer --env-file=absent validate model.yaml` does (`--env-file-if-exists`
+prints a line and goes on), and so does every command while
+`NODE_REPL_EXTERNAL_MODULE` is set. Node leaves the arguments in the command
+line, so `saer` then refuses them as arguments it does not know.
 
 This is a second guard rail against errors of our own implementation, such as
 a render path that came to fetch a file or to start a program. It is not a
@@ -275,28 +290,39 @@ security boundary against intentional misuse or a compromised process"
 ([`SECURITY.md`](https://github.com/nodejs/node/blob/v26.11.0/SECURITY.md#permission-model-boundaries---permission)).
 The bundle run under node carries no restriction at all.
 
-`apps/cli/src/restriction.spec.ts` packages a probe with the same script, and
-so under the same configuration, and holds each of those channels to its
-refusal: as built, with every grant in `NODE_OPTIONS`, and with every grant as
-an argument. Every attempt stays on the machine: a connection goes to a
-loopback listener the spec holds, which must see none. The probe also has to
-read and write a file, read an asset and run WebAssembly, so a probe that did
-not start cannot pass. It runs with the compiled scenario table, in the
-`test-compiled` target.
+The model also refuses a few calls whatever the grants: under it `fsync`,
+`fdatasync`, `fchmod`, `fchown` and `futimes` throw `ERR_ACCESS_DENIED`. The
+bundle calls none of them. A writer that came to call one would fail in the
+executable alone, where only the compiled scenario table would show it.
 
-A later Node that gates more behind the model refuses it here until `execArgv`
-grants it. Node's main branch has `--allow-env`, which 26.11 does not: under
-it a process starts without the environment variables it was not granted.
+`apps/cli/src/restriction.spec.ts` packages a probe with the same script, and
+so under the same arguments, and holds each channel to its refusal. It runs
+the probe as built, with every grant in `NODE_OPTIONS`, with every grant in a
+`--node-options` argument, and with a configuration file that grants every
+other permission flag of the packaging Node, named as the last argument, as
+the first, after a `--`, and as the `node.config.json` of the working
+directory.
+It also sends a waiting probe `SIGUSR1`, which opens the inspector of a Node
+that allows it, and requires no listener and no word on standard error. Every
+attempt stays on the machine: a connection goes to a loopback listener the
+spec holds, which must see none. The probe also has to read and write a file,
+read an asset and run WebAssembly, so a probe that did not start cannot pass.
+The spec runs in the `test-compiled` target and in no other.
+
+A Node that adds a permission flag stops the build: the script compares the
+flags `node --help` lists with the ones it grants or denies, and refuses to
+package until each is one or the other. Node's main branch has `--allow-env`,
+which 26.11 does not: under it a process starts without the environment
+variables it was not granted.
 
 ### What a Linux executable needs
 
 The Linux executables are dynamically linked, as the official Node binaries
-are, and the [README](../README.md#macos-and-linux) states what a system has
-to provide: glibc 2.28 or newer, libstdc++ and libatomic. Node's
-[`BUILDING.md`](https://github.com/nodejs/node/blob/v26.11.0/BUILDING.md#official-binary-platforms-and-toolchains)
-gives the floor of its binaries as glibc 2.28 and libstdc++ 6.0.25, and says
-that since Node 25 they need the libatomic runtime. To read what a built
-executable asks for:
+are. The [README](../README.md#macos-and-linux) states what a system has to
+provide, and it is the one statement of it. Its source is Node's
+[`BUILDING.md`](https://github.com/nodejs/node/blob/v26.11.0/BUILDING.md#official-binary-platforms-and-toolchains),
+which gives the floor of the official binaries and says that since Node 25
+they need the libatomic runtime. To read what a built executable asks for:
 
 ```sh
 readelf -d dist/cli/saer-<version>-x86_64-unknown-linux-gnu | grep NEEDED
@@ -306,22 +332,23 @@ objdump -T dist/cli/saer-<version>-x86_64-unknown-linux-gnu |
 
 On Node 26.11.0 both Linux executables name `libatomic.so.1`, `libstdc++.so.6`,
 `libgcc_s.so.1` and glibc's `libc`, `libm`, `libdl` and `libpthread`, and
-reference no version above `GLIBC_2.28` and `GLIBCXX_3.4.21`. A system that
-cannot provide them uses the [Nix package](nix.md), which brings its own
-loader and libraries.
+reference no version above `GLIBC_2.28` and `GLIBCXX_3.4.21`, which is at or
+under the floor Node states. A system that cannot provide them uses the
+[Nix package](nix.md), which brings its own loader and libraries.
 
 ### Bumping Node
 
 The flake names two Nodes. `nodejs_24` is the development and test runtime,
 and nothing here moves it. `nodejs-slim_26` packages the executables, and the
 version in the four URLs is its version, so a nixpkgs bump that moves Node 26
-moves all four URLs while the hashes stay behind, and the build fails on a
-hash mismatch rather than injecting into a binary of another version.
-Renovate does not know about this fetch, so replace the hashes by hand, from
-the checksums the release publishes:
+moves all four URLs while the hashes stay behind. From then on every
+`nix develop` fails with a hash mismatch, because the binaries are an input of
+every shell, until the four hashes are replaced. Renovate does not know about
+this fetch, so replace them by hand, from the checksums the release publishes.
+None of this needs the shell:
 
 ```sh
-version=$(nix develop --command sh -c '"$SAERSKRIVEN_SEA_NODE" --version')
+version="v$(nix eval --inputs-from . --raw nixpkgs#nodejs-slim_26.version)"
 curl -q --fail --silent --show-error --location --remote-name \
   "https://nodejs.org/dist/${version}/SHASUMS256.txt"
 for file in "node-${version}-linux-x64.tar.xz" \
@@ -335,19 +362,31 @@ done
 `SHASUMS256.txt.sig` beside that file is a release key's signature over it,
 which Node's README says how to
 [verify](https://github.com/nodejs/node#verifying-binaries). Paste the four
-into `nodeRuntimePins`, then run
-`nix develop --command pnpm nx compile @saerskriven/cli --configuration=all`
-and `nix develop --command pnpm nx test-compiled @saerskriven/cli`, and
-confirm the first packages offline. A new target needs an entry there before
-the script will build it.
+into `nodeRuntimePins` in `flake.nix`, each beside the target its file is
+for. `nix develop` enters again once they match. Then run
+`nix develop --command pnpm nx compile @saerskriven/cli --configuration=all`,
+which packages every target offline, and
+`nix develop --command pnpm nx test-compiled @saerskriven/cli`. A new target
+needs an entry in `nodeRuntimePins` before the script will build it.
 
-Read the release notes of every Node in between for single executable
-applications and the permission model, which Node 26 still develops: a new
-permission scope needs a grant in `scripts/sea-executable.sh` or `saer` loses
-what it gates, and the probe spec names each refusal by its error code. A
-bump can also change [what a Linux executable needs](#what-a-linux-executable-needs)
-and the Web Storage globals [CODING.md](../CODING.md#build-targets) records. A
-new Node major is a change of the attribute `flake.nix` names.
+What a bump can change, and where to look:
+
+- **The permission flags.** `scripts/sea-executable.sh` stops the build when
+  the new Node has a flag it neither grants nor denies: add it to the
+  denials, or grant it if `saer` loses what it gates, and add a row for it to
+  the probe. Read the release notes of every Node in between for single
+  executable applications and the permission model, which Node 26 still
+  develops.
+- **What a Linux executable needs.** Read it off the built executables
+  [as above](#what-a-linux-executable-needs). "glibc 2.28" is written in
+  `README.md`, in the message of `scripts/release/install.sh` and in the
+  test of that message in `scripts/release/install.test.mts`.
+- **The version in this page.** The two links into Node's repository above
+  name `v26.11.0`, and so do the sentences that say what was measured on it.
+- **The Web Storage globals** that [CODING.md](../CODING.md#build-targets)
+  records for the runtime inside an executable.
+
+A new Node major is a change of the attribute `flake.nix` names.
 
 ## Rebuilding a released executable
 

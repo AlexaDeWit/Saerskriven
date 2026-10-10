@@ -58,7 +58,9 @@ The overlay calls [`nix/package.nix`](../nix/package.nix) with the caller's
 `pkgs.callPackage "${saerskriven}/nix/package.nix" { }`.
 The direct `saerskriven.packages.${system}.saerskriven` output uses the flake's
 nixpkgs input, including any downstream `follows` relationship.
-Unsupported systems fail with the supported systems listed.
+Through the overlay or `callPackage`, an unsupported system fails with the
+supported systems listed. The flake's own `packages` holds no `saerskriven`
+for one.
 
 To move to a later release, update the input lock in its own reviewed change:
 
@@ -73,14 +75,15 @@ before merging that update.
 
 ## Linux compatibility and execution coverage
 
-A released Linux executable asks the system for glibc's loader and libraries
-and for GCC's `libstdc++`, `libatomic` and `libgcc_s`
+A Linux executable built on Node asks the system for glibc's loader and
+libraries and for GCC's `libstdc++`, `libatomic` and `libgcc_s`
 ([what a Linux executable needs](build.md#what-a-linux-executable-needs)). The
-package answers all of them from the caller's nixpkgs: it records that loader,
-and a run path to those libraries, in the executable. It does not rely on
-NixOS's `nix-ld`, `/lib64`, or host library paths. The package check below
-runs it in a sandbox that holds no host loader and no host library, so this is
-the route for a system that cannot provide them.
+release pinned today, v0.8.3, asks for glibc and `libgcc_s` alone. The package
+answers all of them from the caller's nixpkgs: it records that loader, and a
+run path to those libraries, in the executable. It does not rely on NixOS's
+`nix-ld`, `/lib64`, or host library paths. The package check below runs it in
+a sandbox that holds no host loader and no host library, so this is the route
+for a system that cannot provide them.
 
 An executable built on Node holds its payload in an ELF note, and the package
 patches it whole with `patchelf`. `nix/release.json` still pins v0.8.3, which
@@ -105,6 +108,11 @@ relying on an untested target.
 `x86_64-darwin` has no package, because no executable is released for an Intel
 Mac after v0.8.3. A flake input locked to a revision from before that still
 provides the release it pinned.
+
+The pin holds no executable built on Node until a release of one is pinned, so
+the CI build job also runs the check on the Linux x64 executable it has just
+built. [`nix/built-check.nix`](../nix/built-check.nix) is that check, and its
+header gives the command for a local build.
 
 ```sh
 nix build --no-link --print-build-logs .#checks.x86_64-linux.saerskriven

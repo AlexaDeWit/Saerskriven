@@ -119,8 +119,9 @@ It needs Bash, curl, and either `sha256sum` (Linux) or `shasum` (macOS).
 A Linux executable needs glibc 2.28 or newer (Debian 10, Ubuntu 20.04, RHEL 8
 and later), libstdc++ and libatomic. A slim container image may lack
 libatomic: its package is `libatomic1` on Debian and Ubuntu and `libatomic` on
-Fedora and RHEL. On Linux the installer starts the installed executable once,
-and names these libraries when it does not start. Alpine Linux's musl is not
+Fedora and RHEL. On Linux the installer starts the new executable once before
+it installs it. When that fails it names these libraries and changes nothing,
+so a previous installation stays as it was. Alpine Linux's musl is not
 supported. Where the libraries cannot be installed, the
 [Nix package](docs/nix.md) brings its own.
 
