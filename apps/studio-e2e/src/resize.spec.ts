@@ -20,7 +20,6 @@ import {
   boxOf,
   canvasSettled,
   centreOf,
-  clearPositionOn,
   dragBy,
   elementNodes,
   onScreen,
@@ -28,6 +27,7 @@ import {
   pointHandles,
   pressOn,
   reachesAt,
+  roomiestPointOn,
   screenBoxOf,
   touchCancel,
   touchDown,
@@ -161,16 +161,19 @@ const selectAloneAtFullZoom = async (
 
 const pressInputs = ['mouse', 'touch'] as const;
 
-const pressedStillAtCentre = async (
+const pressRoom = 2;
+
+const pressedStillAt = async (
   page: Page,
   control: Locator,
+  at: Point,
   session: CDPSession | undefined,
 ): Promise<void> => {
   if (session === undefined) {
-    await pressOn(page, control);
+    await page.mouse.move(at.x, at.y);
+    await page.mouse.down();
     await page.mouse.up();
   } else {
-    const at = await centreOf(control);
     await touchDrag(session, at, at);
   }
   await expect(control).toBeFocused();
@@ -308,10 +311,13 @@ test('a no-op resize at the minimum leaves later geometry settled', async ({
   expect(await glyphWidthOf(node)).toBe((await boxOf(node)).width);
 });
 
-for (const [kind, element] of boxesAtTheFloor) {
+for (const [kind, element] of [
+  ...boxesAtTheFloor,
+  ['a curve boundary', archAtTheFloor],
+] as const) {
   for (const input of pressInputs) {
     test(
-      `at the floor each corner handle of ${kind} takes a ${input} press at its centre, and each side control is covered there but not all over`,
+      `at the floor each corner handle of ${kind} takes a ${input} press at its centre`,
       { tag: '@phone' },
       async ({ page }) => {
         const session =
@@ -321,16 +327,10 @@ for (const [kind, element] of boxesAtTheFloor) {
         const corners = node.locator(
           '.react-flow__resize-control.handle > button',
         );
-        const sides = node.locator('.react-flow__resize-control.line > button');
         await expect(corners).toHaveCount(4);
-        await expect(sides).toHaveCount(4);
 
         for (const corner of await corners.all()) {
-          await pressedStillAtCentre(page, corner, session);
-        }
-        for (const side of await sides.all()) {
-          expect(await reachesAt(side, await centreOf(side))).toBe(false);
-          await clearPositionOn(side);
+          await pressedStillAt(page, corner, await centreOf(corner), session);
         }
 
         expect(await boxOf(node)).toMatchObject(floorSize);
@@ -340,25 +340,23 @@ for (const [kind, element] of boxesAtTheFloor) {
   }
 }
 
-for (const input of pressInputs) {
+for (const [kind, element] of boxesAtTheFloor) {
   test(
-    `at the floor each corner handle of a curve boundary takes a ${input} press at its centre`,
+    `at the floor each side control of ${kind} takes a mouse press at the roomiest point of its own inside the element`,
     { tag: '@phone' },
     async ({ page }) => {
-      const session = input === 'touch' ? await touchSession(page) : undefined;
-      const curve = await selectAloneAtFullZoom(page, archAtTheFloor);
-      expect(await boxOf(curve)).toMatchObject(floorSize);
-      const corners = curve.locator(
-        '.react-flow__resize-control.handle > button',
-      );
-      await expect(corners).toHaveCount(4);
+      const node = await selectAloneAtFullZoom(page, element);
+      expect(await boxOf(node)).toMatchObject(floorSize);
+      const sides = node.locator('.react-flow__resize-control.line > button');
+      await expect(sides).toHaveCount(4);
 
-      for (const corner of await corners.all()) {
-        await pressedStillAtCentre(page, corner, session);
+      for (const side of await sides.all()) {
+        const { at, room } = await roomiestPointOn(side, node);
+        expect(room).toBeGreaterThanOrEqual(pressRoom);
+        await pressedStillAt(page, side, at, undefined);
       }
 
-      expect(await boxOf(curve)).toMatchObject(floorSize);
-      await session?.detach();
+      expect(await boxOf(node)).toMatchObject(floorSize);
     },
   );
 }

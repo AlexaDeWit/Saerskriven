@@ -91,6 +91,14 @@ describe('resizeBoxByKey', () => {
     });
   });
 
+  it('lands a full step of 5 from 45 wide on 40', () => {
+    const wide = { position: box.position, size: { width: 45, height: 100 } };
+    expect(resizeBoxByKey(wide, 'right', 'ArrowLeft')).toEqual({
+      position: box.position,
+      size: { width: 40, height: 100 },
+    });
+  });
+
   it.each([
     [43, 5],
     [41, 5],

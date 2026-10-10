@@ -324,20 +324,24 @@ was, with no undo step. Escape also clears the selection, as it does anywhere.
 
 A selected element carries a line on each side and a handle at each corner.
 Drag a side to change one axis or a corner to change both, with the opposite
-side fixed. Focus a control and press an arrow key to move that edge five
-units, or twenty with Shift. The resize controls stop shrinking at forty
-units. At that size some of them overlap: on a side forty units long, the
-corner handle beside the side's control covers the middle of it, while every
-corner handle takes a press at its centre. Zoom in to press the rest of the
-side control, or set the size in Position and size. An element made smaller
-in Position and size or in a file keeps its size until it is grown. While a
-width or height is under forty units the controls only grow it, so Undo or
-Position and size makes it smaller again. An arrow key that would shrink a
-width or height already at forty units or less changes nothing and says so.
-An arrow key off the focused control's axis changes nothing: Up or Down on
-the left or right line, Left or Right on the top or bottom line. On a trust
-boundary curve the same controls scale its points
-([Trust boundaries](#trust-boundaries)).
+side fixed. A side takes the press on a small square a quarter of the way along
+its line, from the left or the top. Focus a control and press an arrow key to
+move that edge five units, or twenty with Shift. The resize controls stop
+shrinking at forty units. At that size some of them overlap: on a side forty
+units long, the corner handle beside the side's square covers the middle of it.
+At 100% zoom and above every corner handle takes a press at its centre, by
+mouse and by touch. A mouse still reaches the side's square just past that
+corner handle. A touch there can land on the handle beside it, and on an actor,
+a process and a store the top side takes no touch at 100% zoom, so by touch use
+a corner handle, zoom in, or Position and size. Zooming in makes each control's
+own part larger without uncovering the middle. An element made smaller in
+Position and size or in a file keeps its size until it is grown. While a width
+or height is under forty units the controls only grow it, so Undo or Position
+and size makes it smaller again. An arrow key that would shrink a width or
+height already at forty units or less changes nothing and says so. An arrow key
+off the focused control's axis changes nothing: Up or Down on the left or right
+line, Left or Right on the top or bottom line. On a trust boundary curve the
+same controls scale its points ([Trust boundaries](#trust-boundaries)).
 
 While an element with a threat badge is selected, the badge steps out past its
 top-right corner, so the handle there stays on the corner, and it draws above

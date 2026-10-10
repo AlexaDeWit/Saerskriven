@@ -219,6 +219,88 @@ export const clearPositionOn = async (target: Locator): Promise<Point> => {
   return position ?? { x: 0, y: 0 };
 };
 
+/**
+ * The roomiest point of `target` inside `within`: the screen point where
+ * `target` is topmost and the nearest point where it is not, or the edge of
+ * `within`, is farthest away. `room` is that distance in pixels each way,
+ * sampled every half pixel. Fails where `target` is topmost nowhere inside
+ * `within`.
+ */
+export const roomiestPointOn = async (
+  target: Locator,
+  within: Locator,
+): Promise<{ readonly at: Point; readonly room: number }> => {
+  const frame = await screenBoxOf(within);
+  const roomiest = await target.evaluate((node, inside) => {
+    const step = 0.5;
+    const box = node.getBoundingClientRect();
+    const left = Math.max(box.left, inside.x);
+    const top = Math.max(box.top, inside.y);
+    const columns = Math.max(
+      Math.ceil((Math.min(box.right, inside.x + inside.width) - left) / step),
+      0,
+    );
+    const rows = Math.max(
+      Math.ceil((Math.min(box.bottom, inside.y + inside.height) - top) / step),
+      0,
+    );
+    const room = Array.from({ length: rows }, (unused, row) =>
+      Array.from({ length: columns }, (alsoUnused, column) =>
+        node.contains(
+          document.elementFromPoint(left + column * step, top + row * step),
+        )
+          ? Number.POSITIVE_INFINITY
+          : 0,
+      ),
+    );
+    const roomAt = (row: number, column: number): number =>
+      room[row]?.[column] ?? 0;
+    const settle = (row: number, column: number, towards: 1 | -1): void => {
+      const line = room[row];
+      if (line !== undefined && roomAt(row, column) > 0) {
+        line[column] = Math.min(
+          roomAt(row, column),
+          1 +
+            Math.min(
+              roomAt(row - towards, column - 1),
+              roomAt(row - towards, column),
+              roomAt(row - towards, column + 1),
+              roomAt(row, column - towards),
+            ),
+        );
+      }
+    };
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        settle(row, column, 1);
+      }
+    }
+    for (let row = rows - 1; row >= 0; row -= 1) {
+      for (let column = columns - 1; column >= 0; column -= 1) {
+        settle(row, column, -1);
+      }
+    }
+    const deepest = room
+      .flatMap((line, row) =>
+        line.map((steps, column) => ({ steps, row, column })),
+      )
+      .reduce((most, sample) => (sample.steps > most.steps ? sample : most), {
+        steps: 0,
+        row: 0,
+        column: 0,
+      });
+    return {
+      at: { x: left + deepest.column * step, y: top + deepest.row * step },
+      room: deepest.steps * step,
+    };
+  }, frame);
+  expect(
+    roomiest.room,
+    'the control is covered all over inside the element',
+  ).toBeGreaterThan(0);
+  return roomiest;
+};
+
 /** Scrolls a control into view and fails where it is off screen or something else covers its centre. */
 export const onScreen = async (target: Locator): Promise<void> => {
   await target.scrollIntoViewIfNeeded();
