@@ -1,3 +1,45 @@
+## 0.9.0 (2026-10-10)
+
+### 🚀 Features
+
+- ⚠️ **cli:** remove the Streamable HTTP transport from saer mcp ([#836](https://github.com/AlexaDeWit/Saerskriven/pull/836))
+- ⚠️ **cli:** ship saer as a Node 26 single executable ([#837](https://github.com/AlexaDeWit/Saerskriven/pull/837))
+- **mcp:** follow the host's directory list ([#822](https://github.com/AlexaDeWit/Saerskriven/pull/822))
+- **model:** mint 8-character ids ([#821](https://github.com/AlexaDeWit/Saerskriven/pull/821), [#816](https://github.com/AlexaDeWit/Saerskriven/issues/816))
+- **studio:** raise the resize floor from 10 to 40 ([#830](https://github.com/AlexaDeWit/Saerskriven/pull/830), [#839](https://github.com/AlexaDeWit/Saerskriven/pull/839))
+- **studio:** accent an element or a flow from a keyed palette ([#832](https://github.com/AlexaDeWit/Saerskriven/pull/832))
+
+### 🩹 Fixes
+
+- **formats:** write Threat Dragon flow and boundary ends as integers ([#823](https://github.com/AlexaDeWit/Saerskriven/pull/823))
+- **formats:** raise a Threat Dragon size under 10 and report it ([#826](https://github.com/AlexaDeWit/Saerskriven/pull/826))
+- **studio:** restore detached flows and forced-colour paint ([#806](https://github.com/AlexaDeWit/Saerskriven/pull/806), [#739](https://github.com/AlexaDeWit/Saerskriven/issues/739))
+
+### ⚠️ Breaking Changes
+
+- **cli:** ship saer as a Node 26 single executable ([#837](https://github.com/AlexaDeWit/Saerskriven/pull/837))
+  the executables are built on Node 26 in place of Deno.
+  No executable is built for an Intel Mac (x86_64-apple-darwin): v0.8.3
+  is the last release with one, and the install.sh on its release page
+  installs it. The downloads grow: Linux from 127 MB (x64) and 121 MB
+  (arm64) to 189 MB, macOS on Apple silicon from 111 MB to 185 MB, and
+  Windows from 123 MB to 143 MB. A Linux executable now needs libstdc++
+  and libatomic besides glibc 2.28 or newer. A slim container image may
+  lack libatomic, whose package is libatomic1 or libatomic, and the Nix
+  package brings its own libraries.
+- **cli:** remove the Streamable HTTP transport from saer mcp ([#836](https://github.com/AlexaDeWit/Saerskriven/pull/836))
+  `saer mcp` no longer serves Streamable HTTP. The
+  `--http`, `--port` and `--token-file` options are removed, and passing
+  one exits 2 with `error: unknown option`. Stdio is the only way to
+  connect: have the host launch `saer mcp`, which is the entry
+  `saer mcp install` writes. A host still configured with the server's
+  URL finds nothing listening there until its entry launches the command
+  instead.
+
+### ❤️ Thank You
+
+- Alexandra de Wit @AlexaDeWit
+
 ## 0.8.3 (2026-10-06)
 
 ### 🚀 Features
