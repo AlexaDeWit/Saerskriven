@@ -100,16 +100,20 @@ its class and font size, and `severityToneClass` names each severity's tone.
 Nothing in the sheet is faded, so every ink is drawn at the ratio
 `tokens.spec.ts` measures for it. An out-of-scope element is marked by round
 dots on its outline, where an outline in scope is solid and a trust boundary's
-is dashed. An [accent](../../docs/studio.md#accents) is paint alone: the
-layout carries an element's key to its glyph, which marks its group with the
-classes of `accentClassNames`, and no box, bound or flow name placement reads
-it. The slot colours and tints are palette roles like any other. The studio's
-sheet always carries the accent rules, and `renderCanvasStylesheet` writes
-them only for a drawing that holds an accent, so a drawing without one keeps
-the sheet it had. A note has no outline, so while it is out of scope its glyph draws
+is dashed. A note has no outline, so while it is out of scope its glyph draws
 a dotted frame `noteFrameOffset` outside its box, clear of the selection frame
 and focus ring the studio draws inside the box. `drawnBounds` holds the frame,
 and a flow's block is held clear of it.
+
+An [accent](../../docs/studio.md#accents) is paint alone: the layout carries
+an element's key to its glyph, which marks its group with the classes of
+`accentClassNames`, and no box, bound or flow name placement reads it. The
+slot colours and tints are palette roles like any other. The studio's sheet
+always carries the accent rules, and `renderCanvasStylesheet` writes them only
+for a drawing that holds an accent, so a drawing without one keeps the sheet
+it had. It mixes each tint from the theme's element colour, so a themed
+drawing keeps a name readable on one.
+
 [`render-theme.ts`](src/lib/render-theme.ts): `renderThemeSchema` and
 `defaultRenderTheme` are the theme headless output is drawn with, and
 `badgeTextColour` resolves a badge's lettering under it.

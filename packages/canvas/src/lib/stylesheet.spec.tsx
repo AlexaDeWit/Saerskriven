@@ -17,11 +17,14 @@ import {
   wrappedTextStyles,
 } from './stylesheet.js';
 import {
+  contrastRatio,
+  darkPalette,
   dotPitchRatio,
   lightPalette,
   outOfScopeOutline,
   paletteProperty,
   strokeWidths,
+  type Colour,
 } from './tokens.js';
 
 const declared = new Set<string>(Object.values(canvasClassNames));
@@ -401,6 +404,38 @@ describe('an accent', () => {
       ).toEqual([0, weight * dotPitchRatio]);
     },
   );
+
+  it("mixes each tint from the theme's own element colour, so a theme of light text on dark elements keeps a name at the ratio of text on every tint", () => {
+    const darkTheme: RenderTheme = {
+      ...defaultRenderTheme,
+      colours: {
+        background: darkPalette.surfaceCanvas,
+        text: darkPalette.textPrimary,
+        muted: darkPalette.textSecondary,
+        element: darkPalette.surfacePanel,
+        actor: darkPalette.surfaceActor,
+        process: darkPalette.surfaceProcess,
+      },
+    };
+    const themed = rulesOf(renderCanvasStylesheet(darkTheme, true));
+    const tintOf = (className: string): Colour => {
+      const rule = ruleIn(themed, `.${className} .${accentClassNames.tinted}`);
+      return `#${/fill: #(?<tint>[0-9A-F]{6});/u.exec(rule ?? '')?.groups?.tint ?? ''}`;
+    };
+
+    expect(
+      slotClasses.filter(
+        ({ className }) =>
+          !(contrastRatio(darkTheme.colours.text, tintOf(className)) >= 4.5),
+      ),
+    ).toEqual([]);
+    expect(
+      slotClasses.filter(
+        ({ tint }) =>
+          contrastRatio(darkTheme.colours.text, lightPalette[tint]) >= 4.5,
+      ),
+    ).toEqual([]);
+  });
 
   it('draws no slot colour and no tint under forced colours, and leaves the strong weights standing', () => {
     for (const { className } of slotClasses) {

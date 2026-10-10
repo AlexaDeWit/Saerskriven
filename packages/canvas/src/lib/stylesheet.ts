@@ -11,6 +11,7 @@ import {
   type RenderTheme,
 } from './render-theme.js';
 import {
+  accentTint,
   canvasType,
   dotPitchRatio,
   lightPalette,
@@ -376,8 +377,10 @@ ${slotRules(
 /**
  * Resolves headless drawing colours, font family, and badge appearance. The
  * accent rules are written only where `accented` says the drawing holds an
- * accent, in the light palette's slot colours, so a drawing without one gets
- * the sheet it got before accents existed.
+ * accent, so a drawing without one gets the sheet it got before accents
+ * existed. They draw the light palette's slot colours, which the theme has no
+ * key for, and each tint is its slot mixed into the theme's element colour, so
+ * a theme of light text on dark elements keeps a name readable on a tint.
  */
 export function renderCanvasStylesheet(
   theme: RenderTheme = defaultRenderTheme,
@@ -385,6 +388,12 @@ export function renderCanvasStylesheet(
 ): string {
   const palette: Palette = {
     ...lightPalette,
+    ...Object.fromEntries(
+      Object.values(accentSlots).map(({ line, tint }) => [
+        tint,
+        accentTint(theme.colours.element, lightPalette[line]),
+      ]),
+    ),
     surfaceCanvas: theme.colours.background,
     surfacePanel: theme.colours.element,
     surfaceActor: theme.colours.actor,

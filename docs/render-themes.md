@@ -22,6 +22,8 @@ Diagram badges retain their threat count and severity letter.
 Status, record status, and flag colours apply to register labels.
 An [accent](studio.md#accents) is drawn in the light palette's four slot colours,
 which the theme has no key for.
+A strong accent's tint is its slot colour mixed into the theme's `element` colour,
+so a name stays as readable on a tint as the theme makes it on an element.
 Diagram badges summarize open threats by severity, and add a triangle marked `!` where a threat on that element carries a flag, in any status.
 An element whose flagged threats are none of them open shows that triangle alone, with no count.
 The triangle takes the `colours.text` colour and the `badges` appearance settings, not the `flag` colours.
