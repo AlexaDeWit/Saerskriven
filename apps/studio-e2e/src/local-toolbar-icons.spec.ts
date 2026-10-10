@@ -49,6 +49,8 @@ const iconTooltip = async (page: Page, control: Locator): Promise<void> => {
 
 const colourSchemes = ['light', 'dark'] as const;
 
+const endNearTheTop = 60;
+
 const closeConnectionIcons = async (
   page: Page,
   flow: Locator,
@@ -203,7 +205,7 @@ for (const scheme of colourSchemes) {
       }),
     );
     await page.mouse.move(700, 600);
-    await page.mouse.wheel(0, 600);
+    await page.mouse.wheel(0, 2 * ((await screenBoxOf(end)).y - endNearTheTop));
     await canvasSettled(page);
     expect((await screenBoxOf(end)).y).toBeLessThan(120);
     await end.click();

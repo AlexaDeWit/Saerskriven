@@ -6,6 +6,7 @@ import {
   canvasSettled,
   centreOf,
   drawnBy,
+  emptyCanvasPoint,
   focusRingShown,
   lineOf,
   screenBoxOf,
@@ -49,6 +50,8 @@ const beyondTheBorder = 40;
 
 const farStep = 20;
 
+const bendRaisedOnScreen = 130;
+
 const panTakesAtLeast = 400;
 
 const panRunsOut = 1000;
@@ -83,7 +86,7 @@ const focusedOn = (item: Locator): Promise<boolean> =>
   item.evaluate((node) => node === document.activeElement);
 
 const scrollViewBy = async (page: Page, by: Point): Promise<void> => {
-  const over = await centreOf(canvasContainer(page));
+  const over = await emptyCanvasPoint(page);
   await page.mouse.move(over.x, over.y);
   await page.mouse.wheel(-2 * by.x, -2 * by.y);
   await canvasSettled(page);
@@ -453,7 +456,11 @@ test('Tab onto a bend handle outside the viewport brings it just inside', async 
   await selectByKeyboard(page, firstFlow);
   const bend = page.getByRole('button', { name: 'Bend 1', exact: true });
   await bend.focus();
-  await pressTimes(page, farArrow.top, 6);
+  await pressTimes(
+    page,
+    farArrow.top,
+    Math.ceil(bendRaisedOnScreen / (farStep * (await viewportZoom(page)))),
+  );
   await canvasSettled(page);
   const drawn = await screenBoxOf(bend);
   const viewport = await viewportBox(page);

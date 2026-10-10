@@ -2,6 +2,7 @@ import { ReactFlowProvider } from '@xyflow/react';
 import { useMemo, useState } from 'react';
 import { DiagramCanvas } from '../canvas/diagram-canvas.js';
 import { useViewCommands } from '../canvas/view-commands.js';
+import { unmeasuredCardBottom } from '../canvas/viewport.js';
 import { CommandSurfaceProvider } from '../commands/binding.js';
 import type { CommandSurface } from '../commands/surface.js';
 import {
@@ -32,7 +33,8 @@ export function App() {
 function Studio() {
   const session = useFileSession();
   const paneCoverage = useState(0);
-  const view = useViewCommands(paneCoverage[0]);
+  const [cardBottom, setCardBottom] = useState(unmeasuredCardBottom);
+  const view = useViewCommands(paneCoverage[0], cardBottom);
   const [colourMode, setColourMode] = useColourMode();
   const reference = useShortcutReference();
   const { t } = useTranslator();
@@ -54,11 +56,15 @@ function Studio() {
           <div className={styles.stage}>
             <StudioChrome
               colourMode={colourMode}
+              onCardBottom={setCardBottom}
               onColourModeChange={setColourMode}
               session={session}
               triggerRef={reference.menuTrigger}
             />
-            <DiagramCanvas paneCoverage={paneCoverage} />
+            <DiagramCanvas
+              cardBottom={cardBottom}
+              paneCoverage={paneCoverage}
+            />
             <span className={styles.version} data-testid="studio-version">
               {studioReleaseTag === ''
                 ? t('shell.development-version', { version: studioVersion })

@@ -608,13 +608,14 @@ and leave the file unmodified.
 
 ## The view
 
-Opening a model, or switching to another diagram, fits the diagram to the
-window. **Fit to view** and **Fit selection** fit the area left of the open
-threat panel. The zoom controls show the current percentage, and pressing it
-resets the zoom to 100%. Selecting or dropping an element does not move the
-view. Tab onto an item outside the viewport, and an arrow key that moves the
-selected element out of it, bring the item back inside by the shortest pan
-([Accessibility](#accessibility)).
+Opening a model, or switching to another diagram, centres the diagram in the
+space below the top card, so nothing opens behind the card. **Fit to view** and
+**Fit selection** centre in that same space, less what the open threat panel
+covers. A tall diagram opens a little smaller for it. The zoom controls show
+the current percentage, and pressing it resets the zoom to 100%. Selecting or
+dropping an element does not move the view. Tab onto an item outside the
+viewport, and an arrow key that moves the selected element out of it, bring the
+item back inside by the shortest pan ([Accessibility](#accessibility)).
 
 Scrolling pans in both directions and a trackpad pinch zooms. Holding Control
 (or Command on macOS) turns scrolling into zoom. A touch drag pans in Select. A

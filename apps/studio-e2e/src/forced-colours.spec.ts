@@ -35,6 +35,8 @@ import { commandChord } from './chords.fixtures.js';
 const actorName = /^Customer\sbrowser, actor/u;
 const flowName = /^Submit order, flow/u;
 
+const viewportWhereTextPaintsSolid = { width: 1280, height: 860 };
+
 const systemColours = (page: Page) =>
   page.evaluate(() => {
     const probe = document.createElement('span');
@@ -202,6 +204,7 @@ for (const scheme of ['light', 'dark'] as const) {
       page,
     }) => {
       await page.emulateMedia({ forcedColors: 'active', colorScheme: scheme });
+      await page.setViewportSize(viewportWhereTextPaintsSolid);
       await page.addInitScript((mode) => {
         localStorage.setItem('saerskrivenColourMode', mode);
       }, appearance);

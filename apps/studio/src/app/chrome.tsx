@@ -12,17 +12,26 @@ const cardHeight = '--saer-chrome-block-size';
 
 const reportsHeight = '--saer-chrome-reports-block-size';
 
-/** Measures the chrome and file reports for the panes below them. */
+/**
+ * Measures the chrome and file reports for the panes below them, and hands
+ * `onCardBottom` the card's bottom edge, in pixels below the top of the stage
+ * the canvas fills, for the fit to keep a diagram clear of.
+ */
 export function StudioChrome({
   colourMode,
+  onCardBottom,
   onColourModeChange,
   session,
   triggerRef,
-}: StudioMenuProps) {
+}: StudioMenuProps & {
+  readonly onCardBottom?: (bottom: number) => void;
+}) {
   const card = useRef<HTMLDivElement>(null);
   const reports = useRef<HTMLDivElement>(null);
 
-  useMeasuredHeight(card, cardHeight);
+  useMeasuredHeight(card, cardHeight, (node) => {
+    onCardBottom?.(bottomInStage(node));
+  });
   useMeasuredHeight(reports, reportsHeight);
 
   return (
@@ -51,6 +60,7 @@ export function StudioChrome({
 function useMeasuredHeight(
   target: RefObject<HTMLDivElement | null>,
   property: string,
+  measured?: (node: HTMLDivElement) => void,
 ): void {
   useMeasured(
     target,
@@ -59,9 +69,19 @@ function useMeasuredHeight(
         property,
         `${String(node.getBoundingClientRect().height)}px`,
       );
+      measured?.(node);
     },
     () => {
       document.documentElement.style.removeProperty(property);
     },
+  );
+}
+
+function bottomInStage(card: HTMLElement): number {
+  const chrome = card.parentElement;
+  const stage = chrome instanceof HTMLElement ? chrome.offsetParent : null;
+  return (
+    card.getBoundingClientRect().bottom -
+    (stage?.getBoundingClientRect().top ?? 0)
   );
 }

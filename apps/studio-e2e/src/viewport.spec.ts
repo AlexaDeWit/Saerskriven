@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { boxAt, modelWith } from '@saerskriven/model/fixtures';
 import { commandKey } from './chords.fixtures.js';
 import {
   boxesOverlap,
@@ -9,8 +10,10 @@ import {
   viewportZoom,
 } from './canvas.fixtures.js';
 import {
+  chromeCard,
   nodeNamed,
   openFile,
+  openModelDocument,
   openPlaceholder,
   openTwoDiagrams,
   placeholder,
@@ -65,6 +68,30 @@ test('a real model opens fitted, so the elements at its far corners are drawn in
   await drawnInside(page, furthestDown);
   await clearOfTheCluster(page, furthestDown);
 });
+
+test(
+  'a tall diagram whose top element is centred opens with that element clear of the card',
+  { tag: '@phone' },
+  async ({ page }) => {
+    const box = { width: 160, height: 80 };
+    await openModelDocument(
+      page,
+      modelWith({
+        elements: [
+          boxAt('column-top', 0, 0, 'actor', box, 'Top'),
+          boxAt('column-bottom', 0, 900, 'actor', box, 'Bottom'),
+        ],
+      }),
+    );
+
+    const card = await screenBoxOf(chromeCard(page), 'the card');
+    const top = await screenBoxOf(nodeNamed(page, /^Top, actor/u), 'Top');
+    expect(top.x).toBeGreaterThan(card.x);
+    expect(top.x + top.width).toBeLessThan(card.x + card.width);
+    expect(top.y).toBeGreaterThanOrEqual(card.y + card.height);
+    await drawnInside(page, /^Bottom, actor/u);
+  },
+);
 
 test('the placeholder opens fitted as well', async ({ page }) => {
   await openPlaceholder(page);

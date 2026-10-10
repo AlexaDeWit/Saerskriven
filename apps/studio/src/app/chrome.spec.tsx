@@ -19,7 +19,11 @@ const measuredHeights = [
   '--saer-chrome-reports-block-size',
 ];
 
-function Chrome() {
+function Chrome({
+  onCardBottom,
+}: {
+  readonly onCardBottom?: (bottom: number) => void;
+}) {
   const session = useFileSession(specBridge());
   const surface = useMemo(
     () => ({ ...unmountedSurface, files: session.commands }),
@@ -28,7 +32,7 @@ function Chrome() {
 
   return (
     <CommandSurfaceProvider surface={surface}>
-      <StudioChrome session={session} />
+      <StudioChrome onCardBottom={onCardBottom} session={session} />
     </CommandSurfaceProvider>
   );
 }
@@ -113,6 +117,15 @@ describe('StudioChrome', () => {
     const region = screen.getByRole('status');
     expect(region.textContent).toContain('Second');
     expect(card().contains(region)).toBe(false);
+  });
+
+  it('hands the shell the bottom edge of the card it measured, for the fit to keep a diagram below', () => {
+    const onCardBottom = vi.fn<(bottom: number) => void>();
+    render(<Chrome onCardBottom={onCardBottom} />);
+
+    expect(onCardBottom).toHaveBeenCalledWith(
+      card().getBoundingClientRect().bottom,
+    );
   });
 
   it('measures the card and the notices over the announcement back onto the document root', () => {
