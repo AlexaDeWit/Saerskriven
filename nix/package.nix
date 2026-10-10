@@ -24,12 +24,8 @@ in stdenvNoCC.mkDerivation {
     runHook preInstall
     mkdir -p "$out/bin"
   '' + lib.optionalString stdenvNoCC.hostPlatform.isLinux ''
-    # A release up to v0.8.3, which nix/release.json pins, was built with
-    # Deno and ends in a payload its runtime finds relative to EOF, behind a
-    # 16-byte trailer. patchelf would move it, so the ELF before it is
-    # patched alone. A Node single executable holds its payload in an ELF
-    # note and is patched whole. The trailer branch leaves with that pin
-    # (docs/nix.md, Updating the release pin).
+    # Releases through v0.8.3 locate their payload from EOF, so patch their
+    # ELF separately. Node executables carry an ELF note and are patched whole.
     read -r magic name_hash < <(tail -c 16 "$src" | od --endian=little -An -tx4 -N8)
     file_size=$(stat -c %s "$src")
     payload_size=0

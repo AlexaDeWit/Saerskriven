@@ -78,16 +78,15 @@ before merging that update.
 A Linux executable built on Node asks the system for glibc's loader and
 libraries and for GCC's `libstdc++`, `libatomic` and `libgcc_s`
 ([what a Linux executable needs](build.md#what-a-linux-executable-needs)). The
-release pinned today, v0.8.3, asks for glibc and `libgcc_s` alone. The package
-answers all of them from the caller's nixpkgs: it records that loader, and a
+package answers all of them from the caller's nixpkgs: it records that loader, and a
 run path to those libraries, in the executable. It does not rely on NixOS's
 `nix-ld`, `/lib64`, or host library paths. The package check below runs it in
 a sandbox that holds no host loader and no host library, so this is the route
 for a system that cannot provide them.
 
 An executable built on Node holds its payload in an ELF note, and the package
-patches it whole with `patchelf`. `nix/release.json` still pins v0.8.3, which
-was built with Deno and ends in a payload its runtime finds relative to EOF,
+patches it whole with `patchelf`. Releases through v0.8.3 were built with Deno
+and end in a payload their runtime finds relative to EOF,
 behind a 16-byte trailer: little-endian magic `0x501e`, the name hash `0x2a7`,
 and the payload size including the trailer. `patchelf` would move that payload,
 so where the package finds the trailer it patches the ELF before the payload
