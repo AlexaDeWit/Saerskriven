@@ -24,8 +24,6 @@ permissions:
 
 env:
   pnpm_config_store_dir: ${{ github.workspace }}/.pnpm-store
-  DENO_NO_UPDATE_CHECK: '1'
-  DENO_NO_PROMPT: '1'
 
 jobs:
   build-test:
@@ -66,7 +64,7 @@ jobs:
           use_oidc: true # tokenless upload via GitHub OIDC, no CODECOV_TOKEN secret
           fail_ci_if_error: true # Report upload failures even when the step is advisory.
 
-      # Ubuntu AppArmor blocks the network namespace used by the offline compiler.
+      # Ubuntu AppArmor blocks the network namespace the offline packaging runs in.
       - name: Allow the unprivileged user namespace the compile runs in
         run: |
           knob=/proc/sys/kernel/apparmor_restrict_unprivileged_userns
@@ -138,8 +136,11 @@ jobs:
     permissions:
       contents: read
     strategy:
+      # Each leg is the one place its executable runs natively: Linux x64,
+      # Linux arm64 and macOS arm64. A red leg says nothing about the others.
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -150,7 +151,7 @@ jobs:
         with:
           name: cli-executables
           path: cli
-      - name: Install and upgrade with the system shell and tools
+      - name: Install, upgrade and render with the system shell and tools
         run: /bin/bash scripts/release/install-smoke.sh
 
   rasterizer:
