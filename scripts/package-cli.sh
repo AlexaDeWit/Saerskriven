@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compile release binaries offline. See docs/build.md for runtime pins and rebuilds.
+# Package the release executables offline. See docs/build.md for the runtime pins and rebuilds.
 set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -10,57 +10,22 @@ readonly bundle='apps/cli/dist/saer.js'
 readonly assets='apps/cli/dist/assets'
 readonly out_dir='dist/cli'
 
-export DENO_NO_UPDATE_CHECK=1
-export DENO_NO_PROMPT=1
-
 readonly all_targets=(
   x86_64-unknown-linux-gnu
   aarch64-unknown-linux-gnu
-  x86_64-apple-darwin
   aarch64-apple-darwin
   x86_64-pc-windows-msvc
 )
 
-readonly unshare_bin="${SAERSKRIVEN_UNSHARE:-unshare}"
-if ! command -v -- "${unshare_bin}" >/dev/null 2>&1; then
-  echo "no unshare at '${unshare_bin}'. A network namespace is a Linux" >&2
-  echo "facility, so this script does not run on macOS or Windows: compile" >&2
-  echo "on Linux, or in a Linux container." >&2
-  exit 1
-fi
-if ! "${unshare_bin}" -rn true >/dev/null 2>&1; then
-  echo "'${unshare_bin} -rn' cannot create a network namespace here." >&2
-  echo "Refusing to compile with the network reachable: the runtime deno" >&2
-  echo "embeds has to come from the flake's pins, not from dl.deno.land." >&2
-  echo "Ubuntu 24.04 and its like deny this through the sysctl" >&2
-  echo "kernel.apparmor_restrict_unprivileged_userns, which the workflow" >&2
-  echo "clears before it compiles." >&2
-  exit 1
-fi
-
-if [ -z "${SAERSKRIVEN_DENORT_CACHE-}" ]; then
-  echo "SAERSKRIVEN_DENORT_CACHE is unset, so nothing pins the runtime deno" >&2
-  echo "embeds. Run this inside the flake shell, which sets it:" >&2
-  echo "  nix develop .#ci --command $0${1+ $1}" >&2
-  exit 1
-fi
-
-scratch="$(mktemp -d)"
-readonly scratch
-readonly repeat_dir="${scratch}/cli-repeat"
-trap 'rm -rf -- "${scratch}"' EXIT
-
-# Deno needs writable caches around the pinned, read-only runtime downloads.
-deno_dir="${scratch}/deno"
-readonly deno_dir
-mkdir -p -- "${deno_dir}"
-ln -s -- "${SAERSKRIVEN_DENORT_CACHE}/dl" "${deno_dir}/dl"
-export DENO_DIR="${deno_dir}"
-
-host_target="$(deno eval 'console.log(Deno.build.target)')"
-readonly host_target
-deno_version="$(deno eval 'console.log(Deno.version.deno)')"
-readonly deno_version
+case "$(uname -s) $(uname -m)" in
+  'Linux x86_64') readonly host_target='x86_64-unknown-linux-gnu' ;;
+  'Linux aarch64') readonly host_target='aarch64-unknown-linux-gnu' ;;
+  *)
+    echo "no release target is built on $(uname -s) $(uname -m): package on" >&2
+    echo "Linux, or in a Linux container, where every target is built." >&2
+    exit 1
+    ;;
+esac
 
 targets=("${host_target}")
 if [ "${1-}" = '--all' ]; then
@@ -69,16 +34,6 @@ elif [ "$#" -ne 0 ]; then
   echo "usage: $0 [--all]" >&2
   exit 2
 fi
-
-for target in "${targets[@]}"; do
-  pinned="${SAERSKRIVEN_DENORT_CACHE}/dl/release/v${deno_version}/denort-${target}.zip"
-  if [ ! -e "${pinned}" ]; then
-    echo "no pinned denort runtime for ${target} at ${pinned}." >&2
-    echo "Add its hash to denortHashes in flake.nix; the compile fetches" >&2
-    echo "nothing." >&2
-    exit 1
-  fi
-done
 
 if [ ! -f "${bundle}" ]; then
   echo "no bundle at ${bundle}: run 'nx build @saerskriven/cli' first" >&2
@@ -93,14 +48,11 @@ fi
 version="$(node -p 'require("./package.json").version')"
 readonly version
 
-# Deno embeds file times and modes. Fix both for repeatable bytes (#106).
-stamp_staged() {
-  find "$1" -type d -exec chmod 755 -- {} +
-  find "$1" -type f -exec chmod 644 -- {} +
-  find "$1" -depth -exec touch -m -d '@0' -- {} +
-}
+scratch="$(mktemp -d)"
+readonly scratch
+readonly repeat_dir="${scratch}/cli-repeat"
+trap 'rm -rf -- "${scratch}"' EXIT
 
-# import.meta.dirname locates assets beside the entry point.
 stage_into() {
   mkdir -p -- "$1"
   cp -- "${bundle}" "$1/saer.js"
@@ -112,36 +64,12 @@ readonly repeat_staged="${scratch}/repeat"
 stage_into "${staged}"
 stage_into "${repeat_staged}"
 
-# Vary the second input metadata to detect a missing stamp.
-find "${repeat_staged}" -type f -exec chmod 700 -- {} +
+# The repeat tree differs in every time and mode, so a build that reads
+# either into its output fails the comparison below.
+find "${repeat_staged}" -type f -exec chmod 600 -- {} +
 find "${repeat_staged}" -depth -exec touch -m -d '@1000000000' -- {} +
 
-stamp_staged "${staged}"
-stamp_staged "${repeat_staged}"
-
-compile_into() {
-  local target="$1"
-  local tree="$2"
-  local output="$3"
-
-  "${unshare_bin}" -rn deno compile \
-    --quiet \
-    --no-config \
-    --no-lock \
-    --no-remote \
-    --no-npm \
-    --cached-only \
-    --allow-read \
-    --allow-write \
-    --allow-env \
-    --allow-net=127.0.0.1 \
-    --include "${tree}/assets" \
-    --target "${target}" \
-    --output "${output}" \
-    "${tree}/saer.js"
-}
-
-rm -rf -- "${out_dir}" "${repeat_dir}"
+rm -rf -- "${out_dir}"
 mkdir -p -- "${out_dir}" "${repeat_dir}"
 
 for target in "${targets[@]}"; do
@@ -150,9 +78,11 @@ for target in "${targets[@]}"; do
     *-windows-*) name="${name}.exe" ;;
   esac
 
-  echo "compiling ${name}"
-  compile_into "${target}" "${staged}" "${out_dir}/${name}"
-  compile_into "${target}" "${repeat_staged}" "${repeat_dir}/${name}"
+  echo "packaging ${name}"
+  scripts/sea-executable.sh "${staged}" saer.js "${target}" \
+    "${repo_root}/${out_dir}/${name}"
+  scripts/sea-executable.sh "${repeat_staged}" saer.js "${target}" \
+    "${repeat_dir}/${name}"
 
   first="$(sha256sum <"${out_dir}/${name}" | cut -d ' ' -f 1)"
   second="$(sha256sum <"${repeat_dir}/${name}" | cut -d ' ' -f 1)"
@@ -163,17 +93,9 @@ for target in "${targets[@]}"; do
   fi
 done
 
-rm -rf -- "${repeat_dir}"
-
 (cd -- "${out_dir}" && sha256sum -- saer-* >SHA256SUMS)
 
 readonly host_binary="${out_dir}/saer-${version}-${host_target}"
-if [ ! -x "${host_binary}" ]; then
-  echo "no executable at ${host_binary} to run: this host's target" >&2
-  echo "(${host_target}) is not one deno compiled, so nothing checked the" >&2
-  echo "version any of these executables report" >&2
-  exit 1
-fi
 
 reported="$("${host_binary}" --version)"
 if [ "${reported}" != "${version}" ]; then
@@ -222,7 +144,7 @@ esac
 
 echo "saer --version reports ${reported}, saer validate ${fixture}"
 echo "reports ${summary}, saer render writes a PDF and a PNG, saer share"
-echo "writes a link, and every target compiled twice to the same bytes"
+echo "writes a link, and every target was built twice to the same bytes"
 
 # Log input hashes to locate differences when rebuilding a release.
 sha256sum -- "${bundle}" "${assets}"/*.ttf \

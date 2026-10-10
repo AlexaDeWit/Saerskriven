@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "//": [
-    "The build bundles every workspace and npm dependency as ESM for `deno compile`. It stamps the root manifest version through esbuild.config.mts.",
-    "The build copies the Typst module out of node_modules, the pinned fonts out of the flake, and the resvg and brotli modules out of the resvg-wasm and brotli-wasm projects' outputs into dist/assets. The executor default names the fonts variable, and the build adds those two outputs. The compiled executable includes that directory.",
+    "The build bundles every workspace and npm dependency as one ESM file, which the packaging script embeds in a Node single executable application. It stamps the root manifest version through esbuild.config.mts.",
+    "The build copies the Typst module out of node_modules, the pinned fonts out of the flake, and the resvg and brotli modules out of the resvg-wasm and brotli-wasm projects' outputs into dist/assets. The executor default names the fonts variable, and the build adds those two outputs. The packaging script embeds that directory's files in the executable.",
     "The typecheck writes declarations under out-tsc. The build writes only the bundle and its runtime assets under dist.",
     "The build overrides the executor default's tsConfig with tsconfig.esbuild.json, which extends tsconfig.app.json and widens lib alone, so the lib that resolves WebAssembly for the workspace sources it compiles stays out of the typecheck's program. The reason and the measurement are in that file.",
     "The test target depends on build because main.spec.ts and mcp-session.spec.ts run dist/saer.js, and it hashes all of dist (CODING.md, Build targets). The compiled test runs those two and the runner table's own spec, which is what demands the executable compile produced.",
@@ -79,6 +79,7 @@
         ],
         "inputs": [
           "{workspaceRoot}/scripts/package-cli.sh",
+          "{workspaceRoot}/scripts/sea-executable.sh",
           "{workspaceRoot}/flake.nix",
           "{workspaceRoot}/flake.lock",
           "{workspaceRoot}/test-data/saerskriven/two-diagrams.yaml",
@@ -89,16 +90,19 @@
             ]
           },
           {
-            "env": "SAERSKRIVEN_DENORT_CACHE"
+            "env": "SAERSKRIVEN_SEA_NODE"
+          },
+          {
+            "env": "SAERSKRIVEN_NODE_RUNTIMES"
+          },
+          {
+            "env": "SAERSKRIVEN_RCODESIGN"
           },
           {
             "env": "SAERSKRIVEN_UNSHARE"
           },
           {
-            "runtime": "deno --version"
-          },
-          {
-            "runtime": "deno eval 'console.log(Deno.build.target)'"
+            "runtime": "uname -sm"
           },
           "sharedGlobals",
           {

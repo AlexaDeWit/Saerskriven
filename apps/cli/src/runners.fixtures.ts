@@ -19,17 +19,23 @@ export type Runner = {
 /** Where the esbuild target writes the bundle a runner runs under node. */
 export const bundlePath = join(repositoryRoot, 'apps/cli/dist/saer.js');
 
-const hostTarget = (): string | undefined => {
-  const probe = spawnSync('deno', ['eval', 'console.log(Deno.build.target)'], {
-    encoding: 'utf8',
-  });
-  return probe.status === 0 ? probe.stdout.trim() : undefined;
+const releaseTargets: Readonly<Record<string, string>> = {
+  'linux-x64': 'x86_64-unknown-linux-gnu',
+  'linux-arm64': 'aarch64-unknown-linux-gnu',
 };
+
+/**
+ * The release target of this host. The packaging script runs on Linux alone,
+ * so anywhere else this is a name no executable carries.
+ */
+export const hostTarget =
+  releaseTargets[`${process.platform}-${process.arch}`] ??
+  'unknown-host-target';
 
 const executablePath = join(
   repositoryRoot,
   'dist/cli',
-  `saer-${cliVersion}-${hostTarget() ?? 'unknown-host-target'}`,
+  `saer-${cliVersion}-${hostTarget}`,
 );
 
 const bundleRunner: Runner = {
@@ -50,9 +56,9 @@ export const compiledRunner: Runner = {
 };
 
 /**
- * Both ways a release is run: the bundle under node, and the executable
- * `deno compile` produced. A spec that names this table covers both, and
- * skips the compiled one where the packaging target has not run.
+ * Both ways a release is run: the bundle under node, and the single
+ * executable the packaging script built. A spec that names this table covers
+ * both, and skips the compiled one where the packaging target has not run.
  */
 export const runners: readonly Runner[] = [bundleRunner, compiledRunner];
 
