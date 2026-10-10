@@ -2,6 +2,7 @@
 
 runCommand "saerskriven-installed-check" {
   nativeBuildInputs = [ saerskriven poppler-utils ];
+  OPENSSL_CONF = "/dev/null";
 } ''
   ${lib.optionalString stdenv.hostPlatform.isLinux ''
     test ! -e /lib64/ld-linux-x86-64.so.2

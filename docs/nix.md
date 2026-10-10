@@ -118,6 +118,7 @@ Markdown, SVG, and PDF. It checks PDF text and embedded Liberation fonts with
 Poppler. No external Node, browser, or Typst executable is on the check's
 PATH.
 Poppler belongs to the check, not the installed CLI's runtime closure.
+The check uses an empty OpenSSL configuration to avoid reading macOS's host file.
 
 ## Updating the release pin
 
