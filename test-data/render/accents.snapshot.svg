@@ -130,13 +130,13 @@
   fill: #EAE2EC;
 }
 .saer-diagram-accent-3 .saer-diagram-shape {
-  stroke: #867E66;
+  stroke: #93814F;
 }
 .saer-diagram-accent-3 .saer-diagram-flow-arrow {
-  fill: #867E66;
+  fill: #93814F;
 }
 .saer-diagram-accent-3 .saer-diagram-tinted {
-  fill: #E7E4DC;
+  fill: #EAE5D8;
 }
 .saer-diagram-accent-4 .saer-diagram-shape {
   stroke: #5C8A8F;

@@ -89,13 +89,14 @@ export type Palette = {
  * needs 4.5 and a control's outline 3. The fifth severity, which the starting
  * palette lacks, is the olive of the primary action, and the grid line is a
  * warm taupe measured on a band, 1.3 to 1.6 on the canvas ground, since it is
- * worse for being darker. Each accent slot is the dark table's colour with its
- * channels scaled down in steps of 4% until its outline clears 3 on the canvas
- * ground, on every fill of an element and on its own tint, which leaves it as
- * far from the severity tones as that floor allows: slot 3 measures 24 from
- * the warm grey and slot 4 measures 29 from the slate blue, by
- * {@link channelDistance}. A tint is {@link accentTint} of the slot over the
- * panel fill.
+ * worse for being darker. Accent slots 1, 2 and 4 are the dark table's colours
+ * with their channels scaled down in steps of 4% until the outline clears 3 on
+ * the canvas ground, on every fill of an element and on its own tint. Slot 3
+ * is the maintainer's choice (#828): the dark table's sand with its hue and
+ * its HSL saturation kept and its lightness lowered, which clears the same
+ * floor. By {@link channelDistance} slot 3 measures 41 from the warm grey and
+ * slot 4 measures 29 from the slate blue. A tint is {@link accentTint} of the
+ * slot over the panel fill.
  */
 export const lightPalette = {
   surfaceApp: '#F0EDE5',
@@ -119,11 +120,11 @@ export const lightPalette = {
   toneNeutral: '#756E63',
   slot1: '#AA6A89',
   slot2: '#9370CE',
-  slot3: '#867E66',
+  slot3: '#93814F',
   slot4: '#5C8A8F',
   slot1Tint: '#EDE1E1',
   slot2Tint: '#EAE2EC',
-  slot3Tint: '#E7E4DC',
+  slot3Tint: '#EAE5D8',
   slot4Tint: '#E1E6E2',
 } as const satisfies Palette;
 
