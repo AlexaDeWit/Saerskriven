@@ -9,10 +9,8 @@ runCommand "saerskriven-installed-check" {
   ''}
   export HOME="$TMPDIR/home"
   mkdir -p "$HOME"
-  export DENO_NO_UPDATE_CHECK=1
-  export DENO_NO_PROMPT=1
 
-  for tool in node deno typst chromium; do
+  for tool in node typst chromium; do
     if command -v "$tool"; then
       echo "Unexpected external runtime: $tool" >&2
       exit 1

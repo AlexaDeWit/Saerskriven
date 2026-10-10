@@ -93,15 +93,20 @@ fixture.
 
 The CLI ships as one executable per platform, attached to every
 [release](https://github.com/AlexaDeWit/Saerskriven/releases). It carries its own
-runtime, so there is nothing else to install: no node, no npm, no browser.
+runtime: no node, no npm and no browser has to be installed. On Linux it needs
+three system libraries, which [the next section](#macos-and-linux) names.
 
 | Executable                                  | Platform              |
 | ------------------------------------------- | --------------------- |
 | `saer-<version>-x86_64-unknown-linux-gnu`   | Linux, Intel or AMD   |
 | `saer-<version>-aarch64-unknown-linux-gnu`  | Linux, 64-bit ARM     |
-| `saer-<version>-x86_64-apple-darwin`        | macOS, Intel          |
 | `saer-<version>-aarch64-apple-darwin`       | macOS, Apple silicon  |
 | `saer-<version>-x86_64-pc-windows-msvc.exe` | Windows, Intel or AMD |
+
+No executable is built for an Intel Mac. v0.8.3 is the last release with one,
+and the `install.sh` on
+[its page](https://github.com/AlexaDeWit/Saerskriven/releases/tag/v0.8.3)
+installs it.
 
 ### macOS and Linux
 
@@ -110,7 +115,15 @@ The installer selects your platform and checks the executable against its
 embedded SHA-256 before installing it as `~/.local/bin/saer`.
 The compatibility command `saerskriven` is a symbolic link to `saer`.
 It needs Bash, curl, and either `sha256sum` (Linux) or `shasum` (macOS).
-Linux executables require glibc. Alpine Linux's musl is not supported.
+
+A Linux executable needs glibc 2.28 or newer (Debian 10, Ubuntu 20.04, RHEL 8
+and later), libstdc++ and libatomic. A slim container image may lack
+libatomic: its package is `libatomic1` on Debian and Ubuntu and `libatomic` on
+Fedora and RHEL. On Linux the installer starts the new executable once before
+it installs it. When that fails it names these libraries and changes nothing,
+so a previous installation stays as it was. Alpine Linux's musl is not
+supported. Where the libraries cannot be installed, the
+[Nix package](docs/nix.md) brings its own.
 
 Download the script to a file, inspect it, then run it as your own user:
 
@@ -170,9 +183,11 @@ gh attestation verify install.sh --repo AlexaDeWit/Saerskriven \
 
 Add `--source-digest` with the signed tag's commit to require that commit too.
 
-On macOS the executables are unsigned. If Gatekeeper blocks a verified download,
+On macOS the executable carries an ad hoc signature and is not notarised. If
+Gatekeeper blocks a verified download,
 `xattr -d com.apple.quarantine ~/.local/bin/saer` removes its quarantine
-attribute. The installer does not change Gatekeeper settings or execute the download.
+attribute. The installer does not change Gatekeeper settings, and on macOS it
+does not execute the download.
 
 ### Other installation methods
 
@@ -294,7 +309,7 @@ connecting one.
 
 ## Development
 
-Nix with flakes provides the toolchain (node, pnpm, deno). With
+Nix with flakes provides the toolchain (node, pnpm). With
 [direnv](https://direnv.net/), `cd` into the checkout and it loads itself.
 
 The flake decides the pnpm version and `packageManager` in

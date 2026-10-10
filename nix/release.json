@@ -10,10 +10,6 @@
       "target": "aarch64-unknown-linux-gnu",
       "hash": "177fc8f1f7087f249bd8306712cc093e4947b7476dce33ef57860f9cafbf1de5"
     },
-    "x86_64-darwin": {
-      "target": "x86_64-apple-darwin",
-      "hash": "73a2d5efc9d2de9327e10cb780f7dc4cf0b7796bac000aa8126697fcedd7770c"
-    },
     "aarch64-darwin": {
       "target": "aarch64-apple-darwin",
       "hash": "54a755511e28517f299d59d8558cce51f047df991da676ec9a61a452cdbded8a"

@@ -66,51 +66,84 @@
           pkgs.bashInteractive
           pkgs.nodejs_24
           pkgs.pnpm
-          # Deno packages the CLI. Node remains the development and test runtime.
-          # The runtime embedded by Deno is pinned separately below.
-          pkgs.deno
         ];
 
-        # The denort runtime `deno compile` embeds in an executable, one entry
-        # per target scripts/package-cli.sh builds. The URL version is
-        # pkgs.deno's, so a deno bump moves all five URLs while the hashes
-        # stay behind and the build fails on a mismatch. Renovate does not
-        # know this fetch: refetch the hashes by hand, per docs/build.md, which
-        # says why they are pinned at all.
-        denortVersion = pkgs.deno.version;
+        # Node 26 turns the CLI bundle into a single executable application
+        # (scripts/sea-executable.sh). It is named by path and kept off PATH,
+        # where `node` stays nodejs_24, the development and test runtime.
+        packagingNode = pkgs.nodejs-slim_26;
 
-        denortHashes = {
-          "x86_64-unknown-linux-gnu" =
-            "sha256-IU0KQBDJxEMmqC6n/DeFwYmkPNg1Z9kaqk3OOWR1mVQ=";
-          "aarch64-unknown-linux-gnu" =
-            "sha256-Wsx0pLGhkaiKnOC2bPp+B3tQNSwSRinVGGxXEd9GJBU=";
-          "x86_64-apple-darwin" =
-            "sha256-/aDX6ZbQjvzpDSUhyYyETwHv3Kt3McES+7T+gQA849k=";
-          "aarch64-apple-darwin" =
-            "sha256-8miD/vuQqN4LdBHxzcVB8UIR8H1HPHxBW23xz87Gjso=";
-          "x86_64-pc-windows-msvc" =
-            "sha256-Mvuc5Bm042v7VtLTiXgma+6kNT5D84SmgPnSa9hbV28=";
+        # The official Node binary each executable is built on, one entry per
+        # target scripts/package-cli.sh builds, with the hash its release's
+        # SHASUMS256.txt carries. The URL version is packagingNode's, because
+        # Node requires the binary that builds a single executable and the
+        # binary it injects into to be one version: a nixpkgs bump moves all
+        # four URLs while the hashes stay behind and the build fails on a
+        # mismatch. Renovate does not know this fetch: replace the hashes by
+        # hand, per docs/build.md.
+        nodeRuntimeVersion = packagingNode.version;
+
+        nodeRuntimePins = {
+          "x86_64-unknown-linux-gnu" = {
+            platform = "linux-x64";
+            hash = "sha256-22NC0269s8vXIQPQzlzMUoYg9snfcqEfTMs4S/G+9ng=";
+          };
+          "aarch64-unknown-linux-gnu" = {
+            platform = "linux-arm64";
+            hash = "sha256-gaPMqDPQgDVCNrVBGkkAPbiEjuADsSLiEriAOGkvehE=";
+          };
+          "aarch64-apple-darwin" = {
+            platform = "darwin-arm64";
+            hash = "sha256-m6BxpYzFDm9FTv+nDeGyyehT4smMnuZeXf02AQQfwGQ=";
+          };
+          "x86_64-pc-windows-msvc" = {
+            platform = "win-x64";
+            hash = "sha256-pNCl6X7wU74C3SALpYHZzPUjMFejbJs9vk8Wxs9YZIU=";
+          };
         };
 
-        # The layout deno reads before it reaches for the network:
-        # $DENO_DIR/dl/release/v<version>/denort-<target>.zip.
-        denortCache = pkgs.linkFarm "denort-cache-${denortVersion}"
-          (pkgs.lib.mapAttrsToList (target: hash: {
-            name = "dl/release/v${denortVersion}/denort-${target}.zip";
-            path = pkgs.fetchurl {
-              url =
-                "https://dl.deno.land/release/v${denortVersion}/denort-${target}.zip";
-              inherit hash;
-            };
-          }) denortHashes);
+        nodeDist = "https://nodejs.org/dist/v${nodeRuntimeVersion}";
 
-        # DENO_DIR is not set here: deno writes its own caches into it and this
-        # path is read-only, so scripts/package-cli.sh points DENO_DIR at a
-        # writable directory and links this tree in. unshare is named by path
-        # rather than added to PATH, where util-linux would shadow tools
-        # coreutils already provides.
-        denortEnv = {
-          SAERSKRIVEN_DENORT_CACHE = denortCache;
+        # Node publishes the Windows binary bare and every other platform's
+        # inside an archive, of which the build takes bin/node alone. The bare
+        # binary's URL ends in node.exe whatever the version, and a store path
+        # is its name and hash alone, so the name carries the version: a hash
+        # left stale after a bump then misses the store and fails the fetch,
+        # where the old path would have answered with the old binary.
+        nodeRuntime = { platform, hash }:
+          if platform == "win-x64" then
+            pkgs.fetchurl {
+              name = "node-${nodeRuntimeVersion}-win-x64.exe";
+              url = "${nodeDist}/win-x64/node.exe";
+              inherit hash;
+            }
+          else
+            let archive = "node-v${nodeRuntimeVersion}-${platform}";
+            in pkgs.runCommand "node-${nodeRuntimeVersion}-${platform}" {
+              src = pkgs.fetchurl {
+                url = "${nodeDist}/${archive}.tar.xz";
+                inherit hash;
+              };
+            } ''
+              tar -xJf "$src" -O "${archive}/bin/node" > "$out"
+              chmod 555 "$out"
+            '';
+
+        # One binary per target, at <target>/node.
+        nodeRuntimes = pkgs.linkFarm "node-runtimes-${nodeRuntimeVersion}"
+          (pkgs.lib.mapAttrsToList (target: pin: {
+            name = "${target}/node";
+            path = nodeRuntime pin;
+          }) nodeRuntimePins);
+
+        # What scripts/sea-executable.sh builds with, each named by path:
+        # the packaging Node, the pinned binaries, rcodesign for the macOS
+        # ad hoc signature, and unshare, which on PATH would bring util-linux
+        # in to shadow tools coreutils already provides.
+        packagingEnv = {
+          SAERSKRIVEN_SEA_NODE = "${packagingNode}/bin/node";
+          SAERSKRIVEN_NODE_RUNTIMES = nodeRuntimes;
+          SAERSKRIVEN_RCODESIGN = "${pkgs.rcodesign}/bin/rcodesign";
           SAERSKRIVEN_UNSHARE = "${pkgs.util-linux}/bin/unshare";
         };
 
@@ -151,26 +184,34 @@
           LIBGL_ALWAYS_SOFTWARE = "1";
         };
 
-        ciShell = shellEnv // playwrightEnv // denortEnv // {
+        ciShell = shellEnv // playwrightEnv // packagingEnv // {
           name = "saerskriven-ci";
           buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
         };
+
+        saerskriven = packageFor pkgs;
+
+        # nix/release.json names the systems a release has an executable for.
+        released = builtins.elem system saerskriven.meta.platforms;
       in {
-        packages.denort-cache = denortCache;
-        # No dev shell carries these closures: the Rust toolchain is large and
-        # entering a shell to work on the TypeScript should not pay for it
-        # (issue #341). What changed with #379 is who runs the build: the
-        # `resvg-wasm` and `brotli-wasm` nx projects do, each as a task every
-        # consumer depends on, so a cold `nx build @saerskriven/studio` now
-        # triggers the Rust compiles where it used to refuse and name the
-        # command. The shell still holds neither the toolchain nor a module.
-        # Each module's file under nix/ is data, and nix/wasm-module.nix, the
-        # one builder, is applied to it here, so no module builds itself.
-        packages.resvg-wasm = wasmModule ./nix/resvg-wasm;
-        packages.brotli-wasm = wasmModule ./nix/brotli-wasm;
-        packages.saerskriven = packageFor pkgs;
-        checks.saerskriven = pkgs.callPackage ./nix/check.nix {
-          saerskriven = packageFor pkgs;
+        packages = {
+          node-runtimes = nodeRuntimes;
+          # No dev shell carries these closures: the Rust toolchain is large
+          # and entering a shell to work on the TypeScript should not pay for
+          # it (issue #341). What changed with #379 is who runs the build: the
+          # `resvg-wasm` and `brotli-wasm` nx projects do, each as a task every
+          # consumer depends on, so a cold `nx build @saerskriven/studio` now
+          # triggers the Rust compiles where it used to refuse and name the
+          # command. The shell still holds neither the toolchain nor a module.
+          # Each module's file under nix/ is data, and nix/wasm-module.nix, the
+          # one builder, is applied to it here, so no module builds itself.
+          resvg-wasm = wasmModule ./nix/resvg-wasm;
+          brotli-wasm = wasmModule ./nix/brotli-wasm;
+        } // pkgs.lib.optionalAttrs released { inherit saerskriven; };
+
+        checks = pkgs.lib.optionalAttrs released {
+          saerskriven =
+            pkgs.callPackage ./nix/check.nix { inherit saerskriven; };
         };
 
         devShells = {
@@ -189,7 +230,7 @@
 
           # The shell for humans. Currently identical to ci; interactive-only
           # tooling joins here, never in ci, so CI's closure stays lean.
-          default = pkgs.mkShell (shellEnv // playwrightEnv // denortEnv // {
+          default = pkgs.mkShell (shellEnv // playwrightEnv // packagingEnv // {
             name = "saerskriven";
             buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
           });
