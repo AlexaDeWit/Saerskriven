@@ -19,6 +19,8 @@ export const divergenceFrCA = catalogue(divergenceMessages)('fr-CA')({
   'subject-process-named': 'Processus « {name} »',
   'subject-store': 'Magasin de données',
   'subject-store-named': 'Magasin de données « {name} »',
+  'subject-flow': 'Flux',
+  'subject-flow-named': 'Flux « {name} »',
   'subject-text': 'Texte',
   'subject-text-named': 'Texte « {name} »',
   'subject-trust-boundary': 'Frontière de confiance',

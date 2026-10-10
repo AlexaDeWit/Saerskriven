@@ -2,7 +2,7 @@ import {
   decimalsOf,
   storedNumber,
   type Accent,
-  type AccentedElement,
+  type AccentableElement,
   type Diagram,
   type Element,
   type ElementId,
@@ -34,12 +34,12 @@ import { settledCurveNames, type CurveNameSide } from './text-placement.js';
  * An accent is paint alone: no box, bound or label placement reads it.
  */
 export type CanvasNode =
-  | (AccentedNodeBase & { readonly kind: 'actor' })
-  | (AccentedNodeBase & { readonly kind: 'process' })
-  | (AccentedNodeBase & { readonly kind: 'store' })
+  | (AccentableNodeBase & { readonly kind: 'actor' })
+  | (AccentableNodeBase & { readonly kind: 'process' })
+  | (AccentableNodeBase & { readonly kind: 'store' })
   | (CanvasNodeBase & { readonly kind: 'text'; readonly text: string })
-  | (AccentedNodeBase & { readonly kind: 'boundary-box' })
-  | (AccentedNodeBase & {
+  | (AccentableNodeBase & { readonly kind: 'boundary-box' })
+  | (AccentableNodeBase & {
       readonly kind: 'boundary-curve';
       readonly waypoints: readonly Point[];
       readonly nameSide: CurveNameSide | undefined;
@@ -181,7 +181,7 @@ type CanvasNodeBase = {
   readonly badge: ThreatBadge | undefined;
 };
 
-type AccentedNodeBase = CanvasNodeBase & { readonly accent?: Accent };
+type AccentableNodeBase = CanvasNodeBase & { readonly accent?: Accent };
 
 type ResolvedEndpoint =
   | PlacedEndpoint
@@ -241,7 +241,7 @@ function boundaryNode(
   };
 }
 
-function accentOf(element: AccentedElement): { readonly accent?: Accent } {
+function accentOf(element: AccentableElement): { readonly accent?: Accent } {
   return element.accent === undefined ? {} : { accent: element.accent };
 }
 

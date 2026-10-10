@@ -186,7 +186,7 @@ function toCommon(element: SaerskrivenYamlV2Element) {
   };
 }
 
-function toAccent(element: AccentedWireElement): { accent?: Accent } {
+function toAccent(element: AccentableWireElement): { accent?: Accent } {
   const accent = accentSchema.safeParse(element.accent);
   return accent.success ? { accent: accent.data } : {};
 }
@@ -218,7 +218,7 @@ function unknownAccents(document: SaerskrivenYamlV2Document): Divergence[] {
     });
 }
 
-type AccentedWireElement = Exclude<
+type AccentableWireElement = Exclude<
   SaerskrivenYamlV2Element,
   { readonly kind: 'text' }
 >;

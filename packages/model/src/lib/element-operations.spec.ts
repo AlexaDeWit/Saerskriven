@@ -1006,12 +1006,12 @@ describe('setAccent', () => {
   const api = elementId('element-api');
   const flow = elementId('element-order-flow');
   const perimeter = elementId('element-perimeter');
-  const everyAccentedKind = withNote.diagrams[0].elements
+  const everyAccentableKind = withNote.diagrams[0].elements
     .filter((element) => element.kind !== 'text')
     .map((element) => element.id);
 
   it('gives every element named the one key in one model, keeping their other fields and their order', () => {
-    const next = modelOf(setAccent(withNote, everyAccentedKind, 's2'));
+    const next = modelOf(setAccent(withNote, everyAccentableKind, 's2'));
     expect(elementIds(next)).toEqual(elementIds(withNote));
     expect(next.diagrams[0].elements).toEqual(
       withNote.diagrams[0].elements.map((element) =>

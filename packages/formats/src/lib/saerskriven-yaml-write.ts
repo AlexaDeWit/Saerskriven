@@ -1,6 +1,6 @@
 import {
   inNumberOrder,
-  type AccentedElement,
+  type AccentableElement,
   type Assumption,
   type BoundaryShape,
   type Diagram,
@@ -161,7 +161,7 @@ function toWireCommon(element: Element) {
   };
 }
 
-function toWireAccent(element: AccentedElement): { accent?: string } {
+function toWireAccent(element: AccentableElement): { accent?: string } {
   return element.accent === undefined ? {} : { accent: element.accent };
 }
 

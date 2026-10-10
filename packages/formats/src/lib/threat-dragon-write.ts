@@ -52,9 +52,9 @@ import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
  * or a note, the model link of a threat, a note's name, an out-of-scope
  * boundary or note, a diagram's name, and a size this write raises that the
  * source cell does not hold. Accents are reported once for the model, with
- * the count of elements holding one. A diagram, cell or threat the source held and
- * the model no longer does is reported as `discarded-by-edit`. Mitigation
- * texts follow `mitigationDivergences`.
+ * the count of elements holding one. A diagram, cell or threat the source
+ * held and the model no longer does is reported as `discarded-by-edit`.
+ * Mitigation texts follow `mitigationDivergences`.
  */
 export function writeThreatDragon(
   model: Model,

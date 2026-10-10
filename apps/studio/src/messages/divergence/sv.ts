@@ -15,6 +15,8 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
   'subject-process-named': 'Process ”{name}”',
   'subject-store': 'Datalager',
   'subject-store-named': 'Datalager ”{name}”',
+  'subject-flow': 'Flöde',
+  'subject-flow-named': 'Flöde ”{name}”',
   'subject-text': 'Text',
   'subject-text-named': 'Text ”{name}”',
   'subject-trust-boundary': 'Förtroendegräns',

@@ -2,7 +2,7 @@ import {
   elementsAcross,
   takesAccent,
   type Accent,
-  type AccentedElement,
+  type AccentableElement,
   type Diagram,
   type DiagramId,
   type Element,
@@ -112,7 +112,9 @@ export function selectedElements(state: State): readonly ElementId[] {
 }
 
 /** The selected elements of a kind that takes an accent, in selection order. */
-export function accentableSelection(state: State): readonly AccentedElement[] {
+export function accentableSelection(
+  state: State,
+): readonly AccentableElement[] {
   const selected = new Set<string>(state.selection);
   const held = new Map(
     elementsAcross(state.present.diagrams)

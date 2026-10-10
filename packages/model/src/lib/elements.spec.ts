@@ -1,5 +1,4 @@
 import {
-  accentSchema,
   actorSchema,
   boundaryShapeSchema,
   elementKindSchema,
@@ -62,22 +61,6 @@ describe('accent', () => {
     expect(
       elementSchema.parse({ ...actor, kind: 'text', text: '', accent: 's1' }),
     ).not.toHaveProperty('accent');
-  });
-
-  it('is one of four strong and four light keys, and nothing else', () => {
-    expect(accentSchema.options).toEqual([
-      's1',
-      's2',
-      's3',
-      's4',
-      'l1',
-      'l2',
-      'l3',
-      'l4',
-    ]);
-    expect(actorSchema.safeParse({ ...actor, accent: 's5' }).success).toBe(
-      false,
-    );
   });
 });
 

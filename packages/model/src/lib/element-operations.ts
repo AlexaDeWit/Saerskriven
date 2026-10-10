@@ -26,7 +26,7 @@ import {
   elementSchema,
   takesAccent,
   type Accent,
-  type AccentedElement,
+  type AccentableElement,
   type Element,
   type ElementDetailsChange,
   type FlowEndpoint,
@@ -435,9 +435,9 @@ function withAccentOn(
 }
 
 function accented(
-  element: AccentedElement,
+  element: AccentableElement,
   accent: Accent | undefined,
-): AccentedElement {
+): AccentableElement {
   if (accent !== undefined) {
     return { ...element, accent };
   }

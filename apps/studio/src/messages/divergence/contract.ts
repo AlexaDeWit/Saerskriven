@@ -33,6 +33,8 @@ export const divergenceMessages = {
   'subject-process-named': text(name),
   'subject-store': text(),
   'subject-store-named': text(name),
+  'subject-flow': text(),
+  'subject-flow-named': text(name),
   'subject-text': text(),
   'subject-text-named': text(name),
   'subject-trust-boundary': text(),

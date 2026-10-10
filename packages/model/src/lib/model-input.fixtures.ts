@@ -112,9 +112,9 @@ const threatNumbersArbitrary = fc
  * loosely and re-parsed through the union, which pairs each methodology with
  * its own categories. Threat numbers are distinct and never already
  * ascending, so a write has to reorder them. Every kind that takes an accent
- * holds one or none. Ids are positional, references
- * are drawn from ids already laid out, and a flow's endpoints come from its
- * own diagram, minus the flow.
+ * holds one or none. Ids are positional, references are drawn from ids
+ * already laid out, and a flow's endpoints come from its own diagram, minus
+ * the flow.
  */
 export const modelInputArbitrary = fc
   .record({
@@ -191,7 +191,7 @@ function elementArbitrary(
   if (kind === 'flow') {
     return fc
       .tuple(
-        accentedArbitrary(id),
+        accentableArbitrary(id),
         endpointArbitrary(siblings),
         endpointArbitrary(siblings),
         fc.array(pointArbitrary, { maxLength: 3 }),
@@ -208,7 +208,7 @@ function elementArbitrary(
   }
   if (kind === 'trust-boundary') {
     return fc
-      .tuple(accentedArbitrary(id), boundaryShapeArbitrary)
+      .tuple(accentableArbitrary(id), boundaryShapeArbitrary)
       .map(([common, shape]) => ({ kind, ...common, shape }));
   }
   if (kind === 'text') {
@@ -223,11 +223,11 @@ function elementArbitrary(
       }));
   }
   return fc
-    .tuple(accentedArbitrary(id), pointArbitrary, sizeArbitrary)
+    .tuple(accentableArbitrary(id), pointArbitrary, sizeArbitrary)
     .map(([common, position, size]) => ({ kind, ...common, position, size }));
 }
 
-function accentedArbitrary(id: string) {
+function accentableArbitrary(id: string) {
   return fc
     .tuple(
       commonArbitrary(id),

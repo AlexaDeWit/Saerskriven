@@ -51,8 +51,9 @@ element once. An [accent](../../docs/saerskriven-yaml.md#accents) is one too
 wherever it is lost: a Threat Dragon write holds none and reports them once
 for the model, with the count of elements holding one, and a native read
 reports an element whose `accent` is none of the model's keys. Reads and
-writes return one list of them, and an empty list is the aligned case. The subjects, the reasons and the terminal escaping of
-`renderDivergences` are in [`divergence.ts`](src/lib/divergence.ts).
+writes return one list of them, and an empty list is the aligned case. The
+subjects, the reasons and the terminal escaping of `renderDivergences` are in
+[`divergence.ts`](src/lib/divergence.ts).
 
 An entry names its subject, its reason and a `detail`: a code from a closed
 set with the data that code needs, in

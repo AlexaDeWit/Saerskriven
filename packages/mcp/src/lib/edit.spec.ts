@@ -972,6 +972,29 @@ describe('what set_accent writes', () => {
     expect(attempted.bytes(modelFile).toString('utf8')).toBe(before);
   });
 
+  it('adds an element that states an accent', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [
+        {
+          op: 'add_element',
+          diagram: 'diagram-main',
+          element: {
+            kind: 'store',
+            id: 'element-added',
+            name: 'Added',
+            placement: 'auto',
+            accent: 's4',
+          },
+        },
+      ],
+    );
+    expect(Either.isRight(applied)).toBe(true);
+    expect(accentsOf(attempted, modelFile, ['element-added'])).toEqual(['s4']);
+  });
+
   it('refuses a batch that names a text note, saying it takes no accent', () => {
     const attempted = attempt();
     const refused = attempted.edit(

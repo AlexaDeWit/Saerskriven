@@ -247,9 +247,7 @@ function subjectText(
       return undefined;
     case 'element': {
       const element = held.elements.get(subject.id);
-      return element === undefined || element.kind === 'flow'
-        ? undefined
-        : elementSubject(t, element);
+      return element && elementSubject(t, element);
     }
     case 'threat': {
       const threat = held.threats.get(subject.id);
@@ -331,10 +329,7 @@ function mitigationMadeFrom(
   return mitigation && mitigationSubject(t, mitigation, held, detail);
 }
 
-function elementSubject(
-  t: Speaker,
-  element: Exclude<Element, { readonly kind: 'flow' }>,
-): string {
+function elementSubject(t: Speaker, element: Element): string {
   return isEmptyName(element.name)
     ? t(`divergence.subject-${element.kind}`)
     : t(`divergence.subject-${element.kind}-named`, { name: element.name });

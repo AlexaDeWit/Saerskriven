@@ -53,11 +53,11 @@ const elementBaseSchema = z.object({
   reasonOutOfScope: acceptedTextSchema,
 });
 
-const accentedBaseSchema = elementBaseSchema.extend({
+const accentableBaseSchema = elementBaseSchema.extend({
   accent: accentSchema.optional(),
 });
 
-const nodeBaseSchema = accentedBaseSchema.extend({
+const nodeBaseSchema = accentableBaseSchema.extend({
   position: pointSchema,
   size: sizeSchema,
 });
@@ -134,7 +134,7 @@ export type FlowEndpoint = z.infer<typeof flowEndpointSchema>;
 export type FlowEndpointInput = z.input<typeof flowEndpointSchema>;
 
 /** Flow direction is required. Absent security facts and relationship lists remain unknown. */
-export const flowSchema = accentedBaseSchema.extend({
+export const flowSchema = accentableBaseSchema.extend({
   kind: z.literal('flow'),
   protocol: acceptedTextSchema.optional(),
   isEncrypted: z.boolean().optional(),
@@ -182,7 +182,7 @@ export type BoundaryShape = z.infer<typeof boundaryShapeSchema>;
 export type BoundaryShapeInput = z.input<typeof boundaryShapeSchema>;
 
 /** Declared relationships are independent of geometry and remain unknown when absent. */
-export const trustBoundarySchema = accentedBaseSchema.extend({
+export const trustBoundarySchema = accentableBaseSchema.extend({
   kind: z.literal('trust-boundary'),
   containedElements: z.array(elementIdSchema).optional(),
   crossingFlows: z.array(elementIdSchema).optional(),
@@ -215,10 +215,10 @@ export type Element = z.infer<typeof elementSchema>;
 export type ElementInput = z.input<typeof elementSchema>;
 
 /** An element of a kind that takes an accent: every kind but a canvas note. */
-export type AccentedElement = Exclude<Element, { readonly kind: 'text' }>;
+export type AccentableElement = Exclude<Element, { readonly kind: 'text' }>;
 
 /** Whether `element` is of a kind that takes an accent. */
-export function takesAccent(element: Element): element is AccentedElement {
+export function takesAccent(element: Element): element is AccentableElement {
   return element.kind !== 'text';
 }
 
