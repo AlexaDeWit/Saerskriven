@@ -2,11 +2,15 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
 import {
   canvasContainer,
+  dashOf,
+  dotSpacingOf,
   dragBy,
   geometryBoxOf,
   halfwayAlong,
   lineOf,
+  outlineOf,
   screenBoxOf,
+  weightOf,
   type Box,
 } from './canvas.fixtures.js';
 import {
@@ -41,28 +45,6 @@ const frameAround = async (node: Locator): Promise<number> =>
     ),
   );
 
-const outlineOf = async (node: Locator): Promise<number> =>
-  lengthOf(
-    await node
-      .locator(`.${canvasClassNames.shape}`)
-      .first()
-      .evaluate((shape) => getComputedStyle(shape).strokeWidth),
-  );
-
-const weightOf = async (line: Locator): Promise<number> =>
-  lengthOf(await line.evaluate((path) => getComputedStyle(path).strokeWidth));
-
-const dashOf = async (shape: Locator): Promise<number[]> =>
-  (await shape.evaluate((drawn) => getComputedStyle(drawn).strokeDasharray))
-    .split(',')
-    .map(lengthOf);
-
-const dotSpacingOf = async (line: Locator): Promise<number> => {
-  const [dot, gap] = await dashOf(line);
-  expect(dot).toBe(0);
-  return gap / (await weightOf(line));
-};
-
 const processOutlineBox = (node: Locator): Promise<Box> =>
   geometryBoxOf(node.locator(`.${canvasClassNames.process}`));
 
@@ -93,7 +75,9 @@ test('a selected element is framed heavier than the line it is drawn with, and s
 
   await selectNode(page, placeholder.actor);
 
-  expect(await frameAround(node)).toBeGreaterThan(await outlineOf(node));
+  expect(await frameAround(node)).toBeGreaterThan(
+    await weightOf(outlineOf(node)),
+  );
   await expect(handlesOn(node).first()).toBeVisible();
   expect(
     await node.evaluate(

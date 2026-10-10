@@ -50,7 +50,7 @@ no target writes them. They are read as follows:
 | `saerskriven/two-diagrams.yaml`           | `packages/formats`, `packages/mcp`, `apps/cli`, `apps/studio-e2e`, `scripts/package-cli.sh` |
 | `render/two-diagrams.snapshot.pdf.sha256` | `apps/cli`, `apps/studio-e2e`                                                               |
 | `threat-dragon/feature-complete.json`     | `packages/formats`, `packages/mcp`, `apps/cli`, `apps/studio`, `apps/studio-e2e`            |
-| `saerskriven/feature-complete.yaml`       | `packages/formats`, `apps/cli`, `apps/studio`                                               |
+| `saerskriven/feature-complete.yaml`       | `packages/formats`, `apps/cli`, `apps/studio`, `apps/studio-e2e`                            |
 | `saerskriven/v0.2.1.yaml`                 | `packages/formats`, `nix/check.nix`                                                         |
 | `saerskriven/saerskriven-v0.3.0.yaml`     | `packages/formats`                                                                          |
 | `studio/recovery-v0.4.0.json`             | `apps/studio`                                                                               |
@@ -89,7 +89,7 @@ A version 2 Saerskriven YAML file written by hand in the writer's canonical
 form, using every field, enum value and union variant
 `@saerskriven/wire-saerskriven-yaml-v2` declares. `packages/formats` reads it
 as the model it states and writes it back to the byte, `apps/cli` validates
-it, and `apps/studio` opens and saves it.
+it, `apps/studio` opens and saves it, and `apps/studio-e2e` opens it.
 
 ## `saerskriven/two-diagrams.yaml`
 

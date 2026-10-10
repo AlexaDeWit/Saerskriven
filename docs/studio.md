@@ -501,7 +501,7 @@ name, and its field refuses an empty one.
 
 An accent draws attention to an element or a flow: one path through a diagram
 during a discussion, or the parts a copy of a diagram is kept to show. It
-means nothing to the model. No rule, report or threat reads it.
+means nothing to the model: no rule reads it and no threat depends on it.
 
 The card's third row is the accent bar: no accent, four strong accents and
 four light ones, each drawn as an element holding it. Select one or more
@@ -775,8 +775,10 @@ dashed one is a trust boundary, and a dotted one is out of scope: a trust
 boundary out of scope is dotted in place of its dashes. A flow out of scope
 has its line dotted and drawn in the muted ink, and its arrowhead filled with
 it. A Note, which has no outline, takes a dotted frame just outside its box
-while it is out of scope. Names and badges are drawn as they are in scope. The
-dots are a pattern, not a colour, so they survive forced colours.
+while it is out of scope. Names and badges are drawn as they are in scope. An
+[accent](#accents) on an element or a flow out of scope draws the dots and the
+arrowhead in its own colour in place of the muted ink. The dots are a pattern,
+not a colour, so they survive forced colours.
 
 ### Security properties
 

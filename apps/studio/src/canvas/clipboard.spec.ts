@@ -301,6 +301,21 @@ describe('pasteSelected', () => {
     expect(after.past).toHaveLength(2);
   });
 
+  it('keeps the accent of an element through a copy and a paste, and through a duplicate', async () => {
+    recordingClipboard();
+    dispatch(Action.SetAccent({ elementIds: [actorElement], accent: 's3' }));
+    await copySelected();
+    await pasteSelected();
+    duplicateSelected();
+    expect(
+      modelStore
+        .getState()
+        .present.diagrams[0].elements.filter(
+          (element) => 'accent' in element && element.accent === 's3',
+        ),
+    ).toHaveLength(3);
+  });
+
   it('copies from and pastes into the diagram on screen', async () => {
     recordingClipboard();
     modelStore.setState(

@@ -8,7 +8,6 @@ import {
 import { registeredChords } from './chords.fixtures.js';
 import {
   arrowTo,
-  chromeCard,
   diagramSwitcher,
   menuButton,
   openShopperTakeover,
@@ -28,7 +27,7 @@ const palettes = [
 const cursorRow = (page: Page): Locator => page.locator('[data-highlighted]');
 
 const switchedOnTool = (page: Page): Locator =>
-  chromeCard(page).locator('[aria-pressed="true"]');
+  page.getByTestId('toolbox').locator('[aria-pressed="true"]');
 
 const drawnAsCursor = async (row: Locator, palette: Palette): Promise<void> => {
   await expect(row).toHaveCSS(

@@ -43,8 +43,12 @@
   outline-offset: 1px;
 }
 
-.swatch:disabled {
-  opacity: 0.32;
+/* An inactive swatch dims its paint, never the button: opacity on the button
+   would make it a stacking context that paints over a menu or a tooltip the
+   rows above open in place. */
+.swatch:disabled .shape {
+  fill-opacity: 0.32;
+  stroke-opacity: 0.32;
 }
 
 .glyph {
@@ -52,60 +56,64 @@
   height: 1.5rem;
 }
 
-/* The weights are the canvas's own: an outline, and a strong accent's. */
+/* The weights are the canvas's own: an outline, and a strong accent's. Each
+   slot rule weighs what the plain rule does, so the forced-colours block
+   below overrides them all by order. */
 .shape {
   fill: var(--saer-colour-actor);
   stroke: var(--saer-colour-text);
-  stroke-width: 2;
+  stroke-width: var(--saer-stroke-outline);
 }
 
-.glyph[data-strength='strong'] .shape {
-  stroke-width: 3;
+:where(.glyph[data-strength='strong']) .shape {
+  stroke-width: var(--saer-stroke-strong-outline);
 }
 
-.glyph[data-slot='1'] .shape {
+:where(.glyph[data-slot='1']) .shape {
   stroke: var(--saer-colour-slot-1);
 }
 
-.glyph[data-slot='2'] .shape {
+:where(.glyph[data-slot='2']) .shape {
   stroke: var(--saer-colour-slot-2);
 }
 
-.glyph[data-slot='3'] .shape {
+:where(.glyph[data-slot='3']) .shape {
   stroke: var(--saer-colour-slot-3);
 }
 
-.glyph[data-slot='4'] .shape {
+:where(.glyph[data-slot='4']) .shape {
   stroke: var(--saer-colour-slot-4);
 }
 
-.glyph[data-slot='1'][data-strength='strong'] .shape {
+:where(.glyph[data-slot='1'][data-strength='strong']) .shape {
   fill: var(--saer-colour-slot-1-tint);
 }
 
-.glyph[data-slot='2'][data-strength='strong'] .shape {
+:where(.glyph[data-slot='2'][data-strength='strong']) .shape {
   fill: var(--saer-colour-slot-2-tint);
 }
 
-.glyph[data-slot='3'][data-strength='strong'] .shape {
+:where(.glyph[data-slot='3'][data-strength='strong']) .shape {
   fill: var(--saer-colour-slot-3-tint);
 }
 
-.glyph[data-slot='4'][data-strength='strong'] .shape {
+:where(.glyph[data-slot='4'][data-strength='strong']) .shape {
   fill: var(--saer-colour-slot-4-tint);
 }
 
-/* Forced colours draw no slot colour, as the canvas does, and keep the weights. */
+/* Forced colours draw no slot colour, as the canvas does, and keep the
+   weights. An inactive swatch takes the system's own dimmed ink at full
+   strength. */
 @media (forced-colors: active) {
-  .shape,
-  .glyph[data-slot] .shape,
-  .glyph[data-slot][data-strength='strong'] .shape {
+  .shape {
     fill: Canvas;
     stroke: ButtonText;
   }
 
   .swatch:disabled .shape {
     stroke: GrayText;
+    fill-opacity: 1;
+    stroke-opacity: 1;
   }
 
   .swatch[aria-pressed='true'] {

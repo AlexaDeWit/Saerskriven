@@ -10,10 +10,14 @@ import { committedText } from '@saerskriven/model/fixtures';
 import { audit } from './accessibility.fixtures.js';
 import {
   boxesOverlap,
+  dotSpacingOf,
   halfwayAlong,
   lineOf,
+  outlineOf,
+  paintOf,
   reachesAt,
   screenBoxOf,
+  weightOf,
 } from './canvas.fixtures.js';
 import { commandChord, registeredChords } from './chords.fixtures.js';
 import {
@@ -46,6 +50,7 @@ const drawn = {
   lightActor: /^Light 1, actor/u,
   strongStore: /^Strong 3, store/u,
   strongFlow: /^Strong flow, flow/u,
+  strongFlowOutOfScope: /^Out of scope, strong, flow/u,
   plainActor: /^No accent, actor/u,
   note: /^Note, text/u,
 } as const;
@@ -60,17 +65,15 @@ const swatches = (page: Page): Locator => accentBar(page).getByRole('button');
 const pressedSwatches = (page: Page): Locator =>
   accentBar(page).locator('button[aria-pressed="true"]');
 
+const swatchInks = (page: Page): Promise<string[]> =>
+  accentBar(page)
+    .locator('rect')
+    .evaluateAll((shapes) =>
+      shapes.map((shape) => getComputedStyle(shape).stroke),
+    );
+
 const openAccents = (page: Page): Promise<void> =>
   openModelDocument(page, JSON.parse(committedText('accents.model.json')));
-
-const shapeOf = (node: Locator): Locator =>
-  node.locator(`.${canvasClassNames.shape}`).first();
-
-const paintOf = (shape: Locator) =>
-  shape.evaluate((element) => {
-    const { fill, stroke, strokeWidth } = getComputedStyle(element);
-    return { fill, stroke, weight: Number.parseFloat(strokeWidth) };
-  });
 
 const accentedGroups = (page: Page): Locator =>
   page.locator(
@@ -142,11 +145,11 @@ test('one press gives the key to every selected element and flow, drawn in the s
   await page.emulateMedia({ colorScheme: 'dark' });
   await openTwoDiagrams(page);
   const takers = page.locator(
-    `.${canvasClassNames.element}:has(.${canvasClassNames.shape})`,
+    `.${canvasClassNames.element}:has(.${canvasClassNames.shape}:not(.${canvasClassNames.noteFrame}))`,
   );
   const drawnBefore = await takers.count();
   const process = nodeNamed(page, storefront.webShop);
-  const plain = await paintOf(shapeOf(process));
+  const plain = await paintOf(outlineOf(process));
 
   await selectByKeyboard(page, storefront.webShop);
   await selectAll(page);
@@ -154,7 +157,7 @@ test('one press gives the key to every selected element and flow, drawn in the s
 
   await expect(accentedGroups(page)).toHaveCount(drawnBefore);
   await expect(pressedSwatches(page)).toHaveAccessibleName('Strong accent 1');
-  const strong = await paintOf(shapeOf(process));
+  const strong = await paintOf(outlineOf(process));
   expect(strong.stroke).toBe(rgbColour(darkPalette.slot1));
   expect(strong.fill).toBe(rgbColour(darkPalette.slot1Tint));
   expect(strong.weight).toBeGreaterThan(plain.weight);
@@ -162,7 +165,7 @@ test('one press gives the key to every selected element and flow, drawn in the s
   await swatch(page, 'Light accent 4').click();
 
   await expect(accentedGroups(page)).toHaveCount(0);
-  const light = await paintOf(shapeOf(process));
+  const light = await paintOf(outlineOf(process));
   expect(light.stroke).toBe(rgbColour(darkPalette.slot4));
   expect(light.fill).toBe(plain.fill);
   expect(light.weight).toBe(plain.weight);
@@ -171,7 +174,7 @@ test('one press gives the key to every selected element and flow, drawn in the s
   await expect(accentedGroups(page)).toHaveCount(drawnBefore);
   await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
   await expect(accentedGroups(page)).toHaveCount(0);
-  expect(await paintOf(shapeOf(process))).toEqual(plain);
+  expect(await paintOf(outlineOf(process))).toEqual(plain);
 });
 
 test('the pressed swatch is the accent the selection holds, none where it is mixed, and a note alone leaves the row inactive', async ({
@@ -219,24 +222,44 @@ test('a strong flow reads heavier under the pointer, and heavier again once it i
   await openAccents(page);
   const flow = nodeNamed(page, drawn.strongFlow);
   const line = lineOf(page, drawn.strongFlow);
-  const weightOf = async (): Promise<number> => (await paintOf(line)).weight;
-  const rested = await weightOf();
+  const rested = await weightOf(line);
   expect(rested).toBeGreaterThan(
-    (await paintOf(lineOf(page, /^Light flow, flow/u))).weight,
+    await weightOf(lineOf(page, /^Light flow, flow/u)),
   );
 
   const on = await halfwayAlong(line);
   await page.mouse.move(on.x, on.y);
-  await expect.poll(weightOf).toBeGreaterThan(rested);
-  const hovered = await weightOf();
+  await expect.poll(() => weightOf(line)).toBeGreaterThan(rested);
+  const hovered = await weightOf(line);
 
   await page.mouse.click(on.x, on.y);
   await expect(flow).toHaveClass(/selected/u);
-  await expect.poll(weightOf).toBeGreaterThan(hovered);
+  await expect.poll(() => weightOf(line)).toBeGreaterThan(hovered);
+});
+
+test('a strong out-of-scope flow keeps its dots as far apart for their size under the pointer and once selected', async ({
+  page,
+}) => {
+  await openAccents(page);
+  const flow = nodeNamed(page, drawn.strongFlowOutOfScope);
+  const line = lineOf(page, drawn.strongFlowOutOfScope);
+  const rested = await weightOf(line);
+  const atRest = await dotSpacingOf(line);
+
+  const on = await halfwayAlong(line);
+  await page.mouse.move(on.x, on.y);
+  await expect.poll(() => weightOf(line)).toBeGreaterThan(rested);
+  const hovered = await weightOf(line);
+  expect(await dotSpacingOf(line)).toBeCloseTo(atRest);
+
+  await page.mouse.click(on.x, on.y);
+  await expect(flow).toHaveClass(/selected/u);
+  await expect.poll(() => weightOf(line)).toBeGreaterThan(hovered);
+  expect(await dotSpacingOf(line)).toBeCloseTo(atRest);
 });
 
 for (const scheme of ['light', 'dark'] as const) {
-  test(`forced colours over the ${scheme} scheme draw no slot colour and no tint, and keep the strong weight`, async ({
+  test(`forced colours over the ${scheme} scheme draw no slot colour and no tint, keep the strong weight, and dim the nine inactive swatches alike`, async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme: scheme, forcedColors: 'active' });
@@ -254,10 +277,13 @@ for (const scheme of ['light', 'dark'] as const) {
         palette.slot4Tint,
       ].map(rgbColour),
     );
-    const plain = await paintOf(shapeOf(nodeNamed(page, drawn.plainActor)));
+    const plain = await paintOf(outlineOf(nodeNamed(page, drawn.plainActor)));
+    const inactive = await swatchInks(page);
+    expect(inactive).toHaveLength(swatchNames.length);
+    expect(new Set(inactive).size).toBe(1);
 
-    const strong = await paintOf(shapeOf(nodeNamed(page, drawn.strongActor)));
-    const light = await paintOf(shapeOf(nodeNamed(page, drawn.lightActor)));
+    const strong = await paintOf(outlineOf(nodeNamed(page, drawn.strongActor)));
+    const light = await paintOf(outlineOf(nodeNamed(page, drawn.lightActor)));
     const band = await paintOf(
       nodeNamed(page, drawn.strongStore).locator(
         `.${accentClassNames.storeBand}`,
@@ -276,5 +302,9 @@ for (const scheme of ['light', 'dark'] as const) {
       expect(slotColours.has(paint.stroke)).toBe(false);
       expect(slotColours.has(paint.fill)).toBe(false);
     }
+
+    await selectByKeyboard(page, drawn.plainActor);
+    await expect(swatch(page, 'Strong accent 1')).toBeEnabled();
+    expect(await swatchInks(page)).not.toContain(inactive[0]);
   });
 }

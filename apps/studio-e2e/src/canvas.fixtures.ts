@@ -516,6 +516,40 @@ export const handlesOf = (box: Box): Point[] =>
     { x: box.x, y: box.y + box.height / 2 },
   ].map(rounded);
 
+/** The outline an element draws, or the first shape of several. */
+export const outlineOf = (node: Locator): Locator =>
+  node.locator(`.${canvasClassNames.shape}`).first();
+
+/** What a shape is painted with: its computed fill and stroke, and its stroke weight in pixels. */
+export const paintOf = (
+  shape: Locator,
+): Promise<{
+  readonly fill: string;
+  readonly stroke: string;
+  readonly weight: number;
+}> =>
+  shape.evaluate((drawn) => {
+    const { fill, stroke, strokeWidth } = getComputedStyle(drawn);
+    return { fill, stroke, weight: Number.parseFloat(strokeWidth) };
+  });
+
+/** The stroke weight a shape or a line is drawn at, in pixels. */
+export const weightOf = async (shape: Locator): Promise<number> =>
+  (await paintOf(shape)).weight;
+
+/** The dash and the gap a shape's stroke is drawn in, in pixels. */
+export const dashOf = async (shape: Locator): Promise<number[]> =>
+  (await shape.evaluate((drawn) => getComputedStyle(drawn).strokeDasharray))
+    .split(',')
+    .map((length) => Number.parseFloat(length));
+
+/** How far apart a dotted line's dots are for their size: its pitch over its weight. */
+export const dotSpacingOf = async (line: Locator): Promise<number> => {
+  const [dot, gap] = await dashOf(line);
+  expect(dot).toBe(0);
+  return gap / (await weightOf(line));
+};
+
 /** The line one flow draws, from its source through its waypoints. */
 export const lineOf = (page: Page, name: RegExp): Locator =>
   page.getByRole('group', { name }).locator(`path.${canvasClassNames.flow}`);
