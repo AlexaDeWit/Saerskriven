@@ -53,7 +53,7 @@ the owner signs the tag. Publication starts after the tag exists.
 Pull requests rehearse the release through artifact creation and attestation.
 The same jobs run on ordinary main, tag, and manual CI runs:
 
-- Build and test the host CLI, then compile all five targets twice and compare
+- Build and test the host CLI, then package all four targets twice and compare
   their bytes. Package `install.sh` with the release tag and every binary's
   SHA-256 embedded. Check the host version and every executable and installer
   checksum.
@@ -64,10 +64,14 @@ The same jobs run on ordinary main, tag, and manual CI runs:
   ref, and commit.
 - Require those stages in `CI gate` before publication can run.
 
-Native Linux and macOS smoke jobs use the packaged installer with the system
-Bash and tools, without Nix or Node. They replace the download transport with
-local release assets, run the installed CLI, repeat the install, and confirm
-that a corrupted download leaves the installed version unchanged.
+Native smoke jobs on Linux x64, Linux arm64 and macOS arm64 use the packaged
+installer with the system Bash and tools, without Nix or Node. They replace the
+download transport with local release assets, run the installed CLI, repeat the
+install, and confirm that a corrupted download leaves the installed version
+unchanged. Each then validates a model with the installed executable and
+compares the PNG and the PDF it renders with the committed goldens, so each of
+those three executables runs on a machine of its own kind. Nothing runs the
+Windows executable.
 
 Fork and Dependabot PRs still build and validate the artifacts. GitHub gives
 them read-only tokens, so they cannot generate attestations. The gate accepts

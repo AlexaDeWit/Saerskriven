@@ -637,6 +637,12 @@ mitigations:
     threats:
       - th-agent-write
       - th-agent-loss
+  - id: mit-executable-guard-rail
+    title: The executable opens no connection and starts no program
+    prose: "Every released executable is a Node single executable application, and `scripts/sea-executable.sh` builds each one with Node's permission model on and two grants, file reads and file writes. With no other grant it refuses the network, child processes, worker threads, native addons, WASI and the inspector, and `execArgvExtension` is `none`, so neither `NODE_OPTIONS` nor an argument of the person running it adds a grant. `apps/cli/src/restriction.spec.ts` packages a probe under the same configuration and holds each of those channels to its refusal. This is a second guard rail against errors of our own implementation, such as a render path that came to fetch a file or to start a program. It is not a defence against a compromised dependency or against hostile code inside the executable: Node's documentation calls its permission model a seat belt for trusted code, and says it is not a security boundary against intentional misuse or a compromised process. It applies to a released executable and to the Nix package made from one, and not to the bundle run under node, to the studio or to a development build. File reads and writes stay as wide as the person who ran the command."
+    status: implemented
+    threats:
+      - th-pdf
   - id: th-oversize-mitigation
     title: ""
     prose: The size is measured in UTF-8 bytes before a parser sees the text, against `readLimits.maxTextBytes`, which is 8 MiB and about forty-five times the largest file this repository vendors. Past it the read comes back as `ExceededReadLimit` naming the bound and what it had measured. A generated text one byte over the bound gates it in `read-limits.spec.ts`, since committing megabytes to prove a size bound would be the wrong trade.

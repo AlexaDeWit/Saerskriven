@@ -97,11 +97,11 @@
             "globals": [
               {
                 "name": "localStorage",
-                "message": "node leaves this undefined, though @types/node declares it and the deno-compiled executable defines it (CODING.md, Build targets)."
+                "message": "the development runtime leaves this undefined, though @types/node declares it, and a read of it in the executable writes a warning to standard error (CODING.md, Build targets)."
               },
               {
                 "name": "sessionStorage",
-                "message": "node leaves this undefined, though @types/node declares it and the deno-compiled executable defines it (CODING.md, Build targets)."
+                "message": "the development runtime leaves this undefined, though @types/node declares it and the executable's runtime defines it (CODING.md, Build targets)."
               },
               {
                 "name": "importScripts",
