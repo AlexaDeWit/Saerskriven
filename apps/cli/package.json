@@ -8,7 +8,7 @@
     "The build copies the Typst module out of node_modules, the pinned fonts out of the flake, and the resvg and brotli modules out of the resvg-wasm and brotli-wasm projects' outputs into dist/assets. The executor default names the fonts variable, and the build adds those two outputs. The packaging script embeds that directory's files in the executable.",
     "The typecheck writes declarations under out-tsc. The build writes only the bundle and its runtime assets under dist.",
     "The build overrides the executor default's tsConfig with tsconfig.esbuild.json, which extends tsconfig.app.json and widens lib alone, so the lib that resolves WebAssembly for the workspace sources it compiles stays out of the typecheck's program. The reason and the measurement are in that file.",
-    "The test target depends on build because main.spec.ts and mcp-session.spec.ts run dist/saer.js, and it hashes all of dist (CODING.md, Build targets). The compiled test runs those two and the runner table's own spec, which is what demands the executable compile produced.",
+    "The test target depends on build because main.spec.ts and mcp-session.spec.ts run dist/saer.js, and it hashes all of dist (CODING.md, Build targets). The compiled test runs those two, the runner table's own spec, which is what demands the executable compile produced, and the restriction spec, which packages a probe through scripts/sea-executable.sh and so hashes that script and the pins it reads.",
     "The compile target hashes its bundle, packaging script, toolchain, fixture, and host target. Nx stores the gitignored dist/cli directory as its output."
   ],
   "nx": {
@@ -149,6 +149,19 @@
           {
             "env": "CI"
           },
+          "{workspaceRoot}/scripts/sea-executable.sh",
+          {
+            "env": "SAERSKRIVEN_SEA_NODE"
+          },
+          {
+            "env": "SAERSKRIVEN_NODE_RUNTIMES"
+          },
+          {
+            "env": "SAERSKRIVEN_RCODESIGN"
+          },
+          {
+            "env": "SAERSKRIVEN_UNSHARE"
+          },
           {
             "dependentTasksOutputFiles": "apps/cli/dist/**/*",
             "transitive": false
@@ -160,7 +173,7 @@
         ],
         "options": {
           "cwd": "apps/cli",
-          "command": "vitest run src/runners.fixtures.spec.ts src/main.spec.ts src/mcp-session.spec.ts",
+          "command": "vitest run src/runners.fixtures.spec.ts src/main.spec.ts src/mcp-session.spec.ts src/restriction.spec.ts",
           "env": {
             "SAERSKRIVEN_COMPILED_RUNNER": "required"
           }
