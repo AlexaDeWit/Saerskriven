@@ -76,10 +76,11 @@
         # The official Node binary each executable is built on, one entry per
         # target scripts/package-cli.sh builds, with the hash its release's
         # SHASUMS256.txt carries. The URL version is packagingNode's, because
-        # `--build-sea` injects only into a binary of its own version: a
-        # nixpkgs bump moves all four URLs while the hashes stay behind and
-        # the build fails on a mismatch. Renovate does not know this fetch:
-        # replace the hashes by hand, per docs/build.md.
+        # Node requires the binary that builds a single executable and the
+        # binary it injects into to be one version: a nixpkgs bump moves all
+        # four URLs while the hashes stay behind and the build fails on a
+        # mismatch. Renovate does not know this fetch: replace the hashes by
+        # hand, per docs/build.md.
         nodeRuntimeVersion = packagingNode.version;
 
         nodeRuntimePins = {
@@ -104,10 +105,15 @@
         nodeDist = "https://nodejs.org/dist/v${nodeRuntimeVersion}";
 
         # Node publishes the Windows binary bare and every other platform's
-        # inside an archive, of which the build takes bin/node alone.
+        # inside an archive, of which the build takes bin/node alone. The bare
+        # binary's URL ends in node.exe whatever the version, and a store path
+        # is its name and hash alone, so the name carries the version: a hash
+        # left stale after a bump then misses the store and fails the fetch,
+        # where the old path would have answered with the old binary.
         nodeRuntime = { platform, hash }:
           if platform == "win-x64" then
             pkgs.fetchurl {
+              name = "node-${nodeRuntimeVersion}-win-x64.exe";
               url = "${nodeDist}/win-x64/node.exe";
               inherit hash;
             }

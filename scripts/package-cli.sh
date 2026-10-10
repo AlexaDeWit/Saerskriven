@@ -64,9 +64,10 @@ readonly repeat_staged="${scratch}/repeat"
 stage_into "${staged}"
 stage_into "${repeat_staged}"
 
-# The repeat tree differs in every time and mode, so a build that reads
-# either into its output fails the comparison below.
+# The repeat tree differs in the time and mode of every file and directory,
+# so a build that reads either into its output fails the comparison below.
 find "${repeat_staged}" -type f -exec chmod 600 -- {} +
+find "${repeat_staged}" -type d -exec chmod 700 -- {} +
 find "${repeat_staged}" -depth -exec touch -m -d '@1000000000' -- {} +
 
 rm -rf -- "${out_dir}"

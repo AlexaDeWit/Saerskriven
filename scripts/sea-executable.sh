@@ -49,8 +49,16 @@ trap 'rm -rf -- "${scratch}"' EXIT
 
 # Keys and paths are relative to the tree, so no host path reaches the
 # output, and sorted, so the listing order of a directory does not either.
+# A key is the path as written, so a name is held to plain characters.
 assets='{}'
 if [ -d "${tree}/assets" ]; then
+  stray="$(cd -- "${tree}" &&
+    LC_ALL=C find assets -name '*[!A-Za-z0-9._-]*' -print -quit)"
+  if [ -n "${stray}" ]; then
+    echo "refusing the asset '${stray}': a name may hold only letters," >&2
+    echo "digits, '.', '_' and '-'." >&2
+    exit 1
+  fi
   assets="$(cd -- "${tree}" && find assets -type f | LC_ALL=C sort |
     jq -R . | jq -s 'map({ (.): . }) | add // {}')"
 fi
@@ -114,8 +122,8 @@ chmod 755 -- "${output}"
 # lines are shown only where it fails.
 case "${target}" in
   *-apple-darwin)
-    if ! signing="$("${SAERSKRIVEN_RCODESIGN}" sign --binary-identifier saer \
-      -- "${output}" 2>&1)"; then
+    if ! signing="$("${SAERSKRIVEN_UNSHARE}" -rn "${SAERSKRIVEN_RCODESIGN}" \
+      sign --binary-identifier saer -- "${output}" 2>&1)"; then
       echo "${signing}" >&2
       exit 1
     fi
