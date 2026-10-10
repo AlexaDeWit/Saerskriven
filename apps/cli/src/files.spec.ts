@@ -1,24 +1,12 @@
 import { Either } from 'effect';
-import { existsSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { scratchDirectory } from './cli.fixtures.js';
-import { createPrivateFile, readTextFile, writeFile } from './files.js';
+import { readTextFile, writeFile } from './files.js';
 
 const directory = scratchDirectory('files');
 
 describe('text files at the edge', () => {
-  it('replaces a symbolic link with a private file, leaving its target alone', () => {
-    const target = join(directory, 'target.txt');
-    const link = join(directory, 'link.txt');
-    writeFileSync(target, 'untouched');
-    symlinkSync(target, link);
-    expect(createPrivateFile(link, 'secret')).toEqual(Either.right(undefined));
-    expect([readFileSync(target, 'utf8'), readFileSync(link, 'utf8')]).toEqual([
-      'untouched',
-      'secret',
-    ]);
-  });
-
   it('writes a text and reads back what it wrote', () => {
     const path = join(directory, 'written.txt');
     expect(writeFile(path, 'Særskriven\n')).toEqual(Either.right(undefined));

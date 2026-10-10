@@ -15,16 +15,14 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { revisionOf } from './revision.js';
 
 /**
- * What the host adds to the root for one call. `Pinned` and `OverHttp` are a
- * server that never asks, and `Unasked` one that follows the host on a call
- * that stayed under the root. The rest are a call that left it: the host
- * declares no roots, its answer carried no list, its list held more entries
- * than the server reads, so none of them was read, or it listed these real
- * paths.
+ * What the host adds to the root for one call. `Pinned` is a server that
+ * never asks, and `Unasked` one that follows the host on a call that stayed
+ * under the root. The rest are a call that left it: the host declares no
+ * roots, its answer carried no list, its list held more entries than the
+ * server reads, so none of them was read, or it listed these real paths.
  */
 export type HostDirectories = Data.TaggedEnum<{
   Pinned: {};
-  OverHttp: {};
   Unasked: {};
   Undeclared: {};
   Unanswered: {};
@@ -98,9 +96,9 @@ export type ReadModelFile = {
 
 /**
  * Whether a call may leave the root: `host` for a directory the host lists,
- * and never for a root that was `pinned` or a server reached over `http`.
+ * and never for a root that was `pinned`.
  */
-export type Reach = 'host' | 'pinned' | 'http';
+export type Reach = 'host' | 'pinned';
 
 /**
  * What the `mcp` invocation asked the server to work over. A request naming
@@ -295,7 +293,6 @@ function defaulting(
 const hostAsOpened: Readonly<Record<Reach, HostDirectories>> = {
   host: HostDirectories.Unasked(),
   pinned: HostDirectories.Pinned(),
-  http: HostDirectories.OverHttp(),
 };
 
 function permittedDirectories(workspace: ModelWorkspace): readonly string[] {
@@ -319,7 +316,6 @@ function hostLines(host: HostDirectories): readonly string[] {
     Pinned: () => [
       'The server was started with --root, so it reads that directory alone.',
     ],
-    OverHttp: () => ['Over HTTP the server reads its root alone.'],
     Unasked: () => [],
     Undeclared: () => [
       'The host lists no directories, so the server reads its root alone.',

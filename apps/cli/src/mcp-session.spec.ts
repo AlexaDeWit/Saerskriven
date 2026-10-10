@@ -34,7 +34,6 @@ import {
   readFileSync,
   realpathSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -43,14 +42,7 @@ import { readAnyFormat } from '@saerskriven/formats';
 import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
 import { Either } from 'effect';
 import { join } from 'node:path';
-import {
-  hostBlindServers,
-  httpProcess,
-  sessionOpeners,
-  stdioOpener,
-  type SessionHost,
-  type SessionOpener,
-} from './mcp-session.fixtures.js';
+import { openSession, type SessionHost } from './mcp-session.fixtures.js';
 import {
   ran,
   runners,
@@ -70,11 +62,11 @@ const dragonBytes = readFileSync(
 
 const retitled = 'A title written through saer_edit';
 
-const scripted = async (opener: SessionOpener, runner: Runner, era: Era) => {
+const scripted = async (runner: Runner, era: Era) => {
   const root = mkdtempSync(join(tmpdir(), 'saerskriven-cli-session-'));
   try {
     writeFileSync(join(root, 'dragon.json'), dragonBytes);
-    const session = await opener.open(
+    const session = await openSession(
       runner,
       ['mcp', '--root', root, '--file', 'dragon.json'],
       era,
@@ -186,391 +178,383 @@ const hosted = () => {
 
 for (const runner of runners) {
   const register = runner.absence === undefined ? describe : describe.skip;
-  for (const opener of sessionOpeners) {
-    register(
-      titleOf(
-        runner,
-        `the scripted session against saer mcp over ${opener.name}`,
-      ),
-      () => {
-        for (const era of eras) {
-          it(`inspects, draws, shares, searches, edits a threat and reads it back in the ${era} era`, async () => {
-            const run = await scripted(opener, runner, era);
-            const written = editOf(run.edited);
-            const [image] = imagesOf(run.drawn);
-            const drawn = structuredOf(run.drawn, renderDiagramResultSchema);
-            const opening = run.results.flatMap((result) =>
-              proseOf(result).prose.map((text) => text.split('\n')[0]),
-            );
+  register(
+    titleOf(runner, 'the scripted session against saer mcp'),
+    () => {
+      for (const era of eras) {
+        it(`inspects, draws, shares, searches, edits a threat and reads it back in the ${era} era`, async () => {
+          const run = await scripted(runner, era);
+          const written = editOf(run.edited);
+          const [image] = imagesOf(run.drawn);
+          const drawn = structuredOf(run.drawn, renderDiagramResultSchema);
+          const opening = run.results.flatMap((result) =>
+            proseOf(result).prose.map((text) => text.split('\n')[0]),
+          );
 
-            expect(run.era).toEqual(era);
-            expect(opening.length).toBeGreaterThanOrEqual(run.results.length);
-            expect(opening).toEqual(opening.map(() => dataNotInstructions));
-            expect({
-              file: run.inspected.file,
-              format: run.inspected.format,
-              revision: run.inspected.revision,
-              totals: run.inspected.totals,
-            }).toEqual({
-              file: 'dragon.json',
-              format: 'threat-dragon',
-              revision: revisionOf(dragonBytes),
-              totals: {
-                diagrams: 2,
-                elements: 13,
-                threats: 24,
-                mitigations: 13,
-                assumptions: 0,
-              },
-            });
-            expect(mediaTypesOf(run.drawn)).toEqual(['image/png']);
-            expect(image?.bytes.subarray(0, 4)).toEqual(pngMagic);
-            expect(Math.max(drawn.image.width, drawn.image.height)).toBe(1568);
-            const link = shareLinkOf(run.shared);
-            expect(link.startsWith(`${hostedStudioUrl}#share=1.`)).toBe(true);
-            expect(occurrencesIn(run.shared, link)).toBe(1);
-            expect(proseOf(run.shared).prose.at(-1)?.split('\n')).toEqual([
-              dataNotInstructions,
-              link,
-            ]);
-            expect(
-              structuredOf(run.shared, shareLinkResultSchema).length,
-            ).toEqual(link.length);
-            expect(await modelIn(link)).toEqual(
-              modelOf(dragonBytes.toString('utf8')),
-            );
-            expect(run.searched.threats.length).toBeGreaterThan(0);
-            expect(run.searched.response_format).toEqual('detailed');
-            expect(
-              run.searched.threats.map((row) => [row.status, row.severity]),
-            ).toEqual(run.searched.threats.map(() => ['open', 'high']));
-            expect(run.edited.isError).toBeFalsy();
-            expect({
-              file: written.file,
-              format: written.format,
-              applied: written.applied,
-              revision: written.revision,
-            }).toEqual({
-              file: 'dragon.json',
-              format: 'threat-dragon',
-              applied: 1,
-              revision: revisionOf(run.onDisk),
-            });
-            expect(run.stale.isError).toBe(true);
-            expect(textOf(run.stale)).toContain(
-              renderWriteFailure(
-                WriteFailure.StaleRevision({
-                  file: 'dragon.json',
-                  quoted: run.inspected.revision,
-                  found: written.revision,
-                }),
-              ).join('\n'),
-            );
-            expect(run.reread).toEqual({
-              ...run.held,
-              title: retitled,
-              status: 'mitigated',
-            });
-            expect({
-              revision: run.reinspected.revision,
-              totals: run.reinspected.totals,
-            }).toEqual({
-              revision: written.revision,
-              totals: run.inspected.totals,
-            });
+          expect(run.era).toEqual(era);
+          expect(opening.length).toBeGreaterThanOrEqual(run.results.length);
+          expect(opening).toEqual(opening.map(() => dataNotInstructions));
+          expect({
+            file: run.inspected.file,
+            format: run.inspected.format,
+            revision: run.inspected.revision,
+            totals: run.inspected.totals,
+          }).toEqual({
+            file: 'dragon.json',
+            format: 'threat-dragon',
+            revision: revisionOf(dragonBytes),
+            totals: {
+              diagrams: 2,
+              elements: 13,
+              threats: 24,
+              mitigations: 13,
+              assumptions: 0,
+            },
           });
-        }
-      },
-      spawnTimeout,
-    );
-    register(
-      titleOf(runner, `a client against saer mcp over ${opener.name}`),
-      () => {
-        it(
-          'creates, reads, patches and clears security properties through the transport',
-          async () => {
-            const root = mkdtempSync(
-              join(tmpdir(), 'saerskriven-mcp-properties-'),
-            );
-            const file = 'model.yaml';
-            const session = await opener.open(
-              runner,
-              ['mcp', '--root', root],
-              'modern',
-            );
-            try {
-              const created = await session.client.callTool({
-                name: 'saer_create',
-                arguments: { file, title: 'Security properties' },
-              });
-              expect(created.isError).toBeFalsy();
-              const revision = readingOf(
-                await session.client.callTool({
-                  name: 'saer_inspect',
-                  arguments: { file },
-                }),
-              ).revision;
-              const added = await session.client.callTool({
-                name: 'saer_edit',
-                arguments: {
-                  file,
-                  revision,
-                  edits: [
-                    { op: 'add_diagram', diagram: 'diagram', title: 'System' },
-                    {
-                      op: 'add_element',
-                      diagram: 'diagram',
-                      element: {
-                        kind: 'actor',
-                        id: 'caller',
-                        name: 'Caller',
-                        placement: 'auto',
-                        providesAuthentication: false,
-                      },
-                    },
-                    {
-                      op: 'add_element',
-                      diagram: 'diagram',
-                      element: {
-                        kind: 'trust-boundary',
-                        id: 'boundary',
-                        name: 'Boundary',
-                        shape: {
-                          kind: 'box',
-                          position: { x: 0, y: 0 },
-                          size: { width: 200, height: 200 },
-                        },
-                        containedElements: ['caller'],
-                        crossingFlows: [],
-                      },
-                    },
-                    {
-                      op: 'add_element',
-                      diagram: 'diagram',
-                      element: {
-                        kind: 'flow',
-                        id: 'flow',
-                        name: 'Traffic',
-                        source: { kind: 'attached', element: 'caller' },
-                        target: { kind: 'free', position: { x: 300, y: 100 } },
-                        bidirectional: true,
-                        protocol: '',
-                        isEncrypted: false,
-                        trustBoundaryIds: ['boundary'],
-                      },
-                    },
-                  ],
-                },
-              });
-              expect(added.isError).toBeFalsy();
-              const found = await session.client.callTool({
-                name: 'saer_search_elements',
-                arguments: {
-                  file,
-                  element: 'flow',
-                  response_format: 'detailed',
-                },
-              });
-              expect(
-                structuredOf(found, searchElementsResultSchema).elements,
-              ).toMatchObject([
-                {
-                  id: 'flow',
-                  protocol: '',
-                  isEncrypted: false,
-                  bidirectional: true,
-                  trustBoundaryIds: ['boundary'],
-                },
-              ]);
-              expect(textOf(found)).toContain('isEncrypted: false');
-              const changed = await session.client.callTool({
-                name: 'saer_edit',
-                arguments: {
-                  file,
-                  revision: editOf(added).revision,
-                  edits: [
-                    {
-                      op: 'set_element_properties',
-                      element: 'flow',
-                      properties: { kind: 'flow', protocol: 'HTTPS' },
-                      unset: ['isEncrypted'],
-                    },
-                  ],
-                },
-              });
-              expect(changed.isError).toBeFalsy();
-              const saved = readFileSync(join(root, file), 'utf8');
-              const model = Either.getOrThrow(readAnyFormat(saved)).model;
-              const flow = model.diagrams[0].elements.find(
-                (element) => element.id === 'flow',
-              );
-              expect(flow).toMatchObject({
-                protocol: 'HTTPS',
-                bidirectional: true,
-                trustBoundaryIds: ['boundary'],
-              });
-              expect(flow).not.toHaveProperty('isEncrypted');
-              const reread = await session.client.callTool({
-                name: 'saer_search_elements',
-                arguments: {
-                  file,
-                  element: 'flow',
-                  response_format: 'detailed',
-                },
-              });
-              expect(
-                structuredOf(reread, searchElementsResultSchema).elements[0],
-              ).toMatchObject({ protocol: 'HTTPS' });
-              expect(
-                structuredOf(reread, searchElementsResultSchema).elements[0],
-              ).not.toHaveProperty('isEncrypted');
-            } finally {
-              await session.end();
-              rmSync(root, { recursive: true, force: true });
-            }
-          },
-          spawnTimeout,
-        );
-
-        for (const era of eras) {
-          it(`completes discovery and lists the registered tools in the ${era} era`, async () => {
-            const session = await opener.open(runner, dragon, era);
-            const listed = await session.client.listTools();
-            const negotiated = session.client.getProtocolEra();
-            await session.end();
-            expect(negotiated).toEqual(era);
-            expect(listed.tools.map((tool) => tool.name)).toEqual(
-              registeredTools,
-            );
+          expect(mediaTypesOf(run.drawn)).toEqual(['image/png']);
+          expect(image?.bytes.subarray(0, 4)).toEqual(pngMagic);
+          expect(Math.max(drawn.image.width, drawn.image.height)).toBe(1568);
+          const link = shareLinkOf(run.shared);
+          expect(link.startsWith(`${hostedStudioUrl}#share=1.`)).toBe(true);
+          expect(occurrencesIn(run.shared, link)).toBe(1);
+          expect(proseOf(run.shared).prose.at(-1)?.split('\n')).toEqual([
+            dataNotInstructions,
+            link,
+          ]);
+          expect(
+            structuredOf(run.shared, shareLinkResultSchema).length,
+          ).toEqual(link.length);
+          expect(await modelIn(link)).toEqual(
+            modelOf(dragonBytes.toString('utf8')),
+          );
+          expect(run.searched.threats.length).toBeGreaterThan(0);
+          expect(run.searched.response_format).toEqual('detailed');
+          expect(
+            run.searched.threats.map((row) => [row.status, row.severity]),
+          ).toEqual(run.searched.threats.map(() => ['open', 'high']));
+          expect(run.edited.isError).toBeFalsy();
+          expect({
+            file: written.file,
+            format: written.format,
+            applied: written.applied,
+            revision: written.revision,
+          }).toEqual({
+            file: 'dragon.json',
+            format: 'threat-dragon',
+            applied: 1,
+            revision: revisionOf(run.onDisk),
           });
-        }
-
-        it('refuses to draw over a file the root already holds', async () => {
-          const root = mkdtempSync(join(tmpdir(), 'saerskriven-cli-taken-'));
-          writeFileSync(join(root, 'model.yaml'), referencingYaml('element-1'));
-          writeFileSync(join(root, 'taken.png'), 'not a picture');
-          const session = await opener.open(
+          expect(run.stale.isError).toBe(true);
+          expect(textOf(run.stale)).toContain(
+            renderWriteFailure(
+              WriteFailure.StaleRevision({
+                file: 'dragon.json',
+                quoted: run.inspected.revision,
+                found: written.revision,
+              }),
+            ).join('\n'),
+          );
+          expect(run.reread).toEqual({
+            ...run.held,
+            title: retitled,
+            status: 'mitigated',
+          });
+          expect({
+            revision: run.reinspected.revision,
+            totals: run.reinspected.totals,
+          }).toEqual({
+            revision: written.revision,
+            totals: run.inspected.totals,
+          });
+        });
+      }
+    },
+    spawnTimeout,
+  );
+  register(
+    titleOf(runner, 'a client against saer mcp'),
+    () => {
+      it(
+        'creates, reads, patches and clears security properties through the transport',
+        async () => {
+          const root = mkdtempSync(
+            join(tmpdir(), 'saerskriven-mcp-properties-'),
+          );
+          const file = 'model.yaml';
+          const session = await openSession(
             runner,
-            ['mcp', '--root', root, '--file', 'model.yaml'],
+            ['mcp', '--root', root],
             'modern',
           );
           try {
-            const result = await session.client.callTool({
-              name: 'saer_render_diagram',
-              arguments: { out: 'taken.png' },
+            const created = await session.client.callTool({
+              name: 'saer_create',
+              arguments: { file, title: 'Security properties' },
             });
-            expect(result.isError).toBe(true);
-            expect(resourceLinksOf(result)).toEqual([]);
-            expect(textOf(result)).toContain('is already there');
-            expect(readFileSync(join(root, 'taken.png'), 'utf8')).toEqual(
-              'not a picture',
+            expect(created.isError).toBeFalsy();
+            const revision = readingOf(
+              await session.client.callTool({
+                name: 'saer_inspect',
+                arguments: { file },
+              }),
+            ).revision;
+            const added = await session.client.callTool({
+              name: 'saer_edit',
+              arguments: {
+                file,
+                revision,
+                edits: [
+                  { op: 'add_diagram', diagram: 'diagram', title: 'System' },
+                  {
+                    op: 'add_element',
+                    diagram: 'diagram',
+                    element: {
+                      kind: 'actor',
+                      id: 'caller',
+                      name: 'Caller',
+                      placement: 'auto',
+                      providesAuthentication: false,
+                    },
+                  },
+                  {
+                    op: 'add_element',
+                    diagram: 'diagram',
+                    element: {
+                      kind: 'trust-boundary',
+                      id: 'boundary',
+                      name: 'Boundary',
+                      shape: {
+                        kind: 'box',
+                        position: { x: 0, y: 0 },
+                        size: { width: 200, height: 200 },
+                      },
+                      containedElements: ['caller'],
+                      crossingFlows: [],
+                    },
+                  },
+                  {
+                    op: 'add_element',
+                    diagram: 'diagram',
+                    element: {
+                      kind: 'flow',
+                      id: 'flow',
+                      name: 'Traffic',
+                      source: { kind: 'attached', element: 'caller' },
+                      target: { kind: 'free', position: { x: 300, y: 100 } },
+                      bidirectional: true,
+                      protocol: '',
+                      isEncrypted: false,
+                      trustBoundaryIds: ['boundary'],
+                    },
+                  },
+                ],
+              },
+            });
+            expect(added.isError).toBeFalsy();
+            const found = await session.client.callTool({
+              name: 'saer_search_elements',
+              arguments: {
+                file,
+                element: 'flow',
+                response_format: 'detailed',
+              },
+            });
+            expect(
+              structuredOf(found, searchElementsResultSchema).elements,
+            ).toMatchObject([
+              {
+                id: 'flow',
+                protocol: '',
+                isEncrypted: false,
+                bidirectional: true,
+                trustBoundaryIds: ['boundary'],
+              },
+            ]);
+            expect(textOf(found)).toContain('isEncrypted: false');
+            const changed = await session.client.callTool({
+              name: 'saer_edit',
+              arguments: {
+                file,
+                revision: editOf(added).revision,
+                edits: [
+                  {
+                    op: 'set_element_properties',
+                    element: 'flow',
+                    properties: { kind: 'flow', protocol: 'HTTPS' },
+                    unset: ['isEncrypted'],
+                  },
+                ],
+              },
+            });
+            expect(changed.isError).toBeFalsy();
+            const saved = readFileSync(join(root, file), 'utf8');
+            const model = Either.getOrThrow(readAnyFormat(saved)).model;
+            const flow = model.diagrams[0].elements.find(
+              (element) => element.id === 'flow',
             );
+            expect(flow).toMatchObject({
+              protocol: 'HTTPS',
+              bidirectional: true,
+              trustBoundaryIds: ['boundary'],
+            });
+            expect(flow).not.toHaveProperty('isEncrypted');
+            const reread = await session.client.callTool({
+              name: 'saer_search_elements',
+              arguments: {
+                file,
+                element: 'flow',
+                response_format: 'detailed',
+              },
+            });
+            expect(
+              structuredOf(reread, searchElementsResultSchema).elements[0],
+            ).toMatchObject({ protocol: 'HTTPS' });
+            expect(
+              structuredOf(reread, searchElementsResultSchema).elements[0],
+            ).not.toHaveProperty('isEncrypted');
           } finally {
             await session.end();
             rmSync(root, { recursive: true, force: true });
           }
-        });
+        },
+        spawnTimeout,
+      );
 
-        it('refuses a file outside the root as a tool result', async () => {
-          const session = await opener.open(
-            runner,
-            ['mcp', '--root', 'test-data'],
-            'modern',
-          );
-          const result = await session.client.callTool({
-            name: 'saer_inspect',
-            arguments: { file: '../package.json' },
-          });
+      for (const era of eras) {
+        it(`completes discovery and lists the registered tools in the ${era} era`, async () => {
+          const session = await openSession(runner, dragon, era);
+          const listed = await session.client.listTools();
+          const negotiated = session.client.getProtocolEra();
           await session.end();
-          expect(result.isError).toBe(true);
-          expect(textOf(result)).toContain(
-            'is outside the root this server may read',
+          expect(negotiated).toEqual(era);
+          expect(listed.tools.map((tool) => tool.name)).toEqual(
+            registeredTools,
           );
         });
-      },
-      spawnTimeout,
-    );
-    register(
-      titleOf(
-        runner,
-        `the resources and prompts of saer mcp over ${opener.name}`,
-      ),
-      () => {
-        for (const era of eras) {
-          it(`reads the register and a diagram, completes it, and renders both prompts in the ${era} era`, async () => {
-            const session = await opener.open(runner, dragon, era);
-            try {
-              const listed = await session.client.listResources();
-              const registerRead = await session.client.readResource({
-                uri: 'saer://register',
-              });
-              const diagram = await session.client.readResource({
-                uri: 'saer://diagram/0',
-              });
-              const completed = await session.client.complete({
-                ref: { type: 'ref/resource', uri: 'saer://diagram/{diagram}' },
-                argument: { name: 'diagram', value: '' },
-              });
-              const prompts = await session.client.listPrompts();
-              const stride = await session.client.getPrompt({
-                name: 'stride_pass',
-                arguments: { element: 'Booking service' },
-              });
-              const review = await session.client.getPrompt({
-                name: 'review_model',
-              });
-              const [image] = blobsOf(diagram);
-              const opening = [
-                ...resourceProseOf(registerRead).prose,
-                ...resourceProseOf(diagram).prose,
-                promptProseOf(stride).prose[0] ?? '',
-                promptProseOf(review).prose[0] ?? '',
-              ].map((text) => text.split('\n')[0]);
+      }
 
-              expect(session.client.getProtocolEra()).toEqual(era);
-              expect(listed.resources.map((resource) => resource.uri)).toEqual([
-                'saer://register',
-                'saer://diagram/0',
-                'saer://diagram/1',
-              ]);
-              expect({
-                ttlMs: listed.ttlMs,
-                cacheScope: listed.cacheScope,
-              }).toEqual(
-                era === 'modern'
-                  ? { ttlMs: 0, cacheScope: 'private' }
-                  : { ttlMs: undefined, cacheScope: undefined },
-              );
-              expect(opening).toEqual(opening.map(() => dataNotInstructions));
-              expect(opening.length).toBe(4);
-              expect(resourceProseOf(registerRead).prose[0]).toContain(
-                '# Clinic booking threat register',
-              );
-              expect(image?.mimeType).toEqual('image/png');
-              expect(image?.bytes.subarray(0, 4)).toEqual(pngMagic);
-              expect(completed.completion.values).toEqual(['0', '1']);
-              expect(prompts.prompts.map((prompt) => prompt.name)).toEqual(
-                registeredPrompts,
-              );
-              expect([stride.messages.length, review.messages.length]).toEqual([
-                2, 2,
-              ]);
-            } finally {
-              await session.end();
-            }
+      it('refuses to draw over a file the root already holds', async () => {
+        const root = mkdtempSync(join(tmpdir(), 'saerskriven-cli-taken-'));
+        writeFileSync(join(root, 'model.yaml'), referencingYaml('element-1'));
+        writeFileSync(join(root, 'taken.png'), 'not a picture');
+        const session = await openSession(
+          runner,
+          ['mcp', '--root', root, '--file', 'model.yaml'],
+          'modern',
+        );
+        try {
+          const result = await session.client.callTool({
+            name: 'saer_render_diagram',
+            arguments: { out: 'taken.png' },
           });
+          expect(result.isError).toBe(true);
+          expect(resourceLinksOf(result)).toEqual([]);
+          expect(textOf(result)).toContain('is already there');
+          expect(readFileSync(join(root, 'taken.png'), 'utf8')).toEqual(
+            'not a picture',
+          );
+        } finally {
+          await session.end();
+          rmSync(root, { recursive: true, force: true });
         }
-      },
-      spawnTimeout,
-    );
-  }
+      });
+
+      it('refuses a file outside the root as a tool result', async () => {
+        const session = await openSession(
+          runner,
+          ['mcp', '--root', 'test-data'],
+          'modern',
+        );
+        const result = await session.client.callTool({
+          name: 'saer_inspect',
+          arguments: { file: '../package.json' },
+        });
+        await session.end();
+        expect(result.isError).toBe(true);
+        expect(textOf(result)).toContain(
+          'is outside the root this server may read',
+        );
+      });
+    },
+    spawnTimeout,
+  );
+  register(
+    titleOf(runner, 'the resources and prompts of saer mcp'),
+    () => {
+      for (const era of eras) {
+        it(`reads the register and a diagram, completes it, and renders both prompts in the ${era} era`, async () => {
+          const session = await openSession(runner, dragon, era);
+          try {
+            const listed = await session.client.listResources();
+            const registerRead = await session.client.readResource({
+              uri: 'saer://register',
+            });
+            const diagram = await session.client.readResource({
+              uri: 'saer://diagram/0',
+            });
+            const completed = await session.client.complete({
+              ref: { type: 'ref/resource', uri: 'saer://diagram/{diagram}' },
+              argument: { name: 'diagram', value: '' },
+            });
+            const prompts = await session.client.listPrompts();
+            const stride = await session.client.getPrompt({
+              name: 'stride_pass',
+              arguments: { element: 'Booking service' },
+            });
+            const review = await session.client.getPrompt({
+              name: 'review_model',
+            });
+            const [image] = blobsOf(diagram);
+            const opening = [
+              ...resourceProseOf(registerRead).prose,
+              ...resourceProseOf(diagram).prose,
+              promptProseOf(stride).prose[0] ?? '',
+              promptProseOf(review).prose[0] ?? '',
+            ].map((text) => text.split('\n')[0]);
+
+            expect(session.client.getProtocolEra()).toEqual(era);
+            expect(listed.resources.map((resource) => resource.uri)).toEqual([
+              'saer://register',
+              'saer://diagram/0',
+              'saer://diagram/1',
+            ]);
+            expect({
+              ttlMs: listed.ttlMs,
+              cacheScope: listed.cacheScope,
+            }).toEqual(
+              era === 'modern'
+                ? { ttlMs: 0, cacheScope: 'private' }
+                : { ttlMs: undefined, cacheScope: undefined },
+            );
+            expect(opening).toEqual(opening.map(() => dataNotInstructions));
+            expect(opening.length).toBe(4);
+            expect(resourceProseOf(registerRead).prose[0]).toContain(
+              '# Clinic booking threat register',
+            );
+            expect(image?.mimeType).toEqual('image/png');
+            expect(image?.bytes.subarray(0, 4)).toEqual(pngMagic);
+            expect(completed.completion.values).toEqual(['0', '1']);
+            expect(prompts.prompts.map((prompt) => prompt.name)).toEqual(
+              registeredPrompts,
+            );
+            expect([stride.messages.length, review.messages.length]).toEqual([
+              2, 2,
+            ]);
+          } finally {
+            await session.end();
+          }
+        });
+      }
+    },
+    spawnTimeout,
+  );
   register(
     titleOf(runner, 'the directories saer mcp reads beyond its root'),
     () => {
       for (const era of eras) {
-        it(`follows the host over stdio where no --root is given, in the ${era} era`, async () => {
+        it(`follows the host where no --root is given, in the ${era} era`, async () => {
           const { host, tally, file, remove } = hosted();
-          const session = await stdioOpener.open(runner, ['mcp'], era, host);
+          const session = await openSession(runner, ['mcp'], era, host);
           try {
             const created = await session.client.callTool({
               name: 'saer_create',
@@ -601,38 +585,33 @@ for (const runner of runners) {
         });
       }
 
-      for (const server of hostBlindServers) {
-        it(`never asks the host over ${server.name}, and reads no answer sent anyway`, async () => {
-          const { host, answer, tally, file, remove } = hosted();
-          const session = await server.opener.open(
-            runner,
-            server.args(host.cwd),
-            'modern',
-            host,
-          );
-          const call = { name: 'saer_create', arguments: { file, title: 'x' } };
-          try {
-            const results = [
-              await session.client.callTool(call),
-              await session.client.request({
-                method: 'tools/call',
-                params: { ...call, inputResponses: { roots: answer } },
-              }),
-            ];
-            expect(results.map((result) => result.isError)).toEqual([
-              true,
-              true,
-            ]);
-            expect({ asked: tally.asked, written: existsSync(file) }).toEqual({
-              asked: 0,
-              written: false,
-            });
-          } finally {
-            await session.end();
-            remove();
-          }
-        });
-      }
+      it('never asks the host where --root is given, and reads no answer sent anyway', async () => {
+        const { host, answer, tally, file, remove } = hosted();
+        const session = await openSession(
+          runner,
+          ['mcp', '--root', host.cwd],
+          'modern',
+          host,
+        );
+        const call = { name: 'saer_create', arguments: { file, title: 'x' } };
+        try {
+          const results = [
+            await session.client.callTool(call),
+            await session.client.request({
+              method: 'tools/call',
+              params: { ...call, inputResponses: { roots: answer } },
+            }),
+          ];
+          expect(results.map((result) => result.isError)).toEqual([true, true]);
+          expect({ asked: tally.asked, written: existsSync(file) }).toEqual({
+            asked: 0,
+            written: false,
+          });
+        } finally {
+          await session.end();
+          remove();
+        }
+      });
     },
     spawnTimeout,
   );
@@ -648,19 +627,17 @@ for (const runner of runners) {
         }).toEqual({ code: 0, out: '', err: '' });
       });
 
-      it('keeps the HTTP token out of both streams and exits 0 on SIGTERM', async () => {
-        const server = await httpProcess(runner, dragon);
-        const token = readFileSync(server.tokenFile, 'utf8');
-        const mode = statSync(server.tokenFile).mode & 0o777;
-        const ended = await server.stop();
-        expect(token.length).toBeGreaterThan(0);
-        expect(mode).toBe(0o600);
-        expect({ code: ended.code, signal: ended.signal }).toEqual({
-          code: 0,
-          signal: null,
+      it('refuses --http as a flag it does not know, serving nothing', () => {
+        const refused = ran(runner, ['mcp', '--http']);
+        expect({
+          code: refused.code,
+          out: refused.out.toString('utf8'),
+          refusal: refused.err.toString('utf8').split('\n')[0],
+        }).toEqual({
+          code: 2,
+          out: '',
+          refusal: "error: unknown option '--http'",
         });
-        expect(ended.out).toEqual('');
-        expect(ended.err).not.toContain(token);
       });
     },
     spawnTimeout,
