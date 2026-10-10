@@ -225,18 +225,6 @@ describe('placing an element', () => {
     expect(modelStore.getState().past).toHaveLength(1);
   });
 
-  it('does not open a name field where the placed box cannot hold it', () => {
-    placeElement(
-      freshElement('actor', { x: 10, y: 20 }, { width: 100, height: 5 }),
-      'pointer',
-      false,
-    );
-
-    const state = modelStore.getState();
-    expect(state.selection).toHaveLength(1);
-    expect(state.inlineEditor).toBeUndefined();
-  });
-
   it('places a curve as one edit through the clicked waypoints', () => {
     placeBoundaryCurve(
       [
@@ -666,6 +654,22 @@ describe('resizeNode', () => {
       },
     });
   });
+
+  it('scales a trust boundary curve to a box 10 across for a smaller typed width', () => {
+    openCanvas([boundaryElement], curvedCanvasModel);
+    const node = laidOutNode(boundaryElement);
+
+    resizeNode(
+      node,
+      { position: node.position, size: { width: 1, height: node.size.height } },
+      3,
+    );
+
+    expect(laidOutNode(boundaryElement)).toMatchObject({
+      position: node.position,
+      size: { width: 10, height: node.size.height },
+    });
+  });
 });
 
 describe('on the diagram switched to', () => {
@@ -679,7 +683,7 @@ describe('on the diagram switched to', () => {
 
   it('places, connects and selects all within that diagram alone', () => {
     const process = freshElement('process', { x: 300, y: 0 });
-    expect(placeElement(process, 'pointer', false)).toBe(true);
+    expect(placeElement(process, 'pointer')).toBe(true);
     connectElements(otherElement, process.id);
 
     const [first, second] = modelStore.getState().present.diagrams;

@@ -76,12 +76,12 @@ describe('box placement gestures', () => {
     });
 
     act(() => {
-      result.current.pointerMove(primaryPointer({ x: 180, y: 140 }, onPane));
+      result.current.pointerMove(primaryPointer({ x: 180, y: 50 }, onPane));
     });
     const shown = boxPreview(result.current);
     expect(shown).toMatchObject({
-      position: { x: 101, y: 81 },
-      size: { width: 78, height: 58 },
+      position: { x: 101, y: 19 },
+      size: { width: 78, height: 60 },
     });
 
     act(() => {
@@ -95,6 +95,22 @@ describe('box placement gestures', () => {
       size: shown?.size,
     });
     expect(modelStore.getState().past).toHaveLength(1);
+  });
+
+  it('keeps the preview of a near-level drag below the press line, measured in screen pixels', () => {
+    const { result } = renderPlacement({ pan: { x: 0, y: 0 }, zoom: 2 });
+
+    act(() => {
+      result.current.pointerDown(primaryPointer({ x: 200, y: 160 }, onPane));
+    });
+    act(() => {
+      result.current.pointerMove(primaryPointer({ x: 400, y: 157 }, onPane));
+    });
+
+    expect(boxPreview(result.current)).toMatchObject({
+      position: { x: 101, y: 81 },
+      size: { width: 98, height: 60 },
+    });
   });
 
   it('stores a pointer placement at three decimals and an Enter placement at one', () => {
@@ -204,12 +220,12 @@ describe('box placement gestures', () => {
         primaryPointer({ x: 300, y: 280 }, { ...onPane, pointerId: 2 }),
       );
       result.current.pointerMove(
-        primaryPointer({ x: 180, y: 140 }, { ...onPane, pointerId: 1 }),
+        primaryPointer({ x: 180, y: 170 }, { ...onPane, pointerId: 1 }),
       );
     });
     expect(boxPreview(result.current)).toMatchObject({
       position: { x: 101, y: 81 },
-      size: { width: 78, height: 58 },
+      size: { width: 78, height: 88 },
     });
 
     act(() => {
@@ -221,7 +237,7 @@ describe('box placement gestures', () => {
 
     act(() => {
       result.current.pointerCancel(
-        primaryPointer({ x: 180, y: 140 }, { ...onPane, pointerId: 1 }),
+        primaryPointer({ x: 180, y: 170 }, { ...onPane, pointerId: 1 }),
       );
     });
     expect(result.current.preview).toBeUndefined();

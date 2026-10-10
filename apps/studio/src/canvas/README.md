@@ -162,9 +162,12 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   message already reports, such as a placement, a rename or a keyboard move,
   announces nothing. React Flow writes its move message before the move lands,
   so `move-message.tsx` writes it once the store holds the move, in the figures
-  Position and size shows. A name a person wrote is quoted through `quoted` in
-  `announcements.ts`, on one line and cut past `nameQuoteLength` (40 grapheme
-  clusters) or `recordQuoteLength` (24).
+  Position and size shows. A key that is refused leaves nothing to show, so it
+  is announced: Delete on a point of a two-point curve, Delete on a free flow
+  end, and an arrow key on a resize control held at its least size. A name a
+  person wrote is quoted through `quoted` in `announcements.ts`, on one line
+  and cut past `nameQuoteLength` (40 grapheme clusters) or `recordQuoteLength`
+  (24).
 - **Activity announcements are hidden on every layout.** The live region keeps
   its text in the accessibility tree without occupying canvas space. Diagram
   changes also announce when focus stays on the switcher.

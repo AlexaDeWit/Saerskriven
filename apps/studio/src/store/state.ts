@@ -134,7 +134,7 @@ const placeholderDocument = {
           outOfScope: false,
           reasonOutOfScope: '',
           position: { x: 40, y: 40 },
-          size: { width: 100, height: 50 },
+          size: { width: 100, height: 60 },
         },
         {
           kind: 'store',
@@ -144,7 +144,7 @@ const placeholderDocument = {
           outOfScope: false,
           reasonOutOfScope: '',
           position: { x: 280, y: 40 },
-          size: { width: 100, height: 50 },
+          size: { width: 100, height: 60 },
         },
         {
           kind: 'flow',

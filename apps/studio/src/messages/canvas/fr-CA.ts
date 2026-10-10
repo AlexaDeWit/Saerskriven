@@ -64,6 +64,7 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
   'source-moved': 'Source déplacée : {flow}.',
   'target-moved': 'Destination déplacée : {flow}.',
   'free-end-kept': 'Une extrémité de flux libre reste où elle est.',
+  'size-kept': 'Un contrôle de redimensionnement ne réduit pas davantage.',
   'position-invalid': 'Entrez des coordonnées de {low} à {high}.',
   'undo-done': 'Annulation effectuée.',
   'redo-done': 'Rétablissement effectué.',
