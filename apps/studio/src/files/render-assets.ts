@@ -2,12 +2,13 @@ import type { PdfAssets } from '@saerskriven/render/pdf';
 import { drawingFace, ledBy } from '@saerskriven/render/png';
 import type { ResvgAssets } from '@saerskriven/render/resvg';
 import { Either } from 'effect';
-import brotliWasmUrl from 'virtual:saerskriven-brotli-wasm?url';
 import resvgWasmUrl from 'virtual:saerskriven-resvg-wasm?url';
 import { renderFaces } from 'virtual:saerskriven-render-faces';
 import typstWasmUrl from 'virtual:saerskriven-typst-wasm?url';
 import { AssetFailure } from '../asset-failure.js';
-import { reasonOf } from '../reason.js';
+import { fetchBytes, once, type Loaded } from './asset-loader.js';
+
+export { loadBrotliModule } from './brotli-asset.js';
 
 type Assets = {
   readonly wasm: Uint8Array;
@@ -18,8 +19,6 @@ type Face = {
   readonly name: string;
   readonly bytes: Uint8Array;
 };
-
-type Loaded<Value> = () => Promise<Either.Either<Value, AssetFailure>>;
 
 const subject = 'this studio build';
 
@@ -49,14 +48,6 @@ export function loadPngAssets(): Promise<
     ),
   );
 }
-
-/**
- * The brotli module a share link is written and read with, fetched once per
- * session after a successful read and shared by every link.
- */
-export const loadBrotliModule: Loaded<Uint8Array> = once(() =>
-  fetchBytes(brotliWasmUrl),
-);
 
 const faces: Loaded<readonly Face[]> = once(() =>
   firstFailureOrAll(
@@ -112,48 +103,4 @@ function firstFailureOrAll<Value>(
     firstFailure,
     Promise.all(loads).then((outcomes) => Either.all(outcomes)),
   ]);
-}
-
-function once<Value>(load: Loaded<Value>): Loaded<Value> {
-  let held: Value | undefined;
-  let loading: Promise<Either.Either<Value, AssetFailure>> | undefined;
-  return async () => {
-    if (held !== undefined) {
-      return Either.right(held);
-    }
-    loading ??= load();
-    const outcome = await loading;
-    if (Either.isRight(outcome)) {
-      held = outcome.right;
-    } else {
-      loading = undefined;
-    }
-    return outcome;
-  };
-}
-
-async function fetchBytes(
-  url: string,
-): Promise<Either.Either<Uint8Array, AssetFailure>> {
-  const response = await guarded(() => fetch(url));
-  if (Either.isLeft(response)) {
-    return Either.left(response.left);
-  }
-  if (!response.right.ok) {
-    return Either.left(
-      AssetFailure.Answered({ url, status: response.right.status }),
-    );
-  }
-  const body = response.right;
-  return guarded(async () => new Uint8Array(await body.arrayBuffer()));
-}
-
-async function guarded<Value>(
-  work: () => Promise<Value>,
-): Promise<Either.Either<Value, AssetFailure>> {
-  try {
-    return Either.right(await work());
-  } catch (cause) {
-    return Either.left(AssetFailure.Unavailable({ reason: reasonOf(cause) }));
-  }
 }

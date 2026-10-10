@@ -2,9 +2,13 @@
 
 Reads and writes Saerskriven's file formats, and imports OTM and TM-BOM. It is
 the only package that maps between the model and the wire packages: it imports
-`@saerskriven/model` and the wire packages, and no other internal package.
+`@saerskriven/model`, the wire packages, and the shared WASM boundary.
 Behavioural detail lives in the TSDoc of the module named beside each part
 below.
+
+The opt-in [`share-link-poc` API](../../docs/share-link-poc.md) compares the
+current encoding with a frozen compact representation and Rust PPMd.
+It does not change the default share writer.
 
 ## Codecs
 

@@ -186,7 +186,10 @@ because its memory follows the window and a larger one shortens no link. Its
 logic crate is [`nix/brotli-wasm/codec`](../nix/brotli-wasm/codec), and its
 export table [`src/lib.rs`](../nix/brotli-wasm/src/lib.rs) names its calls,
 `compress()` and `decompress(maximum)`. `SAERSKRIVEN_BROTLI_WASM` names its
-path.
+path. The same guarded module also exports `compress_ppmd()` and
+`decompress_ppmd(maximum)` for the opt-in
+[compact share-link proof of concept](share-link-poc.md). They share the
+existing input and output buffers and use the locked Rust PPMd crate.
 
 `@saerskriven/formats/brotli` takes the module as bytes from its caller, and
 `brotliWasmAsset` on the `@saerskriven/formats/build-assets` subpath locates

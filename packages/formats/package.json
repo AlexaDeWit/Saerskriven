@@ -36,7 +36,17 @@
       "import": "./src/share-link.ts",
       "default": "./src/share-link.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./ppmd": {
+      "types": "./src/ppmd.ts",
+      "import": "./src/ppmd.ts",
+      "default": "./src/ppmd.ts"
+    },
+    "./share-link-poc": {
+      "types": "./src/share-link-poc.ts",
+      "import": "./src/share-link-poc.ts",
+      "default": "./src/share-link-poc.ts"
+    }
   },
   "dependencies": {
     "@saerskriven/model": "workspace:*",

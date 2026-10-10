@@ -10,9 +10,9 @@
   upstream = "brotli";
   # The logic crate's direct dependencies, part of the ban on unsafe Rust
   # because their macros can expand to unsafe code the forbid does not see.
-  dependencies = [ "brotli" ];
-  exports = [ "input" "compress" "decompress" "output" "output_length" ];
-  description = "Brotli encoder and bounded decoder built from the brotli crate as WebAssembly";
+  dependencies = [ "brotli" "crc32fast" "ppmd-rust" ];
+  exports = [ "input" "compress" "decompress" "compress_ppmd" "decompress_ppmd" "output" "output_length" ];
+  description = "Brotli and experimental PPMd share-link codecs as WebAssembly";
   homepage = "https://github.com/dropbox/rust-brotli";
-  licenses = [ "bsd3" "mit" ];
+  licenses = [ "bsd3" "mit" "cc0" ];
 }

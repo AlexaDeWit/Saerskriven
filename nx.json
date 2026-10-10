@@ -52,6 +52,8 @@
       "{workspaceRoot}/test-data/adversarial/deep-nesting.json"
     ],
     "studioE2eFixtures": [
+      "{workspaceRoot}/test-data/share-links/**/*",
+      "{workspaceRoot}/threat-modelling/saerskriven.yaml",
       "{workspaceRoot}/test-data/otm/**/*",
       "{workspaceRoot}/test-data/every-glyph.model.json",
       "{workspaceRoot}/test-data/accents.model.json",

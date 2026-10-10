@@ -90,7 +90,7 @@ export async function writeShareLink(
   }
   const compressed = await compressBrotli(text, wasm);
   return Either.flatMap(Either.mapLeft(compressed, uncompressed), (bytes) =>
-    linkWithin(`${pageOf(base)}${marker}${encoding}.${base64url(bytes)}`),
+    shareLinkWithin(shareLinkUrl(base, encoding, bytes)),
   );
 }
 
@@ -141,7 +141,7 @@ export async function readShareLink(
     ShareLinkFailure | ReadFailure
   >
 > {
-  const payload = payloadOf(fragment);
+  const payload = shareLinkPayload(fragment);
   if (Either.isLeft(payload)) {
     return Either.left(payload.left);
   }
@@ -150,8 +150,12 @@ export async function readShareLink(
     wasm,
     readLimits.maxTextBytes,
   );
-  return Either.flatMap(Either.mapLeft(inflated, undecoded), (bytes) =>
-    Either.flatMap(textOf(bytes), (text) => saerskrivenYamlCodec.read(text)),
+  return Either.flatMap(
+    Either.mapLeft(inflated, shareInflationFailure),
+    (bytes) =>
+      Either.flatMap(shareLinkText(bytes), (text) =>
+        saerskrivenYamlCodec.read(text),
+      ),
   );
 }
 
@@ -161,6 +165,15 @@ function uncompressed(failure: BrotliFailure): ShareLinkWriteFailure {
       ? failure.sentence
       : `the module answered a compression with ${failure._tag}`,
   });
+}
+
+/** A complete share URL, with the caller's fragment replaced. */
+export function shareLinkUrl(
+  base: string,
+  version: string,
+  bytes: Uint8Array,
+): string {
+  return `${pageOf(base)}${marker}${version}.${base64url(bytes)}`;
 }
 
 function pageOf(base: string): string {
@@ -181,7 +194,8 @@ function base64url(bytes: Uint8Array): string {
     .replaceAll('=', '');
 }
 
-function linkWithin(
+/** Refuses a complete URL beyond the shared link limit. */
+export function shareLinkWithin(
   link: string,
 ): Either.Either<string, ShareLinkWriteFailure> {
   return link.length > shareLinkLimit
@@ -194,8 +208,10 @@ function linkWithin(
     : Either.right(link);
 }
 
-function payloadOf(
+/** Decodes the bounded base64url envelope for one expected encoding. */
+export function shareLinkPayload(
   fragment: string,
+  expected = encoding,
 ): Either.Either<Uint8Array, ShareLinkFailure> {
   if (!isShareLinkFragment(fragment)) {
     return Either.left(ShareLinkFailure.NotAShareLink());
@@ -219,7 +235,7 @@ function payloadOf(
     );
   }
   const prefix = link.slice(0, dot);
-  return prefix === encoding
+  return prefix === expected
     ? bytesOf(link.slice(dot + 1))
     : Either.left(ShareLinkFailure.UnknownEncoding({ prefix }));
 }
@@ -252,7 +268,10 @@ function binaryBytes(binary: string): Uint8Array {
   return bytes;
 }
 
-function undecoded(failure: BrotliFailure): ShareLinkFailure | ReadFailure {
+/** Maps a bounded compression failure to a share or read failure. */
+export function shareInflationFailure(
+  failure: BrotliFailure,
+): ShareLinkFailure | ReadFailure {
   return BrotliFailure.$match(failure, {
     PastMaximum: ({ maximum }) =>
       exceededReadLimit('maxTextBytes', maximum + 1),
@@ -265,7 +284,10 @@ function undecoded(failure: BrotliFailure): ShareLinkFailure | ReadFailure {
   });
 }
 
-function textOf(bytes: Uint8Array): Either.Either<string, ReadFailure> {
+/** Decodes share content as strict UTF-8. */
+export function shareLinkText(
+  bytes: Uint8Array,
+): Either.Either<string, ReadFailure> {
   return Either.try({
     try: () => decoder.decode(bytes),
     catch: () =>

@@ -17,11 +17,16 @@ import {
   type ThreatDragonThreat,
 } from '@saerskriven/wire-threat-dragon';
 import { Either } from 'effect';
-import { modelFrom, parseWire, ReadFailure, type ReadResult } from './codec.js';
+import {
+  modelFrom,
+  parseWire,
+  type ReadFailure,
+  type ReadResult,
+} from './codec.js';
 import type { DivergenceDetail } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { idsHeld, mitigationsFromText } from './mitigation-text.js';
-import { parseWithinLimits } from './read-limits.js';
+import { parseJson } from './parse-json.js';
 import {
   actorProperties,
   boundaryProperties,
@@ -72,15 +77,6 @@ type ThreatEntry = {
   readonly elements: readonly string[];
   readonly number: number;
 };
-
-function parseJson(text: string): Either.Either<unknown, ReadFailure> {
-  return parseWithinLimits(text, (bounded) =>
-    Either.try({
-      try: () => JSON.parse(bounded) as unknown,
-      catch: (error) => ReadFailure.MalformedText({ message: String(error) }),
-    }),
-  );
-}
 
 function mapDocument(
   given: unknown,

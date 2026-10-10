@@ -1,15 +1,8 @@
-//! The module's two buffers, which only this crate allocates, sizes and
-//! frees. The caller writes its bytes at the address `input` answers and
-//! copies the answer from the address and length `output` and `output_length`
-//! answer, so no address the caller holds is ever read here.
-//!
-//! Every call but the two getters, `output` and `output_length`, empties the
-//! output buffer before it does anything else, so after a call that trapped
-//! they answer nothing an earlier call wrote.
+//! Owned buffers shared by the Brotli and PPMd calls.
 
 use std::cell::RefCell;
 
-use crate::codec;
+use crate::{codec, ppmd};
 
 thread_local! {
     static INPUT: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
@@ -40,6 +33,18 @@ pub fn decompress(maximum: usize) -> u32 {
     answer(INPUT.with_borrow(|held| codec::inflated(held, maximum)))
 }
 
+/// Encodes the input as the fixed PPMd profile for experimental share links.
+pub fn compress_ppmd() -> u32 {
+    empty_output();
+    answer(INPUT.with_borrow(|held| ppmd::compressed(held)))
+}
+
+/// Decodes a PPMd frame within the caller's output bound.
+pub fn decompress_ppmd(maximum: usize) -> u32 {
+    empty_output();
+    answer(INPUT.with_borrow(|held| ppmd::inflated(held, maximum)))
+}
+
 /// The output buffer's address.
 pub fn output() -> *const u8 {
     OUTPUT.with_borrow(|held| held.as_ptr())
@@ -50,7 +55,6 @@ pub fn output_length() -> usize {
     OUTPUT.with_borrow(Vec::len)
 }
 
-// Replaced by an empty buffer rather than cleared, so its memory is freed.
 fn empty_output() {
     OUTPUT.set(Vec::new());
 }

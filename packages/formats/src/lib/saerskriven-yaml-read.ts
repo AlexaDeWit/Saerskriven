@@ -69,7 +69,7 @@ import { undeclaredDivergences } from './undeclared.js';
 export function readSaerskrivenYaml(
   text: string,
 ): Either.Either<ReadResult<typeof saerskrivenYamlV2WireSchema>, ReadFailure> {
-  return Either.flatMap(parseYaml(text), mapDocument);
+  return Either.flatMap(parseYaml(text), readSaerskrivenYamlValue);
 }
 
 /**
@@ -82,7 +82,8 @@ export function readSaerskrivenYamlDocument(
   return modelFrom(toModelInput(currentSaerskrivenYaml(document).document));
 }
 
-function mapDocument(
+/** An already bounded value through native migration, validation, and divergence reporting. */
+export function readSaerskrivenYamlValue(
   given: unknown,
 ): Either.Either<ReadResult<typeof saerskrivenYamlV2WireSchema>, ReadFailure> {
   return Either.flatMap(
