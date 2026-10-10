@@ -6,7 +6,6 @@ import {
   lstatSync,
   readFileSync,
   realpathSync,
-  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
@@ -45,24 +44,6 @@ export function writeFile(
   return Either.try({
     try: () => {
       writeFileSync(path, content);
-    },
-    catch: (error) => `cannot write ${path}: ${reasonOf(error)}`,
-  });
-}
-
-/**
- * The text written to a new file only its owner can read, after removing
- * whatever was at the path. A symbolic link there is removed itself, so the
- * text never lands in the file it pointed at.
- */
-export function createPrivateFile(
-  path: string,
-  text: string,
-): Either.Either<void, string> {
-  return Either.try({
-    try: () => {
-      rmSync(path, { force: true });
-      writeFileSync(path, text, { flag: 'wx', mode: 0o600 });
     },
     catch: (error) => `cannot write ${path}: ${reasonOf(error)}`,
   });

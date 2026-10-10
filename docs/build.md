@@ -18,6 +18,11 @@ to validate `test-data/saerskriven/two-diagrams.yaml`, once each to render
 that model to PDF and to PNG, and once to write it as a share link. Deno is a
 packaging tool only. Node stays the development and test runtime.
 
+The script compiles the executable with three permissions: to read files, to
+write files and to read the environment. It grants no network access and no
+permission to start another program, so the runtime refuses both, and no
+command needs either.
+
 The `test-compiled` target puts the CLI's scenario table through that
 executable. It hashes the `compile` output, and Nx stores and restores
 `dist/cli` even though git ignores the directory. CI builds the whole matrix on

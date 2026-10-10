@@ -82,6 +82,34 @@ export function text(runner: Runner, args: readonly string[]) {
   };
 }
 
+const moduleReference =
+  /(?:(?<required>require\(\s*)|\bfrom\s*|\bimport\s*\(?\s*)["'](?:node:)?(?<module>[a-z_\d]+)(?:\/[a-z_\d/]+)?["']/gu;
+
+/**
+ * The modules a bundle's text names, each without its `node:` prefix and its
+ * subpath, in two sets by how the reference is written: `required` for a
+ * `require` call, which esbuild writes as `__require` for a CommonJS
+ * dependency, and `imported` for a static, side-effect, re-exporting or
+ * dynamic import. The text is matched and not parsed, so a reference inside
+ * a comment or a string counts too.
+ */
+export function modulesNamedIn(bundle: string): {
+  readonly imported: ReadonlySet<string>;
+  readonly required: ReadonlySet<string>;
+} {
+  const references = [...bundle.matchAll(moduleReference)].map((match) => ({
+    name: match.groups?.module ?? '',
+    required: match.groups?.required !== undefined,
+  }));
+  const named = (required: boolean): ReadonlySet<string> =>
+    new Set(
+      references
+        .filter((reference) => reference.required === required)
+        .map((reference) => reference.name),
+    );
+  return { imported: named(false), required: named(true) };
+}
+
 /**
  * How long a spec that runs the packaged CLI is given, past the root
  * `vitest.shared.mts` sets. Such a spec spawns node on the bundle, so it

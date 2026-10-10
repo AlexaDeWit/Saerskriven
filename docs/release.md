@@ -22,6 +22,13 @@ bump**: a `fix:` subject is a patch, `feat:` a minor, and a `!` in it or a
 While the workspace is on a `0.x` line nx shifts each of those down one
 step, so a breaking change moves the minor and a feature the patch.
 
+The text of a `BREAKING CHANGE:` footer is what the release notes print under
+the change. The renderer keeps every line that follows it up to a line of
+three or more hyphens, so a footer is followed by a line of four hyphens
+(`----`) before the trailers: git takes a line of exactly three for the start
+of a patch, which hides the trailers from `git interpret-trailers --parse` and
+drops them in a `git format-patch` then `git am`.
+
 ## Why a person runs most of it
 
 The repository's rulesets set the shape:
