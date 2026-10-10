@@ -229,23 +229,26 @@ filter uses the system `Highlight` colour.
 
 ## The view
 
-`fitViewport` in `viewport.ts` centres a box in a `FitArea` with padding kept
-clear on every side, within `zoomLimits`. React Flow's default minimum zoom of
-0.5 cannot fit a large model. `FitOnOpen` fits from inside
-React Flow, which holds the canvas extent, whenever `modelAsOpened` returns a
-new model or the diagram on screen changes. That selector returns the present
-model only while both history stacks are empty, so an open, a close or another
-tab's open fits again, while an edit or a save moves nothing.
+`fitViewport` in `viewport.ts` centres a box in a `FitArea`, within
+`zoomLimits`. React Flow's default minimum zoom of 0.5 cannot fit a large
+model. `FitOnOpen` fits from inside React Flow, which holds the canvas extent,
+whenever `modelAsOpened` returns a new model or the diagram on screen changes.
+That selector returns the present model only while both history stacks are
+empty, so an open, a close or another tab's open fits again, while an edit or
+a save moves nothing.
 
-`fitArea` is what a fit may use: the canvas left of the pane's measured
-coverage and below the chrome card's bottom edge. The shell measures that edge
-with the card (`../app/chrome.tsx`), holds it in state beside the pane
+`fitArea` is what a fit draws in: the canvas left of the pane's measured
+coverage, with 64 pixels clear at the left, right and bottom edges and
+`cardGap` clear under the chrome card's bottom edge. The shell measures that
+edge with the card (`../app/chrome.tsx`), holds it in state beside the pane
 coverage, and hands it to the view commands and to `FitOnOpen`, so a fit
 follows the height the card has. Until the first measurement arrives the edge
 is `unmeasuredCardBottom`, under which no fit has room, so the opening fit
-waits for the card and is made once. Opening reserves the card alone, no pane
-being open then, and the fit commands reserve both. A notice under the card
-moves no fit. The `panelCover` token sets only the pane's default width.
+waits for the card and is made once. A measured card that leaves no height
+under it is left out, and the fit takes the whole canvas. Opening reserves the
+card alone, and the fit commands reserve the card and the pane. A notice under
+the card moves no fit. The `panelCover` token sets only the pane's default
+width.
 
 `FocusPan` in `focus-pan.tsx` pans to bring the focused item's ring into the
 viewport, React Flow's container box. Nothing over the canvas plays a part: a

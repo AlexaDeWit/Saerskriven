@@ -205,6 +205,10 @@ describe('what a refused edit leaves on disk', () => {
   );
 });
 
+const heldModel = (attempted: ReturnType<typeof attempt>, file = modelFile) =>
+  Either.getOrUndefined(readAnyFormat(attempted.bytes(file).toString('utf8')))
+    ?.model;
+
 describe('what an applied edit writes', () => {
   it('reports the file, the count and the handle the next write quotes', () => {
     const attempted = attempt();
@@ -264,6 +268,33 @@ describe('what an applied edit writes', () => {
     ]);
     expect(Either.getOrUndefined(reread)?.format).toEqual('threat-dragon');
   });
+
+  it('adds an element that states an accent', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [
+        {
+          op: 'add_element',
+          diagram: 'diagram-main',
+          element: {
+            kind: 'store',
+            id: 'element-added',
+            name: 'Added',
+            placement: 'auto',
+            accent: 's4',
+          },
+        },
+      ],
+    );
+    expect(Either.isRight(applied)).toBe(true);
+    expect(
+      elementsAcross(heldModel(attempted)?.diagrams ?? []).find(
+        ({ id }) => id === 'element-added',
+      ),
+    ).toMatchObject({ accent: 's4' });
+  });
 });
 
 const addedBackups = (
@@ -281,10 +312,6 @@ const addedBackups = (
     ...fields,
   },
 });
-
-const heldModel = (attempted: ReturnType<typeof attempt>, file = modelFile) =>
-  Either.getOrUndefined(readAnyFormat(attempted.bytes(file).toString('utf8')))
-    ?.model;
 
 const backupsIn = (attempted: ReturnType<typeof attempt>) =>
   heldModel(attempted)?.assumptions.find(
@@ -970,29 +997,6 @@ describe('what set_accent writes', () => {
       { op: 'set_accent', elements: named, accent: 'none' },
     ]);
     expect(attempted.bytes(modelFile).toString('utf8')).toBe(before);
-  });
-
-  it('adds an element that states an accent', () => {
-    const attempted = attempt();
-    const applied = attempted.edit(
-      modelFile,
-      revisionIn(attempted, modelFile),
-      [
-        {
-          op: 'add_element',
-          diagram: 'diagram-main',
-          element: {
-            kind: 'store',
-            id: 'element-added',
-            name: 'Added',
-            placement: 'auto',
-            accent: 's4',
-          },
-        },
-      ],
-    );
-    expect(Either.isRight(applied)).toBe(true);
-    expect(accentsOf(attempted, modelFile, ['element-added'])).toEqual(['s4']);
   });
 
   it('refuses a batch that names a text note, saying it takes no accent', () => {

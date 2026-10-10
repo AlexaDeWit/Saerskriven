@@ -24,7 +24,7 @@ import { canvasModel, openCanvas, requestFlow } from './canvas.fixtures.js';
 import { FitOnOpen, useViewCommands } from './view-commands.js';
 import { unmeasuredCardBottom } from './viewport.js';
 
-const unfitted = 'transform: translate(0px, 0px) scale(1)';
+const unfitted = 'transform: translate(0px,0px) scale(1);';
 
 const transform = (): string =>
   document.querySelector('.react-flow__viewport')?.getAttribute('style') ?? '';
@@ -34,6 +34,8 @@ const Harness = ({ cardBottom }: { readonly cardBottom?: number }) => (
     <FitOnOpen cardBottom={cardBottom} />
   </ReactFlow>
 );
+
+const pastTheCanvas = 10_000;
 
 const movedFrom = async (before: string): Promise<string> => {
   await waitFor(() => {
@@ -97,6 +99,17 @@ describe('FitOnOpen', () => {
     render(<Harness />);
 
     expect(await movedFrom(waiting)).not.toBe(below);
+  });
+
+  it('fits the whole canvas where a measured card leaves no room under it', async () => {
+    const { rerender } = render(<Harness cardBottom={unmeasuredCardBottom} />);
+    const waiting = transform();
+
+    rerender(<Harness cardBottom={pastTheCanvas} />);
+
+    await waitFor(() => {
+      expect(transform()).not.toBe(waiting);
+    });
   });
 
   it('fits again for a file opened over the model on screen', async () => {

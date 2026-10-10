@@ -48,7 +48,7 @@ export function useViewCommands(panelCover = 0, cardBottom = 0): ViewCommands {
 
 /**
  * Fits each newly opened model once, and each diagram switched to, below the
- * chrome card's bottom edge. No pane is open then, so none is reserved.
+ * chrome card's bottom edge. It reserves the card alone, never a pane.
  */
 export function FitOnOpen({
   cardBottom = 0,

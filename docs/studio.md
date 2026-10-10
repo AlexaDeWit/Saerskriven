@@ -611,7 +611,8 @@ and leave the file unmodified.
 Opening a model, or switching to another diagram, centres the diagram in the
 space below the top card, so nothing opens behind the card. **Fit to view** and
 **Fit selection** centre in that same space, less what the open threat panel
-covers. A tall diagram opens a little smaller for it. The zoom controls show
+covers. A tall diagram opens smaller than the window alone would allow, since
+the card's height and a gap under it come off the room. The zoom controls show
 the current percentage, and pressing it resets the zoom to 100%. Selecting or
 dropping an element does not move the view. Tab onto an item outside the
 viewport, and an arrow key that moves the selected element out of it, bring the

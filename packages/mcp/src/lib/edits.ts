@@ -121,7 +121,7 @@ export const modelEditSchema = z.discriminatedUnion('op', [
     accent: z
       .union([accentSchema, z.literal(noAccent)])
       .describe(
-        'The accent key every named element takes, or "none" to clear theirs.',
+        'The accent key every named element takes, `s1` to `s4` strong or `l1` to `l4` light, or "none" to clear theirs.',
       ),
   }),
   elementEditSchema.extend({

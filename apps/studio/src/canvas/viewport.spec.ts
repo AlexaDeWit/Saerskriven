@@ -35,7 +35,11 @@ describe('clearOfPanel', () => {
 
 const canvas = { width: 1000, height: 600 };
 
+const short = { width: 1000, height: 200 };
+
 const cardBottom = 138;
+
+const underCard = cardBottom + 32;
 
 const whole = fitArea(canvas, 0, 0);
 
@@ -57,29 +61,41 @@ const placed = (bounds: CanvasBounds, area: FitArea) => {
 };
 
 describe('fitArea', () => {
-  it('is the whole canvas where no pane is open and no card reaches into it', () => {
-    expect(whole).toEqual({ ...canvas, top: 0 });
+  it('is the canvas less 64 pixels at each edge where no pane is open and no card reaches into it', () => {
+    expect(whole).toEqual({
+      left: 64,
+      top: 64,
+      width: canvas.width - 128,
+      height: canvas.height - 128,
+    });
   });
 
-  it('starts at the bottom edge of the card and keeps the width', () => {
+  it('starts 32 pixels under the card and keeps 64 at the other three edges', () => {
     expect(fitArea(canvas, 0, cardBottom)).toEqual({
-      width: canvas.width,
-      height: canvas.height - cardBottom,
-      top: cardBottom,
+      left: 64,
+      top: underCard,
+      width: canvas.width - 128,
+      height: canvas.height - 64 - underCard,
     });
   });
 
   it('takes the pane off the right and the card off the top together', () => {
     expect(fitArea(canvas, panelCover, cardBottom)).toEqual({
-      width: canvas.width - panelCover,
-      height: canvas.height - cardBottom,
-      top: cardBottom,
+      left: 64,
+      top: underCard,
+      width: canvas.width - panelCover - 128,
+      height: canvas.height - 64 - underCard,
     });
   });
 
-  it('has no height under a card that reaches past the canvas, or one not yet measured', () => {
-    expect(fitArea({ width: 1000, height: 100 }, 0, cardBottom).height).toBe(0);
+  it('is the whole canvas again where a measured card leaves no height under it', () => {
+    expect(fitArea(short, 0, cardBottom)).toEqual(fitArea(short, 0, 0));
+    expect(fitArea(short, 0, cardBottom).height).toBeGreaterThan(0);
+  });
+
+  it('has no height under a card not yet measured', () => {
     expect(fitArea(canvas, 0, unmeasuredCardBottom).height).toBe(0);
+    expect(fitArea(short, 0, unmeasuredCardBottom).height).toBe(0);
   });
 });
 
@@ -92,31 +108,35 @@ describe('fitViewport', () => {
     expect(Math.min(drawn.left, drawn.top)).toBeCloseTo(64);
   });
 
-  it('centres a height-bound diagram between the card and the bottom of the canvas, 64 pixels clear of each', () => {
+  it('draws a height-bound diagram from 32 pixels under the card to 64 above the bottom of the canvas', () => {
     const drawn = placed(tall, fitArea(canvas, 0, cardBottom));
 
-    expect(drawn.top).toBeCloseTo(cardBottom + 64);
+    expect(drawn.top).toBeCloseTo(underCard);
     expect(canvas.height - drawn.bottom).toBeCloseTo(64);
     expect(drawn.left).toBeCloseTo(canvas.width - drawn.right);
     expect(drawn.zoom).toBeLessThan(placed(tall, whole).zoom);
   });
 
-  it('centres a width-bound diagram in the height below the card, at the zoom the width alone decides', () => {
+  it('centres a width-bound diagram in the height under the card, at the zoom the width alone decides', () => {
     const drawn = placed(wide, fitArea(canvas, 0, cardBottom));
 
     expect(drawn.left).toBeCloseTo(64);
     expect(canvas.width - drawn.right).toBeCloseTo(64);
-    expect(drawn.top - cardBottom).toBeCloseTo(canvas.height - drawn.bottom);
+    expect(drawn.top - underCard).toBeCloseTo(
+      canvas.height - 64 - drawn.bottom,
+    );
     expect(drawn.zoom).toBeCloseTo(placed(wide, whole).zoom);
   });
 
-  it('centres in what is left of the pane and below the card where both are reserved', () => {
+  it('centres in what is left of the pane and under the card where both are reserved', () => {
     const drawn = placed(diagram, fitArea(canvas, panelCover, cardBottom));
 
-    expect(drawn.left).toBeCloseTo(canvas.width - panelCover - drawn.right);
-    expect(drawn.top - cardBottom).toBeCloseTo(canvas.height - drawn.bottom);
     expect(drawn.left).toBeCloseTo(64);
-    expect(drawn.top).toBeGreaterThanOrEqual(cardBottom + 64);
+    expect(canvas.width - panelCover - drawn.right).toBeCloseTo(64);
+    expect(drawn.top - underCard).toBeCloseTo(
+      canvas.height - 64 - drawn.bottom,
+    );
+    expect(drawn.top).toBeGreaterThanOrEqual(underCard);
   });
 
   it('draws a diagram far smaller than the canvas no larger than the zoom limit', () => {
@@ -146,15 +166,20 @@ describe('fitViewport', () => {
     ).toBeUndefined();
   });
 
-  it('fits nothing where the card leaves no room under it for the padding, or has not been measured', () => {
-    expect(
-      fitViewport(
-        diagram,
-        fitArea({ width: 1000, height: 250 }, 0, cardBottom),
-      ),
-    ).toBeUndefined();
+  it('fits the whole canvas, behind the card, where a measured card leaves no room under it', () => {
+    const drawn = placed(diagram, fitArea(short, 0, cardBottom));
+
+    expect(drawn.top).toBeCloseTo(64);
+    expect(short.height - drawn.bottom).toBeCloseTo(64);
+    expect(drawn.top).toBeLessThan(cardBottom);
+  });
+
+  it('fits nothing before the card is measured, in a canvas of any height', () => {
     expect(
       fitViewport(diagram, fitArea(canvas, 0, unmeasuredCardBottom)),
+    ).toBeUndefined();
+    expect(
+      fitViewport(diagram, fitArea(short, 0, unmeasuredCardBottom)),
     ).toBeUndefined();
   });
 });
