@@ -91,23 +91,34 @@ describe('resizeBoxByKey', () => {
     });
   });
 
-  it.each([
-    [65, 5],
-    [63, 5],
-    [65, 20],
-    [80, 20],
-  ])('stops a press from %d wide with a step of %d at 60', (width, step) => {
-    const wide = { position: box.position, size: { width, height: 100 } };
-    expect(resizeBoxByKey(wide, 'right', 'ArrowLeft', step)).toEqual({
+  it('lands a full step of 5 from 45 wide on 40', () => {
+    const wide = { position: box.position, size: { width: 45, height: 100 } };
+    expect(resizeBoxByKey(wide, 'right', 'ArrowLeft')).toEqual({
       position: box.position,
-      size: { width: 60, height: 100 },
+      size: { width: 40, height: 100 },
     });
   });
 
+  it.each([
+    [43, 5],
+    [41, 5],
+    [45, 20],
+    [59, 20],
+  ])(
+    'stops a press from %d wide with a step of %d at 40, short of the full step',
+    (width, step) => {
+      const wide = { position: box.position, size: { width, height: 100 } };
+      expect(resizeBoxByKey(wide, 'right', 'ArrowLeft', step)).toEqual({
+        position: box.position,
+        size: { width: 40, height: 100 },
+      });
+    },
+  );
+
   it.each(resizeControlPositions)(
-    'leaves a box 60 by 60 alone when a key on the %s control would shrink it',
+    'leaves a box 40 by 40 alone when a key on the %s control would shrink it',
     (control) => {
-      const floor = { position: box.position, size: { width: 60, height: 60 } };
+      const floor = { position: box.position, size: { width: 40, height: 40 } };
       const inward = [
         control.includes('left') ? 'ArrowRight' : undefined,
         control.includes('right') ? 'ArrowLeft' : undefined,

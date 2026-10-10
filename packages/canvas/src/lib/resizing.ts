@@ -19,7 +19,7 @@ export const resizeControlPositions = [
 export type ResizeControlPosition = (typeof resizeControlPositions)[number];
 
 /** The extent at which resize controls stop shrinking a larger node. */
-export const minimumNodeExtent = 60;
+export const minimumNodeExtent = 40;
 
 /**
  * The extent at which {@link scaledCurvePoints} stops shrinking a larger

@@ -57,20 +57,20 @@ describe('placement geometry', () => {
     },
   );
 
-  it('places a drag of 200 by 20 at 60 high, its stroke inside the drawn box', () => {
+  it('places a drag of 200 by 20 at 40 high, its stroke inside the drawn box', () => {
     expect(
       draggedPlacement('actor', { x: 0, y: 0 }, { x: 200, y: 20 }),
     ).toEqual({
       position: { x: 1, y: 1 },
-      size: { width: 198, height: 60 },
+      size: { width: 198, height: 40 },
     });
   });
 
   it.each([
-    ['up and left', { x: 70, y: 60 }, { x: 40, y: 20 }],
-    ['up and right', { x: 130, y: 60 }, { x: 100, y: 20 }],
+    ['up and left', { x: 70, y: 60 }, { x: 60, y: 40 }],
+    ['up and right', { x: 130, y: 60 }, { x: 100, y: 40 }],
     ['down and right', { x: 130, y: 100 }, { x: 100, y: 80 }],
-    ['down and left', { x: 70, y: 100 }, { x: 40, y: 80 }],
+    ['down and left', { x: 70, y: 100 }, { x: 60, y: 80 }],
   ] as const)(
     'grows a short drag %s to the floor from the pressed corner',
     (_, to, position) => {
@@ -101,25 +101,25 @@ describe('placement geometry', () => {
       'right, three screen pixels above the press line',
       { x: 300, y: 77 },
       { x: 200, y: -3 },
-      { position: { x: 100, y: 80 }, size: { width: 200, height: 60 } },
+      { position: { x: 100, y: 80 }, size: { width: 200, height: 40 } },
     ],
     [
       'right, three screen pixels below the press line',
       { x: 300, y: 83 },
       { x: 200, y: 3 },
-      { position: { x: 100, y: 80 }, size: { width: 200, height: 60 } },
+      { position: { x: 100, y: 80 }, size: { width: 200, height: 40 } },
     ],
     [
       'down, three screen pixels left of the press line',
       { x: 97, y: 280 },
       { x: -3, y: 200 },
-      { position: { x: 100, y: 80 }, size: { width: 60, height: 200 } },
+      { position: { x: 100, y: 80 }, size: { width: 40, height: 200 } },
     ],
     [
       'right at half zoom, three screen pixels and six units above the press line',
       { x: 500, y: 74 },
       { x: 200, y: -3 },
-      { position: { x: 100, y: 80 }, size: { width: 400, height: 60 } },
+      { position: { x: 100, y: 80 }, size: { width: 400, height: 40 } },
     ],
   ] as const)(
     'keeps the short axis right and down of the press for a drag %s',
@@ -139,8 +139,8 @@ describe('placement geometry', () => {
         { x: 200, y: -4 },
       ),
     ).toEqual({
-      position: { x: 100, y: 20 },
-      size: { width: 200, height: 60 },
+      position: { x: 100, y: 40 },
+      size: { width: 200, height: 40 },
     });
   });
 
@@ -271,7 +271,7 @@ describe('switchedShape', () => {
     expect(switchedShape(switchedShape(box))).toEqual(box);
   });
 
-  it('grows a curve that spans less than the minimum extent about its middle', () => {
+  it('grows a curve that spans less than 40 to a box 40 across, about its middle', () => {
     expect(
       switchedShape({
         kind: 'curve',
@@ -282,8 +282,8 @@ describe('switchedShape', () => {
       }),
     ).toEqual({
       kind: 'box',
-      position: { x: 0, y: 50 - minimumNodeExtent / 2 },
-      size: { width: 100, height: minimumNodeExtent },
+      position: { x: 0, y: 30 },
+      size: { width: 100, height: 40 },
     });
   });
 
