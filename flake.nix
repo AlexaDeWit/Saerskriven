@@ -182,22 +182,30 @@
           name = "saerskriven-ci";
           buildInputs = toolchainInputs ++ workflowLintInputs ++ sastInputs;
         };
+
+        saerskriven = packageFor pkgs;
+
+        # nix/release.json names the systems a release has an executable for.
+        released = builtins.elem system saerskriven.meta.platforms;
       in {
-        packages.node-runtimes = nodeRuntimes;
-        # No dev shell carries these closures: the Rust toolchain is large and
-        # entering a shell to work on the TypeScript should not pay for it
-        # (issue #341). What changed with #379 is who runs the build: the
-        # `resvg-wasm` and `brotli-wasm` nx projects do, each as a task every
-        # consumer depends on, so a cold `nx build @saerskriven/studio` now
-        # triggers the Rust compiles where it used to refuse and name the
-        # command. The shell still holds neither the toolchain nor a module.
-        # Each module's file under nix/ is data, and nix/wasm-module.nix, the
-        # one builder, is applied to it here, so no module builds itself.
-        packages.resvg-wasm = wasmModule ./nix/resvg-wasm;
-        packages.brotli-wasm = wasmModule ./nix/brotli-wasm;
-        packages.saerskriven = packageFor pkgs;
-        checks.saerskriven = pkgs.callPackage ./nix/check.nix {
-          saerskriven = packageFor pkgs;
+        packages = {
+          node-runtimes = nodeRuntimes;
+          # No dev shell carries these closures: the Rust toolchain is large
+          # and entering a shell to work on the TypeScript should not pay for
+          # it (issue #341). What changed with #379 is who runs the build: the
+          # `resvg-wasm` and `brotli-wasm` nx projects do, each as a task every
+          # consumer depends on, so a cold `nx build @saerskriven/studio` now
+          # triggers the Rust compiles where it used to refuse and name the
+          # command. The shell still holds neither the toolchain nor a module.
+          # Each module's file under nix/ is data, and nix/wasm-module.nix, the
+          # one builder, is applied to it here, so no module builds itself.
+          resvg-wasm = wasmModule ./nix/resvg-wasm;
+          brotli-wasm = wasmModule ./nix/brotli-wasm;
+        } // pkgs.lib.optionalAttrs released { inherit saerskriven; };
+
+        checks = pkgs.lib.optionalAttrs released {
+          saerskriven =
+            pkgs.callPackage ./nix/check.nix { inherit saerskriven; };
         };
 
         devShells = {

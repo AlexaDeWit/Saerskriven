@@ -116,7 +116,7 @@ void test('the updater pins hashes from verified asset bytes for the explicit re
   const verifications = probe.calls.filter(
     ({ args }) => args[0] === 'attestation',
   );
-  assert.equal(verifications.length, 4);
+  assert.equal(verifications.length, Object.keys(manifest.assets).length);
   for (const { args } of verifications) {
     assert.equal(args[args.indexOf('--source-ref') + 1], 'refs/tags/v1.2.3');
     assert.equal(args[args.indexOf('--source-digest') + 1], commit);

@@ -3,6 +3,7 @@ set -euo pipefail
 
 readonly release_tag='@RELEASE_TAG@'
 readonly repository='AlexaDeWit/Saerskriven'
+readonly last_intel_mac_release='v0.8.3'
 readonly release_checksums='
 @RELEASE_SHA256SUMS@
 '
@@ -29,6 +30,7 @@ main() {
           "Installs ${release_tag} to \$HOME/.local/bin by default." \
           'Provides saer and the compatibility command saerskriven.' \
           'Checks SHA-256 before replacing an existing executable.' \
+          'On Linux, starts the installed executable once to check that it runs.' \
           '--verify-attestation also requires gh and verifies the release build origin.'
         return
         ;;
@@ -57,6 +59,9 @@ main() {
     arm64|aarch64) arch=aarch64 ;;
     *) fail "Unsupported architecture: $arch. Use a 64-bit Intel, AMD, or ARM system." ;;
   esac
+  if [ "$os" = Darwin ] && [ "$arch" = x86_64 ]; then
+    fail "No executable is built for an Intel Mac. $last_intel_mac_release is the last release with one: run the install.sh from https://github.com/${repository}/releases/tag/$last_intel_mac_release"
+  fi
 
   local checksum_command
   if command -v sha256sum >/dev/null 2>&1; then
@@ -99,6 +104,13 @@ main() {
 
   install_binary "$bin_dir" "$scratch/$asset"
   printf 'Installed %s to %s/saer (SHA-256 verified).\n' "$release_tag" "$bin_dir"
+  if [ "$os" = Linux ] && ! "$bin_dir/saer" --version >/dev/null; then
+    printf '%s\n' \
+      "$bin_dir/saer does not start on this system." \
+      'It needs glibc 2.28 or newer, libstdc++ and libatomic (the package libatomic1 or libatomic).' \
+      "Install them, or use the Nix package, which brings its own: https://github.com/${repository}/blob/${release_tag}/docs/nix.md" >&2
+    exit 1
+  fi
   case ":${PATH-}:" in
     *:"$bin_dir":*) ;;
     *) printf 'Add %s to PATH in your shell configuration, then open a new terminal.\n' "$bin_dir" ;;

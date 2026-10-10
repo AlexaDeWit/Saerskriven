@@ -31,14 +31,12 @@ const binaryNameSchema = z.enum(['saer', 'saerskriven']);
 const systemSchema = z.enum([
   'x86_64-linux',
   'aarch64-linux',
-  'x86_64-darwin',
   'aarch64-darwin',
 ]);
 const assetSchema = z.object({
   target: z.enum([
     'x86_64-unknown-linux-gnu',
     'aarch64-unknown-linux-gnu',
-    'x86_64-apple-darwin',
     'aarch64-apple-darwin',
   ]),
   hash: z.string().regex(/^[0-9a-f]{64}$/u),
