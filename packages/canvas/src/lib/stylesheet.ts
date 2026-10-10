@@ -1,4 +1,10 @@
-import { severitySchema, type Severity } from '@saerskriven/model';
+import {
+  accentParts,
+  severitySchema,
+  type Accent,
+  type AccentSlot,
+  type Severity,
+} from '@saerskriven/model';
 import {
   badgeTextColour,
   defaultRenderTheme,
@@ -6,6 +12,7 @@ import {
 } from './render-theme.js';
 import {
   canvasType,
+  dotPitchRatio,
   lightPalette,
   outOfScopeOutline,
   paletteProperty,
@@ -88,6 +95,49 @@ export const severityToneClass = {
 /** Shared stroke width for drawing and bounding a trust boundary. */
 export const boundaryStrokeWidth = strokeWidths.outline;
 
+/**
+ * The classes an accent adds to a drawing, which the sheet styles only where
+ * a drawing holds one: a slot and `strong` on an element's group, `tinted` on
+ * the fill a strong accent tints, and the band a strong accent draws a store.
+ */
+export const accentClassNames = {
+  slot1: 'saer-diagram-accent-1',
+  slot2: 'saer-diagram-accent-2',
+  slot3: 'saer-diagram-accent-3',
+  slot4: 'saer-diagram-accent-4',
+  strong: 'saer-diagram-accent-strong',
+  tinted: 'saer-diagram-tinted',
+  storeBand: 'saer-diagram-store-band',
+} as const satisfies Record<string, DiagramClassName>;
+
+const accentSlots = {
+  1: { className: accentClassNames.slot1, line: 'slot1', tint: 'slot1Tint' },
+  2: { className: accentClassNames.slot2, line: 'slot2', tint: 'slot2Tint' },
+  3: { className: accentClassNames.slot3, line: 'slot3', tint: 'slot3Tint' },
+  4: { className: accentClassNames.slot4, line: 'slot4', tint: 'slot4Tint' },
+} as const satisfies Record<
+  AccentSlot,
+  {
+    readonly className: DiagramClassName;
+    readonly line: keyof Palette;
+    readonly tint: keyof Palette;
+  }
+>;
+
+/**
+ * The classes an element's group carries for its accent: its slot, and
+ * `strong` where the key is a strong one. No accent gives none.
+ */
+export function accentGroupClasses(accent: Accent | undefined): string[] {
+  if (accent === undefined) {
+    return [];
+  }
+  const { slot, strong } = accentParts[accent];
+  return strong
+    ? [accentSlots[slot].className, accentClassNames.strong]
+    : [accentSlots[slot].className];
+}
+
 const sheetFrom = (
   colour: (role: keyof Palette) => string,
   family: string = canvasType.family,
@@ -151,7 +201,7 @@ const sheetFrom = (
 }
 .${canvasClassNames.outOfScope} .${canvasClassNames.shape} {
   stroke: ${colour(outOfScopeOutline)};
-  stroke-dasharray: 0 5;
+  stroke-dasharray: ${dotted(strokeWidths.outline)};
   stroke-linecap: round;
 }
 .${canvasClassNames.outOfScope} .${canvasClassNames.flowArrow} {
@@ -205,8 +255,65 @@ const sheetFrom = (
 }
 `;
 
-/** The canvas stylesheet with colours read from the studio root properties. */
-export const themedCanvasStylesheet = `${sheetFrom(paletteProperty)}
+const strong = `.${accentClassNames.strong}`;
+
+const strongOutOfScope = `.${canvasClassNames.outOfScope}${strong}`;
+
+const slotRules = (
+  colour: (role: keyof Palette) => string,
+  rule: (className: string, line: string, tint: string) => string,
+): string =>
+  Object.values(accentSlots)
+    .map(({ className, line, tint }) =>
+      rule(className, colour(line), colour(tint)),
+    )
+    .join('\n');
+
+const accentSheetFrom = (
+  colour: (role: keyof Palette) => string,
+): string => `${slotRules(
+  colour,
+  (className, line, tint) => `.${className} .${canvasClassNames.shape} {
+  stroke: ${line};
+}
+.${className} .${canvasClassNames.flowArrow} {
+  fill: ${line};
+}
+.${className} .${accentClassNames.tinted} {
+  fill: ${tint};
+}`,
+)}
+.${accentClassNames.storeBand} {
+  stroke: none;
+}
+${strong} .${canvasClassNames.shape} {
+  stroke-width: ${strokeWidths.strongOutline};
+}
+${strong} .${canvasClassNames.boundaryBox},
+${strong} .${canvasClassNames.boundaryCurve} {
+  stroke-width: ${strokeWidths.strongBoundary};
+}
+${strong} .${canvasClassNames.flow} {
+  stroke-width: ${strokeWidths.strongFlow};
+}
+${strongOutOfScope} .${canvasClassNames.shape} {
+  stroke-dasharray: ${dotted(strokeWidths.strongOutline)};
+}
+${strongOutOfScope} .${canvasClassNames.boundaryBox},
+${strongOutOfScope} .${canvasClassNames.boundaryCurve} {
+  stroke-dasharray: ${dotted(strokeWidths.strongBoundary)};
+}
+${strongOutOfScope} .${canvasClassNames.flow} {
+  stroke-dasharray: ${dotted(strokeWidths.strongFlow)};
+}
+`;
+
+/**
+ * The canvas stylesheet with colours read from the studio root properties.
+ * Under forced colours an accent draws no slot colour and no tint, and a
+ * strong one keeps its weight.
+ */
+export const themedCanvasStylesheet = `${sheetFrom(paletteProperty)}${accentSheetFrom(paletteProperty)}
 @media (forced-colors: active) {
   .${canvasClassNames.shape} {
     fill: Canvas;
@@ -232,6 +339,21 @@ export const themedCanvasStylesheet = `${sheetFrom(paletteProperty)}
   .${canvasClassNames.outOfScope} .${canvasClassNames.shape} {
     stroke: CanvasText;
   }
+${slotRules(
+  paletteProperty,
+  (className) => `  .${className} .${canvasClassNames.shape} {
+    stroke: CanvasText;
+  }
+  .${className} .${canvasClassNames.flowArrow} {
+    fill: CanvasText;
+  }
+  .${className} .${accentClassNames.tinted} {
+    fill: Canvas;
+  }
+  .${className} .${accentClassNames.storeBand} {
+    fill: none;
+  }`,
+)}
   .${canvasClassNames.badge} {
     stroke: CanvasText;
     stroke-width: 1.5;
@@ -251,9 +373,15 @@ export const themedCanvasStylesheet = `${sheetFrom(paletteProperty)}
 }
 `;
 
-/** Resolves headless drawing colours, font family, and badge appearance. */
+/**
+ * Resolves headless drawing colours, font family, and badge appearance. The
+ * accent rules are written only where `accented` says the drawing holds an
+ * accent, in the light palette's slot colours, so a drawing without one gets
+ * the sheet it got before accents existed.
+ */
 export function renderCanvasStylesheet(
   theme: RenderTheme = defaultRenderTheme,
+  accented = false,
 ): string {
   const palette: Palette = {
     ...lightPalette,
@@ -285,6 +413,11 @@ export function renderCanvasStylesheet(
   );
   return [
     sheetFrom((role) => palette[role], JSON.stringify(theme.fonts.body)),
+    ...(accented ? [accentSheetFrom((role) => palette[role])] : []),
     ...badges,
   ].join('\n');
+}
+
+function dotted(strokeWidth: number): string {
+  return `0 ${String(strokeWidth * dotPitchRatio)}`;
 }

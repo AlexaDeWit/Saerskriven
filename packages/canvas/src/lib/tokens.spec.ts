@@ -29,6 +29,23 @@ const tones = [
   'toneNeutral',
 ] as const satisfies readonly (keyof Palette)[];
 
+const slots = [
+  { line: 'slot1', tint: 'slot1Tint' },
+  { line: 'slot2', tint: 'slot2Tint' },
+  { line: 'slot3', tint: 'slot3Tint' },
+  { line: 'slot4', tint: 'slot4Tint' },
+] as const satisfies readonly {
+  readonly line: keyof Palette;
+  readonly tint: keyof Palette;
+}[];
+
+const elementGrounds = [
+  'surfaceCanvas',
+  'surfacePanel',
+  'surfaceActor',
+  'surfaceProcess',
+] as const satisfies readonly (keyof Palette)[];
+
 const textFloor = 4.5;
 
 const markFloor = 3;
@@ -119,6 +136,35 @@ describe.each(palettes)('$name', ({ palette }) => {
     expect(ruled).toBeLessThanOrEqual(gridCeiling);
   });
 
+  it("draws each accent slot's outline at the ratio of a mark on the canvas ground, on every fill of an element and on its own tint", () => {
+    expect(
+      below(
+        palette,
+        slots.flatMap(({ line, tint }) =>
+          pairsOf([line], [...elementGrounds, tint], markFloor),
+        ),
+      ),
+    ).toEqual([]);
+  });
+
+  it("sets an element's name on the tint of each strong accent at the ratio of text", () => {
+    expect(
+      below(
+        palette,
+        pairsOf(
+          ['textPrimary'],
+          slots.map(({ tint }) => tint),
+          textFloor,
+        ),
+      ),
+    ).toEqual([]);
+  });
+
+  it('gives no accent slot the colour of a severity tone or of another slot', () => {
+    const marks = [...slots.map(({ line }) => line), ...tones];
+    expect(new Set(marks.map((mark) => palette[mark])).size).toBe(marks.length);
+  });
+
   it('keeps the five severity tones apart', () => {
     const collapsed = tones.flatMap((one, at) =>
       tones.slice(at + 1).map((other) => ({
@@ -129,6 +175,27 @@ describe.each(palettes)('$name', ({ palette }) => {
     expect(new Set(tones.map((tone) => palette[tone])).size).toBe(tones.length);
     expect(
       collapsed.filter((entry) => entry.distance < toneDistanceFloor),
+    ).toEqual([]);
+  });
+});
+
+describe('the accent slots', () => {
+  it('are the four colours the maintainer chose on the dark canvas', () => {
+    expect(slots.map(({ line }) => darkPalette[line])).toEqual([
+      '#D988AF',
+      '#AD84F2',
+      '#CABD99',
+      '#80BFC6',
+    ]);
+  });
+
+  it('are each darker on the light canvas, where an outline is read against a light ground', () => {
+    expect(
+      slots.filter(
+        ({ line }) =>
+          contrastRatio(lightPalette[line], '#000000') >=
+          contrastRatio(darkPalette[line], '#000000'),
+      ),
     ).toEqual([]);
   });
 });

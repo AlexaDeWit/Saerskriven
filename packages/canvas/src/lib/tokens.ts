@@ -59,6 +59,25 @@ export type Palette = {
   readonly toneLow: Colour;
   /** No severity assessed, a warm grey. */
   readonly toneNeutral: Colour;
+  /**
+   * Accent slot 1, a pink: the outline of an element that holds it, and the
+   * line of a flow or a trust boundary. A slot means nothing but itself.
+   */
+  readonly slot1: Colour;
+  /** Accent slot 2, a purple. */
+  readonly slot2: Colour;
+  /** Accent slot 3, a sand. */
+  readonly slot3: Colour;
+  /** Accent slot 4, a cyan. */
+  readonly slot4: Colour;
+  /** The opaque fill inside a strong accent of slot 1, under the element's name. */
+  readonly slot1Tint: Colour;
+  /** The fill inside a strong accent of slot 2. */
+  readonly slot2Tint: Colour;
+  /** The fill inside a strong accent of slot 3. */
+  readonly slot3Tint: Colour;
+  /** The fill inside a strong accent of slot 4. */
+  readonly slot4Tint: Colour;
 };
 
 /**
@@ -70,7 +89,12 @@ export type Palette = {
  * needs 4.5 and a control's outline 3. The fifth severity, which the starting
  * palette lacks, is the olive of the primary action, and the grid line is a
  * warm taupe measured on a band, 1.3 to 1.6 on the canvas ground, since it is
- * worse for being darker.
+ * worse for being darker. Each accent slot is the dark table's colour with its
+ * channels scaled down in steps of 4% until its outline clears 3 on the canvas
+ * ground, on every fill of an element and on its own tint, which leaves it as
+ * far from the severity tones as that floor allows: slot 3 measures 24 from
+ * the warm grey and slot 4 measures 29 from the slate blue, by
+ * {@link channelDistance}. A tint is the slot mixed 16% into the panel fill.
  */
 export const lightPalette = {
   surfaceApp: '#F0EDE5',
@@ -92,13 +116,24 @@ export const lightPalette = {
   toneMedium: '#46788A',
   toneLow: '#4B6B50',
   toneNeutral: '#756E63',
+  slot1: '#AA6A89',
+  slot2: '#9370CE',
+  slot3: '#867E66',
+  slot4: '#5C8A8F',
+  slot1Tint: '#EDE1E1',
+  slot2Tint: '#EAE2EC',
+  slot3Tint: '#E7E4DC',
+  slot4Tint: '#E1E6E2',
 } as const satisfies Palette;
 
 /**
  * The dark palette: the same hues over warm ink grounds, measured against the
  * same floors, its hairline lightened so it clears 3 on the wash a process is
  * filled with. The studio takes it under the system's dark preference, and
- * the headless render stays on the light table.
+ * the headless render stays on the light table. The four accent slots are the
+ * maintainer's own choice for this ground (#828), and a tint is the slot mixed
+ * 24% into the actor wash. Slot 4 sits 10 degrees of hue from the slate blue
+ * of severity medium and 61 from it by {@link channelDistance}.
  */
 export const darkPalette = {
   surfaceApp: '#282522',
@@ -120,6 +155,14 @@ export const darkPalette = {
   toneMedium: '#5F95A8',
   toneLow: '#6B8A82',
   toneNeutral: '#9A9185',
+  slot1: '#D988AF',
+  slot2: '#AD84F2',
+  slot3: '#CABD99',
+  slot4: '#80BFC6',
+  slot1Tint: '#5F474D',
+  slot2Tint: '#54465D',
+  slot3Tint: '#5B5448',
+  slot4Tint: '#495552',
 } as const satisfies Palette;
 
 /**
@@ -158,18 +201,31 @@ export const canvasType = {
  * Every stroke the drawing lays down, in user units. One weight carries an
  * element's outline, a trust boundary's dashes and a flow's line. A store's
  * two lines are heavier, being its whole glyph. The badge ring is drawn in a
- * ground colour, cutting the mark out of what lies beneath.
+ * ground colour, cutting the mark out of what lies beneath. A strong accent
+ * draws an outline, a trust boundary's dashes and a flow's line heavier, the
+ * lines with no fill to tint the most.
  */
 export const strokeWidths = {
   outline: 2,
   store: 2.5,
   badgeRing: 3,
+  strongOutline: 3,
+  strongBoundary: 3.5,
+  strongFlow: 4,
 } as const;
+
+/**
+ * The pitch of an out-of-scope outline's dots over its stroke width, so the
+ * dots stay apart at every weight a cue or a strong accent draws them at.
+ */
+export const dotPitchRatio = 2.5;
 
 const cueWidths = {
   selection: 3,
   flowHover: 3,
   flowSelection: 4,
+  strongFlowHover: 5,
+  strongFlowSelection: 6,
 } as const;
 
 /**
@@ -272,6 +328,14 @@ const colourProperties = {
   toneMedium: '--saer-colour-tone-medium',
   toneLow: '--saer-colour-tone-low',
   toneNeutral: '--saer-colour-tone-neutral',
+  slot1: '--saer-colour-slot-1',
+  slot2: '--saer-colour-slot-2',
+  slot3: '--saer-colour-slot-3',
+  slot4: '--saer-colour-slot-4',
+  slot1Tint: '--saer-colour-slot-1-tint',
+  slot2Tint: '--saer-colour-slot-2-tint',
+  slot3Tint: '--saer-colour-slot-3-tint',
+  slot4Tint: '--saer-colour-slot-4-tint',
 } as const satisfies Record<keyof Palette, string>;
 
 /**
@@ -302,7 +366,8 @@ const colourBlock = (palette: Palette, indent: string): string => {
  * reads without colour, and at most one step past the heaviest stroke, so a
  * flow does not swell past its arrowhead. A selected flow is heavier than a
  * hovered one, and each width is a pixel length that a CSS border and an SVG
- * stroke read alike.
+ * stroke read alike. A flow under a strong accent rests at the selection
+ * weight, so its own two cues sit one and two steps above that.
  * `--saer-chrome-block-size` is a placeholder the studio's chrome card
  * overwrites with its measured height, since its tool row can wrap.
  * `--saer-scroll-cue-size` is the strip a listbox lays over an edge its
@@ -340,6 +405,8 @@ ${colourBlock(lightPalette, '  ')}
   --saer-cue-selection: ${cueWidths.selection}px;
   --saer-cue-flow-hover: ${cueWidths.flowHover}px;
   --saer-cue-flow-selection: ${cueWidths.flowSelection}px;
+  --saer-cue-strong-flow-hover: ${cueWidths.strongFlowHover}px;
+  --saer-cue-strong-flow-selection: ${cueWidths.strongFlowSelection}px;
 
   --saer-resize-handle-size: ${String(resizeHandle.size)}px;
   --saer-scroll-cue-size: ${scrollCue};

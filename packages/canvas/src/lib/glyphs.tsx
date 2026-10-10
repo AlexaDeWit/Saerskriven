@@ -1,4 +1,4 @@
-import type { Size } from '@saerskriven/model';
+import { accentParts, type Accent, type Size } from '@saerskriven/model';
 import type { CSSProperties, ReactElement, SVGProps } from 'react';
 import { badgeAnchor, ThreatBadgeGlyph, type BadgeMarks } from './badges.js';
 import { edgePoints } from './flow-anchors.js';
@@ -8,7 +8,11 @@ import type { CanvasEdge, CanvasNode, CanvasNodeKind } from './layout.js';
 import { svgNumber } from './numbers.js';
 import { noteFrame, processEllipse } from './obstacles.js';
 import { arrowheadPath, polylinePath, smoothPath, translate } from './paths.js';
-import { canvasClassNames } from './stylesheet.js';
+import {
+  accentClassNames,
+  accentGroupClasses,
+  canvasClassNames,
+} from './stylesheet.js';
 import { nodeTextPlacement } from './text-placement.js';
 import { strokeWidths } from './tokens.js';
 
@@ -36,23 +40,30 @@ export function boxElementStrokeInsets(
       };
 }
 
-/** One box element's outline in its own coordinates. */
+/**
+ * One box element's outline in its own coordinates. `tinted` marks the fill
+ * of an actor or a process for a strong accent's tint, and draws a store the
+ * band that takes it, which a store has no other use for. A trust boundary
+ * has no fill to tint.
+ */
 export function BoxElementGlyph({
   kind,
   size,
+  tinted = false,
 }: {
   readonly kind: BoxElementKind;
   readonly size: Size;
+  readonly tinted?: boolean;
 }): ReactElement {
   const style = boxStrokeStyle(kind, size);
   if (kind === 'actor') {
-    return rectOutline(canvasClassNames.actor, size, style);
+    return rectOutline(fillClass(canvasClassNames.actor, tinted), size, style);
   }
   if (kind === 'process') {
-    return processOutline(size, style);
+    return processOutline(size, tinted, style);
   }
   if (kind === 'store') {
-    return storeOutline(size, style);
+    return storeOutline(size, tinted, style);
   }
   return rectOutline(canvasClassNames.boundaryBox, size, style);
 }
@@ -73,7 +84,7 @@ export function ElementGlyph({
   readonly textVisible?: boolean;
 }): ReactElement {
   return (
-    <g className={groupClass(node.outOfScope)}>
+    <g className={groupClass(node.outOfScope, accentOf(node))}>
       {outlineOf(node)}
       {textVisible ? <WrappedText {...nodeTextPlacement(node)} /> : null}
       {!badgeVisible || node.badge === undefined ? null : (
@@ -116,7 +127,7 @@ export function FlowGlyph({
 }): ReactElement {
   const points = edgePoints(edge);
   return (
-    <g className={groupClass(edge.outOfScope)}>
+    <g className={groupClass(edge.outOfScope, edge.accent)}>
       <path
         className={shapeClass(canvasClassNames.flow)}
         d={polylinePath(points)}
@@ -163,14 +174,24 @@ export function flowBlockGlyph({
   );
 }
 
-function groupClass(outOfScope: boolean): string {
-  return outOfScope
-    ? `${canvasClassNames.element} ${canvasClassNames.outOfScope}`
-    : canvasClassNames.element;
+function groupClass(outOfScope: boolean, accent: Accent | undefined): string {
+  return [
+    canvasClassNames.element,
+    ...(outOfScope ? [canvasClassNames.outOfScope] : []),
+    ...accentGroupClasses(accent),
+  ].join(' ');
+}
+
+function accentOf(node: CanvasNode): Accent | undefined {
+  return node.kind === 'text' ? undefined : node.accent;
 }
 
 function shapeClass(outline: string): string {
   return `${canvasClassNames.shape} ${outline}`;
+}
+
+function fillClass(outline: string, tinted: boolean): string {
+  return tinted ? `${outline} ${accentClassNames.tinted}` : outline;
 }
 
 function outlineOf(node: CanvasNode): ReactElement | null {
@@ -183,7 +204,13 @@ function outlineOf(node: CanvasNode): ReactElement | null {
       ? null
       : rectOfBox(shapeClass(canvasClassNames.noteFrame), frame);
   }
-  return <BoxElementGlyph kind={node.kind} size={node.size} />;
+  return (
+    <BoxElementGlyph
+      kind={node.kind}
+      size={node.size}
+      tinted={node.accent !== undefined && accentParts[node.accent].strong}
+    />
+  );
 }
 
 /** Formats the backing and its interaction bounds with the same coordinate checks. */
@@ -242,11 +269,15 @@ function rectOutline(
   );
 }
 
-function processOutline(size: Size, style?: CSSProperties): ReactElement {
+function processOutline(
+  size: Size,
+  tinted: boolean,
+  style?: CSSProperties,
+): ReactElement {
   const ellipse = processEllipse(size);
   return (
     <ellipse
-      className={shapeClass(canvasClassNames.process)}
+      className={shapeClass(fillClass(canvasClassNames.process, tinted))}
       style={style}
       cx={svgNumber(ellipse.centre.x)}
       cy={svgNumber(ellipse.centre.y)}
@@ -256,11 +287,22 @@ function processOutline(size: Size, style?: CSSProperties): ReactElement {
   );
 }
 
-function storeOutline(size: Size, style?: CSSProperties): ReactElement {
+function storeOutline(
+  size: Size,
+  tinted: boolean,
+  style?: CSSProperties,
+): ReactElement {
   const right = svgNumber(size.width);
   const bottom = svgNumber(size.height);
   return (
     <>
+      {tinted ? (
+        <rect
+          className={fillClass(accentClassNames.storeBand, true)}
+          width={right}
+          height={bottom}
+        />
+      ) : null}
       <line
         className={shapeClass(canvasClassNames.store)}
         style={style}

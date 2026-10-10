@@ -1,17 +1,28 @@
 import { severitySchema } from '@saerskriven/model';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { everyGlyphModel, specMarks } from './canvas.fixtures.js';
+import {
+  accentsLayout,
+  everyGlyphModel,
+  specMarks,
+} from './canvas.fixtures.js';
 import { layoutDiagram } from './layout.js';
 import { defaultRenderTheme, type RenderTheme } from './render-theme.js';
 import { DiagramGlyphs } from './scene.js';
 import {
+  accentClassNames,
   canvasClassNames,
   renderCanvasStylesheet,
   severityToneClass,
   themedCanvasStylesheet,
   wrappedTextStyles,
 } from './stylesheet.js';
-import { outOfScopeOutline, paletteProperty, strokeWidths } from './tokens.js';
+import {
+  dotPitchRatio,
+  lightPalette,
+  outOfScopeOutline,
+  paletteProperty,
+  strokeWidths,
+} from './tokens.js';
 
 const declared = new Set<string>(Object.values(canvasClassNames));
 
@@ -31,11 +42,30 @@ const everyGlyphMarkup = renderToStaticMarkup(
   />,
 );
 
-const emitted = new Set<string>(
-  (everyGlyphMarkup.match(/class="[^"]*"/gu) ?? []).flatMap((attribute) =>
-    attribute.slice(7, -1).split(' '),
-  ),
-);
+const classesEmittedBy = (markup: string): Set<string> =>
+  new Set<string>(
+    (markup.match(/class="[^"]*"/gu) ?? []).flatMap((attribute) =>
+      attribute.slice(7, -1).split(' '),
+    ),
+  );
+
+const emitted = classesEmittedBy(everyGlyphMarkup);
+
+const accentClasses = new Set<string>(Object.values(accentClassNames));
+
+const accentedSheet = renderCanvasStylesheet(defaultRenderTheme, true);
+
+const rulesOf = (styles: string): string[] =>
+  styles.split('}').map((rule) => rule.trim());
+
+const forcedColours = '@media (forced-colors: active) {';
+
+const slotClasses = [
+  { className: accentClassNames.slot1, line: 'slot1', tint: 'slot1Tint' },
+  { className: accentClassNames.slot2, line: 'slot2', tint: 'slot2Tint' },
+  { className: accentClassNames.slot3, line: 'slot3', tint: 'slot3Tint' },
+  { className: accentClassNames.slot4, line: 'slot4', tint: 'slot4Tint' },
+] as const;
 
 const toneRule = (styles: string, className: string): string | undefined =>
   styles.split('\n').find((line) => line.startsWith(`.${className} { fill:`));
@@ -134,15 +164,15 @@ describe('renderCanvasStylesheet', () => {
 });
 
 describe('themedCanvasStylesheet', () => {
-  it('styles the classes the resolved sheet does, with every colour left to a custom property', () => {
-    expect(classesStyledBy(themedCanvasStylesheet)).toEqual(selected);
+  it('styles the classes the resolved sheet does and the accent classes, with every colour left to a custom property', () => {
+    expect(classesStyledBy(themedCanvasStylesheet)).toEqual(
+      new Set([...selected, ...accentClasses]),
+    );
     expect(themedCanvasStylesheet).not.toMatch(/#[0-9A-Fa-f]{3,8}/u);
   });
 
   it('uses system paint only in the studio forced-colours suffix', () => {
-    const [base, forced] = themedCanvasStylesheet.split(
-      '@media (forced-colors: active) {',
-    );
+    const [base, forced] = themedCanvasStylesheet.split(forcedColours);
     expect(base.trim()).not.toMatch(/Canvas|Highlight/u);
     expect(sheet).not.toContain('forced-colors');
     const rules = (forced ?? '').split('}').map((rule) => rule.trim());
@@ -250,10 +280,12 @@ describe('an out-of-scope element', () => {
       .flatMap((group) => group.split(shapeIn).slice(1))
       .map((shape) => shape.split('"')[0]);
 
-    expect(themedRules.filter((rule) => dashOf(rule) !== undefined)).toEqual([
-      boundary,
-      outline,
-    ]);
+    expect(
+      themedRules.filter(
+        (rule) =>
+          dashOf(rule) !== undefined && !rule.includes(accentClassNames.strong),
+      ),
+    ).toEqual([boundary, outline]);
     expect(Math.max(...selectorsOf(boundary).map(classesNamedBy))).toBeLessThan(
       classesNamedBy(dotted),
     );
@@ -265,6 +297,130 @@ describe('an out-of-scope element', () => {
         canvasClassNames.flow,
       ]),
     );
+  });
+});
+
+const ruleIn = (
+  rules: readonly string[],
+  selector: string,
+): string | undefined =>
+  rules.find((rule) => selectorsOf(rule).includes(selector));
+
+describe('an accent', () => {
+  const accentsMarkup = renderToStaticMarkup(
+    <DiagramGlyphs marks={specMarks} layout={accentsLayout} />,
+  );
+  const [themedBase, forced = ''] = themedCanvasStylesheet.split(forcedColours);
+  const themedRules = rulesOf(themedBase);
+  const forcedRules = rulesOf(forced);
+  const strong = `.${accentClassNames.strong}`;
+  const strongOutOfScope = `.${canvasClassNames.outOfScope}${strong}`;
+  const weights = [
+    [canvasClassNames.shape, strokeWidths.strongOutline, strokeWidths.store],
+    [
+      canvasClassNames.boundaryBox,
+      strokeWidths.strongBoundary,
+      strokeWidths.outline,
+    ],
+    [
+      canvasClassNames.boundaryCurve,
+      strokeWidths.strongBoundary,
+      strokeWidths.outline,
+    ],
+    [canvasClassNames.flow, strokeWidths.strongFlow, strokeWidths.outline],
+  ] as const;
+
+  it('is styled by the resolved sheet only where a drawing holds one, in the light palette and with no property to resolve', () => {
+    expect(renderCanvasStylesheet(defaultRenderTheme, false)).toBe(sheet);
+    expect(classesStyledBy(accentedSheet)).toEqual(
+      new Set([...selected, ...accentClasses]),
+    );
+    expect(accentedSheet).not.toContain('var(');
+    for (const { className, line, tint } of slotClasses) {
+      expect(accentedSheet).toContain(
+        `.${className} .${canvasClassNames.shape} {\n  stroke: ${lightPalette[line]};\n}`,
+      );
+      expect(accentedSheet).toContain(
+        `.${className} .${accentClassNames.tinted} {\n  fill: ${lightPalette[tint]};\n}`,
+      );
+    }
+  });
+
+  it('is drawn with every accent class by the diagram that holds each key, and with none by a diagram that holds no accent', () => {
+    const drawn = classesEmittedBy(accentsMarkup);
+    expect([...accentClasses].filter((name) => !drawn.has(name))).toEqual([]);
+    expect([...accentClasses].filter((name) => emitted.has(name))).toEqual([]);
+  });
+
+  it.each(slotClasses)(
+    "draws slot $line as an outline, a line and an arrowhead in the slot's colour, and tints only the fill marked for it",
+    ({ className, line, tint }) => {
+      expect(
+        ruleIn(themedRules, `.${className} .${canvasClassNames.shape}`),
+      ).toContain(`stroke: ${paletteProperty(line)};`);
+      expect(
+        ruleIn(themedRules, `.${className} .${canvasClassNames.flowArrow}`),
+      ).toContain(`fill: ${paletteProperty(line)};`);
+      expect(
+        ruleIn(themedRules, `.${className} .${accentClassNames.tinted}`),
+      ).toContain(`fill: ${paletteProperty(tint)};`);
+      expect(
+        themedRules.filter(
+          (rule) => rule.includes(className) && rule.includes('stroke-width'),
+        ),
+      ).toEqual([]);
+    },
+  );
+
+  it.each(weights)(
+    'draws a strong %s heavier than a plain one',
+    (className, weight, plain) => {
+      expect(ruleIn(themedRules, `${strong} .${className}`)).toContain(
+        `stroke-width: ${String(weight)};`,
+      );
+      expect(weight).toBeGreaterThan(plain);
+    },
+  );
+
+  it('colours the dots of an out-of-scope outline, its rule following the out-of-scope one with as many classes', () => {
+    const outOfScope = `.${canvasClassNames.outOfScope} .${canvasClassNames.shape} {`;
+    for (const { className } of slotClasses) {
+      const slot = `.${className} .${canvasClassNames.shape} {`;
+      expect(themedBase.indexOf(slot)).toBeGreaterThan(
+        themedBase.indexOf(outOfScope),
+      );
+      expect(classesNamedBy(slot)).toBe(classesNamedBy(outOfScope));
+    }
+  });
+
+  it.each(weights)(
+    'keeps the dots of a strong out-of-scope %s apart, at the pitch its weight asks',
+    (className, weight) => {
+      expect(
+        dashOf(ruleIn(themedRules, `${strongOutOfScope} .${className}`)),
+      ).toEqual([0, weight * dotPitchRatio]);
+    },
+  );
+
+  it('draws no slot colour and no tint under forced colours, and leaves the strong weights standing', () => {
+    for (const { className } of slotClasses) {
+      expect(
+        ruleIn(forcedRules, `.${className} .${canvasClassNames.shape}`),
+      ).toContain('stroke: CanvasText;');
+      expect(
+        ruleIn(forcedRules, `.${className} .${canvasClassNames.flowArrow}`),
+      ).toContain('fill: CanvasText;');
+      expect(
+        ruleIn(forcedRules, `.${className} .${accentClassNames.tinted}`),
+      ).toContain('fill: Canvas;');
+      expect(
+        ruleIn(forcedRules, `.${className} .${accentClassNames.storeBand}`),
+      ).toContain('fill: none;');
+    }
+    expect(forced).not.toMatch(/--saer-colour-slot/u);
+    expect(
+      forcedRules.filter((rule) => rule.includes(accentClassNames.strong)),
+    ).toEqual([]);
   });
 });
 

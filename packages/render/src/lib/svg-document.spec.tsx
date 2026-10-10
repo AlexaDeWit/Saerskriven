@@ -1,5 +1,6 @@
 import {
   canvasClassNames,
+  defaultRenderTheme,
   renderCanvasStylesheet,
   svgNumber,
   textExtent,
@@ -521,6 +522,7 @@ describe.each([
   ...goldenDocuments.map((entry) => ({
     name: entry.name,
     drawn: renderSvg(diagramOf(entry), entry.model, 'en-CA'),
+    accented: diagramOf(entry).elements.some((element) => 'accent' in element),
   })),
   {
     name: 'text XML forbids',
@@ -529,8 +531,9 @@ describe.each([
       forbiddenCharacterModel,
       'en-CA',
     ),
+    accented: false,
   },
-])('$name as a document a reader can open', ({ drawn }) => {
+])('$name as a document a reader can open', ({ drawn, accented }) => {
   const { svg } = drawn;
 
   it('parses as well-formed XML with one svg root in the SVG namespace', () => {
@@ -554,11 +557,12 @@ describe.each([
     ]);
   });
 
-  it('carries the stylesheet in a style element, verbatim', () => {
+  it('carries the stylesheet in a style element, verbatim, with the accent rules only where the diagram holds an accent', () => {
     const styles = [...documentOf(svg).getElementsByTagName('style')];
     expect(styles.map((style) => style.textContent)).toEqual([
-      renderCanvasStylesheet(),
+      renderCanvasStylesheet(defaultRenderTheme, accented),
     ]);
+    expect(svg.includes('saer-diagram-accent')).toBe(accented);
   });
 
   it('names the diagram in a title element the root owns', () => {

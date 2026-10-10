@@ -1,0 +1,494 @@
+{
+  "metadata": {
+    "title": "Every accent",
+    "owner": "Alexandra de Wit",
+    "description": "Each accent key on each kind that takes one, beside an element with none.",
+    "contributors": [
+      "Alexandra de Wit"
+    ]
+  },
+  "diagrams": [
+    {
+      "id": "diagram-accents",
+      "title": "Every accent",
+      "elements": [
+        {
+          "kind": "trust-boundary",
+          "id": "ac-zone-strong",
+          "name": "Strong boundary",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "s3",
+          "shape": {
+            "kind": "box",
+            "position": {
+              "x": 540,
+              "y": 20
+            },
+            "size": {
+              "width": 480,
+              "height": 150
+            }
+          }
+        },
+        {
+          "kind": "trust-boundary",
+          "id": "ac-zone-light",
+          "name": "Light boundary",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "l2",
+          "shape": {
+            "kind": "box",
+            "position": {
+              "x": 20,
+              "y": 220
+            },
+            "size": {
+              "width": 480,
+              "height": 150
+            }
+          }
+        },
+        {
+          "kind": "trust-boundary",
+          "id": "ac-edge-strong",
+          "name": "Strong curve",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "s4",
+          "shape": {
+            "kind": "curve",
+            "waypoints": [
+              {
+                "x": 20,
+                "y": 420
+              },
+              {
+                "x": 360,
+                "y": 400
+              },
+              {
+                "x": 700,
+                "y": 430
+              },
+              {
+                "x": 1040,
+                "y": 410
+              }
+            ]
+          }
+        },
+        {
+          "kind": "trust-boundary",
+          "id": "ac-zone-out",
+          "name": "Out-of-scope boundary",
+          "description": "",
+          "outOfScope": true,
+          "reasonOutOfScope": "Run by another team.",
+          "accent": "l1",
+          "shape": {
+            "kind": "box",
+            "position": {
+              "x": 540,
+              "y": 440
+            },
+            "size": {
+              "width": 480,
+              "height": 150
+            }
+          }
+        },
+        {
+          "kind": "actor",
+          "id": "ac-strong-1",
+          "name": "Strong 1",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "s1",
+          "position": {
+            "x": 60,
+            "y": 60
+          },
+          "size": {
+            "width": 140,
+            "height": 70
+          }
+        },
+        {
+          "kind": "process",
+          "id": "ac-strong-2",
+          "name": "Strong 2",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "s2",
+          "position": {
+            "x": 320,
+            "y": 50
+          },
+          "size": {
+            "width": 140,
+            "height": 90
+          }
+        },
+        {
+          "kind": "store",
+          "id": "ac-strong-3",
+          "name": "Strong 3",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "s3",
+          "position": {
+            "x": 580,
+            "y": 60
+          },
+          "size": {
+            "width": 140,
+            "height": 70
+          }
+        },
+        {
+          "kind": "actor",
+          "id": "ac-strong-4",
+          "name": "Strong 4",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "s4",
+          "position": {
+            "x": 840,
+            "y": 60
+          },
+          "size": {
+            "width": 140,
+            "height": 70
+          }
+        },
+        {
+          "kind": "actor",
+          "id": "ac-light-1",
+          "name": "Light 1",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "l1",
+          "position": {
+            "x": 60,
+            "y": 260
+          },
+          "size": {
+            "width": 140,
+            "height": 70
+          }
+        },
+        {
+          "kind": "process",
+          "id": "ac-light-2",
+          "name": "Light 2",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "l2",
+          "position": {
+            "x": 320,
+            "y": 250
+          },
+          "size": {
+            "width": 140,
+            "height": 90
+          }
+        },
+        {
+          "kind": "store",
+          "id": "ac-light-3",
+          "name": "Light 3",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "l3",
+          "position": {
+            "x": 580,
+            "y": 260
+          },
+          "size": {
+            "width": 140,
+            "height": 70
+          }
+        },
+        {
+          "kind": "actor",
+          "id": "ac-light-4",
+          "name": "Light 4",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "l4",
+          "position": {
+            "x": 840,
+            "y": 260
+          },
+          "size": {
+            "width": 140,
+            "height": 70
+          }
+        },
+        {
+          "kind": "actor",
+          "id": "ac-plain",
+          "name": "No accent",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 60,
+            "y": 480
+          },
+          "size": {
+            "width": 140,
+            "height": 70
+          }
+        },
+        {
+          "kind": "process",
+          "id": "ac-badged",
+          "name": "Strong, with threats",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "s1",
+          "position": {
+            "x": 320,
+            "y": 470
+          },
+          "size": {
+            "width": 140,
+            "height": 90
+          }
+        },
+        {
+          "kind": "store",
+          "id": "ac-out-strong",
+          "name": "Out of scope, strong",
+          "description": "",
+          "outOfScope": true,
+          "reasonOutOfScope": "Run by another team.",
+          "accent": "s2",
+          "position": {
+            "x": 580,
+            "y": 480
+          },
+          "size": {
+            "width": 140,
+            "height": 70
+          }
+        },
+        {
+          "kind": "actor",
+          "id": "ac-out-light",
+          "name": "Out of scope, light",
+          "description": "",
+          "outOfScope": true,
+          "reasonOutOfScope": "Run by another team.",
+          "accent": "l4",
+          "position": {
+            "x": 840,
+            "y": 480
+          },
+          "size": {
+            "width": 140,
+            "height": 70
+          }
+        },
+        {
+          "kind": "text",
+          "id": "ac-note",
+          "name": "Note",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "position": {
+            "x": 60,
+            "y": 600
+          },
+          "size": {
+            "width": 300,
+            "height": 40
+          },
+          "text": "A note takes no accent."
+        },
+        {
+          "kind": "flow",
+          "id": "ac-flow-strong",
+          "name": "Strong flow",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "s1",
+          "source": {
+            "kind": "attached",
+            "element": "ac-strong-1"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "ac-strong-2"
+          },
+          "waypoints": [],
+          "bidirectional": false
+        },
+        {
+          "kind": "flow",
+          "id": "ac-flow-both",
+          "name": "Strong, both ways",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "s4",
+          "source": {
+            "kind": "attached",
+            "element": "ac-strong-3"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "ac-strong-4"
+          },
+          "waypoints": [],
+          "bidirectional": true
+        },
+        {
+          "kind": "flow",
+          "id": "ac-flow-light",
+          "name": "Light flow",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "l3",
+          "source": {
+            "kind": "attached",
+            "element": "ac-light-1"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "ac-light-2"
+          },
+          "waypoints": [],
+          "bidirectional": false
+        },
+        {
+          "kind": "flow",
+          "id": "ac-flow-badged",
+          "name": "Light, with a threat",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "l1",
+          "source": {
+            "kind": "attached",
+            "element": "ac-light-3"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "ac-light-4"
+          },
+          "waypoints": [],
+          "bidirectional": false
+        },
+        {
+          "kind": "flow",
+          "id": "ac-flow-plain",
+          "name": "No accent",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "source": {
+            "kind": "attached",
+            "element": "ac-plain"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "ac-badged"
+          },
+          "waypoints": [],
+          "bidirectional": false
+        },
+        {
+          "kind": "flow",
+          "id": "ac-flow-out",
+          "name": "Out of scope, strong",
+          "description": "",
+          "outOfScope": true,
+          "reasonOutOfScope": "Run by another team.",
+          "accent": "s2",
+          "source": {
+            "kind": "attached",
+            "element": "ac-out-strong"
+          },
+          "target": {
+            "kind": "attached",
+            "element": "ac-out-light"
+          },
+          "waypoints": [],
+          "bidirectional": false
+        }
+      ]
+    }
+  ],
+  "threats": [
+    {
+      "id": "th-node-high",
+      "number": 1,
+      "title": "Tampered request",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "high",
+      "status": "open",
+      "description": "",
+      "elements": [
+        "ac-badged"
+      ],
+      "appliesToModel": false
+    },
+    {
+      "id": "th-node-low",
+      "number": 2,
+      "title": "Replayed request",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "low",
+      "status": "open",
+      "description": "",
+      "elements": [
+        "ac-badged"
+      ],
+      "appliesToModel": false
+    },
+    {
+      "id": "th-flow-critical",
+      "number": 3,
+      "title": "Read in transit",
+      "category": {
+        "methodology": "STRIDE",
+        "category": "tampering"
+      },
+      "severity": "critical",
+      "status": "open",
+      "description": "",
+      "elements": [
+        "ac-flow-badged"
+      ],
+      "appliesToModel": false
+    }
+  ],
+  "lastIssuedThreatNumber": 3,
+  "mitigations": [],
+  "assumptions": []
+}
