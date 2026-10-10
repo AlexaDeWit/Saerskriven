@@ -78,6 +78,11 @@ const fixture = (
     { mode: 0o755 },
   );
   writeFileSync(
+    join(bin, 'sysctl'),
+    '#!/usr/bin/env bash\n[ -n "${INSTALL_TEST_ARM64-}" ] || exit 1\nprintf "%s\\n" "$INSTALL_TEST_ARM64"\n',
+    { mode: 0o755 },
+  );
+  writeFileSync(
     join(bin, 'uname'),
     '#!/usr/bin/env bash\nif [ "$1" = -s ]; then echo "$INSTALL_TEST_OS"; else echo "$INSTALL_TEST_ARCH"; fi\n',
     { mode: 0o755 },
@@ -204,27 +209,77 @@ void test('packaging pins the installer tag and includes its digest in SHA256SUM
   );
 });
 
-void test('a Linux executable that does not start is reported with what it needs', () => {
+const installedNames = (home: string): string[] =>
+  readdirSync(join(home, '.local/bin'));
+
+void test('a Linux executable that does not start replaces nothing and says what it needs', () => {
   const probe = fixture(
     'Linux',
     'x86_64',
     'sha256sum',
     '#!/bin/sh\nexit 127\n',
   );
+  probe.previous();
   const result = probe.run();
   assert.notEqual(result.status, 0);
-  for (const named of ['glibc 2.28', 'libstdc++', 'libatomic', 'docs/nix.md']) {
+  for (const named of [
+    'glibc 2.28',
+    'libstdc++',
+    'libatomic',
+    'docs/nix.md',
+    'Nothing in',
+  ]) {
     assert.ok(result.stderr.includes(named), named);
   }
-  assert.equal(statSync(probe.destination).mode & 0o777, 0o755);
+  assert.equal(result.stdout.includes('Installed'), false);
+  assert.equal(readFileSync(probe.destination, 'utf8'), 'previous executable');
+  assert.equal(readlinkSync(probe.compatibility), 'saer');
+  assert.deepEqual(installedNames(probe.home), ['saer', 'saerskriven']);
+  assert.deepEqual(readdirSync(probe.temp), []);
+});
+
+void test('a Linux executable that does not start leaves a fresh machine without one', () => {
+  const probe = fixture(
+    'Linux',
+    'x86_64',
+    'sha256sum',
+    '#!/bin/sh\nexit 127\n',
+  );
+  assert.notEqual(probe.run().status, 0);
+  assert.deepEqual(installedNames(probe.home), []);
+});
+
+void test('a destination that runs no program is named as one, not as missing libraries', () => {
+  const probe = fixture(
+    'Linux',
+    'x86_64',
+    'sha256sum',
+    '#!/bin/sh\nexit 126\n',
+  );
+  const result = probe.run();
+  assert.notEqual(result.status, 0);
+  assert.ok(result.stderr.includes('--bin-dir'));
+  assert.equal(result.stderr.includes('libatomic'), false);
+  assert.deepEqual(installedNames(probe.home), []);
 });
 
 void test('an Intel Mac is pointed at the last release built for it, before downloading', () => {
+  const answers: Record<string, string>[] = [{}, { INSTALL_TEST_ARM64: '0' }];
+  for (const answer of answers) {
+    const probe = fixture('Darwin', 'x86_64', 'shasum');
+    const result = probe.run([], answer);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /releases\/tag\/v0\.8\.3/u);
+    assert.equal(probe.calls(), '');
+  }
+});
+
+void test('a translated shell on Apple silicon installs the arm64 executable', () => {
   const probe = fixture('Darwin', 'x86_64', 'shasum');
-  const result = probe.run();
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /releases\/tag\/v0\.8\.3/u);
-  assert.equal(probe.calls(), '');
+  const result = probe.run([], { INSTALL_TEST_ARM64: '1' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(probe.calls(), /saer-1\.2\.3-aarch64-apple-darwin/u);
+  assert.equal(readFileSync(probe.destination, 'utf8'), payload);
 });
 
 const asset = 'saer-1.2.3-x86_64-unknown-linux-gnu';

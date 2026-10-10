@@ -30,7 +30,7 @@ main() {
           "Installs ${release_tag} to \$HOME/.local/bin by default." \
           'Provides saer and the compatibility command saerskriven.' \
           'Checks SHA-256 before replacing an existing executable.' \
-          'On Linux, starts the installed executable once to check that it runs.' \
+          'On Linux, starts the new executable once before installing it, and changes nothing when it does not start.' \
           '--verify-attestation also requires gh and verifies the release build origin.'
         return
         ;;
@@ -59,6 +59,11 @@ main() {
     arm64|aarch64) arch=aarch64 ;;
     *) fail "Unsupported architecture: $arch. Use a 64-bit Intel, AMD, or ARM system." ;;
   esac
+  # A translated shell on Apple silicon reports x86_64.
+  if [ "$os" = Darwin ] && [ "$arch" = x86_64 ] &&
+    [ "$(sysctl -n hw.optional.arm64 2>/dev/null || true)" = 1 ]; then
+    arch=aarch64
+  fi
   if [ "$os" = Darwin ] && [ "$arch" = x86_64 ]; then
     fail "No executable is built for an Intel Mac. $last_intel_mac_release is the last release with one: run the install.sh from https://github.com/${repository}/releases/tag/$last_intel_mac_release"
   fi
@@ -102,15 +107,8 @@ main() {
       --source-ref "refs/tags/$release_tag" || fail 'Release attestation verification failed.'
   fi
 
-  install_binary "$bin_dir" "$scratch/$asset"
+  install_binary "$bin_dir" "$scratch/$asset" "$os"
   printf 'Installed %s to %s/saer (SHA-256 verified).\n' "$release_tag" "$bin_dir"
-  if [ "$os" = Linux ] && ! "$bin_dir/saer" --version >/dev/null; then
-    printf '%s\n' \
-      "$bin_dir/saer does not start on this system." \
-      'It needs glibc 2.28 or newer, libstdc++ and libatomic (the package libatomic1 or libatomic).' \
-      "Install them, or use the Nix package, which brings its own: https://github.com/${repository}/blob/${release_tag}/docs/nix.md" >&2
-    exit 1
-  fi
   case ":${PATH-}:" in
     *:"$bin_dir":*) ;;
     *) printf 'Add %s to PATH in your shell configuration, then open a new terminal.\n' "$bin_dir" ;;
@@ -140,6 +138,24 @@ check_install_paths() {
   fi
 }
 
+# The executable is started where it will be installed, before it replaces
+# anything: a temporary directory may forbid running a program.
+check_start() {
+  local status=0
+  "$2" --version >/dev/null </dev/null || status=$?
+  [ "$status" != 0 ] || return 0
+  if [ "$status" = 126 ]; then
+    printf '%s\n' \
+      "$1 does not let a program run. It may be mounted noexec: choose another directory with --bin-dir." >&2
+  else
+    printf '%s\n' \
+      "${release_tag} does not start on this system." \
+      'It needs glibc 2.28 or newer, libstdc++ and libatomic (the package libatomic1 or libatomic).' \
+      "Install them and run this installer again, or use the Nix package, which brings its own: https://github.com/${repository}/blob/${release_tag}/docs/nix.md" >&2
+  fi
+  fail "Nothing in $1 was changed."
+}
+
 install_binary() {
   local bin_dir="$1"
   mkdir -p "$bin_dir"
@@ -148,6 +164,9 @@ install_binary() {
   staging="$(mktemp -d "$bin_dir/.saerskriven-install.XXXXXXXX")"
   cp "$2" "$staging/saer"
   chmod 755 "$staging/saer"
+  if [ "$3" = Linux ]; then
+    check_start "$bin_dir" "$staging/saer"
+  fi
   if [ ! -L "$bin_dir/saerskriven" ]; then
     ln -s saer "$staging/saerskriven"
     rollback_binary="$bin_dir/saer"
