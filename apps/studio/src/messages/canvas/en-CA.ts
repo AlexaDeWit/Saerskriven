@@ -58,6 +58,7 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
   'source-moved': 'Moved the source of {flow}.',
   'target-moved': 'Moved the target of {flow}.',
   'free-end-kept': 'A free flow end stays where it is.',
+  'size-kept': 'A resize control goes no smaller than this.',
   'position-invalid': 'Enter coordinates from {low} to {high}.',
   'undo-done': 'Undo completed.',
   'redo-done': 'Redo completed.',

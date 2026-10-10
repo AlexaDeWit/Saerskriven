@@ -66,6 +66,8 @@ const resizeEnd = vi.fn<(box: NodeBox, fromResizingRender: boolean) => void>();
 
 const endedBy = vi.fn<(input: GestureInput) => void>();
 
+const refused = vi.fn<() => void>();
+
 const nodesChange = vi.fn<(changes: NodeChange<HostNode>[]) => void>();
 
 const canvasKeyDown = vi.fn<() => void>();
@@ -94,6 +96,7 @@ function Host({ data }: NodeProps<HostNode>): ReactElement {
         resizeEnd(box, resizing);
         endedBy(input);
       }}
+      onResizeRefused={refused}
       visible
     />
   );
@@ -240,7 +243,7 @@ describe('ResizeControls', () => {
   );
 
   it.each([false, true])(
-    'adds the key step to an extent below ten with Shift %s',
+    'adds the key step to an extent below the floor with Shift %s',
     (shiftKey) => {
       act(() => {
         control('right', small).dispatchEvent(keyDown('ArrowRight', shiftKey));
@@ -509,23 +512,31 @@ describe('ResizeControls', () => {
       },
       false,
     );
+    expect(refused).not.toHaveBeenCalled();
   });
 
   it.each([
-    { named: 'off the axis of its control', of: client, key: 'ArrowUp' },
+    {
+      named: 'off the axis of its control',
+      of: client,
+      key: 'ArrowUp',
+      refusals: 0,
+    },
     {
       named: 'that would shrink its node under the minimum size',
       of: narrowest,
       key: 'ArrowLeft',
+      refusals: 1,
     },
     {
-      named: 'that would shrink an extent already below ten',
+      named: 'that would shrink an extent already below the floor',
       of: small,
       key: 'ArrowLeft',
+      refusals: 1,
     },
   ])(
-    'claims an arrow key $named, so nothing resizes and React Flow moves no node',
-    ({ of, key }) => {
+    'claims an arrow key $named, so nothing resizes and React Flow moves no node, and reports $refusals refusal',
+    ({ of, key, refusals }) => {
       const reported = nodesChange.mock.calls.length;
       const event = keyDown(key);
 
@@ -536,6 +547,7 @@ describe('ResizeControls', () => {
       expect(event.defaultPrevented).toBe(true);
       expect(resizeEnd).not.toHaveBeenCalled();
       expect(nodesChange).toHaveBeenCalledTimes(reported);
+      expect(refused).toHaveBeenCalledTimes(refusals);
     },
   );
 

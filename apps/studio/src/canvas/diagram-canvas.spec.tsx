@@ -469,15 +469,22 @@ describe('DiagramCanvas', () => {
   });
 
   it.each([
-    ['off its axis', 'top', 'ArrowLeft'],
+    ['off its axis, and says nothing', 'top', 'ArrowLeft', ''],
     [
-      'that would shrink the element under its minimum size',
+      'that would shrink the element under its minimum size, and says the size is kept',
       'right',
       'ArrowLeft',
+      t('canvas.size-kept'),
+    ],
+    [
+      'that would make an actor shorter than its default height, and says the size is kept',
+      'top',
+      'ArrowDown',
+      t('canvas.size-kept'),
     ],
   ] as const)(
-    'moves, resizes and says nothing, and records no undo step, for an arrow key on a resize control %s',
-    (_, from, key) => {
+    'moves and resizes nothing, and records no undo step, for an arrow key on a resize control %s',
+    (_, from, key, said) => {
       openCanvas([actorElement]);
       dispatch(
         Action.ResizeElement({
@@ -497,6 +504,7 @@ describe('DiagramCanvas', () => {
       expect(modelStore.getState().present).toBe(stored.present);
       expect(modelStore.getState().past).toBe(stored.past);
       expect(flowLiveMessage()).toBe('');
+      expect(currentAnnouncement().message).toBe(said);
       expect(told).not.toHaveBeenCalled();
       release();
     },
@@ -665,11 +673,11 @@ describe('DiagramCanvas', () => {
     render(<DiagramCanvas />);
     const before = readerBox();
 
-    fireEvent.keyDown(resizeControl('top'), { key: 'ArrowDown' });
+    fireEvent.keyDown(resizeControl('left'), { key: 'ArrowRight' });
 
     expect(readerBox()).toEqual({
-      position: { x: 0, y: 5 },
-      size: { width: 120, height: 55 },
+      position: { x: 5, y: 0 },
+      size: { width: 115, height: 60 },
     });
     act(() => {
       dispatch(Action.Undo());

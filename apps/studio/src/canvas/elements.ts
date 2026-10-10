@@ -2,7 +2,6 @@ import {
   boxElementStrokeInsets,
   boxOfPoints,
   minimumNodeExtent,
-  type BoxElementKind,
   type CanvasLayout,
   type CanvasNode,
   type NodeBox,
@@ -10,7 +9,6 @@ import {
 import {
   attachedEndpoint,
   generateElementId,
-  geometryLimits,
   type BoundaryShape,
   type Element,
   type ElementId,
@@ -67,12 +65,20 @@ const nominalSizes = {
 /** The screen-pixel movement below which a placement remains a click. */
 export const placementClickDistance = 4;
 
+/** A pointer's offset, in screen pixels, from where a press started. */
+export function pointerOffset(
+  pointer: { readonly clientX: number; readonly clientY: number },
+  start: Point,
+): Point {
+  return { x: pointer.clientX - start.x, y: pointer.clientY - start.y };
+}
+
 /** How far, in screen pixels, a pointer is from where a press started. */
 export function pointerDistance(
   pointer: { readonly clientX: number; readonly clientY: number },
   start: Point,
 ): number {
-  return Math.hypot(pointer.clientX - start.x, pointer.clientY - start.y);
+  return lengthOf(pointerOffset(pointer, start));
 }
 
 /** The default size of an element placed by a click or by Enter. */
@@ -93,34 +99,44 @@ export function centredPlacement(kind: ElementTool, centre: Point): NodeBox {
 }
 
 /**
- * An element sized between opposite corners, its stroke inside them. A drag
- * too thin for that still places a width and a height the model holds.
+ * An element between the pressed point and the pointer, its stroke inside
+ * them, at least `minimumNodeExtent` wide and high. A shorter drag keeps the
+ * pressed corner and grows toward the pointer, or right and down on an axis
+ * the pointer has not moved along.
  */
 export function draggedPlacement(
   kind: Exclude<ElementTool, 'boundary-curve'>,
   from: Point,
   to: Point,
 ): NodeBox {
-  const dragged = {
-    position: { x: Math.min(from.x, to.x), y: Math.min(from.y, to.y) },
-    size: {
-      width: Math.max(Math.abs(to.x - from.x), 1),
-      height: Math.max(Math.abs(to.y - from.y), 1),
-    },
+  const inset = kind === 'note' ? noStroke : boxElementStrokeInsets(kind);
+  const across = draggedSpan(from.x, to.x, inset.left, inset.right);
+  const down = draggedSpan(from.y, to.y, inset.top, inset.bottom);
+  return {
+    position: { x: across.start, y: down.start },
+    size: { width: across.extent, height: down.extent },
   };
-  return kind === 'note' ? dragged : insideStroke(kind, dragged);
 }
 
-/** The geometry a completed pointer press asks an element tool to place. */
+/**
+ * The geometry a pointer asks an element tool to place once it has `moved`,
+ * an offset in screen pixels, from its press: the default size for a click,
+ * and otherwise a drag from `from` to `to`. An axis the pointer is under
+ * `placementClickDistance` along counts as not moved, so its side of the
+ * press cannot flip the element.
+ */
 export function pointerPlacement(
   kind: Exclude<ElementTool, 'boundary-curve'>,
   from: Point,
   to: Point,
-  screenDistance: number,
+  moved: Point,
 ): NodeBox {
-  return screenDistance < placementClickDistance
+  return lengthOf(moved) < placementClickDistance
     ? centredPlacement(kind, from)
-    : draggedPlacement(kind, from, to);
+    : draggedPlacement(kind, from, {
+        x: Math.abs(moved.x) < placementClickDistance ? from.x : to.x,
+        y: Math.abs(moved.y) < placementClickDistance ? from.y : to.y,
+      });
 }
 
 /** The default boundary curve centred on a click or on the viewport. */
@@ -247,6 +263,10 @@ function namedElement(name: string) {
   };
 }
 
+function lengthOf(offset: Point): number {
+  return Math.hypot(offset.x, offset.y);
+}
+
 function arch(position: Point, size: Size): Point[] {
   return [
     { x: position.x, y: position.y + size.height },
@@ -255,48 +275,27 @@ function arch(position: Point, size: Size): Point[] {
   ];
 }
 
-function spanOf(
-  low: number,
-  high: number,
-): {
-  readonly start: number;
-  readonly extent: number;
-} {
+type Span = { readonly start: number; readonly extent: number };
+
+function spanOf(low: number, high: number): Span {
   const extent = Math.max(high - low, minimumNodeExtent);
   return { start: (low + high - extent) / 2, extent };
 }
 
-function insideStroke(kind: BoxElementKind, outer: NodeBox): NodeBox {
-  const nominal = boxElementStrokeInsets(kind);
-  const nominalWidth = nominal.top + nominal.bottom;
-  const available =
-    kind === 'store'
-      ? outer.size.height / 2
-      : Math.min(outer.size.width, outer.size.height) / 2;
-  const strokeWidth = Math.min(nominalWidth, available);
-  const halfStroke = strokeWidth / 2;
-  const inset =
-    kind === 'store'
-      ? { top: halfStroke, right: 0, bottom: halfStroke, left: 0 }
-      : {
-          top: halfStroke,
-          right: halfStroke,
-          bottom: halfStroke,
-          left: halfStroke,
-        };
-  const width = Math.max(
-    outer.size.width - inset.left - inset.right,
-    geometryLimits.leastExtent,
-  );
-  const height = Math.max(
-    outer.size.height - inset.top - inset.bottom,
-    geometryLimits.leastExtent,
+const noStroke = { top: 0, right: 0, bottom: 0, left: 0 } as const;
+
+function draggedSpan(
+  from: number,
+  to: number,
+  before: number,
+  after: number,
+): Span {
+  const drawn = Math.max(
+    Math.abs(to - from),
+    minimumNodeExtent + before + after,
   );
   return {
-    position: {
-      x: outer.position.x + (outer.size.width - width) / 2,
-      y: outer.position.y + (outer.size.height - height) / 2,
-    },
-    size: { width, height },
+    start: (to < from ? from - drawn : from) + before,
+    extent: drawn - before - after,
   };
 }

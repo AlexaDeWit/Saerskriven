@@ -1,5 +1,5 @@
 import { layoutDiagram, minimumNodeExtent } from '@saerskriven/canvas';
-import { addElement, sizeSchema } from '@saerskriven/model';
+import { addElement } from '@saerskriven/model';
 import { Either } from 'effect';
 import { canvasModel } from './canvas.fixtures.js';
 import {
@@ -35,21 +35,21 @@ describe('placement geometry', () => {
   });
 
   it.each([
-    ['actor', { x: 21, y: 31 }, { width: 158, height: 58 }],
-    ['process', { x: 21, y: 31 }, { width: 158, height: 58 }],
-    ['store', { x: 20, y: 31.25 }, { width: 160, height: 57.5 }],
-    ['boundary-box', { x: 21, y: 31 }, { width: 158, height: 58 }],
+    ['actor', { x: 21, y: 31 }, { width: 158, height: 88 }],
+    ['process', { x: 21, y: 31 }, { width: 158, height: 88 }],
+    ['store', { x: 20, y: 31.25 }, { width: 160, height: 87.5 }],
+    ['boundary-box', { x: 21, y: 31 }, { width: 158, height: 88 }],
   ] as const)(
     'draws a %s between either ordering of its corners',
     (kind, position, size) => {
       expect(
-        draggedPlacement(kind, { x: 180, y: 90 }, { x: 20, y: 30 }),
+        draggedPlacement(kind, { x: 180, y: 120 }, { x: 20, y: 30 }),
       ).toEqual({
         position,
         size,
       });
       expect(
-        draggedPlacement(kind, { x: 20, y: 90 }, { x: 180, y: 30 }),
+        draggedPlacement(kind, { x: 20, y: 120 }, { x: 180, y: 30 }),
       ).toEqual({
         position,
         size,
@@ -57,38 +57,115 @@ describe('placement geometry', () => {
     },
   );
 
-  it('places a long, thin drag at the least height the model holds', () => {
-    expect(draggedPlacement('store', { x: 0, y: 0 }, { x: 50, y: 0 })).toEqual({
-      position: { x: 0, y: 0 },
-      size: { width: 50, height: 1 },
+  it('places a drag of 200 by 20 at 60 high, its stroke inside the drawn box', () => {
+    expect(
+      draggedPlacement('actor', { x: 0, y: 0 }, { x: 200, y: 20 }),
+    ).toEqual({
+      position: { x: 1, y: 1 },
+      size: { width: 198, height: 60 },
     });
   });
 
-  it.each(['actor', 'process', 'store', 'boundary-box', 'note'] as const)(
-    'the %s tool places a drag across no distance at a size the model reads',
-    (kind) => {
-      const { size } = draggedPlacement(kind, { x: 7, y: 7 }, { x: 7, y: 7 });
-
-      expect(sizeSchema.safeParse(size).success).toBe(true);
+  it.each([
+    ['up and left', { x: 70, y: 60 }, { x: 40, y: 20 }],
+    ['up and right', { x: 130, y: 60 }, { x: 100, y: 20 }],
+    ['down and right', { x: 130, y: 100 }, { x: 100, y: 80 }],
+    ['down and left', { x: 70, y: 100 }, { x: 40, y: 80 }],
+  ] as const)(
+    'grows a short drag %s to the floor from the pressed corner',
+    (_, to, position) => {
+      expect(draggedPlacement('note', { x: 100, y: 80 }, to)).toEqual({
+        position,
+        size: { width: minimumNodeExtent, height: minimumNodeExtent },
+      });
     },
   );
 
+  it.each(['actor', 'process', 'store', 'boundary-box', 'note'] as const)(
+    'the %s tool places a drag across no distance at the floor, right and down from the press',
+    (kind) => {
+      const press = { x: 7, y: 7 };
+      const { position, size } = draggedPlacement(kind, press, press);
+
+      expect(size).toEqual({
+        width: minimumNodeExtent,
+        height: minimumNodeExtent,
+      });
+      expect(position.x).toBeGreaterThanOrEqual(press.x);
+      expect(position.y).toBeGreaterThanOrEqual(press.y);
+    },
+  );
+
+  it.each([
+    [
+      'right, three screen pixels above the press line',
+      { x: 300, y: 77 },
+      { x: 200, y: -3 },
+      { position: { x: 100, y: 80 }, size: { width: 200, height: 60 } },
+    ],
+    [
+      'right, three screen pixels below the press line',
+      { x: 300, y: 83 },
+      { x: 200, y: 3 },
+      { position: { x: 100, y: 80 }, size: { width: 200, height: 60 } },
+    ],
+    [
+      'down, three screen pixels left of the press line',
+      { x: 97, y: 280 },
+      { x: -3, y: 200 },
+      { position: { x: 100, y: 80 }, size: { width: 60, height: 200 } },
+    ],
+    [
+      'right at half zoom, three screen pixels and six units above the press line',
+      { x: 500, y: 74 },
+      { x: 200, y: -3 },
+      { position: { x: 100, y: 80 }, size: { width: 400, height: 60 } },
+    ],
+  ] as const)(
+    'keeps the short axis right and down of the press for a drag %s',
+    (_, to, moved, placed) => {
+      expect(pointerPlacement('note', { x: 100, y: 80 }, to, moved)).toEqual(
+        placed,
+      );
+    },
+  );
+
+  it('grows a short axis toward a pointer four screen pixels along it', () => {
+    expect(
+      pointerPlacement(
+        'note',
+        { x: 100, y: 80 },
+        { x: 300, y: 76 },
+        { x: 200, y: -4 },
+      ),
+    ).toEqual({
+      position: { x: 100, y: 20 },
+      size: { width: 200, height: 60 },
+    });
+  });
+
   it('treats movement below four screen pixels as a click', () => {
     expect(
-      pointerPlacement('actor', { x: 100, y: 80 }, { x: 102, y: 82 }, 3.9),
+      pointerPlacement(
+        'actor',
+        { x: 100, y: 80 },
+        { x: 103.9, y: 80 },
+        { x: 3.9, y: 0 },
+      ),
     ).toEqual(centredPlacement('actor', { x: 100, y: 80 }));
   });
 
-  it('keeps a four-screen-pixel rectangle as a drag placement', () => {
+  it('places a four-screen-pixel drag at the floor rather than the default size', () => {
     expect(
-      pointerPlacement('actor', { x: 100, y: 80 }, { x: 104, y: 84 }, 4),
-    ).toEqual({ position: { x: 101, y: 81 }, size: { width: 2, height: 2 } });
-  });
-
-  it('fits the stroke inside a small outer extent, down to the least size the model holds', () => {
-    expect(draggedPlacement('actor', { x: 0, y: 0 }, { x: 3, y: 1 })).toEqual({
-      position: { x: 0.25, y: 0 },
-      size: { width: 2.5, height: 1 },
+      pointerPlacement(
+        'actor',
+        { x: 100, y: 80 },
+        { x: 104, y: 80 },
+        { x: 4, y: 0 },
+      ),
+    ).toEqual({
+      position: { x: 101, y: 81 },
+      size: { width: minimumNodeExtent, height: minimumNodeExtent },
     });
   });
 });

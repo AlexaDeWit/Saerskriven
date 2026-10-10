@@ -4,8 +4,10 @@ import { boundsOfPoints } from './bounds.js';
 import type { NodeBox } from './handles.js';
 import { canvasNodeOf, type CanvasNode } from './layout.js';
 import {
+  minimumMeasuredResizeExtent,
   minimumNodeExtent,
   resizeBoxByKey,
+  resizeBoxFromMeasurement,
   resizeBoxOnControlAxes,
   resizeControlPositions,
   resizeControlsOf,
@@ -89,6 +91,35 @@ describe('resizeBoxByKey', () => {
     });
   });
 
+  it.each([
+    [65, 5],
+    [63, 5],
+    [65, 20],
+    [80, 20],
+  ])('stops a press from %d wide with a step of %d at 60', (width, step) => {
+    const wide = { position: box.position, size: { width, height: 100 } };
+    expect(resizeBoxByKey(wide, 'right', 'ArrowLeft', step)).toEqual({
+      position: box.position,
+      size: { width: 60, height: 100 },
+    });
+  });
+
+  it.each(resizeControlPositions)(
+    'leaves a box 60 by 60 alone when a key on the %s control would shrink it',
+    (control) => {
+      const floor = { position: box.position, size: { width: 60, height: 60 } };
+      const inward = [
+        control.includes('left') ? 'ArrowRight' : undefined,
+        control.includes('right') ? 'ArrowLeft' : undefined,
+        control.includes('top') ? 'ArrowDown' : undefined,
+        control.includes('bottom') ? 'ArrowUp' : undefined,
+      ].filter((key) => key !== undefined);
+      for (const key of inward) {
+        expect(resizeBoxByKey(floor, control, key, 20)).toBeUndefined();
+      }
+    },
+  );
+
   it('ignores a key outside the control axis', () => {
     expect(resizeBoxByKey(box, 'top', 'ArrowLeft')).toBeUndefined();
     expect(resizeBoxByKey(box, 'left', 'Enter')).toBeUndefined();
@@ -100,9 +131,9 @@ describe('resizeBoxByKey', () => {
     ['top', 'ArrowDown', 'ArrowUp'],
     ['bottom', 'ArrowUp', 'ArrowDown'],
   ] as const)(
-    'preserves an extent below ten when shrinking from the %s and grows by its step',
+    'preserves an extent below the floor when shrinking from the %s and grows by its step',
     (control, shrink, grow) => {
-      const small = { position: box.position, size: { width: 4, height: 4 } };
+      const small = { position: box.position, size: { width: 20, height: 20 } };
       expect(resizeBoxByKey(small, control, shrink)).toBeUndefined();
       const width = control === 'left' || control === 'right';
       for (const step of [5, 20]) {
@@ -111,11 +142,19 @@ describe('resizeBoxByKey', () => {
             x: box.position.x - (control === 'left' ? step : 0),
             y: box.position.y - (control === 'top' ? step : 0),
           },
-          size: { width: width ? 4 + step : 4, height: width ? 4 : 4 + step },
+          size: {
+            width: width ? 20 + step : 20,
+            height: width ? 20 : 20 + step,
+          },
         });
       }
     },
   );
+
+  it('does not step an extent grown from below the floor back down', () => {
+    const grown = { position: box.position, size: { width: 25, height: 20 } };
+    expect(resizeBoxByKey(grown, 'right', 'ArrowLeft')).toBeUndefined();
+  });
 });
 
 describe('resizeBoxOnControlAxes', () => {
@@ -227,7 +266,7 @@ describe('scaledCurvePoints', () => {
     expect({ position, size }).toEqual(target);
   });
 
-  it('collapses an axis to the minimum extent and no further', () => {
+  it('collapses an axis to a box 10 across and no further', () => {
     const scaled = scaledCurvePoints(curve, {
       position: curveBox.position,
       size: { width: 1, height: curveBox.size.height },
@@ -235,12 +274,31 @@ describe('scaledCurvePoints', () => {
     expect(boundsOfPoints(scaled)).toEqual({
       x: 100,
       y: 140,
-      width: minimumNodeExtent - stroke * 2,
+      width: 10 - stroke * 2,
       height: 60,
     });
   });
 
-  it('leaves an axis already under the minimum extent where it is when asked to shrink', () => {
+  it('leaves a curve at the resize floor when a key or a pointer shrinks it further', () => {
+    const floor = minimumNodeExtent - stroke * 2;
+    const byKey = resizeBoxByKey(curveBox, 'right', 'ArrowLeft', 500);
+    assert.isDefined(byKey);
+    expect(boundsOfPoints(scaledCurvePoints(curve, byKey)).width).toBe(floor);
+
+    const { width, height } = curveBox.size;
+    expect(minimumMeasuredResizeExtent(width, width)).toBe(minimumNodeExtent);
+    const byPointer = resizeBoxFromMeasurement(
+      curveBox,
+      'left',
+      { width, height },
+      { width: 1, height },
+    );
+    expect(boundsOfPoints(scaledCurvePoints(curve, byPointer)).width).toBe(
+      floor,
+    );
+  });
+
+  it('leaves an axis already under its least extent where it is when asked to shrink', () => {
     const shallow = [
       { x: 0, y: 10 },
       { x: 50, y: 11 },

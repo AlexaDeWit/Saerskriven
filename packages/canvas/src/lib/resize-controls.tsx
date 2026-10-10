@@ -112,7 +112,9 @@ type NodePress = {
  * rounds fractional sizes to whole pixels.
  *
  * Buttons claim all arrow keys, including those off their axes or blocked by
- * `minimumNodeExtent`, so React Flow cannot move the selection with them.
+ * `minimumNodeExtent`, so React Flow cannot move the selection with them. A
+ * key on a control's axis that the least extent blocks calls
+ * `onResizeRefused`, and a key off its axis calls nothing.
  *
  * One control holds the press. Fingers on it join, while other controls and
  * arrow keys wait. The last release ends the resize. Touch cancellation or
@@ -135,9 +137,11 @@ export function ResizeControls({
   node,
   onResize,
   onResizeEnd,
+  onResizeRefused,
   visible,
 }: ResizeSubject & {
   readonly labels: ResizeLabels;
+  readonly onResizeRefused: (() => void) | undefined;
   readonly visible: boolean;
 }): ReactElement {
   const { press, generation } = useNodePress({ node, onResize, onResizeEnd });
@@ -150,6 +154,7 @@ export function ResizeControls({
           label={labels[position]}
           node={node}
           onResizeEnd={onResizeEnd}
+          onResizeRefused={onResizeRefused}
           position={position}
           press={press}
           visible={visible}
@@ -272,12 +277,14 @@ function ResizeControl({
   label,
   node,
   onResizeEnd,
+  onResizeRefused,
   position,
   press,
   visible,
 }: Pick<ResizeSubject, 'node' | 'onResizeEnd'> & {
   readonly generation: number;
   readonly label: string;
+  readonly onResizeRefused: (() => void) | undefined;
   readonly position: ResizeControlPosition;
   readonly press: NodePress;
   readonly visible: boolean;
@@ -338,14 +345,20 @@ function ResizeControl({
     }
     event.preventDefault();
     event.stopPropagation();
+    const { key } = event;
     const box = resizeBoxByKey(
       node,
       position,
-      event.key,
+      key,
       event.shiftKey ? shiftedKeyboardResizeStep : keyboardResizeStep,
     );
-    if (box !== undefined && !press.pressed()) {
+    if (press.pressed()) {
+      return;
+    }
+    if (box !== undefined) {
       onResizeEnd?.(box, 'keyboard');
+    } else if (resizeControlKeys[position].some((used) => used === key)) {
+      onResizeRefused?.();
     }
   };
 

@@ -192,13 +192,13 @@ test('geometry fields support movement and resizing, cancellation, and one undo 
   const after = await savedModel(page);
   expect(after.diagrams[0].elements[0]).toMatchObject({
     position: { x: 41, y: 40 },
-    size: { width: 101, height: 50 },
+    size: { width: 101, height: 60 },
   });
   await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   const undone = await savedModel(page);
   expect(undone.diagrams[0].elements[0]).toMatchObject({
     position: { x: 40, y: 40 },
-    size: { width: 100, height: 50 },
+    size: { width: 100, height: 60 },
   });
   await test.step('Escape from a field cancels the edit', async () => {
     await actor.focus();

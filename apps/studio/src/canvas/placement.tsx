@@ -24,14 +24,13 @@ import {
   centredPlacement,
   defaultCurveWaypoints,
   freshElement,
-  pointerDistance,
+  pointerOffset,
   pointerPlacement,
   withPlacement,
   type ElementTool,
 } from './elements.js';
 import type { DiagramNode } from './nodes.js';
 import type { PlacementDraft } from './placement-preview.js';
-import { nameFieldExtent } from './inline-editing.js';
 import {
   currentTool,
   finishPlacement,
@@ -314,7 +313,7 @@ export function usePlacement(
           started.tool,
           started.flow,
           point,
-          pointerDistance(event, started.screen),
+          pointerOffset(event, started.screen),
         ),
       };
       gesture.current = moved;
@@ -355,14 +354,10 @@ export function usePlacement(
     event.preventDefault();
     event.stopPropagation();
     const { geometry } = started;
-    const fieldFits =
-      geometry.size.width >= nameFieldExtent &&
-      geometry.size.height >= nameFieldExtent;
     if (
       placeElement(
         withPlacement(started.element, geometry.position, geometry.size),
         'pointer',
-        fieldFits,
       )
     ) {
       finishPlacement();

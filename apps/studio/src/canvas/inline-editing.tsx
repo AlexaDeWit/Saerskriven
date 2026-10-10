@@ -48,7 +48,11 @@ import {
   useTextDraft,
   type TextRefusal,
 } from '../ui/text-field.js';
-import { announceRefusal, resetAnnouncements } from './announcements.js';
+import {
+  announce,
+  announceRefusal,
+  resetAnnouncements,
+} from './announcements.js';
 import {
   commitNote,
   commitRename,
@@ -82,9 +86,6 @@ type InlineFieldProps = {
   readonly onCommit: (elementId: ElementId, text: string) => void;
   readonly refuse?: (label: Said, text: string) => TextRefusal | undefined;
 };
-
-/** A one-line name opens in place only when its box fits a field in both dimensions. */
-export const nameFieldExtent = lineHeight(wrappedTextStyles.label.fontSize);
 
 /** The store's inline editor replaces the corresponding node text. */
 export const editingNodeTypes = {
@@ -300,6 +301,9 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
               keyboardMoved();
             }
           }
+        }}
+        onResizeRefused={() => {
+          announce((speak) => speak('canvas.size-kept'));
         }}
         resizeLabels={resizeLabels(node, t)}
         resizing={resizing}
