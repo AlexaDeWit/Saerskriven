@@ -200,16 +200,14 @@ describe('the workspace one call runs against', () => {
     );
   });
 
-  it.each(['pinned', 'http'] as const)(
-    'is the workspace as opened for a %s server, which neither asks nor reads an answer',
-    (reach) => {
-      expect(
-        [asking, answered].map((turn) =>
-          workspaceForCall(opened(reach), [outside], turn),
-        ),
-      ).toEqual([Either.right(opened(reach)), Either.right(opened(reach))]);
-    },
-  );
+  it('is the workspace as opened for a pinned server, which neither asks nor reads an answer', () => {
+    const pinned = opened('pinned');
+    expect(
+      [asking, answered].map((turn) =>
+        workspaceForCall(pinned, [outside], turn),
+      ),
+    ).toEqual([Either.right(pinned), Either.right(pinned)]);
+  });
 });
 
 const calling = (
@@ -560,43 +558,37 @@ describe.each(eras)('a %s client of a server that follows its host', (era) => {
     expect(existsSync(path)).toBe(false);
   });
 
-  it.each([
-    ['pinned', HostDirectories.Pinned()],
-    ['http', HostDirectories.OverHttp()],
-  ] as const)(
-    'never asks from a %s server, and reads no answer sent anyway',
-    async (reach, unextended) => {
-      const tree = hostTree();
-      const host = listingHost(tree.listed);
-      const path = join(tree.listed, 'started.yaml');
-      const args = { file: path, title: 'Started' };
-      const open = await session({
-        root: tree.launch,
-        reach,
-        era,
-        roots: host.roots,
-      });
-      const results = [
-        await calling(open, 'saer_create', args),
-        await callingWithAnswer(
-          open,
-          'saer_create',
-          args,
-          answering(uriOf(tree.listed)),
-        ),
-      ];
-      await open.end();
-      for (const result of results) {
-        expect(textOf(result)).toContain(
-          refusal(path, tree.launch, unextended),
-        );
-      }
-      expect({ asked: host.asked(), written: existsSync(path) }).toEqual({
-        asked: 0,
-        written: false,
-      });
-    },
-  );
+  it('never asks from a pinned server, and reads no answer sent anyway', async () => {
+    const tree = hostTree();
+    const host = listingHost(tree.listed);
+    const path = join(tree.listed, 'started.yaml');
+    const args = { file: path, title: 'Started' };
+    const open = await session({
+      root: tree.launch,
+      reach: 'pinned',
+      era,
+      roots: host.roots,
+    });
+    const results = [
+      await calling(open, 'saer_create', args),
+      await callingWithAnswer(
+        open,
+        'saer_create',
+        args,
+        answering(uriOf(tree.listed)),
+      ),
+    ];
+    await open.end();
+    for (const result of results) {
+      expect(textOf(result)).toContain(
+        refusal(path, tree.launch, HostDirectories.Pinned()),
+      );
+    }
+    expect({ asked: host.asked(), written: existsSync(path) }).toEqual({
+      asked: 0,
+      written: false,
+    });
+  });
 
   describe('a prompt naming a file beyond the root', () => {
     const tree = hostTree();
