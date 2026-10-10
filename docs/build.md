@@ -263,7 +263,7 @@ listening socket, a datagram socket and a Unix socket. WebAssembly needs no
 grant, and neither does the environment.
 
 The denials are by name because the absence of a grant is not enough. Node
-takes four arguments out of a command line before `saer` reads it:
+reads four arguments in a command line before `saer` does:
 `--experimental-config-file` and `--experimental-default-config-file`
 wherever they stand, even after a `--`, and `--env-file` and
 `--env-file-if-exists` up to a `--`. A configuration file may hold a
@@ -281,6 +281,14 @@ prints a line and goes on), and so does every command while
 `NODE_REPL_EXTERNAL_MODULE` is set. Node leaves the arguments in the command
 line, so `saer` then refuses them as arguments it does not know.
 
+One variable is outside what the restriction claims. Node reads the OpenSSL
+configuration that `OPENSSL_CONF` names when it starts, before the permission
+model and outside it, and an engine entry in that file names a library for
+OpenSSL to load into the process. That stands beside the dynamic loader's own
+variables, such as `LD_PRELOAD`: whoever sets the environment of the person
+running `saer` can already load code into it, and the restriction is a guard
+rail against errors of our own implementation, which sets neither.
+
 This is a second guard rail against errors of our own implementation, such as
 a render path that came to fetch a file or to start a program. It is not a
 defence against a compromised dependency or against hostile code inside the
@@ -291,9 +299,11 @@ security boundary against intentional misuse or a compromised process"
 The bundle run under node carries no restriction at all.
 
 The model also refuses a few calls whatever the grants: under it `fsync`,
-`fdatasync`, `fchmod`, `fchown` and `futimes` throw `ERR_ACCESS_DENIED`. The
-bundle calls none of them. A writer that came to call one would fail in the
-executable alone, where only the compiled scenario table would show it.
+`fdatasync`, `fchmod`, `fchown` and `futimes` throw `ERR_ACCESS_DENIED`, and
+so does a write given the `flush` option, which is the likeliest way a writer
+would come to one. The bundle calls none of them and passes no `flush`. A
+writer that came to either would fail in the executable alone, where only the
+compiled scenario table would show it.
 
 `apps/cli/src/restriction.spec.ts` packages a probe with the same script, and
 so under the same arguments, and holds each channel to its refusal. It runs
@@ -374,9 +384,11 @@ What a bump can change, and where to look:
 - **The permission flags.** `scripts/sea-executable.sh` stops the build when
   the new Node has a flag it neither grants nor denies: add it to the
   denials, or grant it if `saer` loses what it gates, and add a row for it to
-  the probe. Read the release notes of every Node in between for single
-  executable applications and the permission model, which Node 26 still
-  develops.
+  the probe. A flag that takes a value, as the `--allow-env` on Node's main
+  branch does, is granted with the value we mean or left out, never negated
+  with `--no-`, and the build's comparison stops on it until the script lists
+  it. Read the release notes of every Node in between for single executable
+  applications and the permission model, which Node 26 still develops.
 - **What a Linux executable needs.** Read it off the built executables
   [as above](#what-a-linux-executable-needs). "glibc 2.28" is written in
   `README.md`, in the message of `scripts/release/install.sh` and in the

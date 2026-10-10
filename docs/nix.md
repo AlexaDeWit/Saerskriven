@@ -109,10 +109,11 @@ relying on an untested target.
 Mac after v0.8.3. A flake input locked to a revision from before that still
 provides the release it pinned.
 
-The pin holds no executable built on Node until a release of one is pinned, so
-the CI build job also runs the check on the Linux x64 executable it has just
-built. [`nix/built-check.nix`](../nix/built-check.nix) is that check, and its
-header gives the command for a local build.
+The pin is the last release and never the tree, so the CI build job also runs
+the check on the Linux x64 executable it has just built: the package is proven
+on what the next release will hold before that release exists.
+[`nix/built-check.nix`](../nix/built-check.nix) is that check, and its header
+gives the command for a local build.
 
 ```sh
 nix build --no-link --print-build-logs .#checks.x86_64-linux.saerskriven

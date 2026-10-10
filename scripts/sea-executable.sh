@@ -70,19 +70,33 @@ readonly assets
 # that any argument names (--experimental-config-file) and applies its
 # permission section. It parses execArgv after that file, so a denial here
 # wins over a grant there.
+readonly granted=(fs-read fs-write)
 readonly denied=(addons child-process ffi fs-vfs inspector net openssl-store
   wasi worker)
 known="$("${SAERSKRIVEN_SEA_NODE}" --help |
-  { grep -o -- '--allow-[a-z-]*' || true; } | LC_ALL=C sort -u | tr '\n' ' ')"
-listed="$(printf -- '--allow-%s\n' fs-read fs-write "${denied[@]}" |
-  LC_ALL=C sort | tr '\n' ' ')"
+  { grep -o -- '--allow-[a-z0-9-]*' || true; } | LC_ALL=C sort -u)"
+listed="$(printf -- '--allow-%s\n' "${granted[@]}" "${denied[@]}" |
+  LC_ALL=C sort)"
 if [ "${known}" != "${listed}" ]; then
-  echo "the packaging Node has the permission flags: ${known}" >&2
-  echo "and $0 grants or denies: ${listed}" >&2
+  unlisted="$(LC_ALL=C comm -23 <(echo "${known}") <(echo "${listed}") |
+    paste -s -d ' ' -)"
+  stale="$(LC_ALL=C comm -13 <(echo "${known}") <(echo "${listed}") |
+    paste -s -d ' ' -)"
+  if [ -n "${unlisted}" ]; then
+    echo "the packaging Node has a permission flag that $0" >&2
+    echo "neither grants nor denies: ${unlisted}" >&2
+  fi
+  if [ -n "${stale}" ]; then
+    echo "$0 grants or denies a permission flag that the" >&2
+    echo "packaging Node does not have, or lists one twice: ${stale}" >&2
+  fi
   echo "Grant or deny each by name before building, so that a scope a" >&2
   echo "Node bump added is not left to a configuration file to grant." >&2
   exit 1
 fi
+grants="$(printf '%s\n' "${granted[@]}" | jq -R '"--allow-" + . + "=*"' |
+  jq -s .)"
+readonly grants
 denials="$(printf '%s\n' "${denied[@]}" | jq -R '"--no-allow-" + .' | jq -s .)"
 readonly denials
 
@@ -94,6 +108,7 @@ jq -n \
   --arg executable "${runtime}" \
   --arg output "${output}" \
   --argjson assets "${assets}" \
+  --argjson grants "${grants}" \
   --argjson denials "${denials}" \
   '{
     main: $main,
@@ -104,9 +119,7 @@ jq -n \
     useSnapshot: false,
     useCodeCache: false,
     assets: $assets,
-    execArgv: (
-      ["--permission", "--allow-fs-read=*", "--allow-fs-write=*"] + $denials
-    ),
+    execArgv: (["--permission"] + $grants + $denials),
     execArgvExtension: "none"
   }' >"${config}"
 

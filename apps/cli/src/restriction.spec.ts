@@ -260,7 +260,7 @@ const title =
       );
       grants.push(
         ...sorted(
-          [...new Set(help.stdout.match(/--allow-[a-z-]+/gu))].filter(
+          [...new Set(help.stdout.match(/--allow-[a-z\d-]+/gu))].filter(
             (flag) => !/^--allow-fs-(?:read|write)$/u.test(flag),
           ),
         ),

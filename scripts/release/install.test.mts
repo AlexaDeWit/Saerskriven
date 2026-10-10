@@ -13,7 +13,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { test } from 'node:test';
 import {
   linkTools,
@@ -21,7 +21,7 @@ import {
   workspaceRoot,
 } from '../tools.fixtures.mts';
 
-const payload = '#!/bin/sh\necho "$@" >> "$HOME/started"\n';
+const payload = '#!/bin/sh\necho "$0" "$@" >> "$HOME/started"\n';
 const digest = createHash('sha256').update(payload).digest('hex');
 const targets = [
   ['Linux', 'x86_64', 'x86_64-unknown-linux-gnu'],
@@ -79,7 +79,7 @@ const fixture = (
   );
   writeFileSync(
     join(bin, 'sysctl'),
-    '#!/usr/bin/env bash\n[ -n "${INSTALL_TEST_ARM64-}" ] || exit 1\nprintf "%s\\n" "$INSTALL_TEST_ARM64"\n',
+    '#!/usr/bin/env bash\n[ "$*" = "-n hw.optional.arm64" ] && [ -n "${INSTALL_TEST_ARM64-}" ] || exit 1\nprintf "%s\\n" "$INSTALL_TEST_ARM64"\n',
     { mode: 0o755 },
   );
   writeFileSync(
@@ -176,10 +176,24 @@ for (const [os, arch, target] of targets) {
     assert.equal(readlinkSync(probe.compatibility), 'saer');
     assert.equal(readFileSync(probe.compatibility, 'utf8'), payload);
     const started = join(probe.home, 'started');
-    assert.equal(
-      existsSync(started) ? readFileSync(started, 'utf8') : '',
-      os === 'Linux' ? '--version\n' : '',
-    );
+    if (os === 'Linux') {
+      const [startedFile, ...others] = readFileSync(started, 'utf8')
+        .trimEnd()
+        .split(' --version');
+      assert.deepEqual(others, ['']);
+      assert.ok(startedFile);
+      assert.equal(basename(startedFile), 'saer');
+      assert.match(
+        basename(dirname(startedFile)),
+        /^\.saerskriven-install\.[A-Za-z0-9]{8}$/u,
+      );
+      assert.equal(
+        dirname(dirname(startedFile)),
+        join(probe.home, '.local/bin'),
+      );
+    } else {
+      assert.equal(existsSync(started), false);
+    }
     assert.match(probe.calls(), new RegExp(`saer-1.2.3-${target}`, 'u'));
     assert.match(result.stdout, /PATH/u);
     assert.deepEqual(readdirSync(probe.temp), []);
@@ -247,6 +261,21 @@ void test('a Linux executable that does not start leaves a fresh machine without
   );
   assert.notEqual(probe.run().status, 0);
   assert.deepEqual(installedNames(probe.home), []);
+});
+
+void test('a Linux executable that does not start leaves a legacy saerskriven as it was', () => {
+  const probe = fixture(
+    'Linux',
+    'x86_64',
+    'sha256sum',
+    '#!/bin/sh\nexit 127\n',
+  );
+  mkdirSync(join(probe.home, '.local/bin'), { recursive: true });
+  writeFileSync(probe.compatibility, 'legacy executable');
+  assert.notEqual(probe.run().status, 0);
+  assert.equal(lstatSync(probe.compatibility).isSymbolicLink(), false);
+  assert.equal(readFileSync(probe.compatibility, 'utf8'), 'legacy executable');
+  assert.deepEqual(installedNames(probe.home), ['saerskriven']);
 });
 
 void test('a destination that runs no program is named as one, not as missing libraries', () => {

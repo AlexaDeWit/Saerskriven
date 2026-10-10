@@ -148,6 +148,7 @@ void test('the Nix package is checked on the executable the run built', () => {
     ) < built,
   );
   assert.ok(steps[built]?.run?.includes('x86_64-unknown-linux-gnu'));
+  assert.equal(steps[built]?.if, undefined);
 });
 
 void test('only tokens that can sign reach the attestation job', () => {
