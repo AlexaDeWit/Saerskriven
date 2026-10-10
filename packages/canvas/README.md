@@ -170,7 +170,8 @@ points to a resized box, for the node body's live drawing and for the edit the
 mounting canvas commits. `isResizeKey` tells whether a key is one of
 `resizeKeys`. `GestureInput` names what a gesture is made with, a pointer or
 the keyboard, and the resize controls hand it to `onResizeEnd` beside the
-settled box.
+settled box. They call `onResizeRefused` for an arrow key on a control's axis
+that `minimumNodeExtent` blocks, so the mounting canvas can say so.
 
 A canvas mounting these passes `connectionMode={ConnectionMode.Loose}`, gives
 each node its accessible name, hands `CanvasNodeBody` the `resizeLabels` its

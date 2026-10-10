@@ -48,7 +48,11 @@ import {
   useTextDraft,
   type TextRefusal,
 } from '../ui/text-field.js';
-import { announceRefusal, resetAnnouncements } from './announcements.js';
+import {
+  announce,
+  announceRefusal,
+  resetAnnouncements,
+} from './announcements.js';
 import {
   commitNote,
   commitRename,
@@ -297,6 +301,9 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
               keyboardMoved();
             }
           }
+        }}
+        onResizeRefused={() => {
+          announce((speak) => speak('canvas.size-kept'));
         }}
         resizeLabels={resizeLabels(node, t)}
         resizing={resizing}

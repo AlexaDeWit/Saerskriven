@@ -97,6 +97,22 @@ describe('box placement gestures', () => {
     expect(modelStore.getState().past).toHaveLength(1);
   });
 
+  it('keeps the preview of a near-level drag below the press line, measured in screen pixels', () => {
+    const { result } = renderPlacement({ pan: { x: 0, y: 0 }, zoom: 2 });
+
+    act(() => {
+      result.current.pointerDown(primaryPointer({ x: 200, y: 160 }, onPane));
+    });
+    act(() => {
+      result.current.pointerMove(primaryPointer({ x: 400, y: 157 }, onPane));
+    });
+
+    expect(boxPreview(result.current)).toMatchObject({
+      position: { x: 101, y: 81 },
+      size: { width: 98, height: 60 },
+    });
+  });
+
   it('stores a pointer placement at three decimals and an Enter placement at one', () => {
     const { result } = renderPlacement({ pan: { x: 100, y: 80 }, zoom: 1.1 });
 

@@ -16,6 +16,7 @@ import {
 } from '@saerskriven/model/fixtures';
 import {
   type Box,
+  boxesOverlap,
   boxOf,
   canvasSettled,
   centreOf,
@@ -36,6 +37,7 @@ import {
   viewportZoom,
 } from './canvas.fixtures.js';
 import {
+  editAnnouncement,
   expandPane,
   nodeNamed,
   openFallback,
@@ -352,6 +354,31 @@ for (const input of pressInputs) {
   );
 }
 
+test('a point handle takes the press where it lies over a side control of a curve boundary', async ({
+  page,
+}) => {
+  const curve = await selectAloneAtFullZoom(page, archAtTheFloor);
+  const point = pointHandles(page).first();
+  const [handle, side] = await Promise.all([
+    screenBoxOf(point),
+    screenBoxOf(sideControl(curve, 'bottom', 'Floor')),
+  ]);
+  expect(boxesOverlap(handle, side)).toBe(true);
+
+  expect(
+    await reachesAt(point, {
+      x:
+        (Math.max(handle.x, side.x) +
+          Math.min(handle.x + handle.width, side.x + side.width)) /
+        2,
+      y:
+        (Math.max(handle.y, side.y) +
+          Math.min(handle.y + handle.height, side.y + side.height)) /
+        2,
+    }),
+  ).toBe(true);
+});
+
 test('a curve boundary stops at the floor by pointer and by arrow key', async ({
   page,
 }) => {
@@ -390,7 +417,9 @@ test('an element under the floor in a file keeps its size through a save and an 
   const corner = sideControl(node, 'bottom right corner', 'Chip');
 
   await right.focus();
+  await expect(editAnnouncement(page)).toBeEmpty();
   await right.press('ArrowLeft');
+  await expect(editAnnouncement(page)).not.toBeEmpty();
   await dragBy(page, corner.locator('..'), { x: -15, y: -15 });
   await expect(corner).toBeFocused();
   expect(await boxOf(node)).toEqual(read);

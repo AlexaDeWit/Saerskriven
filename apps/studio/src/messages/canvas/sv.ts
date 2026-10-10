@@ -60,6 +60,7 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
   'source-moved': 'Flyttade källänden på {flow}.',
   'target-moved': 'Flyttade måländen på {flow}.',
   'free-end-kept': 'En fri flödesände ligger kvar där den är.',
+  'size-kept': 'En storlekskontroll minskar inte mer än så här.',
   'position-invalid': 'Ange koordinater från {low} till {high}.',
   'undo-done': 'Ångrade.',
   'redo-done': 'Gjorde om.',

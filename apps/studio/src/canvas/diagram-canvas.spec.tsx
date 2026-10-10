@@ -469,16 +469,22 @@ describe('DiagramCanvas', () => {
   });
 
   it.each([
-    ['off its axis', 'top', 'ArrowLeft'],
+    ['off its axis, and says nothing', 'top', 'ArrowLeft', ''],
     [
-      'that would shrink the element under its minimum size',
+      'that would shrink the element under its minimum size, and says the size is kept',
       'right',
       'ArrowLeft',
+      t('canvas.size-kept'),
     ],
-    ['that would make an actor shorter than it is placed', 'top', 'ArrowDown'],
+    [
+      'that would make an actor shorter than its default height, and says the size is kept',
+      'top',
+      'ArrowDown',
+      t('canvas.size-kept'),
+    ],
   ] as const)(
-    'moves, resizes and says nothing, and records no undo step, for an arrow key on a resize control %s',
-    (_, from, key) => {
+    'moves and resizes nothing, and records no undo step, for an arrow key on a resize control %s',
+    (_, from, key, said) => {
       openCanvas([actorElement]);
       dispatch(
         Action.ResizeElement({
@@ -498,6 +504,7 @@ describe('DiagramCanvas', () => {
       expect(modelStore.getState().present).toBe(stored.present);
       expect(modelStore.getState().past).toBe(stored.past);
       expect(flowLiveMessage()).toBe('');
+      expect(currentAnnouncement().message).toBe(said);
       expect(told).not.toHaveBeenCalled();
       release();
     },

@@ -24,7 +24,7 @@ import {
   centredPlacement,
   defaultCurveWaypoints,
   freshElement,
-  pointerDistance,
+  pointerOffset,
   pointerPlacement,
   withPlacement,
   type ElementTool,
@@ -313,7 +313,7 @@ export function usePlacement(
           started.tool,
           started.flow,
           point,
-          pointerDistance(event, started.screen),
+          pointerOffset(event, started.screen),
         ),
       };
       gesture.current = moved;

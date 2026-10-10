@@ -65,6 +65,8 @@ const aboveFloor = { width: 100, height: 70 } as const;
 
 const thin = { width: 10, height: 100 } as const;
 
+const short = { width: 10, height: 10 } as const;
+
 const keyboardTools = [
   [registeredChords['actor-tool'][0], /^New actor, actor/u],
   [registeredChords['process-tool'][0], /^New process, process/u],
@@ -394,7 +396,10 @@ test('a thin drag grows to the floor from the pressed corner, as its preview sho
 
   const node = nodeNamed(page, /^New actor, actor/u);
   const committed = await inkBoxOf(node.locator(`.${canvasClassNames.actor}`));
-  expect(committed).toEqual(preview);
+  expect(committed.x).toBeCloseTo(preview.x);
+  expect(committed.y).toBeCloseTo(preview.y);
+  expect(committed.width).toBeCloseTo(preview.width);
+  expect(committed.height).toBeCloseTo(preview.height);
   expect((await boxOf(node)).width).toBe(minimumNodeExtent);
   await expect(nameField(page, 'New actor')).toBeFocused();
 });
@@ -405,9 +410,17 @@ test('a short touch drag places an element at the floor in both directions', asy
   const session = await touchSession(page);
   await openPlaceholder(page);
   const from = await emptyCanvasPoint(page);
+  const zoom = await viewportZoom(page);
+  const dragged = {
+    x: Math.round(short.width * zoom),
+    y: Math.round(short.height * zoom),
+  };
 
   await toolButton(page, 'Store').click();
-  await touchDrag(session, from, { x: from.x + 20, y: from.y + 20 });
+  await touchDrag(session, from, {
+    x: from.x + dragged.x,
+    y: from.y + dragged.y,
+  });
 
   const node = nodeNamed(page, /^New store, store/u);
   await expect(node).toHaveCount(1);

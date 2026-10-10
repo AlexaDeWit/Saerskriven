@@ -96,15 +96,73 @@ describe('placement geometry', () => {
     },
   );
 
+  it.each([
+    [
+      'right, three screen pixels above the press line',
+      { x: 300, y: 77 },
+      { x: 200, y: -3 },
+      { position: { x: 100, y: 80 }, size: { width: 200, height: 60 } },
+    ],
+    [
+      'right, three screen pixels below the press line',
+      { x: 300, y: 83 },
+      { x: 200, y: 3 },
+      { position: { x: 100, y: 80 }, size: { width: 200, height: 60 } },
+    ],
+    [
+      'down, three screen pixels left of the press line',
+      { x: 97, y: 280 },
+      { x: -3, y: 200 },
+      { position: { x: 100, y: 80 }, size: { width: 60, height: 200 } },
+    ],
+    [
+      'right at half zoom, three screen pixels and six units above the press line',
+      { x: 500, y: 74 },
+      { x: 200, y: -3 },
+      { position: { x: 100, y: 80 }, size: { width: 400, height: 60 } },
+    ],
+  ] as const)(
+    'keeps the short axis right and down of the press for a drag %s',
+    (_, to, moved, placed) => {
+      expect(pointerPlacement('note', { x: 100, y: 80 }, to, moved)).toEqual(
+        placed,
+      );
+    },
+  );
+
+  it('grows a short axis toward a pointer four screen pixels along it', () => {
+    expect(
+      pointerPlacement(
+        'note',
+        { x: 100, y: 80 },
+        { x: 300, y: 76 },
+        { x: 200, y: -4 },
+      ),
+    ).toEqual({
+      position: { x: 100, y: 20 },
+      size: { width: 200, height: 60 },
+    });
+  });
+
   it('treats movement below four screen pixels as a click', () => {
     expect(
-      pointerPlacement('actor', { x: 100, y: 80 }, { x: 102, y: 82 }, 3.9),
+      pointerPlacement(
+        'actor',
+        { x: 100, y: 80 },
+        { x: 103.9, y: 80 },
+        { x: 3.9, y: 0 },
+      ),
     ).toEqual(centredPlacement('actor', { x: 100, y: 80 }));
   });
 
   it('places a four-screen-pixel drag at the floor rather than the default size', () => {
     expect(
-      pointerPlacement('actor', { x: 100, y: 80 }, { x: 104, y: 84 }, 4),
+      pointerPlacement(
+        'actor',
+        { x: 100, y: 80 },
+        { x: 104, y: 80 },
+        { x: 4, y: 0 },
+      ),
     ).toEqual({
       position: { x: 101, y: 81 },
       size: { width: minimumNodeExtent, height: minimumNodeExtent },

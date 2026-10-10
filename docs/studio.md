@@ -268,13 +268,15 @@ Trust boundary curve, Note and Hand. A tooltip names each tool's shortcuts.
   a drag draws the box from the pressed corner to the pointer. The box is at
   least sixty units wide and high: a shorter drag keeps the pressed corner and
   grows toward the pointer, and the preview shows the size that will be
-  placed. A drag under four screen pixels places the default.
+  placed. On an axis the pointer has moved less than four screen pixels
+  along, the box grows right and down. A drag under four screen pixels places
+  the default.
 - A process draws an ellipse filling its box, a circle when the box is square.
   Its name wraps to the width of the rectangle inside the ellipse, so a wider
   process takes more of its name on each line.
 - Enter places the default at the centre of the view.
-- A placed element arrives selected with a placeholder name ("New actor", "New
-  flow"), and its name field opens. A Note opens its text.
+- An element placed with a tool arrives selected with a placeholder name ("New
+  actor"), and its name field opens. A Note opens its text.
 - The tool returns to Select after one placement. Double-click a tool to lock
   it for repeated placement, and press Escape to unlock it and return to
   Select.
@@ -324,15 +326,16 @@ A selected element carries a line on each side and a handle at each corner.
 Drag a side to change one axis or a corner to change both, with the opposite
 side fixed. Focus a control and press an arrow key to move that edge five
 units, or twenty with Shift. The resize controls stop shrinking at sixty
-units. That is the height an actor, a process or a store is placed at, so the
-controls make none of them shorter than it is placed. An element made smaller
+units. That is the default height of an actor, a process or a store, so the
+controls make none of them shorter than its default. An element made smaller
 in Position and size or in a file keeps its size until it is grown. While a
 width or height is under sixty units the controls only grow it, so Undo or
-Position and size makes it smaller again. An arrow key the focused control
-cannot use changes nothing: Up or Down on the left or right line, Left or
-Right on the top or bottom line, or a key that would shrink a width or height
-already at sixty units or less. On a trust boundary curve the same controls
-scale its points ([Trust boundaries](#trust-boundaries)).
+Position and size makes it smaller again. An arrow key that would shrink a
+width or height already at sixty units or less changes nothing and says so.
+An arrow key off the focused control's axis changes nothing: Up or Down on
+the left or right line, Left or Right on the top or bottom line. On a trust
+boundary curve the same controls scale its points
+([Trust boundaries](#trust-boundaries)).
 
 While an element with a threat badge is selected, the badge steps out past its
 top-right corner, so the handle there stays on the corner, and it draws above

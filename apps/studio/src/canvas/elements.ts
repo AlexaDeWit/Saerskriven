@@ -65,12 +65,20 @@ const nominalSizes = {
 /** The screen-pixel movement below which a placement remains a click. */
 export const placementClickDistance = 4;
 
+/** A pointer's offset, in screen pixels, from where a press started. */
+export function pointerOffset(
+  pointer: { readonly clientX: number; readonly clientY: number },
+  start: Point,
+): Point {
+  return { x: pointer.clientX - start.x, y: pointer.clientY - start.y };
+}
+
 /** How far, in screen pixels, a pointer is from where a press started. */
 export function pointerDistance(
   pointer: { readonly clientX: number; readonly clientY: number },
   start: Point,
 ): number {
-  return Math.hypot(pointer.clientX - start.x, pointer.clientY - start.y);
+  return lengthOf(pointerOffset(pointer, start));
 }
 
 /** The default size of an element placed by a click or by Enter. */
@@ -110,16 +118,25 @@ export function draggedPlacement(
   };
 }
 
-/** The geometry a completed pointer press asks an element tool to place. */
+/**
+ * The geometry a pointer asks an element tool to place once it has `moved`,
+ * an offset in screen pixels, from its press: the default size for a click,
+ * and otherwise a drag from `from` to `to`. An axis the pointer is under
+ * `placementClickDistance` along counts as not moved, so its side of the
+ * press cannot flip the element.
+ */
 export function pointerPlacement(
   kind: Exclude<ElementTool, 'boundary-curve'>,
   from: Point,
   to: Point,
-  screenDistance: number,
+  moved: Point,
 ): NodeBox {
-  return screenDistance < placementClickDistance
+  return lengthOf(moved) < placementClickDistance
     ? centredPlacement(kind, from)
-    : draggedPlacement(kind, from, to);
+    : draggedPlacement(kind, from, {
+        x: Math.abs(moved.x) < placementClickDistance ? from.x : to.x,
+        y: Math.abs(moved.y) < placementClickDistance ? from.y : to.y,
+      });
 }
 
 /** The default boundary curve centred on a click or on the viewport. */
@@ -244,6 +261,10 @@ function namedElement(name: string) {
     outOfScope: false,
     reasonOutOfScope: '',
   };
+}
+
+function lengthOf(offset: Point): number {
+  return Math.hypot(offset.x, offset.y);
 }
 
 function arch(position: Point, size: Size): Point[] {

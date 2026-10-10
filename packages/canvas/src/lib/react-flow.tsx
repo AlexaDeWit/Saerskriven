@@ -79,7 +79,9 @@ export type CanvasFreeEndData = Record<string, never>;
 export type CanvasFreeEndNode = Node<CanvasFreeEndData, typeof freeEndNodeKind>;
 
 /**
- * Draws at the live extent during resizing and leaves accessible naming to the mounting canvas.
+ * Draws at the live extent during resizing. Accessible naming, and what is
+ * said when `onResizeRefused` reports an arrow key the least extent blocks,
+ * are the mounting canvas's.
  * A selected boundary raises its badge through the viewport portal.
  * Side handles require `connectionMode={ConnectionMode.Loose}`.
  */
@@ -92,6 +94,7 @@ export function CanvasNodeBody({
   marks,
   onResize,
   onResizeEnd,
+  onResizeRefused,
   positionAbsoluteX,
   positionAbsoluteY,
   resizeLabels,
@@ -106,6 +109,7 @@ export function CanvasNodeBody({
   readonly resizeLabels: ResizeLabels;
   readonly onResize?: () => void;
   readonly onResizeEnd?: (box: NodeBox, input: GestureInput) => void;
+  readonly onResizeRefused?: () => void;
   readonly resizing?: boolean;
   readonly textVisible?: boolean;
 }): ReactElement {
@@ -163,6 +167,7 @@ export function CanvasNodeBody({
           node={data.node}
           onResize={onResize}
           onResizeEnd={onResizeEnd}
+          onResizeRefused={onResizeRefused}
           visible={controlsVisible}
         />
       ) : null}

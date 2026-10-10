@@ -72,6 +72,7 @@ export const canvasMessages = {
   'source-moved': text(flow),
   'target-moved': text(flow),
   'free-end-kept': text(),
+  'size-kept': text(),
   'position-invalid': text(coordinateRange),
   'undo-done': text(),
   'redo-done': text(),
