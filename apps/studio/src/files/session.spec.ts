@@ -54,6 +54,8 @@ const openOutcomes: OutcomesByTag<OpenOutcome> = {
   Unreadable: OpenOutcome.Unreadable({ reason: 'The file was moved.' }),
   Cancelled: OpenOutcome.Cancelled(),
   NoPicker: OpenOutcome.NoPicker(),
+  Gone: OpenOutcome.Gone({ name: 'moved.yaml' }),
+  Declined: OpenOutcome.Declined(),
 };
 
 const saveOutcomes: OutcomesByTag<SaveOutcome> = {
@@ -171,9 +173,16 @@ describe('openedBy', () => {
     );
   });
 
+  it('reports a recent file that is no longer there, naming it', () => {
+    expect(openedBy(openOutcomes.Gone, untitledFile)).toEqual(
+      Action.RecentFileGone({ name: 'moved.yaml' }),
+    );
+  });
+
   it('dispatches nothing where there is nothing to record', () => {
     expect(openedBy(openOutcomes.Cancelled, untitledFile)).toBeUndefined();
     expect(openedBy(openOutcomes.NoPicker, untitledFile)).toBeUndefined();
+    expect(openedBy(openOutcomes.Declined, untitledFile)).toBeUndefined();
   });
 
   it.each(['otm', 'tmbom'] as const)(

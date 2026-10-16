@@ -11,6 +11,8 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
   },
   'operation-refused': 'Le modèle a refusé la modification.',
   'file-unreachable': 'Saerskriven n’a pas pu accéder au fichier.',
+  'recent-file-gone': 'Saerskriven n’a pas trouvé {name}.',
+  'recent-file-dropped': 'Le fichier a été retiré des fichiers récents.',
   'recovery-rejected':
     'Saerskriven a rejeté l’instantané de récupération enregistré.',
   'recovery-unavailable': 'La récupération locale n’est pas disponible.',

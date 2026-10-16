@@ -10,6 +10,8 @@ export const noticeEnCA = catalogue(noticeMessages)('en-CA')({
   },
   'operation-refused': 'The model refused the edit.',
   'file-unreachable': 'Saerskriven could not reach the file.',
+  'recent-file-gone': 'Saerskriven could not find {name}.',
+  'recent-file-dropped': 'It was removed from Recent files.',
   'recovery-rejected': 'Saerskriven rejected the stored recovery snapshot.',
   'recovery-unavailable': 'Local recovery is unavailable.',
   'recovery-not-restored': 'Saerskriven did not restore the last session.',

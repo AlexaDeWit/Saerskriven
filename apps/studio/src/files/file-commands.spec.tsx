@@ -1082,6 +1082,27 @@ describe('useFileSession', () => {
     expect(modelStore.getState().present).toBe(placeholderModel);
   });
 
+  it('puts a reopen question away once another tab reaches a result', async () => {
+    const other = anotherTab();
+    const result = session(
+      specBridge({ recent: [chosenFile('model.yaml', sampleNativeText)] }),
+      undefined,
+      other.sync,
+    );
+    await waitFor(() => {
+      expect(result.current.recent?.files).toHaveLength(1);
+    });
+    edit();
+    act(() => {
+      result.current.recent?.reopen({ key: 'model.yaml', name: 'model.yaml' });
+    });
+    expect(result.current.recent?.asking?.name).toBe('model.yaml');
+
+    other.reaches({ ...initialState(placeholderModel), recoveryCurrent: true });
+
+    expect(result.current.recent?.asking).toBeUndefined();
+  });
+
   it('holds the file until the question over unsaved work is answered', () => {
     const bridge = specBridge();
     const result = session(bridge);

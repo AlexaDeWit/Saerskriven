@@ -208,6 +208,11 @@ export function reduce(state: State, action: Action): State {
       file: operation === 'open' ? FileLifecycle.NoFile() : state.file,
       lastFailure: StudioFailure.File({ reason }),
     }),
+    RecentFileGone: ({ name }) => ({
+      ...state,
+      file: FileLifecycle.NoFile(),
+      lastFailure: StudioFailure.RecentFileGone({ name }),
+    }),
     LinkRefused: ({ failure }) => ({
       ...state,
       lastFailure: StudioFailure.Link({ failure }),

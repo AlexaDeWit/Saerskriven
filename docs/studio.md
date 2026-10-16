@@ -115,6 +115,21 @@ studio next stores one, since either command would replace it. A failed open
 keeps the current model but lets go of its file, so its next Save treats it as
 a new model rather than writing to either file.
 
+**Recent files**, under Open, lists by name the last 10 files opened or saved
+through the browser's picker as Saerskriven YAML or Threat Dragon, most recent
+first. An OTM or TM-BOM file is not listed. The list is in Chrome and Edge,
+which keep a reference to a file that a page can reopen. Firefox and Safari keep
+none, so their menu has no Recent files. Choosing a file asks the browser for
+permission to edit it where it needs to, then opens it as Open does, asking
+first over unsaved work. A file that is no longer there leaves the list, under a
+notice. A file whose permission is declined stays. After a reopen that did not
+open its file, the next Open starts in that file's folder. **Clear recent
+files** empties the list. The list keeps the browser's references to the files,
+never their contents, survives a reload, and is the same in every tab. A
+reference gives a file's name and not its folder, so two files of the same name
+read the same in the list. In these browsers the open picker and the save
+picker each start in the folder they last used.
+
 **Export** writes the diagram on screen as SVG or PNG, the register as
 Markdown, or the whole model as Typst or PDF. **Threats as Markdown** writes
 the register alone. **Model as Markdown** adds Mermaid diagrams before it,

@@ -28,6 +28,7 @@ import {
   type RenderExports,
 } from './export-commands.js';
 import type { ExportNotice } from './export-notice.js';
+import { useRecentFiles, type RecentFiles } from './recent-files.js';
 import {
   browserShareLinks,
   linkLanding,
@@ -74,10 +75,12 @@ const noReport: ShownReport = { report: undefined, sequence: 0 };
 /**
  * File commands, export commands, notices, and menu questions.
  * `reportSequence` moves each time `report` is replaced, so a component keyed
- * on it draws every report as new nodes.
+ * on it draws every report as new nodes. `recent` is the recent list, and
+ * nothing where the platform keeps no reference to a file.
  */
 export type FileSession = {
   readonly commands: FileCommands;
+  readonly recent: RecentFiles | undefined;
   readonly report: LossReport | undefined;
   readonly reportSequence: number;
   readonly opening: boolean;
@@ -141,20 +144,6 @@ export function useFileSession(
     picker.current = input;
   }, []);
 
-  useEffect(
-    () =>
-      sync.watch((state) => {
-        dispatch(Action.Followed({ state }));
-        bridge.release();
-        setReport(undefined);
-        setOpening(false);
-        setClosing(false);
-        setChoosing(false);
-        cancelLink();
-      }),
-    [bridge, cancelLink, sync],
-  );
-
   const closeFile = useCallback((): void => {
     setClosing(false);
     setReport(undefined);
@@ -177,6 +166,24 @@ export function useFileSession(
       setReport(openReport(action));
     }
   }, []);
+
+  const recent = useRecentFiles(bridge, applyOpen);
+  const cancelRecent = recent.cancel;
+
+  useEffect(
+    () =>
+      sync.watch((state) => {
+        dispatch(Action.Followed({ state }));
+        bridge.release();
+        setReport(undefined);
+        setOpening(false);
+        setClosing(false);
+        setChoosing(false);
+        cancelLink();
+        cancelRecent();
+      }),
+    [bridge, cancelLink, cancelRecent, sync],
+  );
 
   const openFile = useCallback(async (): Promise<void> => {
     setOpening(false);
@@ -333,6 +340,7 @@ export function useFileSession(
   return useMemo(
     () => ({
       commands,
+      recent: bridge.keepsRecent() ? recent : undefined,
       report,
       reportSequence,
       opening,
@@ -376,6 +384,7 @@ export function useFileSession(
       opening,
       openFile,
       receive,
+      recent,
       report,
       reportSequence,
     ],

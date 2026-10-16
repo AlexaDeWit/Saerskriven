@@ -17,6 +17,8 @@ export const noticeMessages = {
   'refusal-details': plural('count'),
   'operation-refused': text(),
   'file-unreachable': text(),
+  'recent-file-gone': text(name),
+  'recent-file-dropped': text(),
   'recovery-rejected': text(),
   'recovery-unavailable': text(),
   'recovery-not-restored': text(),

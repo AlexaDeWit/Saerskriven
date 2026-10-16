@@ -54,6 +54,7 @@ export type StudioFailure = Data.TaggedEnum<{
     readonly failure: ReadFailure | DetectionFailure;
   };
   File: { readonly reason: string };
+  RecentFileGone: { readonly name: string };
   Link: { readonly failure: LinkFailure };
   StoredRecoveryRejected: { readonly problem: RecoveryProblem };
   RecoveryUnavailable: { readonly problem: RecoveryProblem };

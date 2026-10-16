@@ -68,6 +68,7 @@ const entersSubmenu = (
 
 type SubmenuProps = {
   readonly children: ReactNode;
+  readonly disabled?: boolean;
   readonly label?: string;
   readonly trigger: ReactNode;
 };
@@ -78,7 +79,7 @@ type SubmenuProps = {
  * the row. A pointer leaving the row straight into the submenu keeps it open
  * in any direction, where Radix expects it to head right.
  */
-export function Submenu({ children, label, trigger }: SubmenuProps) {
+export function Submenu({ children, disabled, label, trigger }: SubmenuProps) {
   const edge = useContext(SubmenuEdge);
   const row = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement | null>(null);
@@ -98,6 +99,7 @@ export function Submenu({ children, label, trigger }: SubmenuProps) {
       <DropdownMenu.SubTrigger
         aria-label={label}
         className={`${styles.item} ${cursor.row}`}
+        disabled={disabled}
         onPointerLeave={(event) => {
           if (entersSubmenu(event, content.current)) {
             event.preventDefault();

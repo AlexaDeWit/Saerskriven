@@ -99,6 +99,7 @@ type StudioActionTag =
   | 'Followed'
   | 'ReadFailed'
   | 'FileRefused'
+  | 'RecentFileGone'
   | 'LinkRefused'
   | 'DismissFailure';
 
@@ -508,6 +509,7 @@ const studioActions: ActionsByTag<StudioActionTag> = {
     operation: 'open',
     reason: 'the browser said no',
   }),
+  RecentFileGone: Action.RecentFileGone({ name: 'moved.yaml' }),
   LinkRefused: Action.LinkRefused({
     failure: LinkFailure.Codec({ failure: ShareLinkFailure.NotAShareLink() }),
   }),
@@ -1486,6 +1488,18 @@ describe('a refusal outside the model', () => {
         failure: ReadFailure.MalformedText({ message: 'not YAML' }),
       }),
     );
+  });
+
+  it('records a recent file that is no longer there, letting go of the open file as a failed open does', () => {
+    const opened = reduce(withHistory, studioActions.Opened);
+    const next = reduce(opened, studioActions.RecentFileGone);
+
+    expect(next.lastFailure).toEqual(
+      StudioFailure.RecentFileGone({ name: 'moved.yaml' }),
+    );
+    expect(next.file).toEqual(FileLifecycle.NoFile());
+    expect(next.present).toBe(opened.present);
+    expect(next.saved).toBe(opened.saved);
   });
 
   it('records what the platform said when no file arrived at all', () => {

@@ -8,7 +8,11 @@ export type ChosenFile = {
   text(): Promise<string>;
 };
 
-/** Chosen text is within the byte bound but still needs codec validation. */
+/**
+ * Chosen text is within the byte bound but still needs codec validation.
+ * `Gone` and `Declined` answer a reopen whose file is no longer there, or
+ * whose permission the person declined.
+ */
 export type OpenOutcome = Data.TaggedEnum<{
   Chosen: { readonly name: string; readonly text: string };
   TooLarge: {
@@ -19,6 +23,8 @@ export type OpenOutcome = Data.TaggedEnum<{
   Unreadable: { readonly reason: string };
   Cancelled: {};
   NoPicker: {};
+  Gone: { readonly name: string };
+  Declined: {};
 }>;
 
 /** Constructors and matching helpers for open outcomes. */
@@ -52,8 +58,18 @@ export type FileResult<Outcome> = {
   settle(retain: boolean | 'unchanged'): boolean;
 };
 
-/** Only the latest request can settle its handle, and Close invalidates every pending result. */
-export function fileOwnership<Handle>() {
+/** A file the recent list names, by the key a reopen asks for it with. */
+export type RecentFile = { readonly key: string; readonly name: string };
+
+/**
+ * Only the latest request can settle its handle, and Close invalidates every
+ * pending result. `adopted` hears each handle a settlement takes up in place
+ * of the one held, which is how a file joins the recent list: a write back to
+ * the held file, and a refused save, adopt nothing.
+ */
+export function fileOwnership<Handle>(
+  adopted: (handle: Handle) => void = () => undefined,
+) {
   let owner: symbol | undefined;
   let held: Handle | undefined;
   return {
@@ -71,9 +87,14 @@ export function fileOwnership<Handle>() {
             return false;
           }
           owner = undefined;
-          if (retain !== 'unchanged') {
-            held = retain ? candidate : undefined;
+          if (retain === 'unchanged') {
+            return true;
           }
+          const next = retain ? candidate : undefined;
+          if (next !== undefined && next !== held) {
+            adopted(next);
+          }
+          held = next;
           return true;
         },
       });
@@ -85,13 +106,22 @@ export function fileOwnership<Handle>() {
   };
 }
 
-/** File operations defer handle adoption until settlement. Exports never change the association. */
+/**
+ * File operations defer handle adoption until settlement. Exports never
+ * change the association. `keepsRecent` says whether the platform keeps a
+ * reference to a file that a later visit can reopen. Where it keeps none, the
+ * recent list is empty.
+ */
 export type FileBridge = {
   open(maxBytes: number): Promise<FileResult<OpenOutcome>>;
   received(
     file: ChosenFile,
     maxBytes: number,
   ): Promise<FileResult<OpenOutcome>>;
+  reopen(file: RecentFile, maxBytes: number): Promise<FileResult<OpenOutcome>>;
+  keepsRecent(): boolean;
+  recentFiles(): Promise<readonly RecentFile[]>;
+  clearRecent(): Promise<void>;
   save(name: string, text: string): Promise<FileResult<SaveOutcome>>;
   saveAs(
     name: string,

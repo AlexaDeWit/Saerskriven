@@ -12,11 +12,6 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Either } from 'effect';
-import { useEffect, useMemo } from 'react';
-import {
-  CommandSurfaceProvider,
-  unmountedSurface,
-} from '../commands/binding.js';
 import { Action } from '../store/actions.js';
 import { elementById, isDirty } from '../store/selectors.js';
 import { initialState, nameOf, placeholderModel } from '../store/state.js';
@@ -30,8 +25,6 @@ import {
   sampleModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome, type ChosenFile } from './bridge.js';
-import type { RenderExports } from './export-commands.js';
-import { useFileSession } from './file-commands.js';
 import {
   brokenThreatDragonText,
   chosenFile,
@@ -41,7 +34,6 @@ import {
   paste,
   sampleNativeText,
   specBridge,
-  type SpecBridge,
   specLinks,
   specRenders,
   startUnread,
@@ -56,30 +48,16 @@ import { ThreatOverlay } from '../panel/threat-overlay.js';
 import { resetThreatRegister } from '../panel/threat-register-state.js';
 import { ThreatRegister } from '../panel/threat-register.js';
 import { threatsTab } from '../ui/ui.fixtures.js';
-import { FileReports } from './file-reports.js';
-import { StudioMenu } from './menu.js';
-import type { ShareLinks } from './share-link.js';
+import {
+  Menu,
+  burger,
+  choose,
+  item,
+  mounted,
+  openMenu,
+  type User,
+} from './menu.fixtures.js';
 import { recordingClipboard } from '../canvas/canvas.fixtures.js';
-
-type User = ReturnType<typeof userEvent.setup>;
-
-const burger = (): HTMLElement =>
-  screen.getByRole('button', { name: /^Menu/u });
-
-const item = (name: string | RegExp): HTMLElement =>
-  screen.getByRole('menuitem', { name });
-
-const openMenu = async (user: User): Promise<void> => {
-  if (screen.queryByRole('menu') === null) {
-    await user.click(burger());
-    await screen.findByRole('menu');
-  }
-};
-
-const choose = async (user: User, name: string | RegExp): Promise<void> => {
-  await openMenu(user);
-  await user.click(item(name));
-};
 
 const openExportMenu = async (user: User): Promise<void> => {
   await openMenu(user);
@@ -151,44 +129,6 @@ const receiveReadOnly = async ({
       inLocale('en-CA')('reports.opened-read-only', { format }),
     );
   });
-};
-
-function Menu({
-  bridge,
-  runs,
-  renders,
-  links,
-}: {
-  readonly bridge: SpecBridge;
-  readonly runs?: 'pdf';
-  readonly renders?: RenderExports;
-  readonly links?: ShareLinks;
-}) {
-  const session = useFileSession(bridge, renders, undefined, links);
-  useEffect(() => {
-    if (runs === 'pdf') {
-      session.commands.exportPdf();
-    }
-  }, [runs, session.commands]);
-  const surface = useMemo(
-    () => ({ ...unmountedSurface, files: session.commands }),
-    [session.commands],
-  );
-  return (
-    <CommandSurfaceProvider surface={surface}>
-      <StudioMenu session={session} />
-      <FileReports session={session} />
-    </CommandSurfaceProvider>
-  );
-}
-
-const mounted = (
-  bridge: SpecBridge,
-  renders?: RenderExports,
-  runs?: 'pdf',
-  links?: ShareLinks,
-): void => {
-  render(<Menu bridge={bridge} links={links} renders={renders} runs={runs} />);
 };
 
 const asked = (): boolean =>

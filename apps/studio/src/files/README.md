@@ -16,6 +16,7 @@ person sees, and what an OTM or TM-BOM file becomes, is in
 | `export-commands.ts`, `render-assets.ts`                         | The projections through `@saerskriven/render`, and the loader for the WebAssembly modules and faces                        |
 | `share-link.ts`, `share-notice.ts`                               | Share, reading a shared link when it arrives, the question it asks over unsaved work, and the share report                 |
 | `menu.tsx`, `menu-items.tsx`, `submenu.tsx`, `radio-choices.tsx` | The burger menu, the items it and the switcher share, the second level, and a one-of-several group                         |
+| `recent-store.ts`, `recent-files.ts`, `recent-menu.tsx`          | The recent list: the handles IndexedDB keeps, the list and the reopen question a session holds, and the submenu            |
 | `settings-menu.tsx`                                              | The appearance and language submenus                                                                                       |
 | `diagram-switcher.tsx`                                           | The control joined to the burger that names, switches, adds and renames diagrams                                           |
 | `file-reports.tsx`                                               | The failure notice, the crossing report, the export report and the share report, hung under the chrome card                |
@@ -39,7 +40,7 @@ dismissed picker dispatches nothing. Where it cannot ask, the bridge's `save`
 downloads and answers `Written`, since the page cannot see the browser's own
 dialog ([Using the studio](../../../../docs/studio.md#files)).
 
-Each bridge open, fallback read, save, or save-as starts one operation. The
+Each bridge open, reopen, fallback read, save, or save-as starts one operation. The
 latest request owns settlement, regardless of completion order. The bridge
 returns an outcome and a settlement function without changing its held handle,
 and the session validates the read and settles the handle before dispatching
@@ -50,9 +51,9 @@ do not interrupt these operations. A save already in progress can still write
 its target, but once another file operation starts it cannot rename or mark the
 current model saved.
 
-A failed open, whether the read failed or a codec refused the text, keeps the
-model, history, saved checkpoint and loss report, but drops the file
-association and releases the handle, so the next Save leaves both files
+A failed open, whether the read failed, a codec refused the text, or a reopen
+found the file gone, keeps the model, history, saved checkpoint and loss
+report, but drops the file association and releases the handle, so the next Save leaves both files
 untouched. A refused save keeps the file and handle for retry. Dismissing a
 picker keeps the last settled association and does not revive an older pending
 operation. An empty fallback selection starts no operation, and a successful
@@ -60,6 +61,19 @@ one settles with no handle, so its next Save takes the no-handle path under
 the chosen name. An open of OTM or TM-BOM, which Saerskriven reads and does
 not write, releases the handle on success as well, so no Save writes to that
 file, and names the model as YAML under the file's stem.
+
+`keepsRecent` says whether the platform keeps a reference to a file that a
+later visit can reopen: the File System Access API's handle, which IndexedDB
+stores by structured clone. Each handle a settlement adopts in place of the one
+held goes to the top of the recent list, so a write back to the held file
+leaves the list alone, and so does an open of OTM or TM-BOM, which settles
+without its handle. The browser's bridge is built over a `RecentStore`, and a
+spec hands it one held in memory. A reopen asks for the `readwrite` permission
+Save needs, from the press that chose the file, and answers `Declined` where
+the person refuses, or `Gone`, dropping the entry, where the file is no longer
+there. A reopen that does not open its file hands its handle to the next open
+picker as `startIn`. The open and save pickers each pass an `id`, so the
+browser remembers a folder for each.
 
 ## Reading and writing
 
@@ -124,6 +138,9 @@ and New model would clear. The menu button's name and dot and the file state
 line read `isDirty` alone, since a stored session is not an edit on screen. The
 session owns the question so that a keyboard shortcut can open the menu on it.
 New model releases the native handle only after the recovery snapshot clears.
+A recent file asks the same question on its own item, naming the file, and the
+session reads the list again each time the menu opens, which is how one tab
+sees what another added.
 
 `choosing` is that shape a second time, for the format a save-as writes, asked
 only where the platform has no picker. Firefox and Safari are that browser, so
