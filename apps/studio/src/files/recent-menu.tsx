@@ -19,7 +19,7 @@ type RecentMenuProps = {
  */
 export function RecentMenu({ recent, unsaved }: RecentMenuProps) {
   const { t } = useTranslator();
-  const { asking, cancel, clear, confirm, files, refresh, reopen } = recent;
+  const { asking, cancel, clear, files, proceed, refresh, reopen } = recent;
 
   useEffect(() => {
     refresh();
@@ -38,7 +38,7 @@ export function RecentMenu({ recent, unsaved }: RecentMenuProps) {
               keepOpen={unsaved && !asked}
               onChoose={() => {
                 if (asked) {
-                  confirm(file);
+                  proceed(file);
                   return;
                 }
                 reopen(file);

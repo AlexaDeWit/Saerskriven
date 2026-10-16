@@ -127,8 +127,8 @@ open its file, the next Open starts in that file's folder. **Clear recent
 files** empties the list. The list keeps the browser's references to the files,
 never their contents, survives a reload, and is the same in every tab. A
 reference gives a file's name and not its folder, so two files of the same name
-read the same in the list. In these browsers the open picker and the save
-picker each start in the folder they last used.
+read the same in the list. In these browsers Open and Save as each start in the
+folder they last used.
 
 **Export** writes the diagram on screen as SVG or PNG, the register as
 Markdown, or the whole model as Typst or PDF. **Threats as Markdown** writes
@@ -136,7 +136,8 @@ the register alone. **Model as Markdown** adds Mermaid diagrams before it,
 as described in
 [Markdown diagram exports](render-themes.md#mermaid-diagrams-in-markdown). An export proposes the open
 file's name with the export's extension, or `Untitled`, and never changes
-which file Save writes to. When the model has several diagrams, the SVG and
+which file Save writes to. Where the browser asks where to save, an export
+starts beside the open file. When the model has several diagrams, the SVG and
 PNG names add the diagram's title, as `payments - Checkout.svg`: characters a
 file name cannot hold become `_`, runs of white space collapse, leading and
 trailing dots and spaces go, the title is cut to 80 characters, and an empty

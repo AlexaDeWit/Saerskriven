@@ -207,17 +207,21 @@ describe('the Recent files submenu', () => {
     expect(listed()).toEqual([offers.name, clearRecent]);
   });
 
-  it('leaves out a file Open imported from OTM, which Saerskriven does not write', async () => {
-    const user = userEvent.setup();
-    mounted(
-      specBridge({ offers: vendoredFile('otm/example.json'), recent: [] }),
-    );
+  it.each([
+    ['OTM', 'otm/example.json'],
+    ['TM-BOM', 'tmbom/example.json'],
+  ] as const)(
+    'leaves out a file Open imported from %s, which Saerskriven does not write',
+    async (_, path) => {
+      const user = userEvent.setup();
+      mounted(specBridge({ offers: vendoredFile(path), recent: [] }));
 
-    await openThrough(user, 'example.yaml');
-    await openMenu(user);
+      await openThrough(user, 'example.yaml');
+      await openMenu(user);
 
-    await waitFor(() => {
-      expect(unavailable()).toBe(true);
-    });
-  });
+      await waitFor(() => {
+        expect(unavailable()).toBe(true);
+      });
+    },
+  );
 });

@@ -16,11 +16,11 @@ describe('indexedRecentStore', () => {
       },
     ],
   ])(
-    'answers an empty list, and takes a write, where the browser %s',
+    'answers an empty list, and takes an update, where the browser %s',
     async (_, database) => {
       vi.stubGlobal('indexedDB', database);
 
-      await indexedRecentStore.write([]);
+      await indexedRecentStore.update(() => []);
 
       expect(await indexedRecentStore.read()).toEqual([]);
     },

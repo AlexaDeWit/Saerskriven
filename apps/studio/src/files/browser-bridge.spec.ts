@@ -54,6 +54,22 @@ const picking = (...handles: readonly Handle[]) => {
   return picker;
 };
 
+const interruptions = [
+  [
+    'an open supersedes it',
+    async (bridge: FileBridge): Promise<void> => {
+      await settled(bridge.open(1024));
+    },
+  ],
+  [
+    'the file is released',
+    (bridge: FileBridge): Promise<void> => {
+      bridge.release();
+      return Promise.resolve();
+    },
+  ],
+] as const;
+
 beforeEach(() => {
   downloads = recordDownloads();
 });
@@ -410,6 +426,26 @@ describe('exporting', () => {
     expect(opened).toEqual(['second']);
   });
 
+  it('starts the export picker beside the open file, and where the browser chooses without one', async () => {
+    const opened = handleFor('model.yaml', 'a: 1', []);
+    picking(opened);
+    const asked: unknown[] = [];
+    vi.stubGlobal('showSaveFilePicker', (options: unknown) => {
+      asked.push(options);
+      return Promise.resolve(handleFor('model.svg', '', []));
+    });
+    const bridge = freshBridge();
+
+    await bridge.exportFile('model.svg', types[0], '<svg/>');
+    await settled(bridge.open(1024));
+    await bridge.exportFile('model.svg', types[0], '<svg/>');
+
+    expect(asked).toEqual([
+      { startIn: undefined, suggestedName: 'model.svg', types: [types[0]] },
+      { startIn: opened, suggestedName: 'model.svg', types: [types[0]] },
+    ]);
+  });
+
   it('downloads binary content under the proposed name without a picker', async () => {
     const bridge = freshBridge();
     const pdf = new Uint8Array([37, 80, 68, 70]);
@@ -561,6 +597,29 @@ describe('the recent list', () => {
       { id: pickerIds.open, multiple: false, startIn: undefined },
     ]);
   });
+
+  it.each(interruptions)(
+    'settles nothing, and leaves the next open picker alone, where %s before a reopen lands',
+    async (_, interrupt) => {
+      const picker = picking(
+        declined('model.yaml'),
+        handleFor('other.yaml', 'a: 1', []),
+        handleFor('third.yaml', 'a: 1', []),
+      );
+      const bridge = freshBridge();
+      await settled(bridge.open(1024));
+      const [file] = await bridge.recentFiles();
+
+      const reopening = bridge.reopen(file, 1024);
+      await interrupt(bridge);
+
+      expect((await reopening).settle('unchanged')).toBe(false);
+      await settled(bridge.open(1024));
+      expect(picker.mock.calls.at(-1)?.[0]).toMatchObject({
+        startIn: undefined,
+      });
+    },
+  );
 
   it('gives the open and the save picker each a folder of its own to remember', () => {
     expect(pickerIds.open).not.toBe(pickerIds.save);

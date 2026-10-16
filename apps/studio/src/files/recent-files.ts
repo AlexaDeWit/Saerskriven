@@ -18,16 +18,29 @@ export type RecentFiles = {
   readonly asking: RecentFile | undefined;
   readonly refresh: () => void;
   readonly reopen: (file: RecentFile) => void;
-  readonly confirm: (file: RecentFile) => void;
+  readonly proceed: (file: RecentFile) => void;
   readonly cancel: () => void;
   readonly clear: () => void;
 };
 
+const sameFiles = (
+  before: readonly RecentFile[],
+  listed: readonly RecentFile[],
+): boolean =>
+  before.length === listed.length &&
+  before.every(
+    (file, index) =>
+      file.key === listed[index]?.key && file.name === listed[index].name,
+  );
+
 /**
  * The recent list, read when the session mounts and at each `refresh`, the
- * latest read winning. A reopen asks first over unsaved work, as Open does,
- * hands the bridge's result to `land`, which settles it as an open, and reads
- * the list again, since a reopen moves its file to the top or drops it.
+ * latest read winning. A read that lists the files already shown changes no
+ * state, so a caller that hands over a new bridge on each render settles
+ * rather than reading for ever. A reopen asks first over unsaved work, as
+ * Open does, hands the bridge's result to `land`, which settles it as an
+ * open, and reads the list again, since a reopen moves its file to the top or
+ * drops it.
  */
 export function useRecentFiles(
   bridge: FileBridge,
@@ -36,13 +49,15 @@ export function useRecentFiles(
   const [files, setFiles] = useState<readonly RecentFile[]>([]);
   const [asking, setAsking] = useState<RecentFile | undefined>(undefined);
   const reads = useRef(0);
+  const shown = useRef<readonly RecentFile[]>([]);
 
   const refresh = useCallback((): void => {
     reads.current += 1;
     const read = reads.current;
     const list = async (): Promise<void> => {
       const listed = await bridge.recentFiles();
-      if (read === reads.current) {
+      if (read === reads.current && !sameFiles(shown.current, listed)) {
+        shown.current = listed;
         setFiles(listed);
       }
     };
@@ -53,7 +68,7 @@ export function useRecentFiles(
     refresh();
   }, [refresh]);
 
-  const confirm = useCallback(
+  const proceed = useCallback(
     (file: RecentFile): void => {
       const open = async (): Promise<void> => {
         land(await bridge.reopen(file, readLimits.maxTextBytes));
@@ -71,9 +86,9 @@ export function useRecentFiles(
         setAsking(file);
         return;
       }
-      confirm(file);
+      proceed(file);
     },
-    [confirm],
+    [proceed],
   );
 
   const cancel = useCallback((): void => {
@@ -85,7 +100,7 @@ export function useRecentFiles(
   }, [bridge, refresh]);
 
   return useMemo(
-    () => ({ files, asking, refresh, reopen, confirm, cancel, clear }),
-    [asking, cancel, clear, confirm, files, refresh, reopen],
+    () => ({ files, asking, refresh, reopen, proceed, cancel, clear }),
+    [asking, cancel, clear, files, proceed, refresh, reopen],
   );
 }

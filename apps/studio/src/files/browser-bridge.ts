@@ -26,6 +26,7 @@ type OpenPicker = (options: {
 
 type SavePicker = (options: {
   readonly id?: string;
+  readonly startIn?: FileSystemFileHandle;
   readonly suggestedName: string;
   readonly types: readonly SaveFileType[];
 }) => Promise<FileSystemFileHandle>;
@@ -77,25 +78,6 @@ async function readPermitted(
     return missing(cause)
       ? OpenOutcome.Gone({ name: handle.name })
       : OpenOutcome.Unreadable({ reason: reasonOf(cause) });
-  }
-}
-
-async function exportFile(
-  name: string,
-  type: SaveFileType,
-  content: FileContent,
-): Promise<SaveOutcome> {
-  const picker = window.showSaveFilePicker;
-  if (picker === undefined) {
-    return download(name, content, mediaTypeOf(type));
-  }
-  try {
-    const handle = await picker({ suggestedName: name, types: [type] });
-    return writeTo(handle, handle.name, content);
-  } catch (cause) {
-    return dismissed(cause)
-      ? SaveOutcome.Cancelled()
-      : SaveOutcome.Refused({ reason: reasonOf(cause) });
   }
 }
 
@@ -157,7 +139,7 @@ function mediaTypeOf(type: SaveFileType): string {
  * operations. Each handle a settlement adopts goes to the top of the list,
  * and the list's reads and writes run one at a time, in the order asked. A
  * reopen that does not open its file has the next open picker start in that
- * file's folder.
+ * file's folder, and an export's picker starts beside the file held.
  */
 export function browserBridge(store: RecentStore): FileBridge {
   let pending: Promise<unknown> = Promise.resolve();
@@ -179,17 +161,22 @@ export function browserBridge(store: RecentStore): FileBridge {
       const same = await Promise.all(
         entries.map((entry) => sameEntry(entry.handle, handle)),
       );
-      const key =
-        entries.find((_, index) => same[index])?.key ?? crypto.randomUUID();
-      const others = entries.filter((_, index) => !same[index]);
-      await store.write([{ key, handle }, ...others].slice(0, recentLimit));
+      const matched = new Set(
+        entries.filter((_, index) => same[index]).map(({ key }) => key),
+      );
+      const fresh = crypto.randomUUID();
+      await store.update((current) => {
+        const key =
+          current.find((entry) => matched.has(entry.key))?.key ?? fresh;
+        const others = current.filter((entry) => !matched.has(entry.key));
+        return [{ key, handle }, ...others].slice(0, recentLimit);
+      });
     });
 
   const forget = (key: string): Promise<void> =>
-    inTurn(async () => {
-      const entries = await store.read();
-      await store.write(entries.filter((entry) => entry.key !== key));
-    });
+    inTurn(() =>
+      store.update((entries) => entries.filter((entry) => entry.key !== key)),
+    );
 
   const ownership = fileOwnership<FileSystemFileHandle>((handle) => {
     void remember(handle);
@@ -272,7 +259,30 @@ export function browserBridge(store: RecentStore): FileBridge {
   }
 
   function clearRecent(): Promise<void> {
-    return inTurn(() => store.write([]));
+    return inTurn(() => store.update(() => []));
+  }
+
+  async function exportFile(
+    name: string,
+    type: SaveFileType,
+    content: FileContent,
+  ): Promise<SaveOutcome> {
+    const picker = window.showSaveFilePicker;
+    if (picker === undefined) {
+      return download(name, content, mediaTypeOf(type));
+    }
+    try {
+      const handle = await picker({
+        startIn: ownership.current(),
+        suggestedName: name,
+        types: [type],
+      });
+      return writeTo(handle, handle.name, content);
+    } catch (cause) {
+      return dismissed(cause)
+        ? SaveOutcome.Cancelled()
+        : SaveOutcome.Refused({ reason: reasonOf(cause) });
+    }
   }
 
   async function save(

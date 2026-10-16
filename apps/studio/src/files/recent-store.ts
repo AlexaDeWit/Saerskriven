@@ -17,14 +17,23 @@ export type RecentEntry = z.infer<typeof recentListSchema>[number];
 export const recentLimit = 10;
 
 /**
- * Where the recent list is kept, most recent first. A read answers an empty
- * list, and a write does nothing, where storage is absent or refuses, so the
- * menu still works.
+ * Where the recent list is kept, most recent first. `update` reads the list
+ * and writes what `change` makes of it as one step, so two tabs changing it
+ * at once each keep the other's change. A read answers an empty list, and an
+ * update does nothing, where storage is absent or refuses, so the menu still
+ * works.
  */
 export type RecentStore = {
   read(): Promise<readonly RecentEntry[]>;
-  write(entries: readonly RecentEntry[]): Promise<void>;
+  update(
+    change: (entries: readonly RecentEntry[]) => readonly RecentEntry[],
+  ): Promise<void>;
 };
+
+function listOf(stored: unknown): readonly RecentEntry[] {
+  const parsed = recentListSchema.safeParse(stored);
+  return parsed.success ? parsed.data : [];
+}
 
 const databaseName = 'saerskriven-studio';
 const listStore = 'recent-files';
@@ -81,13 +90,19 @@ async function transact<Value>(
  * file's contents.
  */
 export const indexedRecentStore: RecentStore = {
-  read: async () => {
-    const stored = recentListSchema.safeParse(
-      await transact<unknown>('readonly', (store) => store.get(listKey)),
-    );
-    return stored.success ? stored.data : [];
-  },
-  write: async (entries) => {
-    await transact('readwrite', (store) => store.put(entries, listKey));
+  read: async () =>
+    listOf(await transact<unknown>('readonly', (store) => store.get(listKey))),
+  update: async (change) => {
+    await transact<unknown>('readwrite', (store) => {
+      const request = store.get(listKey);
+      request.addEventListener('success', () => {
+        try {
+          store.put(change(listOf(request.result)), listKey);
+        } catch {
+          store.transaction.abort();
+        }
+      });
+      return request;
+    });
   },
 };

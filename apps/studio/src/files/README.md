@@ -40,11 +40,11 @@ dismissed picker dispatches nothing. Where it cannot ask, the bridge's `save`
 downloads and answers `Written`, since the page cannot see the browser's own
 dialog ([Using the studio](../../../../docs/studio.md#files)).
 
-Each bridge open, reopen, fallback read, save, or save-as starts one operation. The
-latest request owns settlement, regardless of completion order. The bridge
+Each bridge open, reopen, fallback read, save, or save-as starts one operation.
+The latest request owns settlement, regardless of completion order. The bridge
 returns an outcome and a settlement function without changing its held handle,
-and the session validates the read and settles the handle before dispatching
-the matching store action, with no asynchronous step between them. A stale
+and the session validates the read and settles the handle before dispatching the
+matching store action, with no asynchronous step between them. A stale
 settlement returns false and changes neither association. Close releases the
 handle and invalidates pending operations. Exports own no file association and
 do not interrupt these operations. A save already in progress can still write
@@ -52,28 +52,23 @@ its target, but once another file operation starts it cannot rename or mark the
 current model saved.
 
 A failed open, whether the read failed, a codec refused the text, or a reopen
-found the file gone, keeps the model, history, saved checkpoint and loss
-report, but drops the file association and releases the handle, so the next Save leaves both files
-untouched. A refused save keeps the file and handle for retry. Dismissing a
-picker keeps the last settled association and does not revive an older pending
-operation. An empty fallback selection starts no operation, and a successful
-one settles with no handle, so its next Save takes the no-handle path under
-the chosen name. An open of OTM or TM-BOM, which Saerskriven reads and does
-not write, releases the handle on success as well, so no Save writes to that
-file, and names the model as YAML under the file's stem.
+found the file gone, keeps the model, history, saved checkpoint and loss report,
+but drops the file association and releases the handle, so the next Save leaves
+both files untouched. A refused save keeps the file and handle for retry.
+Dismissing a picker keeps the last settled association and does not revive an
+older pending operation. An empty fallback selection starts no operation, and a
+successful one settles with no handle, so its next Save takes the no-handle path
+under the chosen name. An open of OTM or TM-BOM, which Saerskriven reads and
+does not write, releases the handle on success as well, so no Save writes to
+that file, and names the model as YAML under the file's stem.
 
-`keepsRecent` says whether the platform keeps a reference to a file that a
-later visit can reopen: the File System Access API's handle, which IndexedDB
-stores by structured clone. Each handle a settlement adopts in place of the one
-held goes to the top of the recent list, so a write back to the held file
-leaves the list alone, and so does an open of OTM or TM-BOM, which settles
-without its handle. The browser's bridge is built over a `RecentStore`, and a
-spec hands it one held in memory. A reopen asks for the `readwrite` permission
-Save needs, from the press that chose the file, and answers `Declined` where
-the person refuses, or `Gone`, dropping the entry, where the file is no longer
-there. A reopen that does not open its file hands its handle to the next open
-picker as `startIn`. The open and save pickers each pass an `id`, so the
-browser remembers a folder for each.
+A file joins the recent list when a settlement adopts its handle in place of the
+one held, so the list holds only files the studio would write back to: an open
+of OTM or TM-BOM, which settles without its handle, and a write back to the held
+file leave it alone. The handles live in IndexedDB behind a `RecentStore`, and
+the browser's bridge is built over one, which a spec hands a store held in
+memory. What each member answers is in the TSDoc of `FileBridge`,
+`fileOwnership` and `browserBridge`.
 
 ## Reading and writing
 
@@ -86,14 +81,14 @@ link is `LinkOpened`, which the reducer settles as it settles `Imported`.
 A write is the codec's own write for the file's format, then the bridge, then
 one action.
 
-`formatFiles` is the one table saying how a format appears as a file: its
-name from [`../format-names.ts`](../format-names.ts), the media type a picker
-files it under, and the extensions it is written with. `saveTypes` is that table as a picker takes it,
-the file's own format first, and `formatOfName` is the way back: the extension
-of the name a picker answers with says which codec writes the text. Nothing
-else reads an extension as a format. The text of a save-as is written once the
-picker has answered, because until then which codec writes it is the person's
-to decide.
+`formatFiles` is the one table saying how a format appears as a file: its name
+from [`../format-names.ts`](../format-names.ts), the media type a picker files
+it under, and the extensions it is written with. `saveTypes` is that table as a
+picker takes it, the file's own format first, and `formatOfName` is the way
+back: the extension of the name a picker answers with says which codec writes
+the text. Nothing else reads an extension as a format. The text of a save-as is
+written once the picker has answered, because until then which codec writes it
+is the person's to decide.
 
 Which document a write merges onto decides whether what Saerskriven does not
 model survives, so the document a read retained rides in the store beside the
@@ -101,18 +96,17 @@ file's name ([the store](../store/README.md)). Saving in the format a model was
 read from merges onto it. Saving in any other format has nothing to merge onto,
 so the codec projects, which is where most of a loss report comes from. A read
 reports too: a wire schema drops every key it does not declare, and the retained
-document has lost them as well, so no later save can say what became of them.
-An open marks each loss it lists as not shown that `keptByWriteBack` says a
-save to the same file keeps, and each report names its subjects from the model it opened or saved. An open
-report lists what the read converted ahead of what the studio does not show,
-each under its own heading and only where it has a line, by the place
-[`../messages/divergence/text.ts`](../messages/divergence/text.ts) gives each
-code. An open of OTM or TM-BOM always reports, losses or none, because its
+document has lost them as well, so no later save can say what became of them. An
+open marks each loss it lists as not shown that `keptByWriteBack` says a save to
+the same file keeps, and each report names its subjects from the model it opened
+or saved. An open report lists what the read converted ahead of what the studio
+does not show, each under its own heading and only where it has a line, by the
+place [`../messages/divergence/text.ts`](../messages/divergence/text.ts) gives
+each code. An open of OTM or TM-BOM always reports, losses or none, because its
 report carries the notice that the model is new and that Save makes a
-Saerskriven file.
-Both reports describe one crossing of the file boundary rather than the model,
-and each stands until a save starts, an open lands, or the file is closed. A
-refused open leaves the report alone, nothing having crossed.
+Saerskriven file. Both reports describe one crossing of the file boundary rather
+than the model, and each stands until a save starts, an open lands, or the file
+is closed. A refused open leaves the report alone, nothing having crossed.
 
 Recovery stores the file's name, format and retained document with the model,
 and no native handle, so after a reload Save takes the no-handle path and

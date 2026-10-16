@@ -225,8 +225,8 @@ export function memoryRecentStore(): RecentStore {
   let entries: readonly RecentEntry[] = [];
   return {
     read: () => Promise.resolve(entries),
-    write: (next) => {
-      entries = next;
+    update: (change) => {
+      entries = change(entries);
       return Promise.resolve();
     },
   };
