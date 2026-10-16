@@ -70,3 +70,4 @@ export { readSaerskrivenYamlDocument } from './lib/saerskriven-yaml-read.js';
 export { writeSaerskrivenYamlDocument } from './lib/saerskriven-yaml-write.js';
 export { saerskrivenYamlCodec } from './lib/saerskriven-yaml.js';
 export { threatDragonCodec } from './lib/threat-dragon.js';
+export { undeclaredPaths } from './lib/undeclared.js';

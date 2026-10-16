@@ -7,7 +7,7 @@ import {
 } from '@saerskriven/model';
 import { assumptionId, elementId } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { unclaimedFile } from '../fixtures.js';
 import {
@@ -16,6 +16,9 @@ import {
   modelFile,
   renaming,
   staleRevision,
+  undeclaredDragonJson,
+  undeclaredPath,
+  undeclaredYaml,
   type EditInput,
 } from './edit.fixtures.js';
 import { editArgumentsSchema, editModel, renderEdit } from './edit.js';
@@ -57,10 +60,19 @@ const attempt = () => {
   return {
     workspace,
     bytes,
-    edit: (file: string, revision: string, edits: readonly EditInput[]) =>
+    place: (file: string, text: string): string => {
+      writeFileSync(join(tree.root, file), text);
+      return file;
+    },
+    edit: (
+      file: string,
+      revision: string,
+      edits: readonly EditInput[],
+      dropUndeclared?: boolean,
+    ) =>
       editModel(
         workspace,
-        editArgumentsSchema.parse({ file, revision, edits }),
+        editArgumentsSchema.parse({ file, revision, edits, dropUndeclared }),
       ),
   };
 };
@@ -222,6 +234,7 @@ describe('what an applied edit writes', () => {
       applied: 1,
       culled: [],
       culledThreats: [],
+      dropped: [],
       divergences: [],
     });
     expect(written).not.toEqual(quoted);
@@ -242,6 +255,8 @@ describe('what an applied edit writes', () => {
       'No record culled.',
       'threats culled:',
       'No threat culled.',
+      'keys dropped:',
+      'No key dropped.',
       `file: ${modelFile}`,
       'format: saerskriven-yaml',
       `revision: ${revisionIn(attempted, modelFile)}`,
@@ -1048,5 +1063,50 @@ describe('what set_accent writes', () => {
     expect(
       accentsOf(attempted, dragonFile, ['store-archive', 'process-booking']),
     ).toEqual([undefined, undefined]);
+  });
+});
+
+describe('what an edit does with a key this version cannot read', () => {
+  it.each([
+    { name: 'undeclared.yaml', text: undeclaredYaml, path: undeclaredPath },
+    { name: 'undeclared.json', text: undeclaredDragonJson, path: 'glow' },
+  ])(
+    'refuses $name, naming the path of the key, and writes nothing',
+    ({ name, text, path }) => {
+      const attempted = attempt();
+      const file = attempted.place(name, text);
+      const before = attempted.bytes(file);
+      const refused = refusalOf(
+        attempted.edit(file, revisionIn(attempted, file), [renaming]),
+      );
+      expect(attempted.bytes(file)).toEqual(before);
+      expect(refused).toContain(path);
+      expect(refused.join('\n')).toContain('dropUndeclared');
+    },
+  );
+
+  it('writes the file without it where the call drops it, and names it as dropped', () => {
+    const attempted = attempt();
+    const file = attempted.place('undeclared.yaml', undeclaredYaml);
+    const applied = attempted.edit(
+      file,
+      revisionIn(attempted, file),
+      [renaming],
+      true,
+    );
+    expect(Either.getOrUndefined(applied)?.dropped).toEqual([undeclaredPath]);
+    expect(
+      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
+    ).toContain(undeclaredPath);
+    expect(
+      Either.getOrUndefined(
+        readAnyFormat(attempted.bytes(file).toString('utf8')),
+      )?.divergences,
+    ).toEqual([]);
+    expect(
+      heldModel(attempted, file)?.diagrams[0]?.elements.find(
+        (element) => element.id === 'element-db',
+      )?.name,
+    ).toBe('Order store');
   });
 });

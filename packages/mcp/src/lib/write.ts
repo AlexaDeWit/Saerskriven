@@ -39,8 +39,9 @@ import {
 /**
  * Why a write produced no file, in the order a tool reaches the checks.
  * `StaleRevision` is answered by reading the file again rather than by
- * retrying. `PastReadBound` keeps every file this server writes one it can
- * read again.
+ * retrying. `UndeclaredKeys` names the keys the file holds that this version
+ * cannot read, which the write would drop. `PastReadBound` keeps every file
+ * this server writes one it can read again.
  */
 export type WriteFailure = Data.TaggedEnum<{
   NoFile: { readonly root: string };
@@ -49,6 +50,7 @@ export type WriteFailure = Data.TaggedEnum<{
     readonly quoted: string;
     readonly found: string;
   };
+  UndeclaredKeys: { readonly file: string; readonly paths: readonly string[] };
   Occupied: { readonly file: string };
   PastReadBound: { readonly file: string; readonly size: number };
   Unwritten: { readonly file: string; readonly reason: string };
@@ -152,6 +154,11 @@ export function renderWriteFailure(failure: WriteFailure): readonly string[] {
       `The file ${quotedForTerminal(file)} changed since the read this call quoted, so nothing was written.`,
       `The call quoted ${quotedForTerminal(quoted)}, and the file on disk is ${found}.`,
       'Read the file again and reconsider the edit against what it holds now.',
+    ],
+    UndeclaredKeys: ({ file, paths }) => [
+      `The file ${quotedForTerminal(file)} was not written: it holds keys this version of saer cannot read, which the write would drop:`,
+      ...paths.map(escapedForTerminal),
+      'Upgrade saer to a release that reads them, or pass `dropUndeclared: true` to write the file without them.',
     ],
     Occupied: ({ file }) => [
       `The file ${quotedForTerminal(file)} is already there, and this tool writes only a path that is free.`,

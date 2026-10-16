@@ -149,6 +149,28 @@ describe('the arguments as the outcome they ask for', () => {
     ).resolves.toEqual(convert(model, { to: 'threat-dragon', out: '-' }));
   });
 
+  it('hands convert --drop-undeclared as the opt-in to drop keys', async () => {
+    await expect(
+      runCli([
+        'convert',
+        model,
+        '--to',
+        'threat-dragon',
+        '--out',
+        '-',
+        '--drop-undeclared',
+      ]),
+    ).resolves.toEqual(
+      convert(model, { to: 'threat-dragon', out: '-', dropUndeclared: true }),
+    );
+  });
+
+  it('documents --drop-undeclared in convert --help', async () => {
+    const outcome = await runCli(['convert', '--help']);
+    expect(outcome.code).toEqual(0);
+    expect(outcome.out).toContain('--drop-undeclared');
+  });
+
   it('hands share the file it was given', async () => {
     const absent = testDataPath('absent.json');
     await expect(runCli(['share', absent])).resolves.toEqual(

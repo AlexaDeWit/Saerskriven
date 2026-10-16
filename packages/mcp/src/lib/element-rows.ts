@@ -1,6 +1,7 @@
 import { escapedForTerminal } from '@saerskriven/formats';
 import {
   acceptedTextSchema,
+  accentSchema,
   diagramIdSchema,
   elementIdSchema,
   elementKindSchema,
@@ -8,7 +9,9 @@ import {
   elementsById,
   flowEndName,
   flowEnds,
+  takesAccent,
   unlabelledFlow,
+  type Accent,
   type Diagram,
   type Element,
   type FlowEndpoint,
@@ -27,12 +30,15 @@ const elementContextSchema = z.object({
     ),
 });
 
-/** A concise identity, scope and threat count for an element. */
+/** A concise identity, scope, accent and threat count for an element. */
 export const elementRowSchema = elementContextSchema.extend({
   id: elementIdSchema,
   kind: elementKindSchema,
   name: acceptedTextSchema,
   outOfScope: z.boolean(),
+  accent: accentSchema
+    .optional()
+    .describe('The accent key the element is drawn with, where it holds one.'),
 });
 
 const [firstElementSchema, ...otherElementSchemas] = elementSchema.options;
@@ -86,6 +92,7 @@ export function elementRow(
     kind: element.kind,
     name: element.name,
     outOfScope: element.outOfScope,
+    ...accentOf(element),
     threats: threatsOn(element, counts),
     ...namedFromEnds(element, diagram),
   };
@@ -110,7 +117,7 @@ export function renderElement(
 ): readonly string[] {
   return [
     escapedForTerminal(
-      `  ${row.id} (${row.kind}, diagram ${row.diagram}, threats ${String(row.threats)}${row.outOfScope ? ', out of scope' : ''}): ${row.namedFromEnds ?? row.name}`,
+      `  ${row.id} (${headingFacts(row).join(', ')}): ${row.namedFromEnds ?? row.name}`,
     ),
     ...('description' in row
       ? detailLines(row).map((line) => `    ${escapedForTerminal(line)}`)
@@ -130,6 +137,18 @@ const formattedFields = new Set<string>([
   'shape',
   'text',
 ]);
+
+function headingFacts(row: ElementDetail | ElementRow): readonly string[] {
+  return [
+    row.kind,
+    `diagram ${row.diagram}`,
+    `threats ${String(row.threats)}`,
+    ...('accent' in row && row.accent !== undefined
+      ? [`accent ${row.accent}`]
+      : []),
+    ...(row.outOfScope ? ['out of scope'] : []),
+  ];
+}
 
 function detailLines(row: ElementDetail): readonly string[] {
   return [
@@ -169,6 +188,12 @@ function geometryLines(row: ElementDetail): readonly string[] {
     ];
   }
   return [`box: ${renderBox(row.position, row.size)}`];
+}
+
+function accentOf(element: Element): { readonly accent?: Accent } {
+  return takesAccent(element) && element.accent !== undefined
+    ? { accent: element.accent }
+    : {};
 }
 
 function namedFromEnds(

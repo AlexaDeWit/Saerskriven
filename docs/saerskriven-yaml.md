@@ -138,8 +138,10 @@ a version carries is a change to its wire schema, deliberately.
 A key this release does not declare is not a refusal. The read drops it and
 reports it as an `undeclared` divergence naming its path, so a file written
 by a later release of version 2 still reads here, minus what this release has
-no home for. Older releases can open extended files of their version but lose
-these new fields when saving. Use a release that understands the fields for
+no home for. Its `saer_edit` and `saer convert` refuse to write such a file
+unless the call says to drop the key ([writing](mcp.md#writing),
+[usage](../README.md#usage)), while the studio, and a release from before that
+refusal, drop it at the next save. Use a release that declares the key for
 lossless edits. A value this release does not declare in an enumerated
 vocabulary is a refusal, at the path of that value, as the additive rule above
 sets out.

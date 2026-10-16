@@ -8,6 +8,7 @@ import {
 import {
   copyFileSync,
   mkdtempSync,
+  readFileSync,
   realpathSync,
   writeFileSync,
 } from 'node:fs';
@@ -71,6 +72,24 @@ export const editableModel: Model = parsedFixture(draft);
 
 const editableYaml = saerskrivenYamlCodec.write(editableModel).output;
 
+/**
+ * {@link editableModel} as a native file holding a key on its first element
+ * that the wire schema does not declare, as a file a later release wrote can.
+ */
+export const undeclaredYaml = editableYaml.replace(
+  '        name: Customer\n',
+  '        name: Customer\n        glow: amber\n',
+);
+
+/** Where the key {@link undeclaredYaml} holds sits in its document. */
+export const undeclaredPath = 'diagrams.0.elements.0.glow';
+
+/** The Threat Dragon fixture holding a root key its wire schema does not declare. */
+export const undeclaredDragonJson = readFileSync(
+  testDataPath('threat-dragon/feature-complete.json'),
+  'utf8',
+).replace('{', '{"glow":"amber",');
+
 type EditableTree = {
   readonly root: string;
   readonly copy: (name: string) => string;
@@ -78,8 +97,8 @@ type EditableTree = {
 
 /**
  * A disposable root with the native model, the Threat Dragon fixture, a text
- * no codec claims, and the OTM example. Every spec here writes, so each takes
- * its own tree rather than sharing one. `copy` puts another copy of the
+ * no codec claims, and the OTM and TM-BOM examples. Every spec here writes,
+ * so each takes its own tree rather than sharing one. `copy` puts another copy of the
  * native model under a name of its own and answers with that name, which is
  * how one tree serves a run of edits that each need an untouched file.
  */

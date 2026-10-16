@@ -2,6 +2,7 @@ import {
   readAnyFormat,
   readLimits,
   saerskrivenYamlCodec,
+  undeclaredPaths,
   type DetectedRead,
 } from '@saerskriven/formats';
 import { referencingYaml, unclaimedYaml } from '@saerskriven/mcp/fixtures';
@@ -20,6 +21,7 @@ import {
   brokenDocumentYaml,
   fixtureFile,
   scratchDirectory,
+  undeclaredKeyYaml,
 } from './cli.fixtures.js';
 import { convert, type ConvertOptions } from './convert.js';
 
@@ -167,7 +169,10 @@ describe('convert', () => {
   });
 
   it('converts an OTM file to a native file, reporting what the import changed', () => {
-    const outcome = convert(testDataPath('otm/example.json'), toYaml);
+    const outcome = convert(testDataPath('otm/example.json'), {
+      ...toYaml,
+      dropUndeclared: true,
+    });
     expect(outcome.code).toEqual(0);
     expect(readBack(outcome.out).format).toEqual('saerskriven-yaml');
     expect(outcome.err).toContain('warning: ');
@@ -227,5 +232,54 @@ describe('convert', () => {
     expect(outcome.err).toEqual(
       `error: cannot write ${join(directory, 'absent', 'model.yaml')}: ENOENT: no such file or directory\n`,
     );
+  });
+});
+
+describe('convert, given a file holding keys this version cannot read', () => {
+  it.each([
+    {
+      name: 'a native file, over itself or elsewhere',
+      text: undeclaredKeyYaml,
+      path: 'nonsense',
+      inPlace: true,
+    },
+    {
+      name: 'an OTM file',
+      text: readFileSync(testDataPath('otm/example.json'), 'utf8'),
+      path: 'dataflows.0.representations',
+      inPlace: false,
+    },
+  ])(
+    'refuses $name, naming each key, and writes nothing',
+    ({ text, path, inPlace }) => {
+      const file = fixtureFile(directory, 'refused/model', text);
+      const out = join(directory, 'refused', 'out.yaml');
+      for (const target of [...(inPlace ? [file] : []), out, '-']) {
+        const outcome = convert(file, { to: 'saerskriven-yaml', out: target });
+        expect(outcome).toMatchObject({ code: 1, out: '' });
+        expect(outcome.err.split('\n')).toContain(path);
+        expect(outcome.err).toContain('--drop-undeclared');
+      }
+      expect(readFileSync(file, 'utf8')).toEqual(text);
+      expect(existsSync(out)).toBe(false);
+    },
+  );
+
+  it('writes the file without them where --drop-undeclared asks, and lists each', () => {
+    const file = fixtureFile(
+      directory,
+      'dropped/model.yaml',
+      undeclaredKeyYaml,
+    );
+    const outcome = convert(file, {
+      to: 'saerskriven-yaml',
+      out: file,
+      dropUndeclared: true,
+    });
+    expect(outcome).toMatchObject({ code: 0, out: '' });
+    expect(outcome.err.split('\n')).toContain('nonsense');
+    expect(
+      undeclaredPaths(readBack(readFileSync(file, 'utf8')).divergences),
+    ).toEqual([]);
   });
 });

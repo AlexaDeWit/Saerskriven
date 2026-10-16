@@ -1,14 +1,10 @@
 import { z } from 'zod';
-import { undeclaredDivergences } from './undeclared.js';
+import { undeclaredDivergences, undeclaredPaths } from './undeclared.js';
 
 const schema = z.object({ kept: z.object({ inner: z.string() }) });
 
 const reportOn = (given: unknown): readonly string[] =>
-  undeclaredDivergences(given, schema.parse(given)).flatMap((divergence) =>
-    divergence.detail.code === 'key-undeclared'
-      ? [divergence.detail.parameters.path]
-      : [],
-  );
+  undeclaredPaths(undeclaredDivergences(given, schema.parse(given)));
 
 describe('undeclaredDivergences', () => {
   it('reports nothing where the schema declared every key', () => {
@@ -39,5 +35,25 @@ describe('undeclaredDivergences', () => {
     expect(reportOn({ kept: { inner: 'yes' }, 'a\\.b': 1 })).toEqual([
       'a\\\\\\.b',
     ]);
+  });
+});
+
+describe('undeclaredPaths', () => {
+  it('lists the undeclared keys of a read and nothing else it reported', () => {
+    expect(
+      undeclaredPaths([
+        {
+          subject: { kind: 'model' },
+          detail: { code: 'accent-unknown', parameters: { accent: 'x9' } },
+          reason: 'narrowed',
+        },
+        ...undeclaredDivergences(
+          { kept: { inner: 'yes', b: 1 }, c: 2 },
+          {
+            kept: { inner: 'yes' },
+          },
+        ),
+      ]),
+    ).toEqual(['kept.b', 'c']);
   });
 });

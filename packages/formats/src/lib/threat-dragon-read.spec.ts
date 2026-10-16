@@ -16,6 +16,7 @@ import { readFailureIssues } from './codec.fixtures.js';
 import { ReadFailure } from './codec.js';
 import { renderDivergences } from './divergence.js';
 import { readThreatDragon } from './threat-dragon-read.js';
+import { undeclaredPaths } from './undeclared.js';
 import {
   fromThreatCategory,
   toThreatCategory,
@@ -443,17 +444,13 @@ describe('a Threat Dragon read that strips a key', () => {
         summary: { ...minimalFixture.summary, mystery: 'held by no schema' },
       }),
     );
-    expect(renderDivergences(result.divergences)).toBe(
-      'model: the key summary.mystery (not declared by the wire schema)',
-    );
+    expect(undeclaredPaths(result.divergences)).toEqual(['summary.mystery']);
   });
 
   it('reports a stripped value without walking into it', () => {
     const result = threatDragonReading(
       `{"version":"2.6.2","summary":{"title":""},"detail":{"diagrams":[]},"mystery":${nested(8)}}`,
     );
-    expect(renderDivergences(result.divergences)).toBe(
-      'model: the key mystery (not declared by the wire schema)',
-    );
+    expect(undeclaredPaths(result.divergences)).toEqual(['mystery']);
   });
 });

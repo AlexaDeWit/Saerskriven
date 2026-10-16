@@ -20,6 +20,20 @@ export function undeclaredDivergences(
   );
 }
 
+/**
+ * The path of every key `divergences` reports `undeclared`, in their order:
+ * what a write merged onto that read's document drops.
+ */
+export function undeclaredPaths(
+  divergences: readonly Divergence[],
+): readonly string[] {
+  return divergences.flatMap((divergence) =>
+    divergence.detail.code === 'key-undeclared'
+      ? [divergence.detail.parameters.path]
+      : [],
+  );
+}
+
 function undeclaredKeys(
   given: unknown,
   kept: unknown,

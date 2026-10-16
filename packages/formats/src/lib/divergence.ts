@@ -141,7 +141,8 @@ export function collapsedWhitespace(text: string): string {
 
 const reasonPhrases: Record<DivergenceReason, string> = {
   unrepresentable: 'no place in the format',
-  undeclared: 'not declared by the wire schema',
+  undeclared:
+    'this version of saer cannot keep it: saer_edit and saer convert refuse to drop it unless told to',
   narrowed: 'reduced to fit the format',
   split: 'split by the format',
   overridden: 'not repeated by the codec',
