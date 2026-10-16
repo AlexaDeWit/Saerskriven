@@ -73,6 +73,11 @@ const slotClasses = [
 const toneRule = (styles: string, className: string): string | undefined =>
   styles.split('\n').find((line) => line.startsWith(`.${className} { fill:`));
 
+const anchorOf = (className: string): string | undefined =>
+  /text-anchor: (?<anchor>\w+);/u.exec(
+    sheet.split(`.${className} {`)[1]?.split('}')[0] ?? '',
+  )?.groups?.anchor;
+
 const dashOf = (rule: string | undefined): number[] | undefined =>
   /stroke-dasharray: (?<dash>[^;]+);/u
     .exec(rule ?? '')
@@ -111,6 +116,17 @@ describe('renderCanvasStylesheet', () => {
       return !block.split('}')[0].includes(`font-size: ${rule.fontSize}px`);
     });
     expect(mismatched.map((rule) => rule.className)).toEqual([]);
+  });
+
+  it("anchors a note's lines at their start and every other run at its middle", () => {
+    expect(
+      Object.fromEntries(
+        Object.entries(wrappedTextStyles).map(([style, rule]) => [
+          style,
+          anchorOf(rule.className),
+        ]),
+      ),
+    ).toEqual({ label: 'middle', note: 'start', flowLabel: 'middle' });
   });
 
   it('uses the ten-unit widget label token for element and flow names', () => {

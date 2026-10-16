@@ -37,9 +37,12 @@ describe('WrappedText', () => {
     expect(markupOf('one two', 36)).toContain(`y="${50 - step / 2}"`);
   });
 
-  it('hangs the first line from the given point when anchored to the top', () => {
-    expect(markupOf('one two', 36, 'top')).toContain('y="50"');
-  });
+  it.each(['top', 'top-left'] as const)(
+    'hangs the first line from the given point when anchored to the %s',
+    (anchor) => {
+      expect(markupOf('one two', 36, anchor)).toContain('y="50"');
+    },
+  );
 
   it('takes its class from the text style it is given', () => {
     expect(markupOf('one', 400)).toContain(

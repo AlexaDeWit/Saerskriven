@@ -1,13 +1,23 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
+import { boxAt, modelWith } from '@saerskriven/model/fixtures';
 import { commandChord, registeredChords } from './chords.fixtures.js';
-import { clickSvgText, dragOnto, flowBlockOf } from './canvas.fixtures.js';
+import {
+  canvasSettled,
+  clickSvgText,
+  dragOnto,
+  flowBlockOf,
+  screenBoxOf,
+  viewportZoom,
+  type Point,
+} from './canvas.fixtures.js';
 import {
   canvasSurface,
   expandThreat,
   menuButton,
   nameField,
   nodeNamed,
+  openModelDocument,
   openPlaceholder,
   openTwoDiagrams,
   panelControl,
@@ -216,6 +226,74 @@ test('a flow left unlabelled draws no label, and the threat panel names it from 
   await expect(
     panelControl(page, 'Detach the flow from Web shop to Catalogue'),
   ).toBeVisible();
+});
+
+const retentionNote = /^Retention, text/u;
+
+const fieldFirstLine = (field: Locator): Promise<Point> =>
+  field.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return {
+      x:
+        box.x +
+        parseFloat(style.borderLeftWidth) +
+        parseFloat(style.paddingLeft),
+      y:
+        box.y +
+        parseFloat(style.borderTopWidth) +
+        parseFloat(style.paddingTop) +
+        parseFloat(style.lineHeight) / 2,
+    };
+  });
+
+const withinNote = async (note: Locator, at: Point): Promise<Point> => {
+  const box = await screenBoxOf(note, 'the Note');
+  return { x: at.x - box.x, y: at.y - box.y };
+};
+
+test("a Note's field starts its first line where the drawing does, at full zoom", async ({
+  page,
+}) => {
+  await openModelDocument(
+    page,
+    modelWith({
+      elements: [
+        {
+          ...boxAt(
+            'el-note',
+            40,
+            40,
+            'text',
+            { width: 240, height: 120 },
+            'Retention',
+          ),
+          text: 'Orders are kept for seven years.',
+        },
+      ],
+    }),
+  );
+  await page.getByRole('button', { name: 'Reset zoom to 100%' }).click();
+  await canvasSettled(page);
+  expect(await viewportZoom(page)).toBe(1);
+  const note = nodeNamed(page, retentionNote);
+  const line = await screenBoxOf(
+    note.locator(`text.${canvasClassNames.note}`),
+    'the drawn text',
+  );
+  const drawn = await withinNote(note, {
+    x: line.x,
+    y: line.y + line.height / 2,
+  });
+
+  await selectByKeyboard(page, retentionNote);
+  await page.keyboard.press('Enter');
+  const field = page.getByRole('textbox', { name: 'Note text' });
+  await expect(field).toBeFocused();
+  const typed = await withinNote(note, await fieldFirstLine(field));
+
+  expect(Math.abs(typed.x - drawn.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(typed.y - drawn.y)).toBeLessThanOrEqual(1);
 });
 
 test('Enter reopens a selected Note for prose editing', async ({ page }) => {

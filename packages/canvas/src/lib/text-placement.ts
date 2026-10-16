@@ -8,6 +8,7 @@ import { wrappedTextStyles, type WrappedTextStyle } from './stylesheet.js';
 import {
   curveNameClearance,
   innerWidth,
+  lineHeight,
   looseLabelWidth,
   textExtent,
   textPadding,
@@ -40,18 +41,24 @@ export type CurveNameSide = {
 
 /**
  * The run of text one node's glyph draws, in the node's own coordinates: a
- * text element's prose centred in its box, a box boundary's name below its
- * top edge, a curve boundary's name beside the bend its `nameSide` names (see
- * {@link settledCurveNames}), and every other kind's name centred in its box.
- * A process wraps to the width of the largest rectangle inside its ellipse,
- * `SQRT1_2` of its box's, rather than to its box.
+ * box boundary's name below its top edge, a curve boundary's name beside the
+ * bend its `nameSide` names (see {@link settledCurveNames}), and every other
+ * kind's name centred in its box. A process wraps to the width of the largest
+ * rectangle inside its ellipse, `SQRT1_2` of its box's, rather than to its box.
+ *
+ * A text element's prose starts at the top left of its box, inside the
+ * padding, with its first line's centre half a line height down, which is
+ * where a field with the same padding and line height sets its first line.
  */
 export function nodeTextPlacement(node: CanvasNode): TextPlacement {
   if (node.kind === 'text') {
     return {
       text: node.text,
-      at: boxCentre(node.size),
-      anchor: 'centre',
+      at: {
+        x: textPadding,
+        y: textPadding + lineHeight(wrappedTextStyles.note.fontSize) / 2,
+      },
+      anchor: 'top-left',
       width: innerWidth(node.size.width),
       textStyle: 'note',
     };
@@ -99,12 +106,16 @@ export function textPlacementCorners(
   }
   const extent = textExtent(lines, rule.fontSize);
   const top =
-    placement.anchor === 'top'
-      ? placement.at.y - rule.fontSize / 2
-      : placement.at.y - extent.height / 2;
+    placement.anchor === 'centre'
+      ? placement.at.y - extent.height / 2
+      : placement.at.y - rule.fontSize / 2;
+  const [left, right] =
+    placement.anchor === 'top-left'
+      ? [placement.at.x, placement.at.x + extent.width]
+      : [placement.at.x - extent.width / 2, placement.at.x + extent.width / 2];
   return [
-    { x: placement.at.x - extent.width / 2, y: top },
-    { x: placement.at.x + extent.width / 2, y: top + extent.height },
+    { x: left, y: top },
+    { x: right, y: top + extent.height },
   ];
 }
 

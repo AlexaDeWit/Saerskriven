@@ -20,7 +20,7 @@ import type { CanvasLayout, CanvasNode } from './layout.js';
 import { sampledCurve } from './paths.js';
 import { wrappedTextStyles } from './stylesheet.js';
 import { nodeTextPlacement, textPlacementCorners } from './text-placement.js';
-import { textPadding, wrapText } from './typography.js';
+import { lineHeight, textPadding, wrapText } from './typography.js';
 
 const dividerName = 'a divider named at length, over more than one line';
 
@@ -400,5 +400,48 @@ describe("a process's name", () => {
       'Authentication',
       'service',
     ]);
+  });
+});
+
+const noteSized = (
+  size: Size,
+  text = 'Orders are kept for seven years.',
+): CanvasLayout =>
+  layoutOf(
+    modelWith({
+      elements: [{ ...boxAt('el-note', 0, 0, 'text', size), text }],
+    }),
+  );
+
+describe("a note's text", () => {
+  it('starts at the top left of its box, inside the padding, however large the box', () => {
+    const starts = [
+      { width: 200, height: 90 },
+      { width: 400, height: 300 },
+    ].map((size) => {
+      const box = textBoxOf(noteSized(size).nodes[0]);
+      return box === undefined ? undefined : { x: box.minX, y: box.minY };
+    });
+    expect(starts[1]).toEqual(starts[0]);
+    expect(starts[0]?.x).toBe(textPadding);
+    expect(starts[0]?.y).toBeGreaterThanOrEqual(textPadding);
+  });
+
+  it('sets its first line half a line height below the padding, where a field of that padding and line height sets it', () => {
+    const [note] = noteSized({ width: 200, height: 90 }).nodes;
+    expect(nodeTextPlacement(note).at).toEqual({
+      x: textPadding,
+      y: textPadding + lineHeight(wrappedTextStyles.note.fontSize) / 2,
+    });
+  });
+
+  it('is reached by the bounds the layout reports where it runs past the bottom of its box', () => {
+    const layout = noteSized(
+      { width: 60, height: 40 },
+      'Orders are kept for seven years, then the provider deletes them.',
+    );
+    const text = textBoxOf(layout.nodes[0]);
+    expect(layout.bounds.y).toBe(0);
+    expect(layout.bounds.y + layout.bounds.height).toBe(text?.maxY);
   });
 });

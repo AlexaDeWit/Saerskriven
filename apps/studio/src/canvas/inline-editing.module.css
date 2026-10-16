@@ -27,7 +27,6 @@
 
 .note {
   height: 100%;
-  padding: var(--saer-space-1) var(--saer-space-2);
   overflow: auto;
   text-align: start;
 }

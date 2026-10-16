@@ -36,7 +36,7 @@
 .saer-diagram-note {
   fill: #6B655C;
   font-size: 12px;
-  text-anchor: middle;
+  text-anchor: start;
   dominant-baseline: central;
 }
 .saer-diagram-flow {

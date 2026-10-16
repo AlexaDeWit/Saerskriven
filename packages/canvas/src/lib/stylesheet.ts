@@ -180,7 +180,7 @@ const sheetFrom = (
 .${wrappedTextStyles.note.className} {
   fill: ${colour('textSecondary')};
   font-size: ${wrappedTextStyles.note.fontSize}px;
-  text-anchor: middle;
+  text-anchor: start;
   dominant-baseline: central;
 }
 .${canvasClassNames.flow} {
