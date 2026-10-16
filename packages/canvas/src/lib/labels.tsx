@@ -5,16 +5,17 @@ import { wrappedTextStyles, type WrappedTextStyle } from './stylesheet.js';
 import { lineHeight, wrapText } from './typography.js';
 
 /**
- * Where `at` sits in the block of lines: at its centre, or at the centre of
- * its first line, which is what a label clearing a flow's own line needs.
+ * How far down the block of lines `at` sits: level with its centre, or with
+ * the centre of its first line. Which end of a line `at.x` stands at is the
+ * `textAnchor` of the run's style.
  */
 export type TextAnchor = 'centre' | 'top';
 
 /**
  * Text wrapped to `width` and hung on `at`, as one `<text>` carrying a
- * `<tspan>` per line. The style names both the class the stylesheet gives
- * the run and the size the wrap estimates with, so the two cannot be paired
- * wrongly at a call site.
+ * `<tspan>` per line. The style names the class the stylesheet gives the
+ * run, the size the wrap estimates with and the end of a line `at.x` stands
+ * at, so none of them can be paired wrongly at a call site.
  */
 export function WrappedText({
   text,

@@ -12,7 +12,9 @@ import {
   type CanvasFlowEdge,
   type CanvasFlowNode,
   type CanvasNodeKind,
+  type TextAnchor,
   type TextPlacement,
+  type TextStyleRule,
   type WrappedTextStyle,
 } from '@saerskriven/canvas';
 import type { ElementId, Size } from '@saerskriven/model';
@@ -82,6 +84,7 @@ type InlineFieldProps = {
   readonly value: string;
   readonly textStyle: WrappedTextStyle;
   readonly room?: number;
+  readonly padding?: string;
   readonly multiline?: boolean;
   readonly onCommit: (elementId: ElementId, text: string) => void;
   readonly refuse?: (label: Said, text: string) => TextRefusal | undefined;
@@ -106,36 +109,60 @@ function withoutLineBreaks(text: string): string {
   return text.replace(/[\r\n]+/gu, '');
 }
 
+function firstLineTop(placement: TextPlacement): number {
+  return (
+    placement.at.y -
+    lineHeight(wrappedTextStyles[placement.textStyle].fontSize) / 2
+  );
+}
+
+const shiftAcross = {
+  middle: '-50%',
+  start: '0',
+} as const satisfies Record<TextStyleRule['textAnchor'], string>;
+
+const shiftDown = {
+  centre: '-50%',
+  top: '0',
+} as const satisfies Record<TextAnchor, string>;
+
 function placedAt(placement: TextPlacement): CSSProperties {
-  const fontSize = wrappedTextStyles[placement.textStyle].fontSize;
+  const across = wrappedTextStyles[placement.textStyle].textAnchor;
   const top =
-    placement.anchor === 'top'
-      ? placement.at.y - lineHeight(fontSize) / 2
-      : placement.at.y;
+    placement.anchor === 'centre' ? placement.at.y : firstLineTop(placement);
   return {
     left: `${String(placement.at.x)}px`,
     top: `${String(top)}px`,
     width: `${String(placement.width)}px`,
-    transform:
-      placement.anchor === 'top'
-        ? 'translate(-50%, 0)'
-        : 'translate(-50%, -50%)',
+    transform: `translate(${shiftAcross[across]}, ${shiftDown[placement.anchor]})`,
   };
 }
 
 function fieldRoom(placement: TextPlacement, size: Size): number {
-  const fontSize = wrappedTextStyles[placement.textStyle].fontSize;
-  return placement.anchor === 'top'
-    ? size.height - (placement.at.y - lineHeight(fontSize) / 2)
-    : 2 * Math.min(placement.at.y, size.height - placement.at.y);
+  return placement.anchor === 'centre'
+    ? 2 * Math.min(placement.at.y, size.height - placement.at.y)
+    : size.height - firstLineTop(placement);
 }
 
-function typeOf(textStyle: WrappedTextStyle, room?: number): CSSProperties {
+function notePadding(placement: TextPlacement, size: Size): string {
+  const top = firstLineTop(placement);
+  const right = size.width - placement.at.x - placement.width;
+  return [top, right, top, placement.at.x]
+    .map((inset) => `${String(inset)}px`)
+    .join(' ');
+}
+
+function typeOf(
+  textStyle: WrappedTextStyle,
+  room?: number,
+  padding?: string,
+): CSSProperties {
   return {
     fontFamily: canvasType.family,
     fontSize: `${String(wrappedTextStyles[textStyle].fontSize)}px`,
     lineHeight: lineHeightRatio,
     maxHeight: room === undefined ? undefined : `${String(room)}px`,
+    padding,
   };
 }
 
@@ -145,6 +172,7 @@ function InlineField({
   value,
   textStyle,
   room,
+  padding,
   multiline = false,
   onCommit,
   refuse = refusedText,
@@ -247,7 +275,7 @@ function InlineField({
         onKeyDown={keyDown}
         ref={field}
         rows={1}
-        style={typeOf(textStyle, room)}
+        style={typeOf(textStyle, room, padding)}
         value={draft.text}
       />
       {draft.refusal !== undefined && (
@@ -336,6 +364,7 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
             label={(speak) => speak('fields.note-text')}
             multiline
             onCommit={commitNote}
+            padding={notePadding(placement, node.size)}
             textStyle={placement.textStyle}
             value={node.text}
           />

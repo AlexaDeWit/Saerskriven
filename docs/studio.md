@@ -505,6 +505,10 @@ character named under it, until you correct it or press Escape. In a Note,
 Enter adds a line, and Command+Enter on macOS or Control+Enter elsewhere
 commits.
 
+A Note's text starts at its top left, in the field as in the diagram and its
+exports. The diagram estimates where its lines wrap, so a line in the field
+can break a word sooner or later than the drawn one.
+
 A flow may be left unlabelled: clear its name, or leave only spaces, and commit.
 The diagram and its exports draw no label for it, and the threat panel's lists
 and notices name it from its ends instead, such as "Flow from Shopper to Web

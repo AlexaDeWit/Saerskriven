@@ -242,12 +242,11 @@ function textBox(element: Element): Box | undefined {
   const extent = textExtent(lines, rule.fontSize);
   const x = attribute(element, 'x');
   const top = attribute(element, 'y') - rule.fontSize / 2;
-  return {
-    minX: x - extent.width / 2,
-    minY: top,
-    maxX: x + extent.width / 2,
-    maxY: top + extent.height,
-  };
+  const [minX, maxX] =
+    rule.textAnchor === 'start'
+      ? [x, x + extent.width]
+      : [x - extent.width / 2, x + extent.width / 2];
+  return { minX, minY: top, maxX, maxY: top + extent.height };
 }
 
 function ownBox(element: Element): Box | undefined {
