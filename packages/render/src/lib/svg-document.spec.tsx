@@ -233,13 +233,6 @@ function textRuleOf(element: Element): TextStyleRule | undefined {
   );
 }
 
-function anchoredAtStart(element: Element, rule: TextStyleRule): boolean {
-  const sheet =
-    element.ownerDocument.getElementsByTagName('style')[0]?.textContent ?? '';
-  const block = sheet.split(`.${rule.className} {`)[1]?.split('}')[0] ?? '';
-  return block.includes('text-anchor: start;');
-}
-
 function textBox(element: Element): Box | undefined {
   const rule = textRuleOf(element);
   if (rule === undefined) {
@@ -249,9 +242,10 @@ function textBox(element: Element): Box | undefined {
   const extent = textExtent(lines, rule.fontSize);
   const x = attribute(element, 'x');
   const top = attribute(element, 'y') - rule.fontSize / 2;
-  const [minX, maxX] = anchoredAtStart(element, rule)
-    ? [x, x + extent.width]
-    : [x - extent.width / 2, x + extent.width / 2];
+  const [minX, maxX] =
+    rule.textAnchor === 'start'
+      ? [x, x + extent.width]
+      : [x - extent.width / 2, x + extent.width / 2];
   return { minX, minY: top, maxX, maxY: top + extent.height };
 }
 

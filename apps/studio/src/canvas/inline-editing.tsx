@@ -14,6 +14,7 @@ import {
   type CanvasNodeKind,
   type TextAnchor,
   type TextPlacement,
+  type TextStyleRule,
   type WrappedTextStyle,
 } from '@saerskriven/canvas';
 import type { ElementId, Size } from '@saerskriven/model';
@@ -115,20 +116,25 @@ function firstLineTop(placement: TextPlacement): number {
   );
 }
 
-const fieldShift = {
-  centre: 'translate(-50%, -50%)',
-  top: 'translate(-50%, 0)',
-  'top-left': 'none',
+const shiftAcross = {
+  middle: '-50%',
+  start: '0',
+} as const satisfies Record<TextStyleRule['textAnchor'], string>;
+
+const shiftDown = {
+  centre: '-50%',
+  top: '0',
 } as const satisfies Record<TextAnchor, string>;
 
 function placedAt(placement: TextPlacement): CSSProperties {
+  const across = wrappedTextStyles[placement.textStyle].textAnchor;
   const top =
     placement.anchor === 'centre' ? placement.at.y : firstLineTop(placement);
   return {
     left: `${String(placement.at.x)}px`,
     top: `${String(top)}px`,
     width: `${String(placement.width)}px`,
-    transform: fieldShift[placement.anchor],
+    transform: `translate(${shiftAcross[across]}, ${shiftDown[placement.anchor]})`,
   };
 }
 

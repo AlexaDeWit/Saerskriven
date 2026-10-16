@@ -67,21 +67,35 @@ export const canvasInteractionClassNames = {
 
 export type WrappedTextStyle = 'label' | 'note' | 'flowLabel';
 
+/**
+ * A run of text's class, its font size, and the end of each line its `x`
+ * stands at: the line's `middle`, or its `start`, which is its left end.
+ */
 export type TextStyleRule = {
   readonly className: string;
   readonly fontSize: number;
+  readonly textAnchor: 'start' | 'middle';
 };
 
-/** The stylesheet and text layout use the same font sizes. */
+/**
+ * The stylesheet and text layout read one rule per run, so the size a wrap
+ * estimates with and the end a box is measured from are the ones drawn.
+ */
 export const wrappedTextStyles = {
   label: {
     className: canvasClassNames.label,
     fontSize: canvasType.widgetLabel,
+    textAnchor: 'middle',
   },
-  note: { className: canvasClassNames.note, fontSize: canvasType.note },
+  note: {
+    className: canvasClassNames.note,
+    fontSize: canvasType.note,
+    textAnchor: 'start',
+  },
   flowLabel: {
     className: canvasClassNames.flowLabel,
     fontSize: canvasType.widgetLabel,
+    textAnchor: 'middle',
   },
 } as const satisfies Record<WrappedTextStyle, TextStyleRule>;
 
@@ -174,13 +188,13 @@ const sheetFrom = (
   fill: ${colour('textPrimary')};
   font-size: ${wrappedTextStyles.label.fontSize}px;
   font-weight: 500;
-  text-anchor: middle;
+  text-anchor: ${wrappedTextStyles.label.textAnchor};
   dominant-baseline: central;
 }
 .${wrappedTextStyles.note.className} {
   fill: ${colour('textSecondary')};
   font-size: ${wrappedTextStyles.note.fontSize}px;
-  text-anchor: start;
+  text-anchor: ${wrappedTextStyles.note.textAnchor};
   dominant-baseline: central;
 }
 .${canvasClassNames.flow} {
@@ -193,7 +207,7 @@ const sheetFrom = (
 .${wrappedTextStyles.flowLabel.className} {
   fill: ${colour('textSecondary')};
   font-size: ${wrappedTextStyles.flowLabel.fontSize}px;
-  text-anchor: middle;
+  text-anchor: ${wrappedTextStyles.flowLabel.textAnchor};
   dominant-baseline: central;
 }
 .${canvasClassNames.flowBacking} {

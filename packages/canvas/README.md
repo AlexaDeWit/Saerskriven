@@ -96,7 +96,8 @@ list of points and `boxesOverlap` tests whether two boxes overlap.
 The headless render embeds `renderCanvasStylesheet` for a theme, and the
 studio injects `themedCanvasStylesheet`, the same sheet with every colour
 read from a custom property. `wrappedTextStyles` pairs each run of text with
-its class and font size, and `severityToneClass` names each severity's tone.
+its class, font size and `text-anchor`, and `severityToneClass` names each
+severity's tone.
 Nothing in the sheet is faded, so every ink is drawn at the ratio
 `tokens.spec.ts` measures for it. An out-of-scope element is marked by round
 dots on its outline, where an outline in scope is solid and a trust boundary's

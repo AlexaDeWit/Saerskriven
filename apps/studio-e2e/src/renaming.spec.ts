@@ -247,6 +247,20 @@ const fieldFirstLine = (field: Locator): Promise<Point> =>
     };
   });
 
+const drawnFirstLine = (text: Locator): Promise<Point> =>
+  text.evaluate((element) => {
+    const toScreen =
+      element instanceof SVGGraphicsElement ? element.getScreenCTM() : null;
+    if (toScreen === null) {
+      return { x: Number.NaN, y: Number.NaN };
+    }
+    const at = new DOMPoint(
+      Number(element.getAttribute('x')),
+      Number(element.getAttribute('y')),
+    ).matrixTransform(toScreen);
+    return { x: at.x, y: at.y };
+  });
+
 const withinNote = async (note: Locator, at: Point): Promise<Point> => {
   const box = await screenBoxOf(note, 'the Note');
   return { x: at.x - box.x, y: at.y - box.y };
@@ -277,14 +291,10 @@ test("a Note's field starts its first line where the drawing does, at full zoom"
   await canvasSettled(page);
   expect(await viewportZoom(page)).toBe(1);
   const note = nodeNamed(page, retentionNote);
-  const line = await screenBoxOf(
-    note.locator(`text.${canvasClassNames.note}`),
-    'the drawn text',
+  const drawn = await withinNote(
+    note,
+    await drawnFirstLine(drawnName(note, canvasClassNames.note)),
   );
-  const drawn = await withinNote(note, {
-    x: line.x,
-    y: line.y + line.height / 2,
-  });
 
   await selectByKeyboard(page, retentionNote);
   await page.keyboard.press('Enter');

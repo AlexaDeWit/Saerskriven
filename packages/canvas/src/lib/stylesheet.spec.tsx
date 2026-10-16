@@ -73,10 +73,8 @@ const slotClasses = [
 const toneRule = (styles: string, className: string): string | undefined =>
   styles.split('\n').find((line) => line.startsWith(`.${className} { fill:`));
 
-const anchorOf = (className: string): string | undefined =>
-  /text-anchor: (?<anchor>\w+);/u.exec(
-    sheet.split(`.${className} {`)[1]?.split('}')[0] ?? '',
-  )?.groups?.anchor;
+const blockOf = (className: string): string =>
+  sheet.split(`.${className} {`)[1]?.split('}')[0] ?? '';
 
 const dashOf = (rule: string | undefined): number[] | undefined =>
   /stroke-dasharray: (?<dash>[^;]+);/u
@@ -110,10 +108,13 @@ describe('renderCanvasStylesheet', () => {
     expect(selected).toEqual(emitted);
   });
 
-  it('renders each run of text at the size its wrap estimates with', () => {
+  it('renders each run of text at the size its wrap estimates with, from the end of a line its box is measured from', () => {
     const mismatched = Object.values(wrappedTextStyles).filter((rule) => {
-      const block = sheet.split(`.${rule.className} {`)[1] ?? '';
-      return !block.split('}')[0].includes(`font-size: ${rule.fontSize}px`);
+      const block = blockOf(rule.className);
+      return (
+        !block.includes(`font-size: ${rule.fontSize}px`) ||
+        !block.includes(`text-anchor: ${rule.textAnchor};`)
+      );
     });
     expect(mismatched.map((rule) => rule.className)).toEqual([]);
   });
@@ -123,7 +124,7 @@ describe('renderCanvasStylesheet', () => {
       Object.fromEntries(
         Object.entries(wrappedTextStyles).map(([style, rule]) => [
           style,
-          anchorOf(rule.className),
+          rule.textAnchor,
         ]),
       ),
     ).toEqual({ label: 'middle', note: 'start', flowLabel: 'middle' });
@@ -140,10 +141,9 @@ describe('renderCanvasStylesheet', () => {
   });
 
   it("fills a flow block's backing with the ground the diagram is drawn on", () => {
-    const block = sheet
-      .split(`.${canvasClassNames.flowBacking} {`)[1]
-      .split('}')[0];
-    expect(block).toContain(`fill: ${defaultRenderTheme.colours.background}`);
+    expect(blockOf(canvasClassNames.flowBacking)).toContain(
+      `fill: ${defaultRenderTheme.colours.background}`,
+    );
   });
 
   it('is styled with properties SVG applies, so it needs no HTML around it', () => {

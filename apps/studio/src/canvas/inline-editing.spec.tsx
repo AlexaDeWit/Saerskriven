@@ -1,5 +1,7 @@
 import {
   canvasClassNames,
+  lineHeight,
+  nodeTextPlacement,
   toReactFlowEdges,
   wrappedTextStyles,
 } from '@saerskriven/canvas';
@@ -264,6 +266,23 @@ describe('the field standing where the text is drawn', () => {
     expect(textbox('Note text').style.fontSize).toBe(
       `${String(wrappedTextStyles.note.fontSize)}px`,
     );
+  });
+
+  it("starts a Note's first line inside the padding the drawing keeps", () => {
+    editing(noteElement, 'note');
+    render(<DiagramCanvas />);
+    const note = currentLayout(state()).nodes.find(
+      (node) => node.id === noteElement,
+    );
+    const drawn = note === undefined ? undefined : nodeTextPlacement(note).at;
+    const { paddingLeft, paddingTop } = textbox('Note text').style;
+
+    expect({
+      x: parseFloat(paddingLeft),
+      y:
+        parseFloat(paddingTop) +
+        lineHeight(wrappedTextStyles.note.fontSize) / 2,
+    }).toEqual(drawn);
   });
 
   it('stays inside the box of the element it names', () => {

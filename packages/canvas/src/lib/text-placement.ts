@@ -58,7 +58,7 @@ export function nodeTextPlacement(node: CanvasNode): TextPlacement {
         x: textPadding,
         y: textPadding + lineHeight(wrappedTextStyles.note.fontSize) / 2,
       },
-      anchor: 'top-left',
+      anchor: 'top',
       width: innerWidth(node.size.width),
       textStyle: 'note',
     };
@@ -106,11 +106,11 @@ export function textPlacementCorners(
   }
   const extent = textExtent(lines, rule.fontSize);
   const top =
-    placement.anchor === 'centre'
-      ? placement.at.y - extent.height / 2
-      : placement.at.y - rule.fontSize / 2;
+    placement.anchor === 'top'
+      ? placement.at.y - rule.fontSize / 2
+      : placement.at.y - extent.height / 2;
   const [left, right] =
-    placement.anchor === 'top-left'
+    rule.textAnchor === 'start'
       ? [placement.at.x, placement.at.x + extent.width]
       : [placement.at.x - extent.width / 2, placement.at.x + extent.width / 2];
   return [
