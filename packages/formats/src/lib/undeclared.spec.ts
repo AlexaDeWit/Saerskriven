@@ -1,10 +1,15 @@
 import { z } from 'zod';
-import { undeclaredDivergences, undeclaredPaths } from './undeclared.js';
+import type { Divergence } from './divergence.js';
+import { droppedByWriteBack, undeclaredDivergences } from './undeclared.js';
 
 const schema = z.object({ kept: z.object({ inner: z.string() }) });
 
 const reportOn = (given: unknown): readonly string[] =>
-  undeclaredPaths(undeclaredDivergences(given, schema.parse(given)));
+  undeclaredDivergences(given, schema.parse(given)).flatMap((divergence) =>
+    divergence.detail.code === 'key-undeclared'
+      ? [divergence.detail.parameters.path]
+      : [],
+  );
 
 describe('undeclaredDivergences', () => {
   it('reports nothing where the schema declared every key', () => {
@@ -38,22 +43,26 @@ describe('undeclaredDivergences', () => {
   });
 });
 
-describe('undeclaredPaths', () => {
-  it('lists the undeclared keys of a read and nothing else it reported', () => {
+describe('droppedByWriteBack', () => {
+  const unknownAccent: Divergence = {
+    subject: { kind: 'model' },
+    detail: { code: 'accent-unknown', parameters: { accent: 'x9' } },
+    reason: 'narrowed',
+  };
+
+  const merged: Divergence = {
+    subject: { kind: 'model' },
+    detail: { code: 'mitigation-title-merged' },
+    reason: 'narrowed',
+  };
+
+  it('holds for an undeclared key and an unknown accent, and no other narrowed value', () => {
+    const undeclared = undeclaredDivergences(
+      { kept: { inner: 'yes' }, c: 2 },
+      { kept: { inner: 'yes' } },
+    );
     expect(
-      undeclaredPaths([
-        {
-          subject: { kind: 'model' },
-          detail: { code: 'accent-unknown', parameters: { accent: 'x9' } },
-          reason: 'narrowed',
-        },
-        ...undeclaredDivergences(
-          { kept: { inner: 'yes', b: 1 }, c: 2 },
-          {
-            kept: { inner: 'yes' },
-          },
-        ),
-      ]),
-    ).toEqual(['kept.b', 'c']);
+      [...undeclared, unknownAccent, merged].map(droppedByWriteBack),
+    ).toEqual([true, true, false]);
   });
 });

@@ -21,16 +21,15 @@ export function undeclaredDivergences(
 }
 
 /**
- * The path of every key `divergences` reports `undeclared`, in their order:
- * what a write merged onto that read's document drops.
+ * Whether writing a model back onto the document of the read that reported
+ * `divergence` loses what it names: a key the wire schema does not declare,
+ * or an accent value the model has no key for, which only the native read
+ * reports and its write never repeats.
  */
-export function undeclaredPaths(
-  divergences: readonly Divergence[],
-): readonly string[] {
-  return divergences.flatMap((divergence) =>
-    divergence.detail.code === 'key-undeclared'
-      ? [divergence.detail.parameters.path]
-      : [],
+export function droppedByWriteBack(divergence: Divergence): boolean {
+  return (
+    divergence.detail.code === 'key-undeclared' ||
+    divergence.detail.code === 'accent-unknown'
   );
 }
 

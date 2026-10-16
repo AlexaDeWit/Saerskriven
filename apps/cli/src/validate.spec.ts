@@ -46,7 +46,7 @@ describe('validate', () => {
         out: 'saerskriven-yaml: 0 diagrams, 0 elements, 1 threat\n',
         err:
           'warning: the file and the model do not correspond exactly.\n' +
-          'model: the key nonsense (this version of saer cannot keep it: saer_edit and saer convert refuse to drop it unless told to)\n',
+          'model: the key nonsense (this version of saer cannot keep it, and rewriting the file refuses to drop it unless told to)\n',
       },
     },
   ])('$named', ({ read, expected }) => {

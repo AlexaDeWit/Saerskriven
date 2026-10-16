@@ -215,7 +215,7 @@ function convertCommand(program: Command, state: ParseState): void {
     )
     .option(
       '--drop-undeclared',
-      'drop and list the keys this version of saer cannot read, where a file holds any, rather than refusing to write',
+      'where --out is <file> itself, drop what this version of saer cannot read rather than refusing to write',
     )
     .action((file: string, options: unknown) => {
       const parsed = convertOptionsSchema.safeParse(options);

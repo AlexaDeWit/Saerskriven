@@ -1,6 +1,7 @@
 import { escapedForTerminal } from '@saerskriven/formats';
 import {
   acceptedTextSchema,
+  accentField,
   accentSchema,
   diagramIdSchema,
   elementIdSchema,
@@ -9,9 +10,7 @@ import {
   elementsById,
   flowEndName,
   flowEnds,
-  takesAccent,
   unlabelledFlow,
-  type Accent,
   type Diagram,
   type Element,
   type FlowEndpoint,
@@ -92,7 +91,7 @@ export function elementRow(
     kind: element.kind,
     name: element.name,
     outOfScope: element.outOfScope,
-    ...accentOf(element),
+    ...accentField(element),
     threats: threatsOn(element, counts),
     ...namedFromEnds(element, diagram),
   };
@@ -188,12 +187,6 @@ function geometryLines(row: ElementDetail): readonly string[] {
     ];
   }
   return [`box: ${renderBox(row.position, row.size)}`];
-}
-
-function accentOf(element: Element): { readonly accent?: Accent } {
-  return takesAccent(element) && element.accent !== undefined
-    ? { accent: element.accent }
-    : {};
 }
 
 function namedFromEnds(

@@ -1,11 +1,19 @@
-import { readAnyFormat, readLimits } from '@saerskriven/formats';
+import {
+  droppedByWriteBack,
+  readAnyFormat,
+  readLimits,
+} from '@saerskriven/formats';
 import {
   OperationFailure,
   elementsAcross,
   type AssumptionStatus,
   type BoundaryShapeInput,
 } from '@saerskriven/model';
-import { assumptionId, elementId } from '@saerskriven/model/fixtures';
+import {
+  assumptionId,
+  elementId,
+  testDataPath,
+} from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -19,6 +27,7 @@ import {
   undeclaredDragonJson,
   undeclaredPath,
   undeclaredYaml,
+  unknownAccentYaml,
   type EditInput,
 } from './edit.fixtures.js';
 import { editArgumentsSchema, editModel, renderEdit } from './edit.js';
@@ -27,7 +36,7 @@ import { describeOperationFailure } from './operation-failure.js';
 import { revisionOf } from './revision.js';
 import { searchThreats } from './search-threats.js';
 import { openWorkspace } from './workspace.js';
-import { refusalOf } from './read-tools.fixtures.js';
+import { forgedLine, forgedLinesIn, refusalOf } from './read-tools.fixtures.js';
 
 const addedMitigation = (
   threat: string,
@@ -255,8 +264,8 @@ describe('what an applied edit writes', () => {
       'No record culled.',
       'threats culled:',
       'No threat culled.',
-      'keys dropped:',
-      'No key dropped.',
+      'dropped:',
+      'Nothing dropped.',
       `file: ${modelFile}`,
       'format: saerskriven-yaml',
       `revision: ${revisionIn(attempted, modelFile)}`,
@@ -1066,13 +1075,35 @@ describe('what set_accent writes', () => {
   });
 });
 
-describe('what an edit does with a key this version cannot read', () => {
+const droppedOnRereadOf = (
+  attempted: ReturnType<typeof attempt>,
+  file: string,
+) =>
+  Either.getOrUndefined(
+    readAnyFormat(attempted.bytes(file).toString('utf8')),
+  )?.divergences.filter(droppedByWriteBack);
+
+const textOf = (
+  outcome: Either.Either<Parameters<typeof renderEdit>[0], readonly string[]>,
+): readonly string[] =>
+  Either.match(outcome, { onLeft: (lines) => lines, onRight: renderEdit });
+
+describe('what an edit does with what this version cannot read', () => {
   it.each([
-    { name: 'undeclared.yaml', text: undeclaredYaml, path: undeclaredPath },
-    { name: 'undeclared.json', text: undeclaredDragonJson, path: 'glow' },
+    {
+      name: 'undeclared.yaml',
+      text: undeclaredYaml,
+      named: `the key ${undeclaredPath}`,
+    },
+    {
+      name: 'undeclared.json',
+      text: undeclaredDragonJson,
+      named: 'the key glow',
+    },
+    { name: 'accent.yaml', text: unknownAccentYaml, named: 'the accent "q9"' },
   ])(
-    'refuses $name, naming the path of the key, and writes nothing',
-    ({ name, text, path }) => {
+    'refuses $name, naming what the write would drop, and writes nothing',
+    ({ name, text, named }) => {
       const attempted = attempt();
       const file = attempted.place(name, text);
       const before = attempted.bytes(file);
@@ -1080,33 +1111,87 @@ describe('what an edit does with a key this version cannot read', () => {
         attempted.edit(file, revisionIn(attempted, file), [renaming]),
       );
       expect(attempted.bytes(file)).toEqual(before);
-      expect(refused).toContain(path);
+      expect(refused.join('\n')).toContain(named);
       expect(refused.join('\n')).toContain('dropUndeclared');
     },
   );
 
-  it('writes the file without it where the call drops it, and names it as dropped', () => {
+  it.each([
+    {
+      name: 'undeclared.yaml',
+      text: undeclaredYaml,
+      code: 'key-undeclared',
+      named: `the key ${undeclaredPath}`,
+    },
+    {
+      name: 'accent.yaml',
+      text: unknownAccentYaml,
+      code: 'accent-unknown',
+      named: 'the accent "q9"',
+    },
+  ])(
+    'writes $name without what it drops where the call says to, and names it as dropped',
+    ({ name, text, code, named }) => {
+      const attempted = attempt();
+      const file = attempted.place(name, text);
+      const applied = attempted.edit(
+        file,
+        revisionIn(attempted, file),
+        [renaming],
+        true,
+      );
+      expect(
+        Either.getOrUndefined(applied)?.dropped.map(
+          ({ detail }) => detail.code,
+        ),
+      ).toEqual([code]);
+      expect(textOf(applied).join('\n')).toContain(named);
+      expect(droppedOnRereadOf(attempted, file)).toEqual([]);
+      expect(
+        heldModel(attempted, file)?.diagrams[0]?.elements.find(
+          (element) => element.id === 'element-db',
+        )?.name,
+      ).toBe('Order store');
+    },
+  );
+
+  it('answers a stale revision before what the write would drop', () => {
     const attempted = attempt();
     const file = attempted.place('undeclared.yaml', undeclaredYaml);
-    const applied = attempted.edit(
-      file,
-      revisionIn(attempted, file),
-      [renaming],
-      true,
+    const refused = refusalOf(
+      attempted.edit(file, staleRevision, [renaming]),
+    ).join('\n');
+    expect(refused).toContain('changed since the read this call quoted');
+    expect(refused).not.toContain('dropUndeclared');
+  });
+
+  it('writes a version 1 file back as version 2, whose migration narrows what it holds', () => {
+    const attempted = attempt();
+    const file = attempted.place(
+      'version-1.yaml',
+      readFileSync(testDataPath('saerskriven/saerskriven-v0.3.0.yaml'), 'utf8'),
     );
-    expect(Either.getOrUndefined(applied)?.dropped).toEqual([undeclaredPath]);
+    const applied = attempted.edit(file, revisionIn(attempted, file), [
+      { op: 'set_model_metadata', title: 'Saerskriven, migrated' },
+    ]);
+    expect(Either.getOrUndefined(applied)?.dropped).toEqual([]);
     expect(
-      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
-    ).toContain(undeclaredPath);
+      attempted.bytes(file).toString('utf8').startsWith('formatVersion: 2\n'),
+    ).toBe(true);
+  });
+
+  it('marks a key spelled as a line of the result as the key it is', () => {
+    const attempted = attempt();
+    const file = attempted.place(
+      'forged.yaml',
+      `${JSON.stringify(forgedLine)}: true\n${undeclaredYaml}`,
+    );
+    const quoted = revisionIn(attempted, file);
     expect(
-      Either.getOrUndefined(
-        readAnyFormat(attempted.bytes(file).toString('utf8')),
-      )?.divergences,
+      forgedLinesIn(refusalOf(attempted.edit(file, quoted, [renaming]))),
     ).toEqual([]);
     expect(
-      heldModel(attempted, file)?.diagrams[0]?.elements.find(
-        (element) => element.id === 'element-db',
-      )?.name,
-    ).toBe('Order store');
+      forgedLinesIn(textOf(attempted.edit(file, quoted, [renaming], true))),
+    ).toEqual([]);
   });
 });

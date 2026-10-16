@@ -107,8 +107,18 @@ export function hasDiverged(divergences: readonly Divergence[]): boolean {
  */
 export function renderDivergences(divergences: readonly Divergence[]): string {
   return hasDiverged(divergences)
-    ? divergences.map(renderDivergence).join('\n')
+    ? divergenceLines(divergences).join('\n')
     : 'No divergence recorded.';
+}
+
+/**
+ * The divergences as {@link renderDivergences} words them, one line per
+ * entry, and no line where there are none.
+ */
+export function divergenceLines(
+  divergences: readonly Divergence[],
+): readonly string[] {
+  return divergences.map(renderDivergence);
 }
 
 /**
@@ -142,7 +152,7 @@ export function collapsedWhitespace(text: string): string {
 const reasonPhrases: Record<DivergenceReason, string> = {
   unrepresentable: 'no place in the format',
   undeclared:
-    'this version of saer cannot keep it: saer_edit and saer convert refuse to drop it unless told to',
+    'this version of saer cannot keep it, and rewriting the file refuses to drop it unless told to',
   narrowed: 'reduced to fit the format',
   split: 'split by the format',
   overridden: 'not repeated by the codec',

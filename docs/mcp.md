@@ -303,13 +303,14 @@ process killed between the two, or a removal the system refuses, leaves a
 `.<name>.<uuid>.saer` copy in the directory that no listing shows, and deleting
 it is safe.
 
-A file holding a key this version of saer does not declare is refused rather
-than edited, since the write would drop the key. `saer_inspect` and
-`saer_validate` report such a key as a divergence saying this version cannot
-keep it. The refusal writes nothing, names every such key by its path, and
-says to upgrade saer to a release that reads them. `dropUndeclared: true`
-writes the file without those keys, and the result lists each one it dropped
-under `dropped`. A Threat Dragon file is refused on the same terms.
+A file holding what this version of saer cannot read is refused rather than
+edited, since the write would drop it: a key the format does not declare, or
+an accent value the model has no key for. `saer_inspect` and `saer_validate`
+report both as divergences. The refusal writes nothing, names each one, a key
+by its path and an accent by its element, and says to upgrade saer to a
+release that reads them. `dropUndeclared: true` writes the file without them,
+and the result lists each one it dropped under `dropped`. A Threat Dragon
+file is refused on the same terms for a key, and it holds no accent.
 
 What the format cannot hold comes back in the result's divergences rather than
 as a refusal,

@@ -1,9 +1,11 @@
 import {
-  escapedForTerminal,
+  divergenceLines,
+  divergenceSchema,
+  droppedByWriteBack,
   quotedForTerminal,
   retainedSource,
-  undeclaredPaths,
   writeThrough,
+  type Divergence,
 } from '@saerskriven/formats';
 import {
   recordReferenceSchema,
@@ -43,7 +45,7 @@ import {
 
 /**
  * What `saer_edit` takes: the file, the handle it was read at, the batch, and
- * whether to drop the keys this version cannot read.
+ * whether to drop what this version cannot read.
  */
 export const editArgumentsSchema = revisionArgumentSchema.extend({
   edits: z
@@ -56,7 +58,7 @@ export const editArgumentsSchema = revisionArgumentSchema.extend({
     .boolean()
     .default(false)
     .describe(
-      'Whether to write a file holding keys this version of saer cannot read, dropping them. Left false, such a file is refused and nothing is written.',
+      'Whether to write a file holding what this version of saer cannot read, a key the wire schema does not declare or an accent value the model has no key for, dropping it. Left false, such a file is refused and nothing is written.',
     ),
 });
 
@@ -77,9 +79,9 @@ export const editResultSchema = writeReportSchema.extend({
       'The threats the file held before the batch that the batch culled by taking away their last reference, an element attachment or the model link, each as it stood before it went.',
     ),
   dropped: z
-    .array(z.string())
+    .array(divergenceSchema)
     .describe(
-      'The path of every key the file held that this version of saer cannot read, which the write dropped as `dropUndeclared` allowed.',
+      'What the file held that this version of saer cannot read and the write dropped, as `dropUndeclared` allowed: each key the wire schema does not declare, by its path, and each accent value the model has no key for, by its element.',
     ),
 });
 
@@ -103,7 +105,7 @@ export const editDescription = [
   "A mitigation's references are its threat links. An assumption's references are its threat links and its model link. An edit that takes a record's last reference away (removing the threat that was its last reference, unlinking it, unlinking an assumption from the model where it links no threat, or a replace that leaves it none) removes the record in the same edit. The result names under `culled`, once each, every record the file held before the batch that an edit of the batch culled, even where a later edit adds it back. A record removed by `remove_mitigation` or `remove_assumption` is not named there, and neither is one the batch itself added.",
   "A threat applies to the elements it attaches to, to the model as a whole (`appliesToModel`), or to both, and those are its references. `link_threat_to_model` and `unlink_threat_from_model` take the threat id. `add_threat` starts a threat not applying to the model where that field is left out, and `replace_threat` takes the whole record, `appliesToModel` included. An edit that takes a threat's last reference away (`detach_threat`, `remove_element` on the element that was its last, `unlink_threat_from_model` where it attaches to no element, or a `replace_threat` that leaves it none) removes the threat in the same edit, with the cascade `remove_threat` carries. A threat that applies to the model stays when its last attachment goes, a threat the file already held with no reference stays, and no read ever culls one. The result names culled threats under `culledThreats` on the same terms as `culled`, a threat removed by `remove_threat` not among them.",
   'A threat carries no number: the model issues one when a threat is added and holds it when the threat is replaced, so no edit renumbers a threat, and no two threats hold one number.',
-  'A file holding a key this version of saer cannot read, which a read reports as a divergence saying so, is refused and nothing is written, since the write would drop the key. The refusal names every such key by its path: upgrade saer to keep them, or pass `dropUndeclared: true` to write the file without them, and the result names each key it dropped under `dropped`.',
+  'A file holding what this version of saer cannot read, a key the wire schema does not declare or an accent value the model has no key for, both of which a read reports as divergences, is refused and nothing is written, since the write would drop them. The refusal names each one, a key by its path and an accent by its element: upgrade saer to keep them, or pass `dropUndeclared: true` to write the file without them, and the result names each one it dropped under `dropped`.',
   'Use this on a model that exists. Start a new one with saer_create and convert a foreign file with saer_import. What the file format cannot hold comes back in the divergences of the result rather than as a refusal, so read them after a write to a Threat Dragon file.',
 ].join(' ');
 
@@ -169,10 +171,10 @@ export function renderEdit(result: EditResult): readonly string[] {
     ...(result.culledThreats.length === 0
       ? ['No threat culled.']
       : result.culledThreats.map(culledThreatLine)),
-    'keys dropped:',
+    'dropped:',
     ...(result.dropped.length === 0
-      ? ['No key dropped.']
-      : result.dropped.map(escapedForTerminal)),
+      ? ['Nothing dropped.']
+      : divergenceLines(result.dropped)),
     ...renderWriteReport(result),
   ];
 }
@@ -189,14 +191,14 @@ function droppable(
   workspace: ModelWorkspace,
   read: ReadModelFile,
   drop: boolean,
-): Either.Either<readonly string[], WriteFailure> {
-  const paths = undeclaredPaths(read.read.divergences);
-  return paths.length === 0 || drop
-    ? Either.right(paths)
+): Either.Either<readonly Divergence[], WriteFailure> {
+  const dropped = read.read.divergences.filter(droppedByWriteBack);
+  return dropped.length === 0 || drop
+    ? Either.right(dropped)
     : Either.left(
-        WriteFailure.UndeclaredKeys({
+        WriteFailure.WouldDrop({
           file: resultPath(workspace, read.path),
-          paths,
+          dropped,
         }),
       );
 }

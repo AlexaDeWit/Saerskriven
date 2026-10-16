@@ -124,7 +124,7 @@ describe('renderDivergences', () => {
     );
     expect(renderDivergences(divergences).split('\n')).toEqual([
       'model: the key notes (no place in the format)',
-      'model: the key notes (this version of saer cannot keep it: saer_edit and saer convert refuse to drop it unless told to)',
+      'model: the key notes (this version of saer cannot keep it, and rewriting the file refuses to drop it unless told to)',
       'model: the key notes (reduced to fit the format)',
       'model: the key notes (split by the format)',
       'model: the key notes (not repeated by the codec)',
