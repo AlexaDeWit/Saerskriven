@@ -78,7 +78,7 @@ export function renderSvg(
 
 function holdsAccent(layout: CanvasLayout): boolean {
   return (
-    layout.nodes.some((node) => node.kind !== 'text' && 'accent' in node) ||
+    layout.nodes.some((node) => 'accent' in node) ||
     layout.edges.some((edge) => 'accent' in edge)
   );
 }

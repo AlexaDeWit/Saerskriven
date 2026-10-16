@@ -2,7 +2,6 @@ import {
   diagramIdSchema,
   elementIdsAcross,
   elementsAcross,
-  takesAccent,
   threatIdSchema,
   type Model,
 } from '@saerskriven/model';
@@ -184,7 +183,7 @@ function overriddenMark(
 
 function droppedAccents(model: Model): readonly Divergence[] {
   const count = elementsAcross(model.diagrams).filter(
-    (element) => takesAccent(element) && element.accent !== undefined,
+    (element) => element.accent !== undefined,
   ).length;
   return count === 0
     ? []

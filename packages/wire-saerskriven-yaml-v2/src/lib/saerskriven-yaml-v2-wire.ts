@@ -17,13 +17,10 @@ const elementBaseSchema = z.object({
   description: z.string(),
   outOfScope: z.boolean(),
   reasonOutOfScope: z.string(),
-});
-
-const accentableBaseSchema = elementBaseSchema.extend({
   accent: z.string().optional(),
 });
 
-const nodeBaseSchema = accentableBaseSchema.extend({
+const nodeBaseSchema = elementBaseSchema.extend({
   position: pointSchema,
   size: sizeSchema,
 });
@@ -68,7 +65,7 @@ const endpointSchema = z.discriminatedUnion('kind', [
   freeEndpointSchema,
 ]);
 
-const flowSchema = accentableBaseSchema.extend({
+const flowSchema = elementBaseSchema.extend({
   kind: z.literal('flow'),
   protocol: z.string().optional(),
   isEncrypted: z.boolean().optional(),
@@ -96,7 +93,7 @@ const boundaryShapeSchema = z.discriminatedUnion('kind', [
   curveBoundaryShapeSchema,
 ]);
 
-const trustBoundarySchema = accentableBaseSchema.extend({
+const trustBoundarySchema = elementBaseSchema.extend({
   kind: z.literal('trust-boundary'),
   containedElements: z.array(z.string()).optional(),
   crossingFlows: z.array(z.string()).optional(),

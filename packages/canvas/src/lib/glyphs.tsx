@@ -14,7 +14,7 @@ import {
   canvasClassNames,
 } from './stylesheet.js';
 import { nodeTextPlacement } from './text-placement.js';
-import { strokeWidths } from './tokens.js';
+import { noteAccentBar, strokeWidths } from './tokens.js';
 
 /** An element kind whose model geometry is a position and size. */
 export type BoxElementKind = Exclude<CanvasNodeKind, 'boundary-curve' | 'text'>;
@@ -70,7 +70,9 @@ export function BoxElementGlyph({
 
 /**
  * Uses node coordinates, with the text and badge optionally drawn in separate layers.
- * An out-of-scope note adds a frame outside its box.
+ * An out-of-scope note adds a frame outside its box. An accented note draws a
+ * bar down the inside of its left edge, and a strong one tints its whole box
+ * behind the bar.
  */
 export function ElementGlyph({
   badgeVisible = true,
@@ -84,7 +86,7 @@ export function ElementGlyph({
   readonly textVisible?: boolean;
 }): ReactElement {
   return (
-    <g className={groupClass(node.outOfScope, accentOf(node))}>
+    <g className={groupClass(node.outOfScope, node.accent)}>
       {outlineOf(node)}
       {textVisible ? <WrappedText {...nodeTextPlacement(node)} /> : null}
       {!badgeVisible || node.badge === undefined ? null : (
@@ -182,10 +184,6 @@ function groupClass(outOfScope: boolean, accent: Accent | undefined): string {
   ].join(' ');
 }
 
-function accentOf(node: CanvasNode): Accent | undefined {
-  return node.kind === 'text' ? undefined : node.accent;
-}
-
 function shapeClass(outline: string): string {
   return `${canvasClassNames.shape} ${outline}`;
 }
@@ -199,16 +197,50 @@ function outlineOf(node: CanvasNode): ReactElement | null {
     return boundaryCurveOutline(node);
   }
   if (node.kind === 'text') {
-    const frame = noteFrame(node, { x: 0, y: 0 });
-    return frame === undefined
-      ? null
-      : rectOfBox(shapeClass(canvasClassNames.noteFrame), frame);
+    return noteOutline(node);
   }
   return (
     <BoxElementGlyph
       kind={node.kind}
       size={node.size}
-      tinted={node.accent !== undefined && accentParts[node.accent].strong}
+      tinted={isStrong(node.accent)}
+    />
+  );
+}
+
+function isStrong(accent: Accent | undefined): boolean {
+  return accent !== undefined && accentParts[accent].strong;
+}
+
+function noteOutline(
+  node: Extract<CanvasNode, { kind: 'text' }>,
+): ReactElement {
+  const frame = noteFrame(node, { x: 0, y: 0 });
+  return (
+    <>
+      {frame === undefined
+        ? null
+        : rectOfBox(shapeClass(canvasClassNames.noteFrame), frame)}
+      {isStrong(node.accent)
+        ? tintBand(accentClassNames.noteGround, node.size)
+        : null}
+      {node.accent === undefined ? null : (
+        <rect
+          className={accentClassNames.noteBar}
+          width={svgNumber(Math.min(noteAccentBar, node.size.width))}
+          height={svgNumber(node.size.height)}
+        />
+      )}
+    </>
+  );
+}
+
+function tintBand(className: string, size: Size): ReactElement {
+  return (
+    <rect
+      className={fillClass(className, true)}
+      width={svgNumber(size.width)}
+      height={svgNumber(size.height)}
     />
   );
 }
@@ -296,13 +328,7 @@ function storeOutline(
   const bottom = svgNumber(size.height);
   return (
     <>
-      {tinted ? (
-        <rect
-          className={fillClass(accentClassNames.storeBand, true)}
-          width={right}
-          height={bottom}
-        />
-      ) : null}
+      {tinted ? tintBand(accentClassNames.storeBand, size) : null}
       <line
         className={shapeClass(canvasClassNames.store)}
         style={style}

@@ -94,8 +94,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
     'Outside text fields. Esc cancels placement and clears selection',
   'when-hand-tool':
     'Hold the Spacebar for a temporary Hand tool outside text fields',
-  'when-accent-bar':
-    'From the accent bar, with an element or a flow other than a note selected',
+  'when-accent-bar': 'From the accent bar, with an element or a flow selected',
   'when-outside-fields-and-menus': 'Focus is outside a text field or open menu',
   'group-file': 'File',
   'group-edit': 'Edit',

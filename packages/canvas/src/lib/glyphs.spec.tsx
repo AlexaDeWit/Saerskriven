@@ -26,8 +26,8 @@ import {
   canvasClassNames,
   wrappedTextStyles,
 } from './stylesheet.js';
-import { noteFrameOffset, strokeWidths } from './tokens.js';
-import { looseLabelWidth, textExtent } from './typography.js';
+import { noteAccentBar, noteFrameOffset, strokeWidths } from './tokens.js';
+import { looseLabelWidth, textExtent, textPadding } from './typography.js';
 
 const drawn = (node: CanvasNode): string =>
   renderToStaticMarkup(<ElementGlyph marks={specMarks} node={node} />);
@@ -247,8 +247,17 @@ const fromText = (markup: string): string =>
   markup.slice(markup.indexOf('<text'));
 
 describe('an accented glyph', () => {
-  const { slot1, slot2, slot3, slot4, strong, tinted, storeBand } =
-    accentClassNames;
+  const {
+    slot1,
+    slot2,
+    slot3,
+    slot4,
+    strong,
+    tinted,
+    storeBand,
+    noteGround,
+    noteBar,
+  } = accentClassNames;
 
   it.each([
     ['ac-strong-1', [slot1, strong]],
@@ -268,6 +277,9 @@ describe('an accented glyph', () => {
     ['ac-flow-out', [canvasClassNames.outOfScope, slot2, strong]],
     ['ac-plain', []],
     ['ac-flow-plain', []],
+    ['ac-note-strong', [slot3, strong]],
+    ['ac-note-light', [slot4]],
+    ['ac-note-out', [canvasClassNames.outOfScope, slot2, strong]],
     ['ac-note', []],
   ] as const)(
     'marks the group of %s with its slot, and its strength where strong',
@@ -294,6 +306,39 @@ describe('an accented glyph', () => {
     expect(store).toContain(band);
     expect(store.indexOf(band)).toBeLessThan(store.indexOf('<line'));
     expect(accented('ac-light-3')).not.toContain(storeBand);
+  });
+
+  it('draws a note a bar down the inside of its left edge, a strong one over a ground its tint fills, and a note with none neither', () => {
+    const bar = `<rect class="${noteBar}" width="${noteAccentBar}" height="40">`;
+    const ground = `<rect class="${noteGround} ${tinted}" width="220" height="40">`;
+    const light = accented('ac-note-light');
+    const strongNote = accented('ac-note-strong');
+    expect(light).toContain(bar);
+    expect(light).not.toContain(tinted);
+    expect(strongNote).toContain(bar);
+    expect(strongNote.indexOf(ground)).toBeGreaterThan(-1);
+    expect(strongNote.indexOf(ground)).toBeLessThan(strongNote.indexOf(bar));
+    expect(accented('ac-note')).not.toContain('<rect');
+  });
+
+  it("draws the bar a strong flow's weight wide, inside the padding a note's text starts at, and no wider than the note", () => {
+    const note = nodeNamed('el-note');
+    expect(noteAccentBar).toBe(strokeWidths.strongFlow);
+    expect(noteAccentBar).toBeLessThan(textPadding);
+    expect(
+      drawn({ ...note, accent: 'l1', size: { width: 2, height: 30 } }),
+    ).toContain(`<rect class="${noteBar}" width="2" height="30">`);
+  });
+
+  it("keeps an accented note's text where it draws it with no accent", () => {
+    const note = accentsLayout.nodes.find(
+      (candidate) => candidate.id === 'ac-note-strong',
+    );
+    if (note === undefined) {
+      throw new Error('The accents layout holds no strong note');
+    }
+    const { accent: _accent, ...plain } = note;
+    expect(fromText(drawn(note))).toBe(fromText(drawn(plain)));
   });
 
   it('leaves a trust boundary and a flow unfilled, whatever their strength', () => {

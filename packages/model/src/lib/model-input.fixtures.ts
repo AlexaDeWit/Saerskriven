@@ -111,10 +111,9 @@ const threatNumbersArbitrary = fc
  * through the model's own character rule. Category candidates are built
  * loosely and re-parsed through the union, which pairs each methodology with
  * its own categories. Threat numbers are distinct and never already
- * ascending, so a write has to reorder them. Every kind that takes an accent
- * holds one or none. Ids are positional, references are drawn from ids
- * already laid out, and a flow's endpoints come from its own diagram, minus
- * the flow.
+ * ascending, so a write has to reorder them. Every element holds an accent
+ * or none. Ids are positional, references are drawn from ids already laid
+ * out, and a flow's endpoints come from its own diagram, minus the flow.
  */
 export const modelInputArbitrary = fc
   .record({
@@ -191,7 +190,7 @@ function elementArbitrary(
   if (kind === 'flow') {
     return fc
       .tuple(
-        accentableArbitrary(id),
+        commonArbitrary(id),
         endpointArbitrary(siblings),
         endpointArbitrary(siblings),
         fc.array(pointArbitrary, { maxLength: 3 }),
@@ -208,7 +207,7 @@ function elementArbitrary(
   }
   if (kind === 'trust-boundary') {
     return fc
-      .tuple(accentableArbitrary(id), boundaryShapeArbitrary)
+      .tuple(commonArbitrary(id), boundaryShapeArbitrary)
       .map(([common, shape]) => ({ kind, ...common, shape }));
   }
   if (kind === 'text') {
@@ -223,30 +222,30 @@ function elementArbitrary(
       }));
   }
   return fc
-    .tuple(accentableArbitrary(id), pointArbitrary, sizeArbitrary)
+    .tuple(commonArbitrary(id), pointArbitrary, sizeArbitrary)
     .map(([common, position, size]) => ({ kind, ...common, position, size }));
 }
 
-function accentableArbitrary(id: string) {
-  return fc
-    .tuple(
-      commonArbitrary(id),
-      fc.record(
-        { accent: fc.constantFrom(...accentSchema.options) },
-        { requiredKeys: [] },
-      ),
-    )
-    .map(([common, accent]) => ({ ...common, ...accent }));
-}
-
 function commonArbitrary(id: string) {
-  return fc.record({
-    id: fc.constant(id),
-    name: textArbitrary,
-    description: textArbitrary,
-    outOfScope: fc.boolean(),
-    reasonOutOfScope: textArbitrary,
-  });
+  return fc.record(
+    {
+      id: fc.constant(id),
+      name: textArbitrary,
+      description: textArbitrary,
+      outOfScope: fc.boolean(),
+      reasonOutOfScope: textArbitrary,
+      accent: fc.constantFrom(...accentSchema.options),
+    },
+    {
+      requiredKeys: [
+        'id',
+        'name',
+        'description',
+        'outOfScope',
+        'reasonOutOfScope',
+      ],
+    },
+  );
 }
 
 function endpointArbitrary(

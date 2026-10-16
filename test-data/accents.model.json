@@ -307,20 +307,74 @@
         },
         {
           "kind": "text",
+          "id": "ac-note-strong",
+          "name": "Strong note",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "s3",
+          "position": {
+            "x": 60,
+            "y": 610
+          },
+          "size": {
+            "width": 220,
+            "height": 40
+          },
+          "text": "A strong note: a bar and a tint."
+        },
+        {
+          "kind": "text",
+          "id": "ac-note-light",
+          "name": "Light note",
+          "description": "",
+          "outOfScope": false,
+          "reasonOutOfScope": "",
+          "accent": "l4",
+          "position": {
+            "x": 300,
+            "y": 610
+          },
+          "size": {
+            "width": 220,
+            "height": 40
+          },
+          "text": "A light note: a bar alone."
+        },
+        {
+          "kind": "text",
+          "id": "ac-note-out",
+          "name": "Out-of-scope note",
+          "description": "",
+          "outOfScope": true,
+          "reasonOutOfScope": "Drawn elsewhere.",
+          "accent": "s2",
+          "position": {
+            "x": 540,
+            "y": 610
+          },
+          "size": {
+            "width": 220,
+            "height": 40
+          },
+          "text": "Out of scope, strong."
+        },
+        {
+          "kind": "text",
           "id": "ac-note",
           "name": "Note",
           "description": "",
           "outOfScope": false,
           "reasonOutOfScope": "",
           "position": {
-            "x": 60,
-            "y": 600
+            "x": 780,
+            "y": 610
           },
           "size": {
-            "width": 300,
+            "width": 220,
             "height": 40
           },
-          "text": "A note takes no accent."
+          "text": "A note with no accent."
         },
         {
           "kind": "flow",

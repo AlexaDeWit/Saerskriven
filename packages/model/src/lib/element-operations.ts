@@ -24,9 +24,7 @@ import {
 } from './element-properties.js';
 import {
   elementSchema,
-  takesAccent,
   type Accent,
-  type AccentableElement,
   type Element,
   type ElementDetailsChange,
   type FlowEndpoint,
@@ -86,11 +84,8 @@ export type SetElementDetailsFailure = Extract<
   { _tag: 'UnknownElement' | 'RefusedCharacter' }
 >;
 
-/** The failures {@link setAccent} can produce. */
-export type SetAccentFailure = Extract<
-  OperationFailure,
-  { _tag: 'UnknownElement' | 'NotAccentable' }
->;
+/** The failure {@link setAccent} can produce. */
+export type SetAccentFailure = UnknownElementFailure;
 
 /** The failures {@link setElementProperties} can produce. */
 export type SetElementPropertiesFailure = Extract<
@@ -337,9 +332,9 @@ export function setElementDetails(
 
 /**
  * Gives every element `elementIds` names the accent `accent`, or clears
- * theirs where it is undefined, in one model. An id naming no element, or a
- * canvas note, which takes no accent, refuses the whole edit. Where every
- * element named already holds `accent`, the same model comes back.
+ * theirs where it is undefined, in one model. An id naming no element
+ * refuses the whole edit. Where every element named already holds `accent`,
+ * the same model comes back.
  */
 export function setAccent(
   model: Model,
@@ -419,25 +414,16 @@ function withAccentOn(
   elementId: ElementId,
   accent: Accent | undefined,
 ): Either.Either<Model, SetAccentFailure> {
-  return Either.flatMap(
+  return Either.map(
     locatedElement(model, elementId),
-    ({ diagramIndex, element }): Either.Either<Model, SetAccentFailure> => {
-      if (!takesAccent(element)) {
-        return Either.left(OperationFailure.NotAccentable({ elementId }));
-      }
-      return Either.right(
-        element.accent === accent
-          ? model
-          : withElement(model, diagramIndex, accented(element, accent)),
-      );
-    },
+    ({ diagramIndex, element }) =>
+      element.accent === accent
+        ? model
+        : withElement(model, diagramIndex, accented(element, accent)),
   );
 }
 
-function accented(
-  element: AccentableElement,
-  accent: Accent | undefined,
-): AccentableElement {
+function accented(element: Element, accent: Accent | undefined): Element {
   if (accent !== undefined) {
     return { ...element, accent };
   }

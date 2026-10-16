@@ -285,6 +285,21 @@ describe('a Saerskriven YAML write of accents', () => {
     );
   });
 
+  it("states a note's key after its scope fields, as on any other kind", () => {
+    const note = elementId('note-hours');
+    const output = writeSaerskrivenYaml(
+      Either.getOrThrow(setAccent(featureComplete, [note], 's3')),
+    ).output;
+    const notes = listOf(
+      at(listOf(at(parseDocument(output), 'diagrams'))[0], 'elements'),
+    ).filter((element) => at(element, 'id') === note);
+    expect(notes.map((element) => at(element, 'accent'))).toEqual(['s3']);
+    expect(output.replace('        accent: s3\n', '')).toBe(written.output);
+    expect(output).toContain(
+      '        reasonOutOfScope: ""\n        accent: s3\n',
+    );
+  });
+
   it('writes a model whose accents were cleared as it wrote the model before any was set', () => {
     const cleared = Either.getOrThrow(
       setAccent(accented, [api, flow], undefined),

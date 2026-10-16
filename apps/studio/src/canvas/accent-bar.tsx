@@ -33,9 +33,9 @@ const glyph = (accent: Accent | undefined) => (
 /**
  * The accent bar: no accent, the four strong keys and the four light ones,
  * each drawn as an element holding it. A press gives the key to every
- * selected element and flow that takes one. The pressed swatch is the one
- * they all hold, none is pressed where they differ, and the row is disabled
- * while the selection holds nothing that takes an accent.
+ * selected element. The pressed swatch is the one they all hold, none is
+ * pressed where they differ, and the row is disabled while nothing is
+ * selected.
  */
 export function AccentBar() {
   const shown = useModelStore(selectionAccent);

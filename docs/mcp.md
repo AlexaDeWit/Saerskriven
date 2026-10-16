@@ -395,9 +395,10 @@ their ids and `accent` is one of `s1` to `s4` (strong), `l1` to `l4` (light),
 or `none` to clear. An accent draws attention to an element and means nothing
 to the model: a light key draws its outline, or a flow's or a trust
 boundary's line, in one of four palette colours, and a strong key draws it
-heavier and tints the fill. The list is one edit, so a text note in it, which
-takes no accent, or an id the model does not hold, refuses the batch.
-`add_element` accepts `accent` on every kind but a text note.
+heavier and tints the fill. A text note takes a bar in the colour down its
+left edge, and a strong key tints the note too. The list is one edit, so an
+id the model does not hold refuses the batch. `add_element` accepts `accent`
+on every kind, a text note included.
 `saer_render_diagram` draws accents, and only the native YAML format saves
 them.
 

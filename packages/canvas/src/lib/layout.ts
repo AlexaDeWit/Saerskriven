@@ -34,12 +34,12 @@ import { settledCurveNames, type CurveNameSide } from './text-placement.js';
  * An accent is paint alone: no box, bound or label placement reads it.
  */
 export type CanvasNode =
-  | (AccentableNodeBase & { readonly kind: 'actor' })
-  | (AccentableNodeBase & { readonly kind: 'process' })
-  | (AccentableNodeBase & { readonly kind: 'store' })
+  | (CanvasNodeBase & { readonly kind: 'actor' })
+  | (CanvasNodeBase & { readonly kind: 'process' })
+  | (CanvasNodeBase & { readonly kind: 'store' })
   | (CanvasNodeBase & { readonly kind: 'text'; readonly text: string })
-  | (AccentableNodeBase & { readonly kind: 'boundary-box' })
-  | (AccentableNodeBase & {
+  | (CanvasNodeBase & { readonly kind: 'boundary-box' })
+  | (CanvasNodeBase & {
       readonly kind: 'boundary-curve';
       readonly waypoints: readonly Point[];
       readonly nameSide: CurveNameSide | undefined;
@@ -165,11 +165,12 @@ export function canvasNodeOf(
     position: element.position,
     size: element.size,
     badge,
+    ...accentField(element),
   };
   if (element.kind === 'text') {
     return { ...base, kind: 'text', text: element.text };
   }
-  return { ...base, ...accentField(element), kind: element.kind };
+  return { ...base, kind: element.kind };
 }
 
 type CanvasNodeBase = {
@@ -179,9 +180,8 @@ type CanvasNodeBase = {
   readonly position: Point;
   readonly size: Size;
   readonly badge: ThreatBadge | undefined;
+  readonly accent?: Accent;
 };
-
-type AccentableNodeBase = CanvasNodeBase & { readonly accent?: Accent };
 
 type ResolvedEndpoint =
   | PlacedEndpoint

@@ -125,14 +125,13 @@ returns the same model. Geometry edits do not change these facts.
 stays with `renameElement`, which refuses an empty one on every kind but a
 flow.
 
-An actor, a process, a store, a flow or a trust boundary may hold an `accent`,
-one of the eight keys of `accentSchema`, which
+An element of any kind, a Note included, may hold an `accent`, one of the
+eight keys of `accentSchema`, which
 [the native format](../../docs/saerskriven-yaml.md#accents) describes.
-`accentParts` names the strength and the palette slot of each key, and
-`takesAccent` tells the kinds that hold one from a Note, which holds none.
+`accentParts` names the strength and the palette slot of each key.
 `setAccent` gives one or more elements a key, or clears theirs, in one model,
-and refuses the whole edit where an id names a Note or no element. A cleared
-accent is an absent key. No other operation reads an accent or changes one.
+and refuses the whole edit where an id names no element. A cleared accent is
+an absent key. No other operation reads an accent or changes one.
 
 A copied threat or assumption leaves its `appliesToModel` behind, since the
 link belongs to the model it was copied from: `selectionFragment` clears it. A

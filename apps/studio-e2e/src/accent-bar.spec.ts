@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   accentClassNames,
   canvasClassNames,
+  canvasInteractionClassNames,
   darkPalette,
   lightPalette,
   rgbColour,
@@ -10,6 +11,7 @@ import { committedText } from '@saerskriven/model/fixtures';
 import { audit } from './accessibility.fixtures.js';
 import {
   boxesOverlap,
+  dashOf,
   dotSpacingOf,
   halfwayAlong,
   lineOf,
@@ -52,7 +54,10 @@ const drawn = {
   strongFlow: /^Strong flow, flow/u,
   strongFlowOutOfScope: /^Out of scope, strong, flow/u,
   plainActor: /^No accent, actor/u,
+  outOfScopeLightActor: /^Out of scope, light, actor/u,
   note: /^Note, text/u,
+  strongNote: /^Strong note, text/u,
+  outOfScopeNote: /^Out-of-scope note, text/u,
 } as const;
 
 const accentBar = (page: Page): Locator => page.getByTestId('accent-bar');
@@ -79,6 +84,15 @@ const accentedGroups = (page: Page): Locator =>
   page.locator(
     `.${canvasClassNames.element}.${accentClassNames.slot1}.${accentClassNames.strong}`,
   );
+
+const noteBarOf = (note: Locator): Locator =>
+  note.locator(`.${accentClassNames.noteBar}`);
+
+const noteGroundOf = (note: Locator): Locator =>
+  note.locator(`.${accentClassNames.noteGround}`);
+
+const noteTextOf = (note: Locator): Locator =>
+  note.locator(`text.${canvasClassNames.note}`);
 
 const selectAll = async (page: Page): Promise<void> => {
   await page.keyboard.press(
@@ -139,17 +153,19 @@ test(
   },
 );
 
-test('one press gives the key to every selected element and flow, drawn in the slot, and one undo takes it back', async ({
+test('one press gives the key to every selected element, flow and note, drawn in the slot, and one undo takes it back', async ({
   page,
 }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await openTwoDiagrams(page);
   const takers = page.locator(
-    `.${canvasClassNames.element}:has(.${canvasClassNames.shape}:not(.${canvasClassNames.noteFrame}))`,
+    `.${canvasClassNames.element}:not(.${canvasInteractionClassNames.flowBlockLayer})`,
   );
   const drawnBefore = await takers.count();
   const process = nodeNamed(page, storefront.webShop);
+  const note = nodeNamed(page, /^Card note, text/u);
   const plain = await paintOf(outlineOf(process));
+  await expect(noteBarOf(note)).toHaveCount(0);
 
   await selectByKeyboard(page, storefront.webShop);
   await selectAll(page);
@@ -161,6 +177,16 @@ test('one press gives the key to every selected element and flow, drawn in the s
   expect(strong.stroke).toBe(rgbColour(darkPalette.slot1));
   expect(strong.fill).toBe(rgbColour(darkPalette.slot1Tint));
   expect(strong.weight).toBeGreaterThan(plain.weight);
+  expect((await paintOf(noteBarOf(note))).fill).toBe(
+    rgbColour(darkPalette.slot1),
+  );
+  expect((await paintOf(noteGroundOf(note))).fill).toBe(
+    rgbColour(darkPalette.slot1Tint),
+  );
+  await expect(noteTextOf(note)).toHaveCSS(
+    'fill',
+    rgbColour(darkPalette.textPrimary),
+  );
 
   await swatch(page, 'Light accent 4').click();
 
@@ -169,6 +195,14 @@ test('one press gives the key to every selected element and flow, drawn in the s
   expect(light.stroke).toBe(rgbColour(darkPalette.slot4));
   expect(light.fill).toBe(plain.fill);
   expect(light.weight).toBe(plain.weight);
+  expect((await paintOf(noteBarOf(note))).fill).toBe(
+    rgbColour(darkPalette.slot4),
+  );
+  await expect(noteGroundOf(note)).toHaveCount(0);
+  await expect(noteTextOf(note)).toHaveCSS(
+    'fill',
+    rgbColour(darkPalette.textSecondary),
+  );
 
   await page.keyboard.press(await commandChord(page, registeredChords.undo[0]));
   await expect(accentedGroups(page)).toHaveCount(drawnBefore);
@@ -177,7 +211,7 @@ test('one press gives the key to every selected element and flow, drawn in the s
   expect(await paintOf(outlineOf(process))).toEqual(plain);
 });
 
-test('the pressed swatch is the accent the selection holds, none where it is mixed, and a note alone leaves the row inactive', async ({
+test("the pressed swatch is the accent the selection holds, a note's among them, and none where it is mixed", async ({
   page,
 }) => {
   await openAccents(page);
@@ -193,8 +227,29 @@ test('the pressed swatch is the accent the selection holds, none where it is mix
   await expect(pressedSwatches(page)).toHaveCount(0);
 
   await selectByKeyboard(page, drawn.note);
-  await expect(swatch(page, 'No accent')).toBeDisabled();
-  await expect(pressedSwatches(page)).toHaveCount(0);
+  await expect(swatch(page, 'No accent')).toBeEnabled();
+  await expect(pressedSwatches(page)).toHaveAccessibleName('No accent');
+
+  await selectByKeyboard(page, drawn.strongNote);
+  await expect(pressedSwatches(page)).toHaveAccessibleName('Strong accent 3');
+});
+
+test('an accented note out of scope keeps its dotted frame in the outline ink, at the weight and pitch of a plain one', async ({
+  page,
+}) => {
+  await openAccents(page);
+  const frame = nodeNamed(page, drawn.outOfScopeNote).locator(
+    `.${canvasClassNames.noteFrame}`,
+  );
+  const plain = await paintOf(outlineOf(nodeNamed(page, drawn.plainActor)));
+
+  const painted = await paintOf(frame);
+  expect(painted.stroke).toBe(rgbColour(lightPalette.textSecondary));
+  expect(painted.weight).toBe(plain.weight);
+  expect(await dashOf(frame)).toEqual(
+    await dashOf(outlineOf(nodeNamed(page, drawn.outOfScopeLightActor))),
+  );
+  await expect(noteBarOf(nodeNamed(page, drawn.outOfScopeNote))).toHaveCount(1);
 });
 
 test('the swatches follow the tools in the tab order while a selection holds, each showing its focus, and Enter applies one', async ({
@@ -290,6 +345,9 @@ for (const scheme of ['light', 'dark'] as const) {
       ),
     );
     const line = await paintOf(lineOf(page, drawn.strongFlow));
+    const strongNote = nodeNamed(page, drawn.strongNote);
+    const bar = await paintOf(noteBarOf(strongNote));
+    const ground = await paintOf(noteGroundOf(strongNote));
 
     expect(strong.stroke).toBe(plain.stroke);
     expect(strong.fill).toBe(plain.fill);
@@ -298,7 +356,9 @@ for (const scheme of ['light', 'dark'] as const) {
     expect(band.fill).toBe('none');
     expect(line.stroke).toBe(plain.stroke);
     expect(line.weight).toBeGreaterThan(plain.weight);
-    for (const paint of [strong, light, line]) {
+    expect(bar.fill).toBe(plain.stroke);
+    expect(ground.fill).toBe('none');
+    for (const paint of [strong, light, line, bar]) {
       expect(slotColours.has(paint.stroke)).toBe(false);
       expect(slotColours.has(paint.fill)).toBe(false);
     }

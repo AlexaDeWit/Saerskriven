@@ -51,13 +51,10 @@ const elementBaseSchema = z.object({
   description: acceptedTextSchema,
   outOfScope: z.boolean(),
   reasonOutOfScope: acceptedTextSchema,
-});
-
-const accentableBaseSchema = elementBaseSchema.extend({
   accent: accentSchema.optional(),
 });
 
-const nodeBaseSchema = accentableBaseSchema.extend({
+const nodeBaseSchema = elementBaseSchema.extend({
   position: pointSchema,
   size: sizeSchema,
 });
@@ -96,7 +93,7 @@ export const storeSchema = nodeBaseSchema.extend({
 /** Store element. */
 export type Store = z.infer<typeof storeSchema>;
 
-/** Canvas note with separate content and outline name. It takes no accent. */
+/** Canvas note with separate content and outline name. */
 export const textSchema = elementBaseSchema.extend({
   position: pointSchema,
   size: sizeSchema,
@@ -134,7 +131,7 @@ export type FlowEndpoint = z.infer<typeof flowEndpointSchema>;
 export type FlowEndpointInput = z.input<typeof flowEndpointSchema>;
 
 /** Flow direction is required. Absent security facts and relationship lists remain unknown. */
-export const flowSchema = accentableBaseSchema.extend({
+export const flowSchema = elementBaseSchema.extend({
   kind: z.literal('flow'),
   protocol: acceptedTextSchema.optional(),
   isEncrypted: z.boolean().optional(),
@@ -182,7 +179,7 @@ export type BoundaryShape = z.infer<typeof boundaryShapeSchema>;
 export type BoundaryShapeInput = z.input<typeof boundaryShapeSchema>;
 
 /** Declared relationships are independent of geometry and remain unknown when absent. */
-export const trustBoundarySchema = accentableBaseSchema.extend({
+export const trustBoundarySchema = elementBaseSchema.extend({
   kind: z.literal('trust-boundary'),
   containedElements: z.array(elementIdSchema).optional(),
   crossingFlows: z.array(elementIdSchema).optional(),
@@ -214,19 +211,9 @@ export type Element = z.infer<typeof elementSchema>;
 /** Any diagram element as {@link elementSchema} accepts it. */
 export type ElementInput = z.input<typeof elementSchema>;
 
-/** An element of a kind that takes an accent: every kind but a canvas note. */
-export type AccentableElement = Exclude<Element, { readonly kind: 'text' }>;
-
-/** Whether `element` is of a kind that takes an accent. */
-export function takesAccent(element: Element): element is AccentableElement {
-  return element.kind !== 'text';
-}
-
 /** `element`'s accent as a field to spread, and no field where it holds none. */
 export function accentField(element: Element): { readonly accent?: Accent } {
-  return takesAccent(element) && element.accent !== undefined
-    ? { accent: element.accent }
-    : {};
+  return element.accent === undefined ? {} : { accent: element.accent };
 }
 
 /** The `kind` an element carries: {@link elementSchema}'s own discriminators. */

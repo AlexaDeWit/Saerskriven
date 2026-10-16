@@ -1043,12 +1043,9 @@ describe('the element details', () => {
 });
 
 const accentsOf = (state: State) =>
-  [processElement, actorElement, noteElement].map((id) => {
-    const element = elementById(state, id);
-    return element !== undefined && 'accent' in element
-      ? element.accent
-      : undefined;
-  });
+  [processElement, actorElement, noteElement].map(
+    (id) => elementById(state, id)?.accent,
+  );
 
 describe('an accent', () => {
   const accented = reduce(noteStart, applied.SetAccent);
@@ -1073,18 +1070,17 @@ describe('an accent', () => {
     expect(reduce(accented, applied.SetAccent)).toBe(accented);
   });
 
-  it('records a note as the model names it, leaving the model alone', () => {
-    const refusedNote = reduce(
+  it('gives a note the key as it gives any other element, as one undo step', () => {
+    const noted = reduce(
       noteStart,
       Action.SetAccent({
         elementIds: [processElement, noteElement],
         accent: 'l1',
       }),
     );
-    expect(refusedNote.present).toBe(noteStart.present);
-    expect(refusedNote.lastFailure).toMatchObject({
-      failure: { _tag: 'NotAccentable' },
-    });
+    expect(accentsOf(noted)).toEqual(['l1', undefined, 'l1']);
+    expect(noted.past).toHaveLength(1);
+    expect(noted.lastFailure).toBeUndefined();
   });
 });
 

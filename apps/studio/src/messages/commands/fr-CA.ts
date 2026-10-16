@@ -96,7 +96,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'when-hand-tool':
     'Maintenez Espace pour un outil Main temporaire, hors des champs de texte',
   'when-accent-bar':
-    'Depuis la barre d’accentuation, avec un élément ou un flux autre qu’une note sélectionné',
+    'Depuis la barre d’accentuation, avec un élément ou un flux sélectionné',
   'when-outside-fields-and-menus':
     'Le focus est hors des champs de texte et des menus ouverts',
   'group-file': 'Fichier',

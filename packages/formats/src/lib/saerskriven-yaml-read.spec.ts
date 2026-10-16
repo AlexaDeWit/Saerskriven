@@ -157,8 +157,8 @@ function modelOfDocumentIn(text: string) {
 }
 
 function accentsOf(text: string) {
-  return readingOf(text)?.model.diagrams[0]?.elements.map((element) =>
-    'accent' in element ? element.accent : undefined,
+  return readingOf(text)?.model.diagrams[0]?.elements.map(
+    (element) => element.accent,
   );
 }
 
@@ -348,13 +348,13 @@ describe('a threat that states its model link', () => {
 });
 
 describe('an element that states an accent', () => {
-  it('holds one of the eight keys, on a node and on a flow, reporting nothing', () => {
+  it('holds one of the eight keys, on a node, a flow and a canvas note, reporting nothing', () => {
     const accented = accentOn(
-      accentOn(oneFlowInVersion2, 'Ledger', 's4'),
+      accentOn(noteWithAccent, 'Ledger', 's4'),
       'Posts',
       'l1',
     );
-    expect(accentsOf(accented)).toEqual([undefined, 's4', 'l1']);
+    expect(accentsOf(accented)).toEqual([undefined, 's4', 'l1', 's1']);
     expect(readingOf(accented)?.divergences).toEqual([]);
   });
 
@@ -384,17 +384,7 @@ describe('an element that states an accent', () => {
     ).not.toContain('accent');
   });
 
-  it('is dropped as undeclared on a canvas note, and in a version 1 file, neither of which declares the key', () => {
-    expect(readingOf(noteWithAccent)?.divergences).toEqual([
-      {
-        subject: { kind: 'model' },
-        detail: {
-          code: 'key-undeclared',
-          parameters: { path: 'diagrams.0.elements.3.accent' },
-        },
-        reason: 'undeclared',
-      },
-    ]);
+  it('is dropped as undeclared in a version 1 file, which does not declare the key', () => {
     const versionOne = readingOf(accentOn(oneFlowDocument, 'Ledger', 's4'));
     expect(versionOne?.model.diagrams[0]?.elements[1]).not.toHaveProperty(
       'accent',

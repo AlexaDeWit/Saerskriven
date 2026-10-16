@@ -42,14 +42,10 @@ const pressed = (): (string | null)[] =>
     .filter((control) => control.getAttribute('aria-pressed') === 'true')
     .map((control) => control.getAttribute('aria-label'));
 
-const accentOf = (id: ElementId) => {
-  const element = elementById(modelStore.getState(), id);
-  return element !== undefined && 'accent' in element
-    ? element.accent
-    : undefined;
-};
+const accentOf = (id: ElementId) =>
+  elementById(modelStore.getState(), id)?.accent;
 
-const accentable = [actorElement, requestFlow, boundaryElement];
+const accentable = [actorElement, requestFlow, boundaryElement, noteElement];
 
 describe('AccentBar', () => {
   it('offers no accent, the four strong keys and the four light ones, in that order, each as an icon button', () => {
@@ -65,11 +61,8 @@ describe('AccentBar', () => {
     expect(screen.getByRole('region', { name: 'Accent' })).toBeDefined();
   });
 
-  it.each([
-    ['nothing is selected', []],
-    ['only a note is selected', [noteElement]],
-  ] as const)('is disabled while %s', (_, selection) => {
-    openCanvas(selection);
+  it('is disabled while nothing is selected', () => {
+    openCanvas([]);
     render(<AccentBar />);
 
     expect(
@@ -78,22 +71,18 @@ describe('AccentBar', () => {
     expect(pressed()).toEqual([]);
   });
 
-  it('gives the key to every selected element and flow that takes one as one undo step, leaving a selected note as it was', async () => {
-    openCanvas([...accentable, noteElement]);
+  it('gives the key to every selected element, flow and note as one undo step', async () => {
+    openCanvas(accentable);
     const user = userEvent.setup();
     render(<AccentBar />);
 
     await user.click(swatch('Strong accent 2'));
 
-    expect(accentable.map(accentOf)).toEqual(['s2', 's2', 's2']);
-    expect(accentOf(noteElement)).toBeUndefined();
+    expect(accentable.map(accentOf)).toEqual(['s2', 's2', 's2', 's2']);
     expect(accentOf(processElement)).toBeUndefined();
     expect(modelStore.getState().past).toHaveLength(1);
     expect(modelStore.getState().lastFailure).toBeUndefined();
-    expect(modelStore.getState().selection).toEqual([
-      ...accentable,
-      noteElement,
-    ]);
+    expect(modelStore.getState().selection).toEqual(accentable);
     act(() => {
       dispatch(Action.Undo());
     });
@@ -117,7 +106,12 @@ describe('AccentBar', () => {
     act(() => {
       dispatch(Action.Select({ elementIds: [requestFlow, noteElement] }));
     });
-    expect(pressed()).toEqual(['Strong accent 1']);
+    expect(pressed()).toEqual([]);
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [noteElement, actorElement] }));
+    });
+    expect(pressed()).toEqual(['Light accent 3']);
   });
 
   it('clears every selected accent with No accent, as one undo step', async () => {
@@ -128,7 +122,12 @@ describe('AccentBar', () => {
 
     await user.click(swatch('No accent'));
 
-    expect(accentable.map(accentOf)).toEqual([undefined, undefined, undefined]);
+    expect(accentable.map(accentOf)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
     expect(modelStore.getState().present).toEqual(canvasModel);
     expect(modelStore.getState().past).toHaveLength(2);
   });

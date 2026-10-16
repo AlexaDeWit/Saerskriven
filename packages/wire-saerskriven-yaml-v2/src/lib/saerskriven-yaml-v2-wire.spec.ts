@@ -99,9 +99,9 @@ describe('the Saerskriven YAML version 2 wire schema', () => {
     });
   });
 
-  it('reads an accent as text, a key no release knows included, and drops one a canvas note states', () => {
+  it('reads an accent as text, a key no release knows included, on a canvas note as on any other kind', () => {
     const [process] = document.diagrams[0].elements;
-    const note = { ...process, kind: 'text', text: '' };
+    const note = { ...process, kind: 'text', text: '', accent: 's1' };
     const accented = (elements: readonly object[]) => ({
       ...document,
       diagrams: [{ ...document.diagrams[0], elements }],
@@ -109,9 +109,7 @@ describe('the Saerskriven YAML version 2 wire schema', () => {
     expect(
       parsedOf(accented([{ ...process, accent: 'a key of a later release' }])),
     ).toEqual(accented([{ ...process, accent: 'a key of a later release' }]));
-    expect(parsedOf(accented([{ ...note, accent: 's1' }]))).toEqual(
-      accented([note]),
-    );
+    expect(parsedOf(accented([note]))).toEqual(accented([note]));
   });
 
   it('drops the threat mitigation text and the assumption element links', () => {

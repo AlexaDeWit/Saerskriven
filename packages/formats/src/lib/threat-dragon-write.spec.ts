@@ -309,7 +309,12 @@ describe('projecting elements under the 10 Threat Dragon takes as its least widt
 });
 
 describe('writing a model that holds accents', () => {
-  const accentedIds = ['element-clerk', 'element-post', 'element-zone'];
+  const accentedIds = [
+    'element-clerk',
+    'element-post',
+    'element-zone',
+    'element-note',
+  ];
   const accented = Either.getOrThrow(
     setAccent(
       Either.getOrThrow(setAccent(richer, accentedIds.map(elementId), 's1')),
@@ -321,14 +326,14 @@ describe('writing a model that holds accents', () => {
     ['a projection', undefined, projected],
     ['a merge', richerThanFormatSource, merged],
   ])(
-    'writes %s as it writes the model without them, and reports them once for the model with their count',
+    'writes %s as it writes the model without them, and reports them once for the model with their count, a note counted',
     (_, source, plain) => {
       const written = threatDragonCodec.write(accented, source);
       expect(written.output).toBe(plain.output);
       expect(
         renderDivergences(written.divergences.filter(isDroppedAccents)),
       ).toBe(
-        'model: the accents on 4 elements, which the format has no key for (no place in the format)',
+        'model: the accents on 5 elements, which the format has no key for (no place in the format)',
       );
       expect(
         written.divergences.filter(
