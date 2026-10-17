@@ -5,6 +5,7 @@ import {
   threatCountByElement,
 } from '@saerskriven/model';
 import {
+  diagramId,
   elementId,
   drawnFixture,
   sharedModel,
@@ -21,6 +22,7 @@ import {
   treeHolding,
   twoDiagramsWorkspace,
 } from './read-tools.fixtures.js';
+import { renderElement } from './element-rows.js';
 import { readNamed } from './reading.js';
 import { renderElementSearch, searchElements } from './search-elements.js';
 import { searchLimits } from './search.js';
@@ -353,6 +355,21 @@ describe('the row of an element on more than one diagram', () => {
     expect(
       lines.find((line) => line.startsWith('  card-vault ')),
     ).not.toContain('also on');
+  });
+
+  it('joins the other diagrams apart from the facts around them', () => {
+    const [line] = renderElement({
+      id: elementId('relay'),
+      diagram: diagramId('first'),
+      diagrams: ['first', 'second', 'third'].map(diagramId),
+      kind: 'process',
+      name: 'Relay',
+      outOfScope: false,
+      threats: 0,
+    });
+    expect(line).toContain(
+      'diagram first, also on second and third, threats 0',
+    );
   });
 
   it('is drawn from the diagram a search keeps, with its geometry and accent there', () => {

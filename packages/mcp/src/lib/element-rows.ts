@@ -28,7 +28,7 @@ import { z } from 'zod';
 
 const elementContextSchema = z.object({
   diagram: diagramIdSchema.describe(
-    'The diagram the row draws the element from: its accent, and in a detailed row its geometry, are the ones it has there.',
+    "The diagram the row draws the element from: the first diagram drawing it that the read covers, which is the first of `diagrams`, or of the diagrams a search's `diagram` filter keeps. Its accent, and in a detailed row its geometry, are the ones it has there.",
   ),
   diagrams: z
     .array(diagramIdSchema)
@@ -177,7 +177,7 @@ function headingFacts(row: ElementDetail | ElementRow): readonly string[] {
   return [
     row.kind,
     `diagram ${row.diagram}`,
-    ...(others.length === 0 ? [] : [`also on ${others.join(', ')}`]),
+    ...(others.length === 0 ? [] : [`also on ${others.join(' and ')}`]),
     `threats ${String(row.threats)}`,
     ...(row.accent === undefined ? [] : [`accent ${row.accent}`]),
     ...(row.outOfScope ? ['out of scope'] : []),

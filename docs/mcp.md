@@ -337,7 +337,10 @@ the element stands and reports the size the model holds. It holds a threat
 only under an actor, a process, a store or a flow, so a threat on none of
 those is reported and not written, and a threat that applies to the model
 (`appliesToModel`) is written under those it names, with its model link
-reported as dropped.
+reported as dropped. It draws an element on one diagram, so a write splits an
+element on several, as `place_element` makes one, into a cell on each and
+reports it, and the file reads back as a separate element per cell. Only the
+native YAML format keeps one element on several diagrams.
 
 `saer_create` writes a new model in the native YAML format at version 2, with
 the `title` it is given and any of `owner`, `description` and `contributors`,
@@ -362,10 +365,11 @@ diagram's element list, with the optional security facts and declared boundary
 relationships of its kind. An actor, process, store or text note takes a
 `placement`: a position and size, or `"auto"` for the next place on the shared
 grid. Left out, `description` and `reasonOutOfScope` are empty and
-`outOfScope` is false, and a flow has no bends and runs one way. It refuses an empty name, or one of white space alone, on
-every kind but a flow, as `rename_element` does, and a flow end attached to
-anything but an actor, process or store of the diagram, or to the element the
-flow's other end is attached to, as `reconnect_flow` does. A file that
+`outOfScope` is false, and a flow has no bends and runs one way. It refuses an
+empty name, or one of white space alone, on every kind but a flow, as
+`rename_element` does, and a flow end attached to anything but an actor,
+process or store of the diagram, or to the element the flow's other end is
+attached to, as `reconnect_flow` does. A file that
 already holds either, as an imported one can, still opens.
 
 `set_element_properties` patches the security facts of an actor, process,
@@ -479,7 +483,10 @@ element's anchor there. It refuses the last diagram an element is on, and the
 refusal points to `remove_element`, which takes the element out of the model.
 
 Placing an element on another diagram and taking it off the first, in one
-batch, moves it there with its id, its threats and the flows attached to it.
+batch, moves it there with its id and its threats. The flows attached to it
+stay attached but do not move: each stays on the diagrams it is on, with its
+end drawn away from the element on the first. To draw a flow on the new
+diagram, place it there too, and take it off the first with `unplace_element`.
 
 #### Geometry
 
@@ -551,9 +558,10 @@ that is not a flow.
 `add_diagram` adds an empty diagram with the id and title given, after the
 diagrams the model holds, and `rename_diagram` changes a diagram's title. Both
 refuse a title with nothing in it but white space. `remove_diagram` removes
-only a diagram with no elements left, so remove its elements with
-`remove_element`, or take an element that is on another diagram too off it
-with `unplace_element`, first, in the same batch or an earlier one.
+only a diagram with no elements left, so empty it first, in the same batch or
+an earlier one. `remove_element` deletes an element from every diagram it is
+on and culls the threats it was the last attachment of, so take an element
+that is also on another diagram off this one with `unplace_element` instead.
 
 #### Threats
 
