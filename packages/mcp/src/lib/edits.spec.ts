@@ -3,6 +3,7 @@ import {
   assumptionId,
   diagramId,
   drawnAt,
+  drawnOn,
   elementId,
   mitigationId,
   drawnFixture,
@@ -215,12 +216,15 @@ const batchOn = (
 const modelAfter = (model: Model, edits: readonly EditInput[]): Model =>
   Either.getOrThrow(batchOn(model, edits)).model;
 
-const drawnOn = (model: Model, diagram: number, id: string) =>
-  drawnAt(model, diagram).find((element) => element.id === id);
+const overview = 'overview';
 
-const overview = 0;
+const payments = 'payments';
 
-const payments = 1;
+const lastOn = (model: Model, diagram: string) =>
+  drawnAt(
+    model,
+    model.diagrams.findIndex(({ id }) => id === diagram),
+  ).at(-1);
 
 describe('an edit of an element drawn on more than one diagram', () => {
   it.each<EditInput>([
@@ -313,13 +317,6 @@ describe('an edit of an element drawn on more than one diagram', () => {
         waypoints: [{ x: 600, y: 150 }],
       },
       {
-        op: 'set_flow_end_position',
-        element: 'charge',
-        diagram: 'overview',
-        side: 'target',
-        position: { x: 700, y: 220 },
-      },
-      {
         op: 'set_boundary_shape',
         element: 'payments-zone',
         diagram: 'payments',
@@ -334,7 +331,6 @@ describe('an edit of an element drawn on more than one diagram', () => {
     ]);
     expect(drawnOn(edited, overview, 'charge')).toMatchObject({
       waypoints: [{ x: 600, y: 150 }],
-      target: { kind: 'away', position: { x: 700, y: 220 } },
     });
     expect(drawnOn(edited, payments, 'charge')).toEqual(
       drawnOn(sharedModel, payments, 'charge'),
@@ -345,6 +341,24 @@ describe('an edit of an element drawn on more than one diagram', () => {
     expect(drawnOn(edited, overview, 'payments-zone')).toEqual(
       drawnOn(sharedModel, overview, 'payments-zone'),
     );
+  });
+
+  it('frees an end at the position on the diagram it names, and on every other where it was drawn', () => {
+    const edited = modelAfter(sharedModel, [
+      {
+        op: 'set_flow_end_position',
+        element: 'charge',
+        diagram: 'overview',
+        side: 'target',
+        position: { x: 700, y: 220 },
+      },
+    ]);
+    expect(drawnOn(edited, overview, 'charge')).toMatchObject({
+      target: { kind: 'free', position: { x: 700, y: 220 } },
+    });
+    expect(drawnOn(edited, payments, 'charge')).toMatchObject({
+      target: { kind: 'free', position: { x: 520, y: 130 } },
+    });
   });
 
   it('pins a reconnected end on the diagram it names and draws it away where its element is not', () => {
@@ -408,7 +422,7 @@ describe('an edit of an element drawn on more than one diagram', () => {
 });
 
 const lastBox = (model: Model) => {
-  const last = drawnAt(model, payments).at(-1);
+  const last = lastOn(model, payments);
   return last !== undefined && 'position' in last
     ? { id: last.id, position: last.position, size: last.size }
     : undefined;
@@ -434,7 +448,7 @@ describe('what place_element does', () => {
         accent: 's3',
       },
     ]);
-    expect(drawnAt(placed, payments).at(-1)).toMatchObject({
+    expect(lastOn(placed, payments)).toMatchObject({
       id: 'customer',
       position: { x: 40, y: 400 },
       accent: 's3',
@@ -497,7 +511,7 @@ describe('what place_element does', () => {
       target: { kind: 'attached', element: 'payments-api', side: 'left' },
       waypoints: [],
     });
-    expect(drawnAt(placed, payments).at(-1)).toMatchObject({
+    expect(lastOn(placed, payments)).toMatchObject({
       id: 'payments-zone',
       shape: boundaryBox,
     });

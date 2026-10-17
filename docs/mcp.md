@@ -547,7 +547,9 @@ another diagram that places the element the renderer chooses the side, and on
 one that does not the end is drawn away from it, where the end was drawn
 before. `set_flow_end_position` frees the `source` or `target` end at a canvas
 `position`, or moves an end that is free already, and the other end may be
-free as well. `reverse_flow` swaps the two
+free as well. An end attached to an element, on it or drawn away from it, is
+freed on every diagram the flow is on: at `position` on the diagram the edit
+changes, and where it was drawn on every other. `reverse_flow` swaps the two
 ends, each with its pinned side or its position, and reverses the bends, so
 the flow runs the other way along the same route and keeps its id, whether it
 is bidirectional, and the threats attached to it. All five refuse an element

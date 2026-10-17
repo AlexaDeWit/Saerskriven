@@ -5,12 +5,12 @@ import {
   accentSchema,
   diagramIdSchema,
   diagramsOf,
-  drawnElements,
   drawnElementSchema,
   elementIdSchema,
   elementKindSchema,
   elementOf,
   elementsById,
+  firstDrawings,
   flowEndName,
   flowEnds,
   unlabelledFlow,
@@ -100,17 +100,12 @@ export function elementsOnDiagrams(
   searched: readonly Diagram[],
 ): readonly ElementOnDiagram[] {
   const elements = elementsById(model.elements);
-  const seen = new Set<ElementId>();
-  return searched.flatMap((diagram) =>
-    drawnElements(model, diagram).flatMap((element) => {
-      if (seen.has(element.id)) {
-        return [];
-      }
-      seen.add(element.id);
-      const diagrams = diagramsOf(model, element.id).map(({ id }) => id);
-      return [{ element, diagram, diagrams, elements }];
-    }),
-  );
+  return firstDrawings(model, searched).map(({ drawn, diagram }) => ({
+    element: drawn,
+    diagram,
+    diagrams: diagramsOf(model, drawn.id).map(({ id }) => id),
+    elements,
+  }));
 }
 
 /** The identifying fields of one element, and its count in `counts`. */
