@@ -1,6 +1,7 @@
 import { ReadFailure } from '@saerskriven/formats';
 import { ShareLinkFailure } from '@saerskriven/formats/share-link';
 import {
+  addElement,
   emptyModel,
   OperationFailure,
   type DiagramId,
@@ -15,9 +16,10 @@ import {
   softHyphen,
   threatId,
 } from '@saerskriven/model/fixtures';
+import { Either } from 'effect';
 import { Action } from './actions.js';
 import { reduce } from './reducer.js';
-import { activeDiagramId, elementById } from './selectors.js';
+import { activeDiagramId, drawnElementById } from './selectors.js';
 import {
   FileLifecycle,
   LinkFailure,
@@ -48,17 +50,14 @@ import {
 } from './store.fixtures.js';
 
 const start = initialState(sampleModel);
+const placeholderDiagram = placeholderModel.diagrams[0].id;
 const recordedStart = initialState(recordedModel);
 const [heldMitigation] = recordedModel.mitigations;
 const [heldAssumption] = recordedModel.assumptions;
 const noteElement = elementId('note-editable');
-const noteModel = {
-  ...sampleModel,
-  diagrams: sampleModel.diagrams.map((diagram) => ({
-    ...diagram,
-    elements: [...diagram.elements, newNote(noteElement, 'Draft note')],
-  })),
-};
+const noteModel = Either.getOrThrow(
+  addElement(sampleModel, mainDiagram, newNote(noteElement, 'Draft note')),
+);
 const noteStart = initialState(noteModel);
 const boundaryElement = elementId('boundary-edge');
 const boundaryStart = initialState(
@@ -119,11 +118,12 @@ const applied: ActionsByTag<ModelActionTag> = {
     change: { description: 'Edits the models.' },
   }),
   SetAccent: Action.SetAccent({
+    diagramId: mainDiagram,
     elementIds: [processElement, actorElement],
     accent: 's2',
   }),
   AddDiagram: Action.AddDiagram({
-    diagram: { id: secondDiagram, title: 'Second', elements: [] },
+    diagram: { id: secondDiagram, title: 'Second' },
   }),
   RenameDiagram: Action.RenameDiagram({
     diagramId: mainDiagram,
@@ -134,10 +134,12 @@ const applied: ActionsByTag<ModelActionTag> = {
     fragment: placeholderModel,
   }),
   ArrangeElements: Action.ArrangeElements({
+    diagramId: mainDiagram,
     moves: [{ elementId: processElement, offset: { x: 10, y: 20 } }],
     decimals: 3,
   }),
   ReconnectFlow: Action.ReconnectFlow({
+    diagramId: placeholderDiagram,
     elementId: elementId('placeholder-flow'),
     side: 'source',
     endpointId: elementId('extra-actor'),
@@ -152,16 +154,19 @@ const applied: ActionsByTag<ModelActionTag> = {
     decimals: 3,
   }),
   MoveElement: Action.MoveElement({
+    diagramId: mainDiagram,
     elementId: processElement,
     offset: { x: 10, y: -5 },
     decimals: 1,
   }),
   MoveElements: Action.MoveElements({
+    diagramId: mainDiagram,
     elementIds: [actorElement, processElement],
     offset: { x: 10, y: -5 },
     decimals: 1,
   }),
   ResizeElement: Action.ResizeElement({
+    diagramId: mainDiagram,
     elementId: processElement,
     offset: { x: -10, y: -5 },
     size: { width: 200, height: 90 },
@@ -176,6 +181,7 @@ const applied: ActionsByTag<ModelActionTag> = {
     text: 'Edited note',
   }),
   SetFlowWaypoints: Action.SetFlowWaypoints({
+    diagramId: placeholderDiagram,
     elementId: elementId('placeholder-flow'),
     waypoints: [{ x: 200, y: 100 }],
     decimals: 1,
@@ -185,6 +191,7 @@ const applied: ActionsByTag<ModelActionTag> = {
     bidirectional: true,
   }),
   SetFlowEndPosition: Action.SetFlowEndPosition({
+    diagramId: placeholderDiagram,
     elementId: elementId('placeholder-flow'),
     side: 'target',
     position: { x: 400, y: 200 },
@@ -192,6 +199,7 @@ const applied: ActionsByTag<ModelActionTag> = {
   }),
   ReverseFlow: Action.ReverseFlow({ elementId: elementId('placeholder-flow') }),
   SetBoundaryShape: Action.SetBoundaryShape({
+    diagramId: mainDiagram,
     elementId: boundaryElement,
     shape: {
       kind: 'curve',
@@ -287,11 +295,12 @@ const refused: ActionsByTag<ModelActionTag> = {
     change: { outOfScope: true },
   }),
   SetAccent: Action.SetAccent({
+    diagramId: mainDiagram,
     elementIds: [processElement, elementId('element-missing')],
     accent: 's2',
   }),
   AddDiagram: Action.AddDiagram({
-    diagram: { id: mainDiagram, title: 'Again', elements: [] },
+    diagram: { id: mainDiagram, title: 'Again' },
   }),
   RenameDiagram: Action.RenameDiagram({
     diagramId: diagramId('diagram-missing'),
@@ -302,6 +311,7 @@ const refused: ActionsByTag<ModelActionTag> = {
     fragment: sampleModel,
   }),
   ArrangeElements: Action.ArrangeElements({
+    diagramId: mainDiagram,
     moves: [
       { elementId: processElement, offset: { x: 10, y: 20 } },
       { elementId: elementId('missing'), offset: { x: 10, y: 20 } },
@@ -309,6 +319,7 @@ const refused: ActionsByTag<ModelActionTag> = {
     decimals: undefined,
   }),
   ReconnectFlow: Action.ReconnectFlow({
+    diagramId: mainDiagram,
     elementId: processElement,
     side: 'source',
     endpointId: actorElement,
@@ -327,16 +338,19 @@ const refused: ActionsByTag<ModelActionTag> = {
     decimals: undefined,
   }),
   MoveElement: Action.MoveElement({
+    diagramId: mainDiagram,
     elementId: elementId('element-missing'),
     offset: { x: 1, y: 1 },
     decimals: undefined,
   }),
   MoveElements: Action.MoveElements({
+    diagramId: mainDiagram,
     elementIds: [processElement, elementId('element-missing')],
     offset: { x: 1, y: 1 },
     decimals: undefined,
   }),
   ResizeElement: Action.ResizeElement({
+    diagramId: mainDiagram,
     elementId: elementId('element-missing'),
     offset: { x: 0, y: 0 },
     size: { width: 10, height: 10 },
@@ -351,6 +365,7 @@ const refused: ActionsByTag<ModelActionTag> = {
     text: 'Not a note',
   }),
   SetFlowWaypoints: Action.SetFlowWaypoints({
+    diagramId: mainDiagram,
     elementId: processElement,
     waypoints: [],
     decimals: undefined,
@@ -360,6 +375,7 @@ const refused: ActionsByTag<ModelActionTag> = {
     bidirectional: true,
   }),
   SetFlowEndPosition: Action.SetFlowEndPosition({
+    diagramId: mainDiagram,
     elementId: processElement,
     side: 'source',
     position: { x: 0, y: 0 },
@@ -367,6 +383,7 @@ const refused: ActionsByTag<ModelActionTag> = {
   }),
   ReverseFlow: Action.ReverseFlow({ elementId: processElement }),
   SetBoundaryShape: Action.SetBoundaryShape({
+    diagramId: mainDiagram,
     elementId: processElement,
     shape: {
       kind: 'box',
@@ -532,7 +549,7 @@ function stateFor(action: Action): State {
       reduce(
         initialState(placeholderModel),
         Action.AddElement({
-          diagramId: placeholderModel.diagrams[0].id,
+          diagramId: placeholderDiagram,
           element: newProcess('extra-actor', 'Extra actor'),
           decimals: undefined,
         }),
@@ -616,6 +633,7 @@ describe('an edit that names its decimals', () => {
     [
       start,
       Action.MoveElement({
+        diagramId: mainDiagram,
         elementId: processElement,
         offset: { x: 0.123456, y: 0.04 },
         decimals: 1,
@@ -626,6 +644,7 @@ describe('an edit that names its decimals', () => {
     [
       start,
       Action.MoveElements({
+        diagramId: mainDiagram,
         elementIds: [actorElement, processElement],
         offset: { x: 0.123456, y: 0.04 },
         decimals: 3,
@@ -636,6 +655,7 @@ describe('an edit that names its decimals', () => {
     [
       start,
       Action.ArrangeElements({
+        diagramId: mainDiagram,
         moves: [
           { elementId: processElement, offset: { x: 0.123456, y: 0.04 } },
         ],
@@ -647,6 +667,7 @@ describe('an edit that names its decimals', () => {
     [
       start,
       Action.ResizeElement({
+        diagramId: mainDiagram,
         elementId: processElement,
         offset: { x: 0.123456, y: 0 },
         size: { width: 200.5558, height: 90.4444 },
@@ -671,6 +692,7 @@ describe('an edit that names its decimals', () => {
     [
       placed,
       Action.SetFlowWaypoints({
+        diagramId: placeholderDiagram,
         elementId: flow,
         waypoints: [{ x: 200.123456, y: 100.98765 }],
         decimals: 1,
@@ -681,6 +703,7 @@ describe('an edit that names its decimals', () => {
     [
       placed,
       Action.SetFlowEndPosition({
+        diagramId: placeholderDiagram,
         elementId: flow,
         side: 'target',
         position: { x: 400.123456, y: 200.98765 },
@@ -692,6 +715,7 @@ describe('an edit that names its decimals', () => {
     [
       boundaryStart,
       Action.SetBoundaryShape({
+        diagramId: mainDiagram,
         elementId: boundaryElement,
         shape: {
           kind: 'curve',
@@ -717,7 +741,7 @@ describe('an edit that names its decimals', () => {
   it.each(cases)(
     'hands the count to the operation, which stores what it writes at it (%#)',
     (state, action, id, stored) => {
-      expect(elementById(reduce(state, action), id)).toMatchObject(stored);
+      expect(drawnElementById(reduce(state, action), id)).toMatchObject(stored);
     },
   );
 
@@ -725,11 +749,12 @@ describe('an edit that names its decimals', () => {
   const beside = elementId('process-beside');
   const noisyActor = [
     Action.AddElement({
-      diagramId: placeholderModel.diagrams[0].id,
+      diagramId: placeholderDiagram,
       element: newProcess(beside, 'Beside'),
       decimals: undefined,
     }),
     Action.ResizeElement({
+      diagramId: placeholderDiagram,
       elementId: actor,
       offset: { x: 0.123456, y: 0 },
       size: { width: 100.5558, height: 50.4444 },
@@ -743,13 +768,15 @@ describe('an edit that names its decimals', () => {
   ])(
     '$_tag frees the flow end it detaches at the count it names',
     (removal) => {
-      expect(elementById(noisyActor, actor)).toMatchObject({
+      expect(drawnElementById(noisyActor, actor)).toMatchObject({
         position: { x: 40.123456, y: 40 },
       });
 
-      expect(elementById(reduce(noisyActor, removal), flow)).toMatchObject({
-        source: { kind: 'free', position: { x: 90.4, y: 65.2 } },
-      });
+      expect(drawnElementById(reduce(noisyActor, removal), flow)).toMatchObject(
+        {
+          source: { kind: 'free', position: { x: 90.4, y: 65.2 } },
+        },
+      );
     },
   );
 });
@@ -762,7 +789,7 @@ describe('the flow end, direction and boundary shape edits', () => {
       stateFor(applied.SetFlowEndPosition),
       applied.SetFlowEndPosition,
     );
-    expect(elementById(edited, flow)).toMatchObject({
+    expect(drawnElementById(edited, flow)).toMatchObject({
       source: { kind: 'attached', element: 'placeholder-actor' },
       target: { kind: 'free', position: { x: 400, y: 200 } },
     });
@@ -770,7 +797,7 @@ describe('the flow end, direction and boundary shape edits', () => {
 
   it('swap the two ends of a flow', () => {
     const edited = reduce(stateFor(applied.ReverseFlow), applied.ReverseFlow);
-    expect(elementById(edited, flow)).toMatchObject({
+    expect(drawnElementById(edited, flow)).toMatchObject({
       source: { kind: 'attached', element: 'placeholder-store' },
       target: { kind: 'attached', element: 'placeholder-actor' },
     });
@@ -778,7 +805,7 @@ describe('the flow end, direction and boundary shape edits', () => {
 
   it('give a trust boundary the shape given', () => {
     const edited = reduce(boundaryStart, applied.SetBoundaryShape);
-    expect(elementById(edited, boundaryElement)).toMatchObject({
+    expect(drawnElementById(edited, boundaryElement)).toMatchObject({
       shape: applied.SetBoundaryShape.shape,
     });
   });
@@ -801,7 +828,10 @@ describe('history', () => {
     const before = stateFor(applied.SetFlowWaypoints);
     const next = reduce(
       before,
-      Action.SetFlowWaypoints({ ...applied.SetFlowWaypoints, waypoints: [] }),
+      Action.SetFlowWaypoints({
+        ...applied.SetFlowWaypoints,
+        waypoints: [],
+      }),
     );
     expect(next).toBe(before);
   });
@@ -987,7 +1017,7 @@ describe('the model metadata', () => {
 });
 
 const details = (state: State) => {
-  const element = elementById(state, noteElement);
+  const element = drawnElementById(state, noteElement);
   return {
     description: element?.description,
     outOfScope: element?.outOfScope,
@@ -1046,7 +1076,7 @@ describe('the element details', () => {
 
 const accentsOf = (state: State) =>
   [processElement, actorElement, noteElement].map(
-    (id) => elementById(state, id)?.accent,
+    (id) => drawnElementById(state, id)?.accent,
   );
 
 describe('an accent', () => {
@@ -1058,6 +1088,7 @@ describe('an accent', () => {
     const cleared = reduce(
       accented,
       Action.SetAccent({
+        diagramId: mainDiagram,
         elementIds: [processElement, actorElement],
         accent: undefined,
       }),
@@ -1076,6 +1107,7 @@ describe('an accent', () => {
     const noted = reduce(
       noteStart,
       Action.SetAccent({
+        diagramId: mainDiagram,
         elementIds: [processElement, noteElement],
         accent: 'l1',
       }),

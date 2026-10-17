@@ -1,18 +1,33 @@
 import { Either } from 'effect';
-import { z } from 'zod';
-import { modelSchema } from './model.js';
+import type { DrawnModelInput, ModelInput } from './model.js';
+import { parseDrawnModel } from './parse-drawn.js';
 import type { ParseIssue } from './parse-issue.js';
 import { parseModel, type Model, type ParseFailure } from './parse.js';
 
 /**
- * The valid fixture with one edit applied, parsed. The draft is a deep copy,
- * so a spec that plants a violation hands the next spec the fixture it
- * expects.
+ * The valid fixture with one edit applied, parsed through
+ * `parseDrawnModel`. The draft is a deep copy, so a spec that plants a
+ * violation hands the next spec the fixture it expects.
  */
 export function seededModel(
   mutate: (draft: typeof validModelFixture) => void,
 ): Either.Either<Model, ParseFailure> {
   const draft = structuredClone(validModelFixture);
+  mutate(draft);
+  return parseDrawnModel(draft);
+}
+
+/**
+ * The valid fixture as the model's own shape with one edit applied, parsed
+ * through `parseModel`. The draft is a deep copy, as for
+ * {@link seededModel}.
+ */
+export function seededPlacedModel(
+  mutate: (draft: ModelInput) => void,
+): Either.Either<Model, ParseFailure> {
+  const draft: ModelInput = structuredClone(
+    Either.getOrThrow(parseDrawnModel(validModelFixture)),
+  );
   mutate(draft);
   return parseModel(draft);
 }
@@ -43,10 +58,10 @@ export function issuesOf(
  * Hand-authored valid model of one diagram: an actor, a process, an
  * out-of-scope store, a flow anchored at its source and free at its target,
  * a box and a curve trust boundary, one threat attached to two elements, one
- * mitigation, and one assumption. Typed as the schema's input, not as a
- * Model: specs feed it through parseModel.
+ * mitigation, and one assumption. Its diagram owns its elements, the shape
+ * `parseDrawnModel` takes, and specs feed it through that.
  */
-export const validModelFixture: z.input<typeof modelSchema> = {
+export const validModelFixture: DrawnModelInput = {
   metadata: {
     title: 'Order service',
     owner: 'Alexandra de Wit',
@@ -173,10 +188,10 @@ export const validModelFixture: z.input<typeof modelSchema> = {
  * linked to no element. The last issued number sits above every number the
  * register still holds, the state a register reaches once its
  * highest-numbered threat is removed. The coverage query specs compute
- * their expected results from it by hand. Typed as the schema's input, not
- * as a Model: specs feed it through parseModel.
+ * their expected results from it by hand. Its diagrams own their elements,
+ * the shape `parseDrawnModel` takes, and specs feed it through that.
  */
-export const threatRegisterFixture: z.input<typeof modelSchema> = {
+export const threatRegisterFixture: DrawnModelInput = {
   metadata: {
     title: 'Payment gateway',
     owner: 'Alexandra de Wit',
@@ -337,10 +352,9 @@ export const threatRegisterFixture: z.input<typeof modelSchema> = {
 /**
  * The threat register fixture before any analysis: its diagrams with no
  * threats, mitigations, or assumptions, and no threat number yet issued.
- * Typed as the schema's input, not as a Model: specs feed it through
- * parseModel.
+ * Its diagrams own their elements, as {@link threatRegisterFixture}'s do.
  */
-export const emptyRegisterFixture: z.input<typeof modelSchema> = {
+export const emptyRegisterFixture: DrawnModelInput = {
   ...threatRegisterFixture,
   threats: [],
   lastIssuedThreatNumber: 0,

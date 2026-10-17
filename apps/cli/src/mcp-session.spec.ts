@@ -389,7 +389,7 @@ for (const runner of runners) {
             expect(changed.isError).toBeFalsy();
             const saved = readFileSync(join(root, file), 'utf8');
             const model = Either.getOrThrow(readAnyFormat(saved)).model;
-            const flow = model.diagrams[0].elements.find(
+            const flow = model.elements.find(
               (element) => element.id === 'flow',
             );
             expect(flow).toMatchObject({

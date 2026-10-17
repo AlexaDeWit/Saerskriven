@@ -90,7 +90,7 @@ identifiers it generates, and the escaped paths its report names for
 undeclared fields share one budget, `readLimits.maxImportTextUnits`, charged
 before each string is built, and a conversion over it returns
 `ExceededReadLimit`. The mapping validates the references it uses and then
-parses the result through `parseModel`.
+parses the result through `parseDrawnModel`.
 
 `importedId` is the id an import gives each record it makes, from the source
 parts it was made of, and `importedFrom` finds the records made from the

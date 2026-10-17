@@ -1,4 +1,5 @@
 import {
+  drawnElements,
   elementIdSchema,
   type Diagram,
   type DiagramId,
@@ -102,6 +103,7 @@ export function numberDiagrams(
  * a pinned flow end asks for. `writeThreatDragon` writes the release stamp.
  */
 export function mergeDiagram(
+  model: Model,
   diagram: Diagram,
   held: ThreatDragonDiagram | undefined,
   id: number,
@@ -110,7 +112,8 @@ export function mergeDiagram(
   const heldCells = held ? cellsOf(held) : [];
   const cells = indexById(heldCells);
   const ports = portSides(heldCells);
-  const merged = diagram.elements.map((element, index) =>
+  const drawn = drawnElements(model, diagram);
+  const merged = drawn.map((element, index) =>
     mergeCell(
       element,
       cells.get(element.id),
@@ -119,7 +122,7 @@ export function mergeDiagram(
       ports,
     ),
   );
-  const kept = new Set<string>(diagram.elements.map((element) => element.id));
+  const kept = new Set<string>(drawn.map((element) => element.id));
   return {
     diagram: {
       ...held,

@@ -1,85 +1,51 @@
 import { Either } from 'effect';
-import { elementId, elementIn, softHyphen, validModel } from '../fixtures.js';
+import { elementId, softHyphen, validModel } from '../fixtures.js';
 import {
   addDiagram,
   removeDiagram,
   renameDiagram,
 } from './diagram-operations.js';
 import { removeElement } from './element-operations.js';
-import { elementSchema } from './elements.js';
 import { OperationFailure } from './operation-failures.js';
 import {
-  cache,
   elementIds,
   errorOf,
-  flowInput,
   mainDiagram,
   modelOf,
   operationContract,
   secondDiagram,
-  writeFlow,
 } from './operations.fixtures.js';
 import { parseModel } from './parse.js';
 
-const secondOfElements = {
-  id: secondDiagram,
-  title: 'Second',
-  elements: [
-    { ...cache, id: elementId('element-second-store') },
-    elementSchema.parse({
-      ...flowInput,
-      id: 'element-second-flow',
-      source: { kind: 'attached', element: 'element-second-store' },
-      target: { kind: 'free', position: { x: 0, y: 0 } },
-    }),
-  ],
-};
+const second = { id: secondDiagram, title: 'Second' };
 
 describe('addDiagram', () => {
-  it('appends a diagram after the ones the model holds', () => {
-    const next = modelOf(
-      addDiagram(validModel, {
-        id: secondDiagram,
-        title: 'Second',
-        elements: [],
-      }),
-    );
+  it('appends an empty diagram after the ones the model holds', () => {
+    const next = modelOf(addDiagram(validModel, second));
     expect(next.diagrams.map((diagram) => diagram.id)).toEqual([
       mainDiagram,
       secondDiagram,
     ]);
+    expect(next.diagrams[1].placements).toEqual([]);
     expect(next.diagrams[0]).toBe(validModel.diagrams[0]);
-  });
-
-  it('accepts a diagram of elements whose flows stay inside it', () => {
-    const next = modelOf(addDiagram(validModel, secondOfElements));
-    expect(next.diagrams[1].elements).toHaveLength(2);
+    expect(next.elements).toBe(validModel.elements);
   });
 
   it('refuses the id of a diagram the model holds', () => {
     expect(
-      errorOf(
-        addDiagram(validModel, {
-          id: mainDiagram,
-          title: 'Again',
-          elements: [],
-        }),
-      ),
+      errorOf(addDiagram(validModel, { id: mainDiagram, title: 'Again' })),
     ).toEqual(OperationFailure.DuplicateDiagramId({ diagramId: mainDiagram }));
   });
 
   it('refuses an empty title and a refused character in one', () => {
     expect(
-      errorOf(
-        addDiagram(validModel, { id: secondDiagram, title: ' ', elements: [] }),
-      ),
+      errorOf(addDiagram(validModel, { id: secondDiagram, title: ' ' })),
     ).toEqual(OperationFailure.EmptyTitle({ diagramId: secondDiagram }));
     expect(
       errorOf(
         addDiagram(validModel, {
           id: secondDiagram,
           title: `Sec${softHyphen}ond`,
-          elements: [],
         }),
       ),
     ).toEqual(
@@ -89,94 +55,13 @@ describe('addDiagram', () => {
       }),
     );
   });
-
-  it('refuses an element id the model holds already, or one the diagram repeats', () => {
-    expect(
-      errorOf(
-        addDiagram(validModel, {
-          id: secondDiagram,
-          title: 'Second',
-          elements: [elementIn(validModel, 'element-api')],
-        }),
-      ),
-    ).toEqual(
-      OperationFailure.DuplicateElementId({
-        elementId: elementId('element-api'),
-      }),
-    );
-    expect(
-      errorOf(
-        addDiagram(validModel, {
-          id: secondDiagram,
-          title: 'Second',
-          elements: [cache, cache],
-        }),
-      ),
-    ).toEqual(OperationFailure.DuplicateElementId({ elementId: cache.id }));
-  });
-
-  it('refuses a flow anchored outside the diagram', () => {
-    expect(
-      errorOf(
-        addDiagram(validModel, {
-          id: secondDiagram,
-          title: 'Second',
-          elements: [writeFlow],
-        }),
-      )?._tag,
-    ).toBe('InvalidFlowEndpoint');
-  });
-
-  it('refuses an element whose name is white space, as addElement does', () => {
-    expect(
-      errorOf(
-        addDiagram(validModel, {
-          ...secondOfElements,
-          elements: [{ ...cache, name: ' ' }],
-        }),
-      ),
-    ).toEqual(OperationFailure.EmptyName({ elementId: cache.id }));
-  });
-
-  it('adds a flow named with white space alone unlabelled, as addElement does', () => {
-    const [store, flow] = secondOfElements.elements;
-    const next = modelOf(
-      addDiagram(validModel, {
-        ...secondOfElements,
-        elements: [store, { ...flow, name: ' \t' }],
-      }),
-    );
-    expect(elementIn(next, 'element-second-flow').name).toBe('');
-  });
-
-  it('refuses a flow ending on another flow of the diagram, as addElement does', () => {
-    const onFlow = elementSchema.parse({
-      ...flowInput,
-      id: 'element-third-flow',
-      source: { kind: 'attached', element: 'element-second-store' },
-      target: { kind: 'attached', element: 'element-second-flow' },
-    });
-    expect(
-      errorOf(
-        addDiagram(validModel, {
-          ...secondOfElements,
-          elements: [...secondOfElements.elements, onFlow],
-        }),
-      ),
-    ).toEqual(
-      OperationFailure.InvalidFlowEndpoint({
-        side: 'target',
-        reference: elementId('element-second-flow'),
-      }),
-    );
-  });
 });
 
 describe('renameDiagram', () => {
   it('retitles the diagram and leaves its elements as they were', () => {
     const next = modelOf(renameDiagram(validModel, mainDiagram, 'Retitled'));
     expect(next.diagrams[0].title).toBe('Retitled');
-    expect(next.diagrams[0].elements).toBe(validModel.diagrams[0].elements);
+    expect(next.diagrams[0].placements).toBe(validModel.diagrams[0].placements);
   });
 
   it('refuses an empty title, a whitespace title, and a refused character', () => {
@@ -201,14 +86,8 @@ describe('renameDiagram', () => {
 });
 
 describe('removeDiagram', () => {
-  it('drops a diagram that owns no element', () => {
-    const withSecond = modelOf(
-      addDiagram(validModel, {
-        id: secondDiagram,
-        title: 'Second',
-        elements: [],
-      }),
-    );
+  it('drops a diagram that places no element', () => {
+    const withSecond = modelOf(addDiagram(validModel, second));
     expect(
       modelOf(removeDiagram(withSecond, secondDiagram)).diagrams.map(
         (diagram) => diagram.id,
@@ -216,11 +95,11 @@ describe('removeDiagram', () => {
     ).toEqual([mainDiagram]);
   });
 
-  it('refuses a diagram that still owns elements, counting them', () => {
+  it('refuses a diagram that still places elements, counting them', () => {
     expect(errorOf(removeDiagram(validModel, mainDiagram))).toEqual(
       OperationFailure.DiagramNotEmpty({
         diagramId: mainDiagram,
-        elements: validModel.diagrams[0].elements.length,
+        elements: validModel.diagrams[0].placements.length,
       }),
     );
   });
@@ -238,6 +117,7 @@ describe('removeDiagram', () => {
     );
     const next = modelOf(removeDiagram(emptied, mainDiagram));
     expect(next.diagrams).toEqual([]);
+    expect(next.elements).toEqual([]);
     expect(next.threats).toEqual([]);
     expect(next.mitigations).toEqual([]);
     expect(next.assumptions).toEqual([]);
@@ -250,12 +130,7 @@ describe('diagram operations', () => {
   operationContract({
     addDiagram: {
       input: validModel,
-      run: (model) =>
-        addDiagram(model, { id: secondDiagram, title: 'Second', elements: [] }),
-    },
-    'addDiagram of elements': {
-      input: validModel,
-      run: (model) => addDiagram(model, secondOfElements),
+      run: (model) => addDiagram(model, second),
     },
     renameDiagram: {
       input: validModel,
@@ -266,13 +141,7 @@ describe('diagram operations', () => {
       run: (model) => removeDiagram(model, mainDiagram),
     },
     removeDiagram: {
-      input: modelOf(
-        addDiagram(validModel, {
-          id: secondDiagram,
-          title: 'Second',
-          elements: [],
-        }),
-      ),
+      input: modelOf(addDiagram(validModel, second)),
       run: (model) => removeDiagram(model, secondDiagram),
     },
   });

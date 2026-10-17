@@ -1,5 +1,5 @@
-import type { ModelInput } from '@saerskriven/model';
-import { parsedFixture } from '@saerskriven/model/fixtures';
+import type { DrawnModelInput } from '@saerskriven/model';
+import { drawnFixture } from '@saerskriven/model/fixtures';
 import type {
   ThreatDragonDiagram,
   ThreatDragonThreat,
@@ -11,21 +11,26 @@ import {
   numberDiagrams,
 } from './threat-dragon-diagrams.js';
 
-const diagram = (id: string): ModelInput['diagrams'][number] => ({
+const diagram = (id: string): DrawnModelInput['diagrams'][number] => ({
   id,
   title: `Diagram ${id}`,
   elements: [],
 });
 
 const model = (ids: readonly string[]) =>
-  parsedFixture({
+  drawnFixture({
     metadata: { title: '', owner: '', description: '', contributors: [] },
     diagrams: ids.map(diagram),
     threats: [],
     lastIssuedThreatNumber: 0,
     mitigations: [],
     assumptions: [],
-  } satisfies ModelInput);
+  } satisfies DrawnModelInput);
+
+const firstOf = (ids: readonly string[]) => {
+  const drawn = model(ids);
+  return [drawn, drawn.diagrams[0]] as const;
+};
 
 const held = (ids: readonly number[]): ThreatDragonDiagram[] =>
   ids.map((id) => ({
@@ -97,7 +102,7 @@ describe('drawing one diagram of the model', () => {
 
   it('takes what Threat Dragon writes for a diagram of no methodology', () => {
     expect(
-      mergeDiagram(model(['a']).diagrams[0], undefined, 0, cells).diagram,
+      mergeDiagram(...firstOf(['a']), undefined, 0, cells).diagram,
     ).toEqual({
       id: 0,
       title: 'Diagram a',
@@ -109,7 +114,7 @@ describe('drawing one diagram of the model', () => {
 
   it('keeps the methodology and the thumbnail a held diagram declared', () => {
     expect(
-      mergeDiagram(model(['0']).diagrams[0], held([0])[0], 0, cells).diagram,
+      mergeDiagram(...firstOf(['0']), held([0])[0], 0, cells).diagram,
     ).toMatchObject({
       diagramType: 'STRIDE',
       thumbnail: './public/content/images/thumbnail.stride.jpg',
@@ -129,7 +134,7 @@ describe('drawing one diagram of the model', () => {
         },
       ],
     };
-    const merged = mergeDiagram(model(['0']).diagrams[0], source, 0, cells);
+    const merged = mergeDiagram(...firstOf(['0']), source, 0, cells);
     expect(merged.diagram.cells).toEqual([]);
     expect(renderDivergences(merged.divergences)).toBe(
       'element "cell-gone": the store cell the source document held (removed by an edit)',

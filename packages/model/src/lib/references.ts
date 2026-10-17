@@ -1,5 +1,5 @@
 import { Data, Either } from 'effect';
-import type { Element, Flow, FlowEndpoint } from './elements.js';
+import type { Element, ElementKind, Flow, FlowEndpoint } from './elements.js';
 import type { ElementId, ThreatId } from './ids.js';
 import type { Diagram } from './model.js';
 import { isEmptyName } from './text.js';
@@ -7,7 +7,7 @@ import type { Threat } from './threats.js';
 
 /**
  * One attached flow endpoint that cannot anchor where it points: at the
- * flow itself, or at an id absent from the diagram meant to hold the flow.
+ * flow itself, or at an id the diagram drawing the flow does not place.
  */
 export type EndpointViolation = {
   readonly side: 'source' | 'target';
@@ -17,7 +17,7 @@ export type EndpointViolation = {
 
 /**
  * The violations among one flow's attached endpoints, checked against the
- * element ids of the diagram holding it, which include the flow's own. This
+ * element ids of the diagram drawing it, which include the flow's own. This
  * is the rule parse applies, and the edit operations hold a new end to a
  * stricter one.
  */
@@ -58,14 +58,21 @@ export type FlowEnds = {
 };
 
 /**
- * `element` where it is a flow left unlabelled, which a reader names by its
- * ends, and undefined otherwise. A name of white space alone counts, since a
- * file or a paste can still hold one.
+ * `element`, an element or one as a diagram draws it, where it is a flow left
+ * unlabelled, which a reader names by its ends, and undefined otherwise. A
+ * name of white space alone counts, since a file or a paste can still hold
+ * one.
  */
-export function unlabelledFlow(element: Element): Flow | undefined {
-  return element.kind === 'flow' && isEmptyName(element.name)
-    ? element
-    : undefined;
+export function unlabelledFlow<
+  Held extends { readonly kind: ElementKind; readonly name: string },
+>(element: Held): Extract<Held, { readonly kind: 'flow' }> | undefined {
+  return isFlow(element) && isEmptyName(element.name) ? element : undefined;
+}
+
+function isFlow<Held extends { readonly kind: ElementKind }>(
+  element: Held,
+): element is Extract<Held, { readonly kind: 'flow' }> {
+  return element.kind === 'flow';
 }
 
 /** The ends of `flow`, each attached one looked up in `elements`. */
@@ -160,37 +167,32 @@ export function chosenDiagram(
     : Either.left(DiagramChoiceFailure.SeveralDiagrams({ diagrams }));
 }
 
-/** Ids of the elements one diagram owns. */
+/** Ids of the elements one diagram places. */
 export function elementIdsIn(diagram: Diagram): Set<string> {
-  return new Set(diagram.elements.map((element) => element.id));
+  return new Set(diagram.placements.map(({ element }) => element));
 }
 
-/** The given elements keyed by id. */
-export function elementsById(
-  elements: readonly Element[],
-): Map<ElementId, Element> {
+/** The given elements, or elements as a diagram draws them, keyed by id. */
+export function elementsById<Held extends { readonly id: ElementId }>(
+  elements: readonly Held[],
+): Map<ElementId, Held> {
   return new Map(elements.map((element) => [element.id, element]));
 }
 
-/** Every element the given diagrams own, in diagram order. */
-export function elementsAcross(diagrams: readonly Diagram[]): Element[] {
-  return diagrams.flatMap((diagram) => diagram.elements);
-}
-
-/** Ids of every element across the given diagrams. */
+/** Ids of every element the given diagrams place. */
 export function elementIdsAcross(diagrams: readonly Diagram[]): Set<string> {
-  return new Set(elementsAcross(diagrams).map((element) => element.id));
+  return new Set(diagrams.flatMap((diagram) => [...elementIdsIn(diagram)]));
 }
 
 /**
- * The first of `elementIds` that names no element of the given diagrams,
- * and undefined where every one of them resolves.
+ * The first of `elementIds` that names none of `elements`, and undefined
+ * where every one of them resolves.
  */
 export function unknownElementIn(
-  diagrams: readonly Diagram[],
+  elements: readonly Element[],
   elementIds: readonly ElementId[],
 ): ElementId | undefined {
-  const known = elementIdsAcross(diagrams);
+  const known = new Set<string>(elements.map(({ id }) => id));
   return elementIds.find((elementId) => !known.has(elementId));
 }
 

@@ -55,6 +55,7 @@ export const noticeMessages = {
   'op-title-character': text(id),
   'op-diagram-not-empty': plural('count', id),
   'op-unknown-element': text(id),
+  'op-not-on-diagram': text({ id: 'text', diagram: 'text' }),
   'op-unknown-threat': text(id),
   'op-unknown-mitigation': text(id),
   'op-unknown-assumption': text(id),

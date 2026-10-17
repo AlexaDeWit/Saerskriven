@@ -1,5 +1,4 @@
 import type { DetectedRead } from '@saerskriven/formats';
-import { elementsAcross } from '@saerskriven/model';
 import { Either } from 'effect';
 import { describeDivergences, readModel } from './input.js';
 import { lines, succeeded, type CommandOutcome } from './outcome.js';
@@ -21,7 +20,7 @@ export function validate(file: string): CommandOutcome {
 function summaryOf(read: DetectedRead): string {
   const counts = [
     counted(read.model.diagrams.length, 'diagram'),
-    counted(elementsAcross(read.model.diagrams).length, 'element'),
+    counted(read.model.elements.length, 'element'),
     counted(read.model.threats.length, 'threat'),
   ];
   return `${read.format}: ${counts.join(', ')}`;

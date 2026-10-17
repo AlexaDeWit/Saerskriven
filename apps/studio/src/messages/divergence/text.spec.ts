@@ -912,6 +912,7 @@ describe('the line a Threat Dragon save reports for accents', () => {
           boxAt('archive', 200, 0, 'store', undefined, 'Paper archive'),
         ],
       }),
+      diagramId('d'),
       [elementId('desk'), elementId('archive')],
       's1',
     ),

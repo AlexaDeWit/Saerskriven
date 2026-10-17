@@ -1,7 +1,7 @@
 import type {
-  DiagramInput,
-  ElementInput,
-  FlowEndpointInput,
+  DrawnDiagramInput,
+  DrawnElementInput,
+  DrawnFlowEndpointInput,
   MitigationInput,
   Model,
   ModelMetadataInput,
@@ -121,7 +121,7 @@ function toMapping(document: ThreatDragonDocument) {
 
 function toMitigations(
   threats: readonly { record: ThreatInput; text: string }[],
-  diagrams: readonly DiagramInput[],
+  diagrams: readonly DrawnDiagramInput[],
 ): MitigationInput[] {
   return mitigationsFromText(
     threats.map(({ record, text }) => ({
@@ -163,7 +163,7 @@ function toMetadata(document: ThreatDragonDocument): ModelMetadataInput {
   };
 }
 
-function toDiagram(diagram: ThreatDragonDiagram): DiagramInput {
+function toDiagram(diagram: ThreatDragonDiagram): DrawnDiagramInput {
   const cells = cellsOf(diagram);
   const ports = portSides(cells);
   return {
@@ -173,7 +173,10 @@ function toDiagram(diagram: ThreatDragonDiagram): DiagramInput {
   };
 }
 
-function toElement(cell: ThreatDragonCell, ports: PortSides): ElementInput {
+function toElement(
+  cell: ThreatDragonCell,
+  ports: PortSides,
+): DrawnElementInput {
   if (cell.shape === 'actor') {
     return { kind: 'actor', ...toNode(cell), ...actorProperties(cell.data) };
   }
@@ -222,7 +225,7 @@ function toElement(cell: ThreatDragonCell, ports: PortSides): ElementInput {
   return toCurveBoundary(cell);
 }
 
-function toCurveBoundary(cell: ThreatDragonCurve): ElementInput {
+function toCurveBoundary(cell: ThreatDragonCurve): DrawnElementInput {
   return {
     kind: 'trust-boundary',
     ...toBoundaryCommon(cell),
@@ -261,7 +264,7 @@ function toBoundaryCommon(cell: ThreatDragonBoundary) {
 function toEndpoint(
   endpoint: ThreatDragonEndpoint,
   ports: PortSides,
-): FlowEndpointInput {
+): DrawnFlowEndpointInput {
   if (!isAnchored(endpoint)) {
     return { kind: 'free', position: endpoint };
   }

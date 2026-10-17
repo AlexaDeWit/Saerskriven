@@ -8,9 +8,7 @@ const declaredKinds = new Set<string>(
 describe('everyGlyphModel', () => {
   it('carries one element of every kind the model declares', () => {
     expect(
-      new Set(
-        everyGlyphModel.diagrams[0].elements.map((element) => element.kind),
-      ),
+      new Set(everyGlyphModel.elements.map((element) => element.kind)),
     ).toEqual(declaredKinds);
   });
 });

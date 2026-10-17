@@ -1,15 +1,16 @@
 import {
+  drawnElements,
   geometryLimits,
   inNumberOrder,
-  parseModel,
+  parseDrawnModel,
   threatFlags,
-  type Flow,
+  type DrawnFlow,
   type Model,
 } from '@saerskriven/model';
 import {
   committedModel,
   modelInputArbitrary,
-  parsedFixture,
+  drawnFixture,
   repositoryRoot,
 } from '@saerskriven/model/fixtures';
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
@@ -87,9 +88,9 @@ function textRecordsIn(model: Model, text: string) {
     .map(({ prose, status, threats }) => ({ prose, status, threats }));
 }
 
-function flowsOf(model: Model): readonly Flow[] {
+function flowsOf(model: Model): readonly DrawnFlow[] {
   return model.diagrams.flatMap((diagram) =>
-    diagram.elements.flatMap((element) =>
+    drawnElements(model, diagram).flatMap((element) =>
       element.kind === 'flow' ? [element] : [],
     ),
   );
@@ -106,9 +107,7 @@ describe('the Saerskriven YAML codec', () => {
 
   it('reads the feature-complete file as the model written out by hand, with nothing diverging', () => {
     const reading = readOrThrow(featureCompleteYaml);
-    expect(reading.model).toStrictEqual(
-      parsedFixture(featureCompleteYamlModel),
-    );
+    expect(reading.model).toStrictEqual(drawnFixture(featureCompleteYamlModel));
     expect(reading.divergences).toEqual([]);
   });
 
@@ -221,7 +220,7 @@ describe('the document shape v0.2.1 wrote', () => {
   it('reads as the model it describes, with nothing diverging', () => {
     const reading = readOrThrow(frozenV021);
     expect(reading.divergences).toEqual([]);
-    expect(reading.model).toStrictEqual(parsedFixture(frozenV021Model));
+    expect(reading.model).toStrictEqual(drawnFixture(frozenV021Model));
   });
 
   it('holds one record for each non-empty mitigation text, under the one-to-one status rule', () => {
@@ -355,7 +354,7 @@ describe(
     it('survives a write and a read as itself, threats in number order, with nothing diverging', () => {
       fc.assert(
         fc.property(modelInputArbitrary, (input) => {
-          const model = Either.getOrThrow(parseModel(input));
+          const model = Either.getOrThrow(parseDrawnModel(input));
           const written = saerskrivenYamlCodec.write(model);
           expect(written.divergences).toEqual([]);
           const reading = readOrThrow(written.output);
@@ -369,8 +368,9 @@ describe(
       fc.assert(
         fc.property(modelInputArbitrary, (input) => {
           const output: unknown = parse(
-            saerskrivenYamlCodec.write(Either.getOrThrow(parseModel(input)))
-              .output,
+            saerskrivenYamlCodec.write(
+              Either.getOrThrow(parseDrawnModel(input)),
+            ).output,
           );
           const document = saerskrivenYamlV2WireSchema.parse(output);
           expect(document.formatVersion).toBe(2);
@@ -383,7 +383,7 @@ describe(
       fc.assert(
         fc.property(modelInputArbitrary, (input) => {
           const output = saerskrivenYamlCodec.write(
-            Either.getOrThrow(parseModel(input)),
+            Either.getOrThrow(parseDrawnModel(input)),
           ).output;
           expect(
             saerskrivenYamlCodec.write(readOrThrow(output).model).output,

@@ -1,4 +1,4 @@
-import { elementsAcross, elementsById } from '@saerskriven/model';
+import { elementsById } from '@saerskriven/model';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
@@ -46,7 +46,7 @@ export function ThreatPanel({
   onCover,
 }: ThreatPanelProps) {
   const threatCount = useModelStore((state) => attachedThreats(state).length);
-  const diagrams = useModelStore((state) => state.present.diagrams);
+  const elements = useModelStore((state) => state.present.elements);
   const [tab, setTab] = useState<PanelTab>('threats');
   const [collapsed, setCollapsed] = useState(true);
   if (focusing && collapsed) {
@@ -96,11 +96,7 @@ export function ThreatPanel({
   return (
     <PanelFrame
       {...frame}
-      heading={elementHeading(
-        element,
-        elementsById(elementsAcross(diagrams)),
-        t,
-      )}
+      heading={elementHeading(element, elementsById(elements), t)}
       tabs={{ tab, onTab: setTab, threatCount }}
     >
       <PanelTabContent tab={tab} value="threats">

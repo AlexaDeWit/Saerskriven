@@ -15,6 +15,7 @@ import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   actorElement,
+  mainDiagram,
   nativeSource,
   sampleModel,
   secondDiagram,
@@ -153,6 +154,7 @@ describe('FitOnOpen', () => {
     act(() => {
       dispatch(
         Action.MoveElement({
+          diagramId: mainDiagram,
           elementId: actorElement,
           offset: { x: 400, y: 400 },
           decimals: undefined,

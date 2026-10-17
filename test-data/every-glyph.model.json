@@ -5,18 +5,125 @@
     "description": "One of everything the canvas draws, and one flow it refuses to place.",
     "contributors": ["Alexandra de Wit"]
   },
+  "elements": [
+    {
+      "kind": "trust-boundary",
+      "id": "el-zone",
+      "name": "Service perimeter",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "trust-boundary",
+      "id": "el-edge-zone",
+      "name": "Edge zone",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "trust-boundary",
+      "id": "el-partner-zone",
+      "name": "Partner network",
+      "description": "",
+      "outOfScope": true,
+      "reasonOutOfScope": "Reviewed by the partner."
+    },
+    {
+      "kind": "actor",
+      "id": "el-client",
+      "name": "Customer\nbrowser",
+      "description": "Places orders.",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "process",
+      "id": "el-api",
+      "name": "Order API",
+      "description": "Accepts and validates orders.",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "store",
+      "id": "el-db",
+      "name": "Order database",
+      "description": "Persists orders.",
+      "outOfScope": true,
+      "reasonOutOfScope": "Run by the cloud provider."
+    },
+    {
+      "kind": "text",
+      "id": "el-note",
+      "name": "Retention note",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "text": "Orders are kept for seven years."
+    },
+    {
+      "kind": "text",
+      "id": "el-scope-note",
+      "name": "Scope note",
+      "description": "",
+      "outOfScope": true,
+      "reasonOutOfScope": "Kept by the provider.",
+      "text": "Backups are the provider's to review."
+    },
+    {
+      "kind": "flow",
+      "id": "el-request",
+      "name": "Submit order",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": { "kind": "attached", "element": "el-client" },
+      "target": { "kind": "attached", "element": "el-api" },
+      "bidirectional": true
+    },
+    {
+      "kind": "flow",
+      "id": "el-write",
+      "name": "Store order",
+      "description": "",
+      "outOfScope": true,
+      "reasonOutOfScope": "Carried on the provider's network.",
+      "source": { "kind": "attached", "element": "el-api" },
+      "target": { "kind": "attached", "element": "el-db" },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "el-probe",
+      "name": "Nightly backup probe",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": { "kind": "free" },
+      "target": { "kind": "attached", "element": "el-db" },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "el-replay",
+      "name": "Replayed submission",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": { "kind": "attached", "element": "el-request" },
+      "target": { "kind": "attached", "element": "el-db" },
+      "bidirectional": false
+    }
+  ],
   "diagrams": [
     {
       "id": "diagram-main",
       "title": "Main data flow",
-      "elements": [
+      "placements": [
         {
-          "kind": "trust-boundary",
-          "id": "el-zone",
-          "name": "Service perimeter",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-zone",
           "shape": {
             "kind": "box",
             "position": { "x": 0, "y": 0 },
@@ -24,12 +131,7 @@
           }
         },
         {
-          "kind": "trust-boundary",
-          "id": "el-edge-zone",
-          "name": "Edge zone",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-edge-zone",
           "shape": {
             "kind": "curve",
             "waypoints": [
@@ -40,12 +142,7 @@
           }
         },
         {
-          "kind": "trust-boundary",
-          "id": "el-partner-zone",
-          "name": "Partner network",
-          "description": "",
-          "outOfScope": true,
-          "reasonOutOfScope": "Reviewed by the partner.",
+          "element": "el-partner-zone",
           "shape": {
             "kind": "box",
             "position": { "x": 300, "y": 430 },
@@ -53,105 +150,44 @@
           }
         },
         {
-          "kind": "actor",
-          "id": "el-client",
-          "name": "Customer\nbrowser",
-          "description": "Places orders.",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-client",
           "position": { "x": 40, "y": 60 },
           "size": { "width": 160, "height": 80 }
         },
         {
-          "kind": "process",
-          "id": "el-api",
-          "name": "Order API",
-          "description": "Accepts and validates orders.",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-api",
           "position": { "x": 280, "y": 60 },
           "size": { "width": 120, "height": 120 }
         },
         {
-          "kind": "store",
-          "id": "el-db",
-          "name": "Order database",
-          "description": "Persists orders.",
-          "outOfScope": true,
-          "reasonOutOfScope": "Run by the cloud provider.",
+          "element": "el-db",
           "position": { "x": 460, "y": 60 },
           "size": { "width": 160, "height": 80 }
         },
         {
-          "kind": "text",
-          "id": "el-note",
-          "name": "Retention note",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-note",
           "position": { "x": 40, "y": 320 },
-          "size": { "width": 200, "height": 90 },
-          "text": "Orders are kept for seven years."
+          "size": { "width": 200, "height": 90 }
         },
         {
-          "kind": "text",
-          "id": "el-scope-note",
-          "name": "Scope note",
-          "description": "",
-          "outOfScope": true,
-          "reasonOutOfScope": "Kept by the provider.",
+          "element": "el-scope-note",
           "position": { "x": 43, "y": 433 },
-          "size": { "width": 194, "height": 74 },
-          "text": "Backups are the provider's to review."
+          "size": { "width": 194, "height": 74 }
         },
         {
-          "kind": "flow",
-          "id": "el-request",
-          "name": "Submit order",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": { "kind": "attached", "element": "el-client" },
-          "target": { "kind": "attached", "element": "el-api" },
+          "element": "el-request",
           "waypoints": [{ "x": 240, "y": 100 }],
-          "bidirectional": true
+          "source": {},
+          "target": {}
         },
+        { "element": "el-write", "waypoints": [], "source": {}, "target": {} },
         {
-          "kind": "flow",
-          "id": "el-write",
-          "name": "Store order",
-          "description": "",
-          "outOfScope": true,
-          "reasonOutOfScope": "Carried on the provider's network.",
-          "source": { "kind": "attached", "element": "el-api" },
-          "target": { "kind": "attached", "element": "el-db" },
+          "element": "el-probe",
           "waypoints": [],
-          "bidirectional": false
+          "source": { "position": { "x": 620, "y": 320 } },
+          "target": {}
         },
-        {
-          "kind": "flow",
-          "id": "el-probe",
-          "name": "Nightly backup probe",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": { "kind": "free", "position": { "x": 620, "y": 320 } },
-          "target": { "kind": "attached", "element": "el-db" },
-          "waypoints": [],
-          "bidirectional": false
-        },
-        {
-          "kind": "flow",
-          "id": "el-replay",
-          "name": "Replayed submission",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": { "kind": "attached", "element": "el-request" },
-          "target": { "kind": "attached", "element": "el-db" },
-          "waypoints": [],
-          "bidirectional": false
-        }
+        { "element": "el-replay", "waypoints": [], "source": {}, "target": {} }
       ]
     }
   ],

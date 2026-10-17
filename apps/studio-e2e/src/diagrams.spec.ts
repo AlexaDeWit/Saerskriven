@@ -24,6 +24,7 @@ import {
   twoDiagrams,
   withoutPickers,
 } from './studio.fixtures.js';
+import { drawnAt } from '@saerskriven/model/fixtures';
 
 const { first, second } = twoDiagrams;
 const firstTitle = first.title;
@@ -325,9 +326,10 @@ test('an edit lands on the diagram on screen, the saved file holds it there, and
 
   const model = await savedModel(page);
   const named = (id: string): readonly string[] =>
-    model.diagrams
-      .find((diagram) => diagram.id === id)
-      ?.elements.map((element) => element.name) ?? [];
+    drawnAt(
+      model,
+      model.diagrams.findIndex((diagram) => diagram.id === id),
+    ).map((element) => element.name);
   expect(named('fulfilment')).toContain('New actor');
   expect(named('storefront')).not.toContain('New actor');
 

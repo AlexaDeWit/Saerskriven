@@ -7,10 +7,10 @@ import {
   type NodeBox,
 } from '@saerskriven/canvas';
 import {
-  elementsAcross,
   threatHasReference,
   type Accent,
   type Decimals,
+  type DrawnElement,
   type Element,
   type ElementId,
   type Model,
@@ -20,6 +20,7 @@ import {
 import { Action } from '../store/actions.js';
 import {
   activeDiagramId,
+  drawnElementById,
   elementById,
   renameable,
   selectedElement,
@@ -51,7 +52,10 @@ type RemovalCascade = {
  * Places and selects one element, stored at the decimals a gesture made with
  * `input` keeps, then opens its inline editor.
  */
-export function placeElement(element: Element, input: GestureInput): boolean {
+export function placeElement(
+  element: DrawnElement,
+  input: GestureInput,
+): boolean {
   return placed(element, input, element.kind === 'text' ? 'note' : 'name');
 }
 
@@ -118,14 +122,17 @@ export function reverseSelectedFlow(): void {
 
 /** Turns the selected trust boundary from a box into a curve, or back, as one undo step. */
 export function toggleBoundaryShape(): void {
-  const boundary = selectedElementRecord(modelStore.getState());
-  if (boundary?.kind !== 'trust-boundary') {
+  const state = modelStore.getState();
+  const boundary = selectedElementRecord(state);
+  const diagramId = activeDiagramId(state);
+  if (boundary?.kind !== 'trust-boundary' || diagramId === undefined) {
     return;
   }
   const shape = switchedShape(boundary.shape);
   if (
     changedModel(
       Action.SetBoundaryShape({
+        diagramId,
         elementId: boundary.id,
         shape,
         decimals: commandDecimals,
@@ -148,11 +155,11 @@ export function toggleBoundaryShape(): void {
  * undefined, as one undo step.
  */
 export function accentSelected(accent: Accent | undefined): void {
-  const taking = selectedElementRecords(modelStore.getState()).map(
-    (element) => element.id,
-  );
-  if (taking.length > 0) {
-    dispatch(Action.SetAccent({ elementIds: taking, accent }));
+  const state = modelStore.getState();
+  const diagramId = activeDiagramId(state);
+  const taking = selectedElementRecords(state).map((element) => element.id);
+  if (diagramId !== undefined && taking.length > 0) {
+    dispatch(Action.SetAccent({ diagramId, elementIds: taking, accent }));
   }
 }
 
@@ -291,13 +298,16 @@ export function resizeNode(
   box: NodeBox,
   decimals: Decimals,
 ): void {
-  if (sameNodeBox(node, box)) {
+  const state = modelStore.getState();
+  const diagramId = activeDiagramId(state);
+  if (sameNodeBox(node, box) || diagramId === undefined) {
     return;
   }
-  const element = elementById(modelStore.getState(), node.id);
+  const element = drawnElementById(state, node.id);
   dispatch(
     element?.kind === 'trust-boundary' && element.shape.kind === 'curve'
       ? Action.SetBoundaryShape({
+          diagramId,
           elementId: element.id,
           shape: {
             kind: 'curve',
@@ -306,6 +316,7 @@ export function resizeNode(
           decimals,
         })
       : Action.ResizeElement({
+          diagramId,
           elementId: node.id,
           offset: {
             x: box.position.x - node.position.x,
@@ -374,7 +385,7 @@ export function focusElement(
 }
 
 function detachedFlows(model: Model, removed: ReadonlySet<ElementId>): number {
-  return elementsAcross(model.diagrams).filter(
+  return model.elements.filter(
     (element) =>
       element.kind === 'flow' &&
       !removed.has(element.id) &&
@@ -421,7 +432,7 @@ function added(action: Action, elementId: ElementId): void {
 }
 
 function placed(
-  element: Element,
+  element: DrawnElement,
   input: GestureInput,
   editor: 'name' | 'note',
 ): boolean {

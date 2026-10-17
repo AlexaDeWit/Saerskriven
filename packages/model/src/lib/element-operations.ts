@@ -1,16 +1,23 @@
 import { Either } from 'effect';
 import {
   diagramIndexOf,
+  elementsDrawnWith,
+  elementsOnDiagram,
   emptyNameFailure,
   flowEndpointFailure,
   invalidRelationships,
+  locatedDrawn,
   locatedElement,
   withDiagram,
   withElement,
+  withPlacement,
   withStoredName,
+  type UndrawnElementFailure,
   type UnknownElementFailure,
 } from './diagram-edits.js';
 import { storedPoint, storedSize, type Decimals } from './decimals.js';
+import { drawnElementOn, elementOf, placementOf } from './drawing.js';
+import type { DrawnElement } from './drawn-elements.js';
 import {
   anchorPoint,
   resized,
@@ -24,7 +31,6 @@ import {
 } from './element-properties.js';
 import {
   elementSchema,
-  type Accent,
   type Element,
   type ElementDetailsChange,
   type FlowEndpoint,
@@ -35,8 +41,8 @@ import { sameItems } from './lists.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 import { toParseIssues } from './parse-issue.js';
+import type { Accent, PlacedFlowEnd, Placement } from './placements.js';
 import { withoutId } from './records.js';
-import { elementIdsAcross, elementIdsIn, elementsById } from './references.js';
 import { restrictRelationships } from './relationships.js';
 import { firstRefusedCharacter } from './text.js';
 import { withCulledThreats } from './threat-operations.js';
@@ -57,14 +63,13 @@ export type AddElementFailure = Extract<
 /** The failure {@link removeElement} can produce. */
 export type RemoveElementFailure = UnknownElementFailure;
 
-/** The failure {@link moveElement} can produce. */
-export type MoveElementFailure = UnknownElementFailure;
+/** The failures {@link moveElement} can produce. */
+export type MoveElementFailure = UndrawnElementFailure;
 
 /** The failures {@link resizeElement} can produce. */
-export type ResizeElementFailure = Extract<
-  OperationFailure,
-  { _tag: 'UnknownElement' | 'NotResizable' }
->;
+export type ResizeElementFailure =
+  | UndrawnElementFailure
+  | Extract<OperationFailure, { _tag: 'NotResizable' }>;
 
 /** The failures {@link renameElement} can produce. */
 export type RenameElementFailure = Extract<
@@ -84,8 +89,8 @@ export type SetElementDetailsFailure = Extract<
   { _tag: 'UnknownElement' | 'RefusedCharacter' }
 >;
 
-/** The failure {@link setAccent} can produce. */
-export type SetAccentFailure = UnknownElementFailure;
+/** The failures {@link setAccent} can produce. */
+export type SetAccentFailure = UndrawnElementFailure;
 
 /** The failures {@link setElementProperties} can produce. */
 export type SetElementPropertiesFailure = Extract<
@@ -99,88 +104,115 @@ export type SetElementPropertiesFailure = Extract<
 >;
 
 /**
- * Requires an existing diagram, a new ID, a name that is more than white
- * space on every kind but a flow, flow ends `reconnectFlow` would accept, and
- * valid local boundary references. A flow named with white space alone is
- * stored unlabelled, as `''`. The element's whole geometry is stored at
- * `decimals`, and as given where no count is named.
+ * Adds `element` to the model and places it on the diagram `diagramId`
+ * names, with the geometry and accent it is drawn with. Requires an existing
+ * diagram, a new ID, a name that is more than white space on every kind but
+ * a flow, flow ends `reconnectFlow` would accept, and valid local boundary
+ * references. A flow named with white space alone is stored unlabelled, as
+ * `''`. The element's whole geometry is stored at `decimals`, and as given
+ * where no count is named.
  */
 export function addElement(
   model: Model,
   diagramId: DiagramId,
-  element: Element,
+  element: DrawnElement,
   decimals?: Decimals,
 ): Either.Either<Model, AddElementFailure> {
   return Either.flatMap(
     diagramIndexOf(model, diagramId),
     (diagramIndex): Either.Either<Model, AddElementFailure> => {
-      if (elementIdsAcross(model.diagrams).has(element.id)) {
+      if (model.elements.some(({ id }) => id === element.id)) {
         return Either.left(
           OperationFailure.DuplicateElementId({ elementId: element.id }),
         );
       }
-      const diagram = model.diagrams[diagramIndex];
+      const facts = elementOf(element);
+      const known = elementsOnDiagram(model, diagramIndex).set(facts.id, facts);
       const failure =
-        emptyNameFailure(element) ??
-        flowEndpointFailure(element, diagram) ??
-        invalidRelationships(
-          element,
-          elementsById([...diagram.elements, element]),
-        );
+        emptyNameFailure(facts) ??
+        flowEndpointFailure(model, facts, model.diagrams[diagramIndex]) ??
+        invalidRelationships(facts, known);
       if (failure !== undefined) {
         return Either.left(failure);
       }
+      const stored = withStoredName(storedElement(element, decimals));
       return Either.right(
-        withDiagram(model, diagramIndex, (held) => ({
-          ...held,
-          elements: [
-            ...held.elements,
-            withStoredName(storedElement(element, decimals)),
-          ],
-        })),
+        withDiagram(
+          { ...model, elements: [...model.elements, elementOf(stored)] },
+          diagramIndex,
+          (held) => ({
+            ...held,
+            placements: [...held.placements, placementOf(stored)],
+          }),
+        ),
       );
     },
   );
 }
 
 /**
- * Removes an element and its threat and boundary references. A threat the
- * element was the last reference of goes with it, carrying the cascade
- * {@link removeThreat} does, and one that applies to the model stays.
- * Attached flows keep their identity and acquire free endpoints at the
- * removed element's anchor, stored at `decimals`.
+ * Removes an element from the model and from every diagram, and its threat
+ * and boundary references. A threat the element was the last reference of
+ * goes with it, carrying the cascade {@link removeThreat} does, and one that
+ * applies to the model stays. Attached flows keep their identity and acquire
+ * free endpoints, on each diagram at the removed element's anchor there,
+ * stored at `decimals`.
  */
 export function removeElement(
   model: Model,
   elementId: ElementId,
   decimals?: Decimals,
 ): Either.Either<Model, RemoveElementFailure> {
-  return Either.map(locatedElement(model, elementId), (located) => {
-    const freed: FlowEndpoint = {
-      kind: 'free',
-      position: storedPoint(anchorPoint(located.element), decimals),
-    };
-    const detached = (endpoint: FlowEndpoint): FlowEndpoint =>
-      endpoint.kind === 'attached' && endpoint.element === elementId
-        ? freed
-        : endpoint;
-    const retained = elementIdsIn(model.diagrams[located.diagramIndex]);
+  return Either.map(locatedElement(model, elementId), () => {
+    const anchors = new Map(
+      model.diagrams.flatMap((diagram) => {
+        const drawn = drawnElementOn(model, diagram, elementId);
+        return drawn === undefined
+          ? []
+          : [[diagram.id, storedPoint(anchorPoint(drawn), decimals)] as const];
+      }),
+    );
+    const freed = new Map(
+      model.elements.flatMap((element) =>
+        element.kind === 'flow'
+          ? [
+              [
+                element.id,
+                freedSides(element.source, element.target, elementId),
+              ] as const,
+            ]
+          : [],
+      ),
+    );
+    const retained = new Set<string>(model.elements.map(({ id }) => id));
     retained.delete(elementId);
-    const trimmed = withDiagram(model, located.diagramIndex, (diagram) => ({
-      ...diagram,
-      elements: diagram.elements
+    const trimmed: Model = {
+      ...model,
+      elements: model.elements
         .filter((element) => element.id !== elementId)
         .map((element) => restrictRelationships(element, retained))
         .map((element) =>
           element.kind === 'flow'
             ? {
                 ...element,
-                source: detached(element.source),
-                target: detached(element.target),
+                source: detached(element.source, elementId),
+                target: detached(element.target, elementId),
               }
             : element,
         ),
-    }));
+      diagrams: model.diagrams.map((diagram) => ({
+        ...diagram,
+        placements: diagram.placements
+          .filter((placement) => placement.element !== elementId)
+          .map((placement) =>
+            freedPlacement(
+              placement,
+              freed.get(placement.element) ?? [],
+              anchors.get(diagram.id),
+            ),
+          ),
+      })),
+    };
     return withCulledThreats(trimmed, (threat) => ({
       ...threat,
       elements: withoutId(threat.elements, elementId),
@@ -189,49 +221,56 @@ export function removeElement(
 }
 
 /**
- * Translates positions, waypoints, and free endpoints. Attached endpoints keep
- * following their elements. Each point the move writes is stored at
- * `decimals`, so a move by a whole offset from 123.63636363636364 at one
- * decimal lands on a number of one decimal, and a size is left as stored. A
- * move that would store every number as it already is returns the same model.
+ * Translates the element's geometry on the diagram `diagramId` names:
+ * positions, waypoints, and free endpoints. Attached endpoints keep following
+ * their elements. Each point the move writes is stored at `decimals`, so a
+ * move by a whole offset from 123.63636363636364 at one decimal lands on a
+ * number of one decimal, and a size is left as stored. A move that would
+ * store every number as it already is returns the same model.
  */
 export function moveElement(
   model: Model,
+  diagramId: DiagramId,
   elementId: ElementId,
   offset: Point,
   decimals?: Decimals,
 ): Either.Either<Model, MoveElementFailure> {
-  return Either.map(locatedElement(model, elementId), (located) => {
-    const moved = translatedElement(located.element, offset, decimals);
-    return sameGeometry(located.element, moved)
-      ? model
-      : withElement(model, located.diagramIndex, moved);
-  });
+  return Either.map(
+    locatedDrawn(model, diagramId, elementId),
+    ({ diagramIndex, drawn }) => {
+      const moved = translatedElement(drawn, offset, decimals);
+      return sameGeometry(drawn, moved)
+        ? model
+        : withPlacement(model, diagramIndex, placementOf(moved));
+    },
+  );
 }
 
 /**
- * Resizes an element that carries an extent. The caller supplies a
- * schema-valid size, which is stored at `decimals` and is schema-valid there
- * too. The position is left as stored. A resize that would store the size the
- * element already has returns the same model.
+ * Resizes an element that carries an extent on the diagram `diagramId`
+ * names. The caller supplies a schema-valid size, which is stored at
+ * `decimals` and is schema-valid there too. The position is left as stored.
+ * A resize that would store the size the element already has returns the
+ * same model.
  */
 export function resizeElement(
   model: Model,
+  diagramId: DiagramId,
   elementId: ElementId,
   size: Size,
   decimals?: Decimals,
 ): Either.Either<Model, ResizeElementFailure> {
   return Either.flatMap(
-    locatedElement(model, elementId),
-    (located): Either.Either<Model, ResizeElementFailure> => {
-      const next = resized(located.element, storedSize(size, decimals));
+    locatedDrawn(model, diagramId, elementId),
+    ({ diagramIndex, drawn }): Either.Either<Model, ResizeElementFailure> => {
+      const next = resized(drawn, storedSize(size, decimals));
       if (next === undefined) {
         return Either.left(OperationFailure.NotResizable({ elementId }));
       }
       return Either.right(
-        sameGeometry(located.element, next)
+        sameGeometry(drawn, next)
           ? model
-          : withElement(model, located.diagramIndex, next),
+          : withPlacement(model, diagramIndex, placementOf(next)),
       );
     },
   );
@@ -260,7 +299,7 @@ export function renameElement(
       return Either.right(
         renamed.name === located.element.name
           ? model
-          : withElement(model, located.diagramIndex, renamed),
+          : withElement(model, renamed),
       );
     },
   );
@@ -281,7 +320,7 @@ export function editNote(
       const refusal = refusedCharacter(elementId, text);
       return refusal === undefined
         ? Either.right(
-            withElement(model, located.diagramIndex, {
+            withElement(model, {
               ...located.element,
               text,
             }),
@@ -324,20 +363,22 @@ export function setElementDetails(
           next.outOfScope === held.outOfScope &&
           next.reasonOutOfScope === held.reasonOutOfScope
           ? model
-          : withElement(model, located.diagramIndex, next),
+          : withElement(model, next),
       );
     },
   );
 }
 
 /**
- * Gives every element `elementIds` names the accent `accent`, or clears
- * theirs where it is undefined, in one model. An id naming no element
- * refuses the whole edit. Where every element named already holds `accent`,
- * the same model comes back.
+ * Gives every element `elementIds` names the accent `accent` on the diagram
+ * `diagramId` names, or clears theirs there where it is undefined, in one
+ * model. An id naming no element the diagram draws refuses the whole edit.
+ * Where every element named already holds `accent` there, the same model
+ * comes back.
  */
 export function setAccent(
   model: Model,
+  diagramId: DiagramId,
   elementIds: readonly ElementId[],
   accent: Accent | undefined,
 ): Either.Either<Model, SetAccentFailure> {
@@ -346,7 +387,7 @@ export function setAccent(
   >(
     (outcome, elementId) =>
       Either.flatMap(outcome, (current) =>
-        withAccentOn(current, elementId, accent),
+        withAccentOn(current, diagramId, elementId, accent),
       ),
     Either.right(model),
   );
@@ -400,10 +441,10 @@ export function setElementProperties(
       }
       const failure = invalidRelationships(
         next.data,
-        elementsById(model.diagrams[located.diagramIndex].elements),
+        elementsDrawnWith(model, elementId),
       );
       return failure === undefined
-        ? Either.right(withElement(model, located.diagramIndex, next.data))
+        ? Either.right(withElement(model, next.data))
         : Either.left(failure);
     },
   );
@@ -411,25 +452,72 @@ export function setElementProperties(
 
 function withAccentOn(
   model: Model,
+  diagramId: DiagramId,
   elementId: ElementId,
   accent: Accent | undefined,
 ): Either.Either<Model, SetAccentFailure> {
   return Either.map(
-    locatedElement(model, elementId),
-    ({ diagramIndex, element }) =>
-      element.accent === accent
+    locatedDrawn(model, diagramId, elementId),
+    ({ diagramIndex, drawn }) =>
+      drawn.accent === accent
         ? model
-        : withElement(model, diagramIndex, accented(element, accent)),
+        : withPlacement(
+            model,
+            diagramIndex,
+            accented(placementOf(drawn), accent),
+          ),
   );
 }
 
-function accented(element: Element, accent: Accent | undefined): Element {
+function accented(placement: Placement, accent: Accent | undefined): Placement {
   if (accent !== undefined) {
-    return { ...element, accent };
+    return { ...placement, accent };
   }
-  const cleared = { ...element };
+  const cleared = { ...placement };
   delete cleared.accent;
   return cleared;
+}
+
+function detached(endpoint: FlowEndpoint, elementId: ElementId): FlowEndpoint {
+  return endpoint.kind === 'attached' && endpoint.element === elementId
+    ? { kind: 'free' }
+    : endpoint;
+}
+
+type FlowSide = 'source' | 'target';
+
+function freedSides(
+  source: FlowEndpoint,
+  target: FlowEndpoint,
+  elementId: ElementId,
+): FlowSide[] {
+  return [
+    ...(detached(source, elementId) === source ? [] : ['source' as const]),
+    ...(detached(target, elementId) === target ? [] : ['target' as const]),
+  ];
+}
+
+function freedPlacement(
+  placement: Placement,
+  sides: readonly FlowSide[],
+  anchor: Point | undefined,
+): Placement {
+  if (sides.length === 0 || !('waypoints' in placement)) {
+    return placement;
+  }
+  const freed = (end: PlacedFlowEnd): PlacedFlowEnd => {
+    const position = anchor ?? end.position;
+    return position === undefined ? end : { position };
+  };
+  return {
+    ...placement,
+    source: sides.includes('source')
+      ? freed(placement.source)
+      : placement.source,
+    target: sides.includes('target')
+      ? freed(placement.target)
+      : placement.target,
+  };
 }
 
 function refusedCharacter(

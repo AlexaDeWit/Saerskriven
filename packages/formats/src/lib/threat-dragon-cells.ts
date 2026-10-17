@@ -1,19 +1,19 @@
 import {
   storedPoint,
-  type Actor,
+  type DrawnActor,
   type BoxBoundaryShape,
   type CurveBoundaryShape,
-  type Element,
+  type DrawnElement,
   type ElementId,
-  type Flow,
-  type FlowEndpoint,
+  type DrawnFlow,
+  type DrawnFlowEndpoint,
   type Point,
-  type Process,
+  type DrawnProcess,
   type Side,
   type Size,
-  type Store,
-  type TextElement,
-  type TrustBoundary,
+  type DrawnStore,
+  type DrawnText,
+  type DrawnTrustBoundary,
 } from '@saerskriven/model';
 import type {
   ThreatDragonCell,
@@ -61,7 +61,7 @@ export type MergedCell = {
  * same shape. A source cell of another shape is discarded and reported.
  */
 export function mergeCell(
-  element: Element,
+  element: DrawnElement,
   held: ThreatDragonCell | undefined,
   threats: readonly ThreatDragonThreat[],
   index: number,
@@ -136,7 +136,7 @@ const leastWrittenExtent = 10;
 const openStatus = fromThreatStatus('open');
 
 function actorCell(
-  element: Actor,
+  element: DrawnActor,
   held: ThreatDragonCell | undefined,
   threats: readonly ThreatDragonThreat[],
   index: number,
@@ -163,7 +163,7 @@ function actorCell(
 }
 
 function processCell(
-  element: Process,
+  element: DrawnProcess,
   held: ThreatDragonCell | undefined,
   threats: readonly ThreatDragonThreat[],
   index: number,
@@ -193,7 +193,7 @@ function processCell(
 }
 
 function storeCell(
-  element: Store,
+  element: DrawnStore,
   held: ThreatDragonCell | undefined,
   threats: readonly ThreatDragonThreat[],
   index: number,
@@ -224,7 +224,7 @@ function storeCell(
 }
 
 function flowCell(
-  element: Flow,
+  element: DrawnFlow,
   held: ThreatDragonCell | undefined,
   threats: readonly ThreatDragonThreat[],
   index: number,
@@ -262,7 +262,7 @@ function flowCell(
 }
 
 function textCell(
-  element: TextElement,
+  element: DrawnText,
   held: ThreatDragonCell | undefined,
   index: number,
 ): MergedCell {
@@ -295,7 +295,7 @@ function textCell(
 }
 
 function boxBoundary(
-  element: TrustBoundary,
+  element: DrawnTrustBoundary,
   shape: BoxBoundaryShape,
   held: ThreatDragonCell | undefined,
   index: number,
@@ -325,7 +325,7 @@ function boxBoundary(
 }
 
 function curveBoundary(
-  element: TrustBoundary,
+  element: DrawnTrustBoundary,
   shape: CurveBoundaryShape,
   held: ThreatDragonCell | undefined,
   index: number,
@@ -379,7 +379,7 @@ function zIndexOf(
 }
 
 function nodeParts(
-  element: Actor | Process | Store,
+  element: DrawnActor | DrawnProcess | DrawnStore,
   from: ThreatDragonNode | undefined,
   index: number,
 ): { id: ElementId; zIndex: number; position: Point; size: Size } {
@@ -399,7 +399,7 @@ function writtenSize(size: Size): Size {
 }
 
 function elementData(
-  element: Actor | Process | Store | Flow,
+  element: DrawnActor | DrawnProcess | DrawnStore | DrawnFlow,
   from: ThreatDragonElementData | undefined,
   threats: readonly ThreatDragonThreat[],
 ): ThreatDragonElementData {
@@ -419,7 +419,7 @@ function elementData(
 }
 
 function boundaryData(
-  element: TrustBoundary,
+  element: DrawnTrustBoundary,
   from: ThreatDragonBoundary | undefined,
 ): Omit<ThreatDragonBoundary['data'], 'type'> {
   const shown = from?.data.name ?? from?.attrs?.label?.text ?? '';
@@ -435,7 +435,7 @@ function boundaryData(
 
 function preservedEndpoint(
   from: ThreatDragonEndpoint | undefined,
-  wanted: FlowEndpoint,
+  wanted: DrawnFlowEndpoint,
   ports: PortSides,
 ): ProjectedEndpoint {
   if (wanted.kind === 'free') {
@@ -464,7 +464,7 @@ function preservedEndpoint(
     : { endpoint: { cell: wanted.element, port }, ports: noPorts };
 }
 
-function unlabelled(element: TextElement): readonly Divergence[] {
+function unlabelled(element: DrawnText): readonly Divergence[] {
   return element.name === ''
     ? []
     : [
@@ -479,7 +479,9 @@ function unlabelled(element: TextElement): readonly Divergence[] {
       ];
 }
 
-function unscoped(element: TextElement | TrustBoundary): readonly Divergence[] {
+function unscoped(
+  element: DrawnText | DrawnTrustBoundary,
+): readonly Divergence[] {
   return element.outOfScope || element.reasonOutOfScope !== ''
     ? [
         {
@@ -492,7 +494,7 @@ function unscoped(element: TextElement | TrustBoundary): readonly Divergence[] {
 }
 
 function raised(
-  element: Element,
+  element: DrawnElement,
   size: Size,
   from: { readonly size: Size } | undefined,
 ): readonly Divergence[] {
@@ -520,7 +522,7 @@ function raised(
 }
 
 function reshaped(
-  element: Element,
+  element: DrawnElement,
   held: ThreatDragonCell | undefined,
   from: ThreatDragonCell | undefined,
 ): readonly Divergence[] {

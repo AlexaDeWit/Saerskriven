@@ -1,6 +1,10 @@
 import { readLimits, saerskrivenYamlCodec } from '@saerskriven/formats';
-import { emptyModel, type Threat } from '@saerskriven/model';
-import { elementId, parsedFixture } from '@saerskriven/model/fixtures';
+import {
+  emptyModel,
+  type MitigationInput,
+  type Threat,
+} from '@saerskriven/model';
+import { drawnAt, elementId, parsedFixture } from '@saerskriven/model/fixtures';
 import { waitFor } from '@testing-library/react';
 import { Either } from 'effect';
 import { recordingSurface } from '../commands/commands.fixtures.js';
@@ -13,6 +17,7 @@ import {
   actorElement,
   firstMitigation,
   firstThreat,
+  mainDiagram,
   processElement,
   recordedModel,
   sampleModel,
@@ -47,7 +52,7 @@ vi.mock('@saerskriven/model', async (importOriginal) => {
   };
 });
 
-const canvasElements = canvasModel.diagrams[0].elements.length;
+const canvasElements = drawnAt(canvasModel).length;
 
 const marker = '# Saerskriven selection v1\n';
 
@@ -212,7 +217,7 @@ describe('copySelected', () => {
     expect(copy.assumptions[0].threats).toEqual([firstThreat]);
     const fromThreatDragon = currentAnnouncement().message;
     expect(numbersIn(fromThreatDragon)).toEqual([
-      copy.diagrams[0].elements.length,
+      drawnAt(copy).length,
       copy.threats.length,
       4,
     ]);
@@ -282,13 +287,14 @@ describe('pasteSelected', () => {
     dispatch(Action.Select({ elementIds: [requestFlow] }));
     await copySelected();
     expect(
-      Either.getOrThrow(saerskrivenYamlCodec.read(clipboard.text())).model
-        .diagrams[0].elements,
+      drawnAt(
+        Either.getOrThrow(saerskrivenYamlCodec.read(clipboard.text())).model,
+      ),
     ).toHaveLength(3);
     await pasteSelected();
     await pasteSelected();
     const after = modelStore.getState();
-    const elements = after.present.diagrams[0].elements;
+    const elements = drawnAt(after.present);
     expect(elements).toHaveLength(canvasElements + 6);
     expect(new Set(elements.map((element) => element.id)).size).toBe(
       canvasElements + 6,
@@ -303,16 +309,20 @@ describe('pasteSelected', () => {
 
   it('keeps the accent of an element through a copy and a paste, and through a duplicate', async () => {
     recordingClipboard();
-    dispatch(Action.SetAccent({ elementIds: [actorElement], accent: 's3' }));
+    dispatch(
+      Action.SetAccent({
+        diagramId: mainDiagram,
+        elementIds: [actorElement],
+        accent: 's3',
+      }),
+    );
     await copySelected();
     await pasteSelected();
     duplicateSelected();
     expect(
-      modelStore
-        .getState()
-        .present.diagrams[0].elements.filter(
-          (element) => 'accent' in element && element.accent === 's3',
-        ),
+      drawnAt(modelStore.getState().present).filter(
+        (element) => 'accent' in element && element.accent === 's3',
+      ),
     ).toHaveLength(3);
   });
 
@@ -326,9 +336,9 @@ describe('pasteSelected', () => {
     dispatch(Action.SelectDiagram({ diagramId: secondDiagram }));
     await pasteSelected();
     const after = modelStore.getState().present;
-    expect(after.diagrams[0].elements).toHaveLength(3);
-    expect(after.diagrams[1].elements).toHaveLength(2);
-    expect(after.diagrams[1].elements.map((element) => element.name)).toContain(
+    expect(drawnAt(after)).toHaveLength(3);
+    expect(drawnAt(after, 1)).toHaveLength(2);
+    expect(drawnAt(after, 1).map((element) => element.name)).toContain(
       'Reader',
     );
   });
@@ -349,6 +359,7 @@ describe('pasteSelected', () => {
     const pending = pasteSelected();
     dispatch(
       Action.MoveElement({
+        diagramId: mainDiagram,
         elementId: actorElement,
         offset: { x: 1, y: 0 },
         decimals: undefined,
@@ -385,7 +396,7 @@ describe('pasteSelected', () => {
     clipboard.readText.mockResolvedValueOnce(version1Selection);
     await pasteSelected();
     const after = modelStore.getState().present;
-    expect(after.diagrams[0].elements).toHaveLength(canvasElements + 1);
+    expect(drawnAt(after)).toHaveLength(canvasElements + 1);
     const pasted = after.threats.at(-1);
     expect(after.mitigations.at(-1)).toMatchObject({
       prose: 'Callers sign in.',
@@ -509,7 +520,7 @@ describe('pasteSelected', () => {
     await pasteSelected();
 
     const restored = modelStore.getState().present;
-    expect(restored.diagrams[0].elements).toHaveLength(canvasElements);
+    expect(drawnAt(restored)).toHaveLength(canvasElements);
     const pasted = restored.threats.at(-1);
     expect(pasted?.id).not.toBe(firstThreat);
     expect(pasted?.number).toBe(sampleThreat.number);
@@ -549,7 +560,7 @@ describe('pasteSelected', () => {
     expect(heldFirstThreat()).toMatchObject({
       number: sampleThreat.number,
       appliesToModel: true,
-      elements: [pasted.diagrams[0].elements.at(-1)?.id],
+      elements: [drawnAt(pasted).at(-1)?.id],
     });
     expect(currentAnnouncement().message).toContain(
       t('canvas.threats-attached', { attached: 1 }),
@@ -606,8 +617,8 @@ describe('duplicateSelected', () => {
     duplicateSelected();
     const after = modelStore.getState();
     expect(after.past).toEqual([canvasModel]);
-    expect(after.present.diagrams[0].elements).toHaveLength(canvasElements + 1);
-    const copy = after.present.diagrams[0].elements.at(-1);
+    expect(drawnAt(after.present)).toHaveLength(canvasElements + 1);
+    const copy = drawnAt(after.present).at(-1);
     expect(copy?.id).not.toBe(actorElement);
     expect(after.present.threats.at(-1)?.elements).toEqual([copy?.id]);
     expect(after.present.threats.at(-1)?.id).not.toBe(firstThreat);
@@ -622,6 +633,7 @@ describe('duplicateSelected', () => {
   it('stores the copy it offsets at three decimals', () => {
     dispatch(
       Action.MoveElement({
+        diagramId: mainDiagram,
         elementId: actorElement,
         offset: { x: 0.123456, y: 5.1 },
         decimals: undefined,
@@ -630,9 +642,9 @@ describe('duplicateSelected', () => {
 
     duplicateSelected();
 
-    expect(
-      modelStore.getState().present.diagrams[0].elements.at(-1),
-    ).toMatchObject({ position: { x: 25.123, y: 30.1 } });
+    expect(drawnAt(modelStore.getState().present).at(-1)).toMatchObject({
+      position: { x: 25.123, y: 30.1 },
+    });
   });
 
   it('counts no excluded link for a threat the duplicate is attached to, for its records, or for a record it shares with a copied threat, where a copy of the same selection counts each', async () => {
@@ -698,7 +710,7 @@ describe('duplicateSelected', () => {
       elements: [
         actorElement,
         storeElement,
-        modelStore.getState().present.diagrams[0].elements.at(-1)?.id,
+        drawnAt(modelStore.getState().present).at(-1)?.id,
       ],
     });
   });
@@ -755,7 +767,7 @@ describe('the clipboard refusals', () => {
   it('words every paste refusal apart', async () => {
     const clipboard = recordingClipboard();
     const text = marker + saerskrivenYamlCodec.write(canvasModel).output;
-    const heldMitigation = {
+    const heldMitigation: MitigationInput = {
       id: 'pinned:mitigation-held',
       title: 'Held',
       prose: 'Held by the target.',
@@ -787,6 +799,7 @@ describe('the clipboard refusals', () => {
         const pending = pasteSelected();
         dispatch(
           Action.MoveElement({
+            diagramId: mainDiagram,
             elementId: actorElement,
             offset: { x: 1, y: 0 },
             decimals: undefined,
@@ -826,7 +839,7 @@ describe('registered reuse commands', () => {
     });
     runCommand(commandById('cut'), surface);
     await waitFor(() => {
-      expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(
+      expect(drawnAt(modelStore.getState().present)).toHaveLength(
         canvasElements - 1,
       );
     });
@@ -837,12 +850,12 @@ describe('registered reuse commands', () => {
     dispatch(Action.Undo());
     runCommand(commandById('paste'), surface);
     await waitFor(() => {
-      expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(
+      expect(drawnAt(modelStore.getState().present)).toHaveLength(
         canvasElements + 1,
       );
     });
     runCommand(commandById('duplicate'), surface);
-    expect(modelStore.getState().present.diagrams[0].elements).toHaveLength(
+    expect(drawnAt(modelStore.getState().present)).toHaveLength(
       canvasElements + 2,
     );
     expect(modelStore.getState().past).toHaveLength(2);

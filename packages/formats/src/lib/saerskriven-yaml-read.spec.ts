@@ -1,3 +1,4 @@
+import { drawnAt } from '@saerskriven/model/fixtures';
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
 import { parse } from 'yaml';
@@ -157,9 +158,7 @@ function modelOfDocumentIn(text: string) {
 }
 
 function accentsOf(text: string) {
-  return readingOf(text)?.model.diagrams[0]?.elements.map(
-    (element) => element.accent,
-  );
+  return drawnAt(readingOf(text)?.model).map((element) => element.accent);
 }
 
 function linksOf(text: string) {
@@ -247,7 +246,7 @@ describe('a Saerskriven YAML read', () => {
 
   it('reads a flow written before it had a direction or a pinned side, and one that has both', () => {
     const flowOf = (text: string) =>
-      readingOf(text)?.model.diagrams[0]?.elements.find(
+      drawnAt(readingOf(text)?.model).find(
         (element) => element.kind === 'flow',
       );
     expect(readingOf(oneFlowDocument)?.divergences).toEqual([]);
@@ -377,9 +376,7 @@ describe('an element that states an accent', () => {
     'reads the key "$unknown" on $on as no accent and reports it as narrowed, naming the element and the key',
     ({ unknown, text, at, id }) => {
       const reading = readingOf(text);
-      expect(reading?.model.diagrams[0]?.elements[at]).not.toHaveProperty(
-        'accent',
-      );
+      expect(drawnAt(reading?.model)[at]).not.toHaveProperty('accent');
       expect(reading?.divergences).toEqual([
         {
           subject: { kind: 'element', id },
@@ -399,9 +396,7 @@ describe('an element that states an accent', () => {
 
   it('is dropped as undeclared in a version 1 file, which does not declare the key', () => {
     const versionOne = readingOf(accentOn(oneFlowDocument, 'Ledger', 's4'));
-    expect(versionOne?.model.diagrams[0]?.elements[1]).not.toHaveProperty(
-      'accent',
-    );
+    expect(drawnAt(versionOne?.model)[1]).not.toHaveProperty('accent');
     expect(versionOne?.divergences).toEqual([
       {
         subject: { kind: 'model' },
@@ -523,7 +518,7 @@ describe('a Saerskriven YAML document mapped without its text', () => {
 
   it('defaults a key the document was written before the format declared', () => {
     expect(
-      modelOfDocumentIn(oneFlowDocument)?.diagrams[0]?.elements.find(
+      drawnAt(modelOfDocumentIn(oneFlowDocument)).find(
         (element) => element.kind === 'flow',
       ),
     ).toMatchObject({ bidirectional: false });

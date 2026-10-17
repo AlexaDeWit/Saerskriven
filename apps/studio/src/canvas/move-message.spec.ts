@@ -3,7 +3,7 @@ import { studioCatalogues, studioMessages } from '../messages/catalogues.js';
 import { Action } from '../store/actions.js';
 import { reduce } from '../store/reducer.js';
 import { initialState } from '../store/state.js';
-import { actorElement } from '../store/store.fixtures.js';
+import { actorElement, mainDiagram } from '../store/store.fixtures.js';
 import { canvasModel } from './canvas.fixtures.js';
 import {
   coordinateText,
@@ -47,6 +47,7 @@ describe('movedSelectionMessage', () => {
     const moved = reduce(
       selected,
       Action.MoveElement({
+        diagramId: mainDiagram,
         elementId: actorElement,
         offset: { x: 28.5, y: 0 },
         decimals: undefined,

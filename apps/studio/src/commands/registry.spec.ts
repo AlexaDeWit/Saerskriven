@@ -1,3 +1,4 @@
+import { drawnAt } from '@saerskriven/model/fixtures';
 import { initialState, placeholderModel } from '../store/state.js';
 import {
   actorElement,
@@ -308,7 +309,7 @@ describe('runCommand', () => {
     runCommand(commandById('select-all'), recording.surface);
 
     expect(modelStore.getState().selection).toEqual(
-      placeholderModel.diagrams[0].elements.map((element) => element.id),
+      drawnAt(placeholderModel).map((element) => element.id),
     );
     expect(modelStore.getState().past).toEqual([]);
     expect(recording.asked).toEqual([]);

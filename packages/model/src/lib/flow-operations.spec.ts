@@ -9,7 +9,7 @@ import {
   validModel,
 } from '../fixtures.js';
 import { addElement } from './element-operations.js';
-import { elementSchema } from './elements.js';
+import { drawnElementSchema } from './drawn-elements.js';
 import {
   reconnectFlow,
   reverseFlow,
@@ -23,6 +23,7 @@ import {
   flowInput,
   mainDiagram,
   modelOf,
+  noisyDiagram,
   noisyFlow,
   noisyModel,
   note,
@@ -42,7 +43,9 @@ describe('setFlowWaypoints', () => {
       { x: -10.5, y: 30 },
       { x: 400, y: 100 },
     ];
-    const next = modelOf(setFlowWaypoints(before, writeFlow.id, waypoints));
+    const next = modelOf(
+      setFlowWaypoints(before, mainDiagram, writeFlow.id, waypoints),
+    );
     expect(flowIn(next, writeFlow.id)).toEqual({ ...writeFlow, waypoints });
     expect(before).toEqual(snapshot);
     expect(next.threats).toBe(before.threats);
@@ -52,14 +55,17 @@ describe('setFlowWaypoints', () => {
       modelOf(
         setFlowWaypoints(
           next,
+          mainDiagram,
           writeFlow.id,
           flowIn(next, writeFlow.id).waypoints,
         ),
       ),
     ).toBe(next);
     expect(
-      flowIn(modelOf(setFlowWaypoints(next, writeFlow.id, [])), writeFlow.id)
-        .waypoints,
+      flowIn(
+        modelOf(setFlowWaypoints(next, mainDiagram, writeFlow.id, [])),
+        writeFlow.id,
+      ).waypoints,
     ).toEqual([]);
   });
   it.each([
@@ -90,6 +96,7 @@ describe('setFlowWaypoints', () => {
       const next = modelOf(
         setFlowWaypoints(
           noisyModel,
+          noisyDiagram,
           noisyFlow,
           [
             { x: 250.123456, y: 99.98765 },
@@ -100,7 +107,7 @@ describe('setFlowWaypoints', () => {
       );
 
       expect(flowIn(next, noisyFlow).waypoints).toEqual(waypoints);
-      expect(flowIn(next, noisyFlow).target).toBe(
+      expect(flowIn(next, noisyFlow).target).toEqual(
         flowIn(noisyModel, noisyFlow).target,
       );
     },
@@ -109,29 +116,43 @@ describe('setFlowWaypoints', () => {
   it('keeps the model for the route the flow has, as given or as the decimals named would store it', () => {
     const held = flowIn(noisyModel, noisyFlow).waypoints;
     const rounded = modelOf(
-      setFlowWaypoints(noisyModel, noisyFlow, [{ x: 250.14, y: 99.96 }], 1),
+      setFlowWaypoints(
+        noisyModel,
+        noisyDiagram,
+        noisyFlow,
+        [{ x: 250.14, y: 99.96 }],
+        1,
+      ),
     );
 
-    expect(modelOf(setFlowWaypoints(noisyModel, noisyFlow, held, 1))).toBe(
-      noisyModel,
-    );
+    expect(
+      modelOf(setFlowWaypoints(noisyModel, noisyDiagram, noisyFlow, held, 1)),
+    ).toBe(noisyModel);
     expect(flowIn(rounded, noisyFlow).waypoints).toEqual([
       { x: 250.1, y: 100 },
     ]);
     expect(
       modelOf(
-        setFlowWaypoints(rounded, noisyFlow, [{ x: 250.13, y: 100.04 }], 1),
+        setFlowWaypoints(
+          rounded,
+          noisyDiagram,
+          noisyFlow,
+          [{ x: 250.13, y: 100.04 }],
+          1,
+        ),
       ),
     ).toBe(rounded);
   });
 
   it('refuses missing elements and other element kinds', () => {
-    expect(errorOf(setFlowWaypoints(before, elementId('missing'), []))).toEqual(
+    expect(
+      errorOf(setFlowWaypoints(before, mainDiagram, elementId('missing'), [])),
+    ).toEqual(
       OperationFailure.UnknownElement({ elementId: elementId('missing') }),
     );
-    expect(errorOf(setFlowWaypoints(withNote, note.id, []))).toEqual(
-      OperationFailure.NotFlowElement({ elementId: note.id }),
-    );
+    expect(
+      errorOf(setFlowWaypoints(withNote, mainDiagram, note.id, [])),
+    ).toEqual(OperationFailure.NotFlowElement({ elementId: note.id }));
   });
 });
 
@@ -140,16 +161,22 @@ describe('reconnectFlow', () => {
     const id = elementId('element-order-flow');
     const before = flowIn(validModel, id);
     const after = modelOf(
-      reconnectFlow(validModel, id, 'target', elementId('element-db')),
+      reconnectFlow(
+        validModel,
+        mainDiagram,
+        id,
+        'target',
+        elementId('element-db'),
+      ),
     );
     expect(flowIn(after, id)).toEqual({
       ...before,
       target: { kind: 'attached', element: elementId('element-db') },
     });
     expect(after.threats).toBe(validModel.threats);
-    expect(reconnectFlow(after, id, 'target', elementId('element-db'))).toEqual(
-      Either.right(after),
-    );
+    expect(
+      reconnectFlow(after, mainDiagram, id, 'target', elementId('element-db')),
+    ).toEqual(Either.right(after));
   });
 
   it.each([
@@ -162,7 +189,13 @@ describe('reconnectFlow', () => {
     (id, side, reference, tag) => {
       expect(
         errorOf(
-          reconnectFlow(validModel, elementId(id), side, elementId(reference)),
+          reconnectFlow(
+            validModel,
+            mainDiagram,
+            elementId(id),
+            side,
+            elementId(reference),
+          ),
         )?._tag,
       ).toBe(tag);
     },
@@ -171,19 +204,25 @@ describe('reconnectFlow', () => {
   it('takes a target exactly where addElement takes a new flow ending there', () => {
     const drawn = modelOf(addElement(withNote, mainDiagram, writeFlow));
     const ends = [
-      ...drawn.diagrams[0].elements.map(({ id }) => id),
+      ...drawn.diagrams[0].placements.map(({ element }) => element),
       elementId('missing'),
     ];
     const reconnects = (end: string) =>
       Either.isRight(
-        reconnectFlow(drawn, writeFlow.id, 'target', elementId(end)),
+        reconnectFlow(
+          drawn,
+          mainDiagram,
+          writeFlow.id,
+          'target',
+          elementId(end),
+        ),
       );
     const adds = (end: string) =>
       Either.isRight(
         addElement(
           drawn,
           mainDiagram,
-          elementSchema.parse({
+          drawnElementSchema.parse({
             ...flowInput,
             id: 'element-probe-flow',
             target: { kind: 'attached', element: end },
@@ -203,21 +242,34 @@ describe('reconnectFlow', () => {
       throw new Error('The fixture flow starts attached');
     }
     const pinned = modelOf(
-      reconnectFlow(validModel, id, 'source', element, 'bottom'),
+      reconnectFlow(validModel, mainDiagram, id, 'source', element, 'bottom'),
     );
     expect(flowIn(pinned, id)).toEqual({
       ...before,
       source: { kind: 'attached', element, side: 'bottom' },
     });
     expect(
-      modelOf(reconnectFlow(pinned, id, 'source', element, 'bottom')),
+      modelOf(
+        reconnectFlow(pinned, mainDiagram, id, 'source', element, 'bottom'),
+      ),
     ).toBe(pinned);
-    const released = modelOf(reconnectFlow(pinned, id, 'source', element));
+    const released = modelOf(
+      reconnectFlow(pinned, mainDiagram, id, 'source', element),
+    );
     expect(flowIn(released, id).source).toEqual({ kind: 'attached', element });
     expect(
-      modelOf(
-        reconnectFlow(pinned, id, 'source', elementId('element-db')),
-      ).diagrams[0].elements.find((candidate) => candidate.id === id),
+      flowIn(
+        modelOf(
+          reconnectFlow(
+            pinned,
+            mainDiagram,
+            id,
+            'source',
+            elementId('element-db'),
+          ),
+        ),
+        id,
+      ),
     ).toMatchObject({
       source: { kind: 'attached', element: elementId('element-db') },
     });
@@ -253,7 +305,13 @@ describe('setFlowEndPosition', () => {
     const before = flowIn(validModel, orderFlow);
     const position = { x: 10, y: 20 };
     const next = modelOf(
-      setFlowEndPosition(validModel, orderFlow, 'source', position),
+      setFlowEndPosition(
+        validModel,
+        mainDiagram,
+        orderFlow,
+        'source',
+        position,
+      ),
     );
     expect(flowIn(next, orderFlow)).toEqual({
       ...before,
@@ -277,6 +335,7 @@ describe('setFlowEndPosition', () => {
       const next = modelOf(
         setFlowEndPosition(
           noisyModel,
+          noisyDiagram,
           noisyFlow,
           'target',
           { x: 510.55555, y: 190.4444 },
@@ -296,13 +355,21 @@ describe('setFlowEndPosition', () => {
 
   it('keeps the model for an end already free there, as given or as the decimals named would store it', () => {
     const rounded = modelOf(
-      setFlowEndPosition(noisyModel, noisyFlow, 'target', { x: 9.96, y: 5 }, 1),
+      setFlowEndPosition(
+        noisyModel,
+        noisyDiagram,
+        noisyFlow,
+        'target',
+        { x: 9.96, y: 5 },
+        1,
+      ),
     );
 
     expect(
       modelOf(
         setFlowEndPosition(
           noisyModel,
+          noisyDiagram,
           noisyFlow,
           'target',
           { x: 500.55555, y: 200.4444 },
@@ -312,19 +379,36 @@ describe('setFlowEndPosition', () => {
     ).toBe(noisyModel);
     expect(
       modelOf(
-        setFlowEndPosition(rounded, noisyFlow, 'target', { x: 10.04, y: 5 }, 1),
+        setFlowEndPosition(
+          rounded,
+          noisyDiagram,
+          noisyFlow,
+          'target',
+          { x: 10.04, y: 5 },
+          1,
+        ),
       ),
     ).toBe(rounded);
   });
 
   it('frees a pinned end, leaving no side behind', () => {
     const pinned = modelOf(
-      reconnectFlow(validModel, orderFlow, 'source', customer, 'bottom'),
+      reconnectFlow(
+        validModel,
+        mainDiagram,
+        orderFlow,
+        'source',
+        customer,
+        'bottom',
+      ),
     );
     expect(
       flowIn(
         modelOf(
-          setFlowEndPosition(pinned, orderFlow, 'source', { x: 0, y: 0 }),
+          setFlowEndPosition(pinned, mainDiagram, orderFlow, 'source', {
+            x: 0,
+            y: 0,
+          }),
         ),
         orderFlow,
       ).source,
@@ -339,7 +423,7 @@ describe('setFlowEndPosition', () => {
     });
     expect(
       modelOf(
-        setFlowEndPosition(validModel, orderFlow, 'target', {
+        setFlowEndPosition(validModel, mainDiagram, orderFlow, 'target', {
           x: 280,
           y: 160,
         }),
@@ -348,7 +432,7 @@ describe('setFlowEndPosition', () => {
     expect(
       flowIn(
         modelOf(
-          setFlowEndPosition(validModel, orderFlow, 'target', {
+          setFlowEndPosition(validModel, mainDiagram, orderFlow, 'target', {
             x: 300,
             y: 180,
           }),
@@ -364,20 +448,32 @@ describe('setFlowEndPosition', () => {
   it('refuses missing elements and other element kinds', () => {
     expect(
       errorOf(
-        setFlowEndPosition(validModel, elementId('element-api'), 'source', {
-          x: 0,
-          y: 0,
-        }),
+        setFlowEndPosition(
+          validModel,
+          mainDiagram,
+          elementId('element-api'),
+          'source',
+          {
+            x: 0,
+            y: 0,
+          },
+        ),
       ),
     ).toEqual(
       OperationFailure.NotFlowElement({ elementId: elementId('element-api') }),
     );
     expect(
       errorOf(
-        setFlowEndPosition(validModel, elementId('missing'), 'target', {
-          x: 0,
-          y: 0,
-        }),
+        setFlowEndPosition(
+          validModel,
+          mainDiagram,
+          elementId('missing'),
+          'target',
+          {
+            x: 0,
+            y: 0,
+          },
+        ),
       )?._tag,
     ).toBe('UnknownElement');
   });
@@ -392,8 +488,16 @@ describe('reverseFlow', () => {
   const pinnedWithBends = modelOf(
     setFlowWaypoints(
       modelOf(
-        reconnectFlow(validModel, orderFlow, 'source', customer, 'bottom'),
+        reconnectFlow(
+          validModel,
+          mainDiagram,
+          orderFlow,
+          'source',
+          customer,
+          'bottom',
+        ),
       ),
+      mainDiagram,
       orderFlow,
       bends,
     ),
@@ -522,17 +626,33 @@ describe('flow operations', () => {
     'setFlowEndPosition freeing the second end': {
       input: validModel,
       run: (model) =>
-        setFlowEndPosition(model, orderFlow, 'source', { x: 10, y: 20 }),
+        setFlowEndPosition(model, mainDiagram, orderFlow, 'source', {
+          x: 10,
+          y: 20,
+        }),
     },
     'setFlowEndPosition at one decimal': {
       input: noisyModel,
       run: (model) =>
-        setFlowEndPosition(model, noisyFlow, 'target', { x: 9.96, y: 5 }, 1),
+        setFlowEndPosition(
+          model,
+          noisyDiagram,
+          noisyFlow,
+          'target',
+          { x: 9.96, y: 5 },
+          1,
+        ),
     },
     'setFlowWaypoints at one decimal': {
       input: noisyModel,
       run: (model) =>
-        setFlowWaypoints(model, noisyFlow, [{ x: 250.14, y: 99.96 }], 1),
+        setFlowWaypoints(
+          model,
+          noisyDiagram,
+          noisyFlow,
+          [{ x: 250.14, y: 99.96 }],
+          1,
+        ),
     },
   });
 });

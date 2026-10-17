@@ -6,6 +6,7 @@ import type {
 import {
   sideSchema,
   type Decimals,
+  type DiagramId,
   type ElementId,
   type Point,
   type Side,
@@ -13,7 +14,7 @@ import {
 import type { Connection, Edge, EdgeChange, NodeChange } from '@xyflow/react';
 import { Action } from '../store/actions.js';
 import { sameSelection } from '../store/selection.js';
-import { selectedElements } from '../store/selectors.js';
+import { activeDiagramId, selectedElements } from '../store/selectors.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { connectElements } from './edits.js';
 import type { DiagramNode } from './nodes.js';
@@ -35,10 +36,20 @@ export function applyChanges(
   nodes: ReadonlyMap<string, CanvasNode>,
   input: GestureInput,
 ): void {
-  const selection = selectedElements(modelStore.getState());
+  const state = modelStore.getState();
+  const selection = selectedElements(state);
+  const diagramId = activeDiagramId(state);
   for (const action of [
     ...selectionActions(changes, elements, selection),
-    ...moveActions(changes, nodes, selection, gestureDecimals[input]),
+    ...(diagramId === undefined
+      ? []
+      : moveActions(
+          changes,
+          nodes,
+          selection,
+          diagramId,
+          gestureDecimals[input],
+        )),
   ]) {
     dispatch(action);
   }
@@ -87,13 +98,15 @@ export function selectionActions(
 }
 
 /**
- * The moves the reported changes ask for, as offsets from where the model has
- * each element, each to be stored at `decimals`.
+ * The moves the reported changes ask for on the diagram `diagramId` names,
+ * as offsets from where it draws each element, each to be stored at
+ * `decimals`.
  */
 export function moveActions(
   changes: readonly DiagramChange[],
   nodes: ReadonlyMap<string, CanvasNode>,
   selection: readonly ElementId[],
+  diagramId: DiagramId,
   decimals: Decimals | undefined,
 ): Action[] {
   const resizing = new Set(
@@ -132,8 +145,15 @@ export function moveActions(
     ? selection
     : [first.elementId];
   return elementIds.length === 1
-    ? [Action.MoveElement({ ...first, decimals })]
-    : [Action.MoveElements({ elementIds, offset: first.offset, decimals })];
+    ? [Action.MoveElement({ ...first, diagramId, decimals })]
+    : [
+        Action.MoveElements({
+          diagramId,
+          elementIds,
+          offset: first.offset,
+          decimals,
+        }),
+      ];
 }
 
 /**

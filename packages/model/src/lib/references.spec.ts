@@ -1,5 +1,6 @@
 import { Either } from 'effect';
-import { elementId, elementIn, flowIn, parsedFixture } from '../fixtures.js';
+import { drawnFixture, elementId, elementIn, flowIn } from '../fixtures.js';
+import { drawnElements } from './drawing.js';
 import { reconnectFlow, setFlowDirection } from './flow-operations.js';
 import { validModelFixture } from './model.fixtures.js';
 import { modelOf } from './operations.fixtures.js';
@@ -8,14 +9,13 @@ import {
   chosenDiagram,
   DiagramChoiceFailure,
   diagramsNamed,
-  elementsAcross,
   elementsById,
   flowEndName,
   flowEnds,
   unlabelledFlow,
 } from './references.js';
 
-const model: Model = parsedFixture({
+const model: Model = drawnFixture({
   ...validModelFixture,
   diagrams: [
     ...validModelFixture.diagrams,
@@ -37,7 +37,7 @@ describe('diagramsNamed', () => {
   });
 
   it('puts the diagram whose id the name is before one titled with it', () => {
-    const titledFirst = parsedFixture({
+    const titledFirst = drawnFixture({
       ...validModelFixture,
       diagrams: [
         { id: 'diagram-titled', title: 'diagram-main', elements: [] },
@@ -102,7 +102,7 @@ describe('flowEnds', () => {
   const endsIn = (held: Model) =>
     flowEnds(
       flowIn(held, orderFlow),
-      elementsById(elementsAcross(held.diagrams)),
+      elementsById(drawnElements(held, held.diagrams[0])),
     );
 
   it('gives the element an attached end is on and a free end as free', () => {
@@ -118,7 +118,13 @@ describe('flowEnds', () => {
 
   it('follows an end to the element it moves to, and the flow to running both ways', () => {
     const moved = modelOf(
-      reconnectFlow(model, orderFlow, 'target', elementId('element-db')),
+      reconnectFlow(
+        model,
+        model.diagrams[0].id,
+        orderFlow,
+        'target',
+        elementId('element-db'),
+      ),
     );
     const both = modelOf(setFlowDirection(moved, orderFlow, true));
     expect(endsIn(both)).toEqual({

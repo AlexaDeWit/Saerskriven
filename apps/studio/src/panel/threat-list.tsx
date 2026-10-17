@@ -1,5 +1,4 @@
 import {
-  elementsAcross,
   elementsById,
   type Element,
   type ElementId,
@@ -456,7 +455,7 @@ function threatIn(threatId: ThreatId): Threat | undefined {
 }
 
 function presentElements(): ReadonlyMap<ElementId, Element> {
-  return elementsById(elementsAcross(modelStore.getState().present.diagrams));
+  return elementsById(modelStore.getState().present.elements);
 }
 
 function focusIn(

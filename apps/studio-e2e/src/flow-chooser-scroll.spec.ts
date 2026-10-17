@@ -1,5 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
-import { committedText } from '@saerskriven/model/fixtures';
+import {
+  elementOf,
+  placementOf,
+  type DrawnElement,
+  type Model,
+} from '@saerskriven/model';
+import { committedModel, elementId } from '@saerskriven/model/fixtures';
 import { edgesOf } from './canvas.fixtures.js';
 import { registeredChords } from './chords.fixtures.js';
 import {
@@ -13,28 +19,32 @@ import {
 
 const crowd = 40;
 
-const extraActor = (index: number): string =>
-  JSON.stringify({
-    kind: 'actor',
-    id: `el-extra-${String(index)}`,
-    name: `Extra ${String(index)}`,
-    description: '',
-    outOfScope: false,
-    reasonOutOfScope: '',
-    position: { x: 0, y: 600 },
-    size: { width: 140, height: 80 },
-  });
+const extraActor = (index: number): DrawnElement => ({
+  kind: 'actor',
+  id: elementId(`el-extra-${String(index)}`),
+  name: `Extra ${String(index)}`,
+  description: '',
+  outOfScope: false,
+  reasonOutOfScope: '',
+  position: { x: 0, y: 600 },
+  size: { width: 140, height: 80 },
+});
 
-const crowdedModel = (): unknown => {
-  const extras = Array.from({ length: crowd }, (_, index) =>
-    extraActor(index),
-  ).join(',');
-  return JSON.parse(
-    committedText('two-diagrams.model.json').replace(
-      '"elements": [',
-      `"elements": [${extras},`,
+const crowdedModel = (): Model => {
+  const model = committedModel('two-diagrams.model.json');
+  const extras = Array.from({ length: crowd }, (_, index) => extraActor(index));
+  return {
+    ...model,
+    elements: [...extras.map(elementOf), ...model.elements],
+    diagrams: model.diagrams.map((diagram, index) =>
+      index === 0
+        ? {
+            ...diagram,
+            placements: [...extras.map(placementOf), ...diagram.placements],
+          }
+        : diagram,
     ),
-  );
+  };
 };
 
 const openChooser = async (page: Page): Promise<void> => {

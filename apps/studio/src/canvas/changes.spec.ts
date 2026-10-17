@@ -5,7 +5,7 @@ import {
   toReactFlowNodes,
 } from '@saerskriven/canvas';
 import type { ElementId, Flow } from '@saerskriven/model';
-import { elementIn } from '@saerskriven/model/fixtures';
+import { drawnAt, elementIn } from '@saerskriven/model/fixtures';
 import { Action } from '../store/actions.js';
 import {
   canvasModel,
@@ -26,7 +26,11 @@ import {
   type DiagramChange,
 } from './changes.js';
 import { elementIds, nodesById } from './nodes.js';
-import { actorElement, processElement } from '../store/store.fixtures.js';
+import {
+  actorElement,
+  mainDiagram,
+  processElement,
+} from '../store/store.fixtures.js';
 
 const layout = layoutDiagram(canvasModel.diagrams[0], canvasModel);
 
@@ -58,7 +62,7 @@ const selectionHeld = (): readonly ElementId[] =>
   modelStore.getState().selection;
 
 const flowDrawn = (): Flow | undefined => {
-  const drawn = modelStore.getState().present.diagrams[0].elements.at(-1);
+  const drawn = drawnAt(modelStore.getState().present).at(-1);
   return drawn?.kind === 'flow' ? drawn : undefined;
 };
 
@@ -117,10 +121,12 @@ describe('moveActions', () => {
         [moving(actorElement, { x: 40, y: 25 }, false)],
         nodes,
         [],
+        mainDiagram,
         undefined,
       ),
     ).toEqual([
       Action.MoveElement({
+        diagramId: mainDiagram,
         elementId: actorElement,
         offset: { x: 40, y: 25 },
         decimals: undefined,
@@ -134,6 +140,7 @@ describe('moveActions', () => {
         [moving(actorElement, { x: 40, y: 25 }, true)],
         nodes,
         [actorElement],
+        mainDiagram,
         undefined,
       ),
     ).toEqual([]);
@@ -148,6 +155,7 @@ describe('moveActions', () => {
         ],
         nodes,
         [actorElement],
+        mainDiagram,
         undefined,
       ),
     ).toEqual([]);
@@ -159,6 +167,7 @@ describe('moveActions', () => {
         [moving(actorElement, { x: 0, y: 0 }, false)],
         nodes,
         [actorElement],
+        mainDiagram,
         undefined,
       ),
     ).toEqual([]);
@@ -170,6 +179,7 @@ describe('moveActions', () => {
         [moving(anchor, { x: 9, y: 9 }, false)],
         nodes,
         [],
+        mainDiagram,
         undefined,
       ),
     ).toEqual([]);
@@ -181,10 +191,12 @@ describe('moveActions', () => {
         [moving(actorElement, { x: 40, y: 25 }, false)],
         nodes,
         [actorElement, processElement, requestFlow],
+        mainDiagram,
         undefined,
       ),
     ).toEqual([
       Action.MoveElements({
+        diagramId: mainDiagram,
         elementIds: [actorElement, processElement, requestFlow],
         offset: { x: 40, y: 25 },
         decimals: undefined,

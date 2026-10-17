@@ -1,8 +1,10 @@
 import {
+  drawnAt,
+  drawnFixture,
   enumeratedCategories,
-  parsedFixture,
 } from '@saerskriven/model/fixtures';
 import {
+  drawnElements,
   severitySchema,
   threatCategorySchema,
   threatStatusSchema,
@@ -52,12 +54,14 @@ const namedById: ThreatDragonDocument = {
   summary: { ...featureComplete.source.summary, id: 'clinic-booking' },
 };
 
-const complementElements = complement.model.diagrams[0]?.elements ?? [];
+const complementElements = drawnAt(complement.model);
 
 const elementNamed = (id: string) =>
   [
     ...complementElements,
-    ...featureComplete.model.diagrams.flatMap((diagram) => diagram.elements),
+    ...featureComplete.model.diagrams.flatMap((diagram) =>
+      drawnElements(featureComplete.model, diagram),
+    ),
   ].find((element) => element.id === id);
 
 const threatDragonMethodologies: readonly string[] =
@@ -115,7 +119,7 @@ describe('reading the feature-complete Threat Dragon file', () => {
 
   it('lands as the model written out by hand, compared as one value', () => {
     expect(featureComplete.model).toStrictEqual(
-      parsedFixture(featureCompleteModel),
+      drawnFixture(featureCompleteModel),
     );
   });
 
@@ -191,7 +195,7 @@ describe('reading curves, shared threats and defaults', () => {
     expect(complement.model.diagrams[1]).toEqual({
       id: '5',
       title: 'Nothing drawn yet',
-      elements: [],
+      placements: [],
     });
   });
 
@@ -213,6 +217,7 @@ describe('reading curves, shared threats and defaults', () => {
         description: '',
         contributors: [],
       },
+      elements: [],
       diagrams: [],
       threats: [],
       lastIssuedThreatNumber: 0,
@@ -252,7 +257,7 @@ describe('reading the mitigation text of a threat', () => {
 
 describe('reading what the model has only just grown a home for', () => {
   it('reads a text block as a note on the canvas, its content its text', () => {
-    expect(unmodelled.model.diagrams[0]?.elements[0]).toEqual({
+    expect(drawnAt(unmodelled.model)[0]).toEqual({
       kind: 'text',
       id: 'text-1',
       name: '',

@@ -1,3 +1,4 @@
+import { drawnAt } from '@saerskriven/model/fixtures';
 import { expect, test, type Locator } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
 import { commandChord, registeredChords } from './chords.fixtures.js';
@@ -30,9 +31,7 @@ const targetEnd = (page: import('@playwright/test').Page) =>
   page.getByRole('button', { name: 'Flow target end', exact: true });
 
 const savedFlow = async (page: import('@playwright/test').Page) =>
-  (await savedModel(page)).diagrams[0].elements.find(
-    (element) => element.kind === 'flow',
-  );
+  drawnAt(await savedModel(page)).find((element) => element.kind === 'flow');
 
 const groundOf = (locator: Locator): Promise<string> =>
   locator.evaluate((element) => getComputedStyle(element).backgroundColor);
@@ -75,7 +74,7 @@ test('pins a flow end to a side by keyboard and by dragging, releases it, and sa
   expect(written.text).toContain('side: top');
   const saved = readBack(written.text).model;
   expect(
-    saved.diagrams[0].elements.find((element) => element.kind === 'flow'),
+    drawnAt(saved).find((element) => element.kind === 'flow'),
   ).toMatchObject({ source: { kind: 'attached', side: 'top' } });
 });
 

@@ -1,3 +1,4 @@
+import { drawnAt } from '@saerskriven/model/fixtures';
 import { expect, test } from '@playwright/test';
 import { gridSpacing } from '@saerskriven/canvas';
 import { audit } from './accessibility.fixtures.js';
@@ -138,9 +139,7 @@ test('clipboard commands preserve graph references', async ({
   await expect(page.locator('.react-flow__node')).toHaveCount(4);
   await expect(page.locator('.react-flow__edge')).toHaveCount(2);
   const copied = await savedModel(page);
-  expect(
-    new Set(copied.diagrams[0].elements.map((element) => element.id)).size,
-  ).toBe(6);
+  expect(new Set(drawnAt(copied).map((element) => element.id)).size).toBe(6);
   expect(new Set(copied.threats.map((threat) => threat.id)).size).toBe(2);
   await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   await expect(page.locator('.react-flow__node')).toHaveCount(2);
@@ -190,13 +189,13 @@ test('geometry fields support movement and resizing, cancellation, and one undo 
   await panel.getByRole('button', { name: 'Apply geometry' }).click();
   await expect(actor).toBeFocused();
   const after = await savedModel(page);
-  expect(after.diagrams[0].elements[0]).toMatchObject({
+  expect(drawnAt(after)[0]).toMatchObject({
     position: { x: 41, y: 40 },
     size: { width: 101, height: 60 },
   });
   await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   const undone = await savedModel(page);
-  expect(undone.diagrams[0].elements[0]).toMatchObject({
+  expect(drawnAt(undone)[0]).toMatchObject({
     position: { x: 40, y: 40 },
     size: { width: 100, height: 60 },
   });
@@ -241,9 +240,7 @@ test('reconnection uses keyboard controls and preserves flow identity, bends, an
   await page.keyboard.press('Enter');
   await expect(panel).toHaveCount(0);
   const after = await savedModel(page);
-  const flow = after.diagrams[0].elements.find(
-    (element) => element.kind === 'flow',
-  );
+  const flow = drawnAt(after).find((element) => element.kind === 'flow');
   expect(flow).toMatchObject({
     id: 'placeholder-flow',
     name: 'Records',
@@ -258,7 +255,7 @@ test('reconnection uses keyboard controls and preserves flow identity, bends, an
   await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   const before = await savedModel(page);
   expect(
-    before.diagrams[0].elements.find((element) => element.kind === 'flow'),
+    drawnAt(before).find((element) => element.kind === 'flow'),
   ).toMatchObject({
     source: { kind: 'attached', element: 'placeholder-actor' },
   });
@@ -274,7 +271,7 @@ test('arrangement and view controls use the registry without view edits entering
   );
   const arranged = await savedModel(page);
   expect(
-    arranged.diagrams[0].elements
+    drawnAt(arranged)
       .filter((element) => 'position' in element)
       .map((element) => ('position' in element ? element.position.x : 0)),
   ).toEqual([40, 40]);
@@ -288,7 +285,7 @@ test('arrangement and view controls use the registry without view edits entering
   ).toHaveAccessibleName('Menu');
   await page.keyboard.press(await commandChord(page, 'ControlOrMeta+z'));
   const undone = await savedModel(page);
-  expect(undone.diagrams[0].elements[1]).toMatchObject({
+  expect(drawnAt(undone)[1]).toMatchObject({
     position: { x: 280 },
   });
   await page.keyboard.press(await commandChord(page, 'ControlOrMeta+Shift+g'));

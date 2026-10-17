@@ -1,9 +1,15 @@
-import { emptyModel, type Flow, type Model } from '@saerskriven/model';
-import { elementId, elementIn } from '@saerskriven/model/fixtures';
+import { emptyModel, type DrawnFlow } from '@saerskriven/model';
+import {
+  drawnAt,
+  drawnOnto,
+  elementId,
+  elementIn,
+} from '@saerskriven/model/fixtures';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
   actorElement,
+  mainDiagram,
   otherElement,
   processElement,
   sampleThreat,
@@ -207,7 +213,7 @@ describe('placing an element', () => {
     );
 
     const state = modelStore.getState();
-    expect(state.present.diagrams[0].elements).toHaveLength(7);
+    expect(drawnAt(state.present)).toHaveLength(7);
     expect(state.selection).toHaveLength(1);
     expect(state.inlineEditor).toEqual({
       kind: 'name',
@@ -421,6 +427,7 @@ describe('toggleBoundaryShape', () => {
     openCanvas([boundaryElement]);
     dispatch(
       Action.SetBoundaryShape({
+        diagramId: mainDiagram,
         elementId: boundaryElement,
         shape: {
           kind: 'box',
@@ -476,6 +483,7 @@ describe('removeSelected', () => {
     openCanvas([processElement]);
     dispatch(
       Action.ResizeElement({
+        diagramId: mainDiagram,
         elementId: processElement,
         offset: { x: 0.123456, y: 0 },
         size: { width: 120.5558, height: 60.4444 },
@@ -529,7 +537,7 @@ describe('removeSelected', () => {
 
     removeSelected();
 
-    const elements = modelStore.getState().present.diagrams[0].elements;
+    const elements = drawnAt(modelStore.getState().present);
     expect(
       elements.find((element) => element.id === actorElement),
     ).toBeUndefined();
@@ -572,9 +580,7 @@ describe('resizeNode', () => {
     const state = modelStore.getState();
     expect(state.past).toHaveLength(1);
     expect(
-      state.present.diagrams[0].elements.find(
-        (element) => element.id === actorElement,
-      ),
+      drawnAt(state.present).find((element) => element.id === actorElement),
     ).toMatchObject({
       position: { x: -20, y: -10 },
       size: { width: 140, height: 70 },
@@ -686,9 +692,9 @@ describe('on the diagram switched to', () => {
     expect(placeElement(process, 'pointer')).toBe(true);
     connectElements(otherElement, process.id);
 
-    const [first, second] = modelStore.getState().present.diagrams;
-    expect(first.elements).toHaveLength(3);
-    expect(second.elements.map((element) => element.kind)).toEqual([
+    const { present } = modelStore.getState();
+    expect(drawnAt(present)).toHaveLength(3);
+    expect(drawnAt(present, 1).map((element) => element.kind)).toEqual([
       'actor',
       'process',
       'flow',
@@ -697,7 +703,7 @@ describe('on the diagram switched to', () => {
     selectAll();
 
     expect(modelStore.getState().selection).toEqual(
-      second.elements.map((element) => element.id),
+      drawnAt(present, 1).map((element) => element.id),
     );
   });
 });
@@ -709,13 +715,13 @@ describe('selectAll', () => {
     selectAll();
 
     expect(modelStore.getState().selection).toEqual(
-      canvasModel.diagrams[0].elements.map((element) => element.id),
+      drawnAt(canvasModel).map((element) => element.id),
     );
     expect(modelStore.getState().past).toEqual([]);
   });
 
   it('leaves an unplaced flow out of the selection', () => {
-    const hiddenFlow: Flow = {
+    const hiddenFlow: DrawnFlow = {
       kind: 'flow',
       id: elementId('flow-hidden'),
       name: 'Hidden flow',
@@ -727,16 +733,10 @@ describe('selectAll', () => {
       waypoints: [],
       bidirectional: false,
     };
-    const model: Model = {
-      ...canvasModel,
-      diagrams: [
-        {
-          ...canvasModel.diagrams[0],
-          elements: [...canvasModel.diagrams[0].elements, hiddenFlow],
-        },
-      ],
-    };
-    modelStore.setState(initialState(model), true);
+    modelStore.setState(
+      initialState(drawnOnto(canvasModel, [hiddenFlow])),
+      true,
+    );
 
     selectAll();
 

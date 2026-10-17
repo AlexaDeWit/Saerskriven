@@ -1,19 +1,19 @@
 import {
   acceptedTextSchema,
-  actorSchema,
   autoExtent,
   autoPlacement,
+  drawnActorSchema,
+  drawnFlowSchema,
+  drawnProcessSchema,
+  drawnStoreSchema,
+  drawnTextSchema,
+  drawnTrustBoundarySchema,
   elementIdSchema,
   elementPropertiesSchema,
-  flowSchema,
   pointSchema,
-  processSchema,
   sizeSchema,
-  storeSchema,
-  textSchema,
-  trustBoundarySchema,
   waypointsSchema,
-  type Element,
+  type DrawnElement,
   type ElementProperties,
 } from '@saerskriven/model';
 import { z } from 'zod';
@@ -39,14 +39,20 @@ const placedDefaults = creationDefaults.extend({
 
 /** Creation keeps model fields, replacing node geometry with the placement choice. */
 export const addedElementSchema = z.discriminatedUnion('kind', [
-  actorSchema.omit({ position: true, size: true }).extend(placedDefaults.shape),
-  processSchema
+  drawnActorSchema
     .omit({ position: true, size: true })
     .extend(placedDefaults.shape),
-  storeSchema.omit({ position: true, size: true }).extend(placedDefaults.shape),
-  textSchema.omit({ position: true, size: true }).extend(placedDefaults.shape),
-  trustBoundarySchema.extend(creationDefaults.shape),
-  flowSchema.extend(creationDefaults.shape).extend({
+  drawnProcessSchema
+    .omit({ position: true, size: true })
+    .extend(placedDefaults.shape),
+  drawnStoreSchema
+    .omit({ position: true, size: true })
+    .extend(placedDefaults.shape),
+  drawnTextSchema
+    .omit({ position: true, size: true })
+    .extend(placedDefaults.shape),
+  drawnTrustBoundarySchema.extend(creationDefaults.shape),
+  drawnFlowSchema.extend(creationDefaults.shape).extend({
     waypoints: waypointsSchema.default([]),
     bidirectional: z.boolean().default(false),
   }),
@@ -91,7 +97,7 @@ export function consistentPropertyEdit(
 export function addedElement(
   input: z.infer<typeof addedElementSchema>,
   index: number,
-): Element {
+): DrawnElement {
   if (!('placement' in input)) return input;
   const { placement, ...element } = input;
   return {

@@ -1,7 +1,6 @@
 import {
   diagramIdSchema,
   elementIdsAcross,
-  elementsAcross,
   threatIdSchema,
   type Model,
 } from '@saerskriven/model';
@@ -51,7 +50,7 @@ import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
  * or a note, the model link of a threat, a note's name, an out-of-scope
  * boundary or note, a diagram's name, and a size this write raises that the
  * source cell does not hold. Accents are reported once for the model, with
- * the count of elements holding one. A diagram, cell or threat the source
+ * the count of placements holding one. A diagram, cell or threat the source
  * held and the model no longer does is reported as `discarded-by-edit`.
  * Mitigation texts follow `mitigationDivergences`.
  */
@@ -64,6 +63,7 @@ export function writeThreatDragon(
   const plan = planThreats(model, source);
   const merged = model.diagrams.map((diagram, index) => ({
     ...mergeDiagram(
+      model,
       diagram,
       held.get(diagram.id),
       numbering.numbers[index],
@@ -182,9 +182,9 @@ function overriddenMark(
 }
 
 function droppedAccents(model: Model): readonly Divergence[] {
-  const count = elementsAcross(model.diagrams).filter(
-    (element) => element.accent !== undefined,
-  ).length;
+  const count = model.diagrams
+    .flatMap((diagram) => diagram.placements)
+    .filter((placement) => placement.accent !== undefined).length;
   return count === 0
     ? []
     : [

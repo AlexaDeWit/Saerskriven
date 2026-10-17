@@ -10,7 +10,7 @@ import {
   validModel,
 } from '../fixtures.js';
 import { addElement } from './element-operations.js';
-import { elementSchema, type Element } from './elements.js';
+import { drawnElementSchema, type DrawnElement } from './drawn-elements.js';
 import type { Point } from './geometry.js';
 import type { OperationFailure } from './operation-failures.js';
 import { parseModel, type Model } from './parse.js';
@@ -60,13 +60,13 @@ export function operationContract(
 /** The diagram {@link validModel} holds. */
 export const mainDiagram = diagramId('diagram-main');
 
-/** The ids of every element across the model's diagrams, in order. */
+/** The ids of every element the model's diagrams place, in diagram order. */
 export const elementIds = (model: Model): string[] =>
   model.diagrams.flatMap((diagram) =>
-    diagram.elements.map((element) => element.id),
+    diagram.placements.map((placement) => placement.element),
   );
 
-/** A store the valid model does not hold, in the schema's input shape. */
+/** A store the valid model does not hold, in the drawn schema's input shape. */
 export const storeInput = {
   kind: 'store',
   id: 'element-cache',
@@ -78,7 +78,7 @@ export const storeInput = {
   size: { width: 160, height: 80 },
 };
 
-/** A flow between two elements of the valid model, in the schema's input shape. */
+/** A flow between two elements of the valid model, in the drawn schema's input shape. */
 export const flowInput = {
   kind: 'flow',
   id: 'element-write-flow',
@@ -105,13 +105,13 @@ const noteInput = {
 };
 
 /** {@link storeInput}, parsed. */
-export const cache = elementSchema.parse(storeInput);
+export const cache = drawnElementSchema.parse(storeInput);
 
 /** {@link flowInput}, parsed. */
-export const writeFlow = elementSchema.parse(flowInput);
+export const writeFlow = drawnElementSchema.parse(flowInput);
 
 /** A text note, parsed. */
-export const note = elementSchema.parse(noteInput);
+export const note = drawnElementSchema.parse(noteInput);
 
 /** The valid model with {@link note} added to its diagram. */
 export const withNote = modelOf(addElement(validModel, mainDiagram, note));
@@ -175,7 +175,7 @@ export const noisyModel: Model = modelWith({
 });
 
 /** Every point an element holds: its position, its free ends and bends, or its curve points. */
-export const pointsOf = (element: Element): readonly Point[] => {
+export const pointsOf = (element: DrawnElement): readonly Point[] => {
   if (element.kind === 'flow') {
     return [
       ...[element.source, element.target].flatMap((end) =>

@@ -57,6 +57,7 @@ import { currentLayout } from './layout.js';
 import {
   actorElement,
   heldElements,
+  mainDiagram,
   processElement,
 } from '../store/store.fixtures.js';
 
@@ -408,6 +409,7 @@ describe('DiagramCanvas', () => {
     openCanvas([actorElement]);
     dispatch(
       Action.MoveElement({
+        diagramId: mainDiagram,
         elementId: actorElement,
         offset: { x: 28.5, y: 12.25 },
         decimals: undefined,
@@ -488,6 +490,7 @@ describe('DiagramCanvas', () => {
       openCanvas([actorElement]);
       dispatch(
         Action.ResizeElement({
+          diagramId: mainDiagram,
           elementId: actorElement,
           offset: { x: 0, y: 0 },
           size: { width: minimumNodeExtent, height: minimumNodeExtent },
@@ -548,6 +551,7 @@ describe('DiagramCanvas', () => {
     openCanvas([actorElement]);
     dispatch(
       Action.ResizeElement({
+        diagramId: mainDiagram,
         elementId: actorElement,
         offset: { x: 28.123456, y: 0 },
         size: { width: 120.123456, height: 60.98765 },
@@ -568,6 +572,7 @@ describe('DiagramCanvas', () => {
     openCanvas([actorElement]);
     dispatch(
       Action.MoveElement({
+        diagramId: mainDiagram,
         elementId: actorElement,
         offset: { x: 28.123456, y: 0 },
         decimals: undefined,
@@ -599,6 +604,7 @@ describe('DiagramCanvas', () => {
       openCanvas([actorElement]);
       dispatch(
         Action.ResizeElement({
+          diagramId: mainDiagram,
           elementId: actorElement,
           offset: { x: 28.123456, y: 0 },
           size: { width: 120.123456, height: 60.98765 },

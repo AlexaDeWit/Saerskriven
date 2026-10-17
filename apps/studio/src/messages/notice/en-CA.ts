@@ -64,6 +64,7 @@ export const noticeEnCA = catalogue(noticeMessages)('en-CA')({
       'Diagram {id} cannot be removed while it holds elements, and it holds {count}.',
   },
   'op-unknown-element': 'The model holds no element {id}.',
+  'op-not-on-diagram': 'Diagram {diagram} does not draw element {id}.',
   'op-unknown-threat': 'The model holds no threat {id}.',
   'op-unknown-mitigation': 'The model holds no mitigation {id}.',
   'op-unknown-assumption': 'The model holds no assumption {id}.',

@@ -10,7 +10,7 @@ import {
   attachedEndpoint,
   generateElementId,
   type BoundaryShape,
-  type Element,
+  type DrawnElement,
   type ElementId,
   type Point,
   type Side,
@@ -153,7 +153,7 @@ export function freshElement(
   kind: ElementTool,
   position: Point,
   size: Size = defaultSize(kind),
-): Element {
+): DrawnElement {
   const { t } = activeTranslator();
   const named = namedElement(t(placeholderNames[kind]));
   if (kind === 'boundary-box') {
@@ -184,10 +184,10 @@ export function freshElement(
 
 /** Moves and sizes a box placement without changing its content or id. */
 export function withPlacement(
-  element: Element,
+  element: DrawnElement,
   position: Point,
   size: Size,
-): Element {
+): DrawnElement {
   if (element.kind === 'flow') {
     return element;
   }
@@ -200,7 +200,7 @@ export function withPlacement(
 }
 
 /** A boundary curve through the waypoints a person committed. */
-export function freshBoundaryCurve(waypoints: readonly Point[]): Element {
+export function freshBoundaryCurve(waypoints: readonly Point[]): DrawnElement {
   return {
     ...namedElement(activeTranslator().t(placeholderNames['boundary-curve'])),
     kind: 'trust-boundary',
@@ -242,7 +242,7 @@ export function freshFlow(
   source: ElementId,
   target: ElementId,
   sides: FlowSides = {},
-): Element {
+): DrawnElement {
   return {
     kind: 'flow',
     ...namedElement(activeTranslator().t('defaults.new-flow')),

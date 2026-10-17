@@ -1,6 +1,7 @@
 import {
+  drawnFixture,
+  drawnOnto,
   elementId,
-  parsedFixture,
   softHyphen,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
@@ -28,14 +29,9 @@ import {
 } from './element-properties.js';
 import { chooseFrom, editorTimeout } from './panel.fixtures.js';
 
-const base = parsedFixture(validModelFixture);
+const base = drawnFixture(validModelFixture);
 const note = { ...newNote('note-plan', 'Rollout plan'), name: '' };
-const withNote = {
-  ...base,
-  diagrams: [
-    { ...base.diagrams[0], elements: [...base.diagrams[0].elements, note] },
-  ],
-};
+const withNote = drawnOnto(base, [note]);
 const api = 'Description of Order API';
 const reason = 'Reason out of scope';
 const current = (id: string) =>

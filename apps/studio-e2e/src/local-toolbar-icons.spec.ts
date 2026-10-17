@@ -29,6 +29,7 @@ import {
   selectByKeyboard,
   withoutPickers,
 } from './studio.fixtures.js';
+import { drawnAt } from '@saerskriven/model/fixtures';
 
 const iconTooltip = async (page: Page, control: Locator): Promise<void> => {
   const name = await control.getAttribute('aria-label');
@@ -100,7 +101,7 @@ const connectionIconsAtSelectedLeft = async (
     await choice.press('Enter');
     await expect(actions).toHaveCount(0);
     await expect(flow).toBeFocused();
-    expect((await savedModel(page)).diagrams[0].elements).toContainEqual(
+    expect(drawnAt(await savedModel(page))).toContainEqual(
       expect.objectContaining({
         kind: 'flow',
         source: { kind: 'attached', element: 'placeholder-actor', side },
@@ -195,7 +196,7 @@ for (const scheme of colourSchemes) {
     await page.keyboard.press(
       await commandChord(page, registeredChords.undo[0]),
     );
-    expect((await savedModel(page)).diagrams[0].elements).toContainEqual(
+    expect(drawnAt(await savedModel(page))).toContainEqual(
       expect.objectContaining({
         source: {
           kind: 'attached',

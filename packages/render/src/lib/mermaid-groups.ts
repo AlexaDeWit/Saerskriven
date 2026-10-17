@@ -1,16 +1,19 @@
 import {
   elementsById,
-  type Diagram,
+  type Element,
   type ElementId,
   type TrustBoundary,
 } from '@saerskriven/model';
 
-/** Declared groups that can be drawn as a single-parent, acyclic hierarchy. */
+/**
+ * The declared groups among one diagram's elements that can be drawn as a
+ * single-parent, acyclic hierarchy.
+ */
 export function mermaidGroups(
-  diagram: Diagram,
+  drawn: readonly Element[],
 ): ReadonlyMap<ElementId, readonly ElementId[]> {
-  const elements = elementsById(diagram.elements);
-  const boundaries = diagram.elements.filter(
+  const elements = elementsById(drawn);
+  const boundaries = drawn.filter(
     (element): element is TrustBoundary => element.kind === 'trust-boundary',
   );
   const parents = new Map<ElementId, Set<ElementId>>();

@@ -1,13 +1,52 @@
 # @saerskriven/model
 
 Zod schemas and inferred types for the threat model core: ids, geometry,
-elements, diagrams, threats, mitigations, assumptions, and model metadata.
-`parseModel` is the parse boundary and the only exported way a `Model` value
-comes into existence, `emptyModel` being the one the package parses for you,
-where a model that has not been drawn starts. Fallible exports return Effect's
-`Either` with a package-owned tagged failure, and an infallible operation
-returns its result bare, on the terms [`CODING.md`](../../CODING.md#error-handling)
-sets. Each export's TSDoc states its behaviour.
+elements, their placements on diagrams, threats, mitigations, assumptions, and
+model metadata. `parseModel` is the parse boundary every `Model` value comes
+through. `parseDrawnModel`, the entry point a read of a file takes, calls it,
+and `emptyModel` is the one model the package parses for you, where a model
+that has not been drawn starts. Fallible exports
+return Effect's `Either` with a package-owned tagged failure, and an
+infallible operation returns its result bare, on the terms
+[`CODING.md`](../../CODING.md#error-handling) sets. Each export's TSDoc states
+its behaviour.
+
+## Elements and placements
+
+The model holds each element once, in `elements` at its root: its id, kind,
+name, description and scope, its security facts and relationship lists, a
+note's text, and for a flow its direction and the element each end attaches
+to, or none for a free end. A diagram holds `placements` in the order it draws
+them. A placement names an element and holds what that diagram draws it with:
+an optional `accent`, and the geometry the element's kind takes, `position` and
+`size` for an actor, a process, a store or a note, `shape` for a trust
+boundary, and for a flow its `waypoints` and, for each end, the `side` an
+attached end is pinned to or the `position` of a free end. A placement has no
+id of its own: its diagram and its element name it.
+
+`parseModel` holds every element to exactly one placement, on one diagram,
+whose geometry fits its kind. A flow end attaches only to an element its own
+diagram places, and a boundary's and a flow's relationship lists name
+elements of that diagram. Every model it accepts is one a version 2
+[native file](../../docs/saerskriven-yaml.md) holds.
+
+A reader of a diagram takes its elements as it draws them: `drawnElements`
+gives a diagram's elements in draw order, each a `DrawnElement`, the
+element's facts with that diagram's accent and geometry inline, the shape a
+version 2 file writes a diagram's elements in. `drawnElementOn`
+gives one of them, `placementOn` an element's placement on a diagram, and
+`diagramsOf` the diagrams that place an element. `drawnElement` joins an
+element to a placement, and `elementOf` and `placementOf` split a drawn
+element back into the two. Drawing an unchanged element and placement again
+gives the same object, so a store selector can compare drawn elements by
+identity.
+
+`parseDrawnModel` parses a model whose diagrams own their elements, each
+drawn on the one diagram that holds it, which is the shape a file format with
+no shared elements reads into. Each element moves to the root in diagram
+order, and leaves its placement on its diagram. Every issue it reports points
+into that input, whichever check found it, so a read names the field as the
+file holds it.
 
 ## Text
 
@@ -33,13 +72,13 @@ rather than reaching a diagram. `firstRefusedCharacter` gives the index of
 the first character a string carries that the rule refuses, so an editor can
 point at it rather than at the field alone.
 
-`parseModel` is the whole of that gate for a foreign file. `renameElement`,
-`editNote`, `setElementDetails`, `setElementProperties`, `addDiagram`,
-`renameDiagram` and `setModelMetadata` screen the strings that an editor
-commits after parsing, and `selectionFragment`, `remapFragment` and
-`insertFragment` pass what they produce through `parseModel`. The other edit
-operations take a caller's strings as given, a model assembled in memory
-being the caller's to assemble.
+`parseDrawnModel`, which calls `parseModel`, is the whole of that gate for a
+foreign file. `renameElement`, `editNote`, `setElementDetails`,
+`setElementProperties`, `addDiagram`, `renameDiagram` and `setModelMetadata`
+screen the strings that an editor commits after parsing, and
+`selectionFragment`, `remapFragment` and `insertFragment` pass what they
+produce through `parseModel`. The other edit operations take a caller's
+strings as given, a model assembled in memory being the caller's to assemble.
 A boundary that renders a model escapes or replaces what its output format
 forbids instead of resting on this rule.
 
@@ -64,15 +103,14 @@ can still store one past it, which the next read refuses.
 Operations are pure functions returning new models: graph edits (add, remove,
 move, resize, rename, edit Note text, set description and scope, reconnect,
 set flow route and direction, free or move one flow end, reverse a flow, set a
-trust boundary's shape, set security properties), diagram edits (add,
-rename, remove), a metadata edit, fragment edits (copy, remap, insert), and
-register edits for threats (add, remove, replace, attach, detach, link to the
-model, unlink from it), mitigations and assumptions (add, replace, remove,
-link, unlink, set status). Coverage
-queries read a model without changing it: elements no threat references, open
-threats by severity, and the threat count of every element. `autoPlacement`
-gives a position to a caller that has none to read, as the OTM and TM-BOM
-imports do.
+trust boundary's shape, set an accent, set security properties), diagram
+edits (add, rename, remove), a metadata edit, fragment edits (copy, remap,
+insert), and register edits for threats (add, remove, replace, attach, detach,
+link to the model, unlink from it), mitigations and assumptions (add, replace,
+remove, link, unlink, set status). Coverage queries read a model without
+changing it: elements no threat references, open threats by severity, and the
+threat count of every element. `autoPlacement` gives a position to a caller
+that has none to read, as the OTM and TM-BOM imports do.
 
 An operation that writes geometry takes, as its last argument, how many
 decimals to store (`Decimals`, a whole count from 0 to 100): `addElement`,
@@ -96,6 +134,17 @@ one, `storedPoint` rounds both coordinates of a point, and `decimalsOf` counts
 the decimals a number is written with, which is the count that stores it
 unchanged. The canvas package's `svgNumber` writes through the first.
 
+An operation that writes an element's geometry or accent takes the id of the
+diagram it writes on, and changes that diagram's placement alone:
+`moveElement`, `resizeElement`, `setBoundaryShape`, `setFlowWaypoints`,
+`setFlowEndPosition`, `reconnectFlow`, which also moves the end to the element
+it names, and `setAccent`. One naming an element the diagram does not place
+refuses with `ElementNotOnDiagram`. `addElement` adds the element and its
+first placement, on the diagram it names. `removeElement` removes the element
+and its placements, and frees each flow end attached to it at its anchor on
+that flow's diagram. `reverseFlow` swaps the ends of the flow and reverses its
+bends on every diagram that draws it.
+
 A diagram's threats are the ones referencing an element drawn on it, which
 `threatsOnDiagrams` reads for one diagram or several. A threat attached to no
 element is on no diagram, whether or not it applies to the model.
@@ -109,9 +158,10 @@ never leaves the last issued number below one it kept. A threat that applies
 to the model survives the cut, so its paste issues no number at all, as the
 fragment rules below set out.
 
-`removeDiagram` refuses a diagram that still owns elements. A cascade would
-delete records the caller never named, which no other operation does, so a
-caller removes the elements with `removeElement` first.
+`addDiagram` appends an empty diagram, and `removeDiagram` refuses a diagram
+that still places elements. A cascade would delete records the caller never
+named, which no other operation does, so a caller removes the elements with
+`removeElement` first.
 
 Element variants hold optional security facts and declared boundary
 relationships, with the absence semantics of
@@ -125,13 +175,15 @@ returns the same model. Geometry edits do not change these facts.
 stays with `renameElement`, which refuses an empty one on every kind but a
 flow.
 
-An element of any kind, a Note included, may hold an `accent`, one of the
+A placement of any kind, a Note's included, may hold an `accent`, one of the
 eight keys of `accentSchema`, which
 [the native format](../../docs/saerskriven-yaml.md#accents) describes.
-`accentParts` names the strength and the palette slot of each key.
-`setAccent` gives one or more elements a key, or clears theirs, in one model,
-and refuses the whole edit where an id names no element. A cleared accent is
-an absent key. No other operation reads an accent or changes one.
+`accentParts` names the strength and the palette slot of each key, and
+`accentField` gives a placement's or a drawn element's accent as a field to
+spread. `setAccent` gives one or more elements a key on one diagram, or
+clears theirs there, in one model, and refuses the whole edit where an id
+names no element that diagram draws. A cleared accent is an absent key. No
+other operation reads an accent or changes one.
 
 A copied threat or assumption leaves its `appliesToModel` behind, since the
 link belongs to the model it was copied from: `selectionFragment` clears it. A
@@ -219,15 +271,22 @@ hand-written models: the refusals a schema holds, each model-wide rule
 untouched and returns a model that parses. Spread across the whole
 vocabulary is the job of `modelInputArbitrary`, which the formats suite
 writes and reads back ([`packages/formats`](../formats/README.md)).
+`parseDrawnModel` is pinned on the same hand-written fixture, which is
+written with its diagrams owning their elements, and each rule reports the
+path the fixture holds the field at.
 
 `@saerskriven/model/fixtures` is the one home for the fixture helpers every
 suite in the workspace shares: the id parsers (`elementId`, `diagramId`,
 `threatId`, `mitigationId`, `assumptionId`), `modelInputArbitrary`, the
-fast-check generator of `parseModel` input, `parsedFixture`, which throws
-where a fixture document stops parsing, since that is a broken suite rather
-than a case under test, `committedModel`, which reads a model under
-`test-data`, and `committedDiagrams`, the diagrams the canvas and render suites
-draw from those files. The subpath resolves to source and stays out of the
+fast-check generator of `parseDrawnModel` input, `parsedFixture` and
+`drawnFixture`, which parse a fixture document through `parseModel` and
+`parseDrawnModel` and throw where it stops parsing, since that is a broken
+suite rather than a case under test, `committedModel`, which reads a model
+under `test-data`, and `committedDiagrams`, the diagrams the canvas and render
+suites draw from those files. `elementIn`, `drawnAt` and `drawnAcross` read
+elements as their diagrams draw them, `placementIn` an element's placement,
+and `redrawn` and `drawnOnto` build a model from drawn elements without a
+parse. The subpath resolves to source and stays out of the
 library build. Who may import it is a workspace rule, stated in
 [`CODING.md`](../../CODING.md#tests).
 

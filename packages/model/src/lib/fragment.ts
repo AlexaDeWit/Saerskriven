@@ -8,6 +8,7 @@ import {
 } from './diagram-edits.js';
 import type { ThreatCategory } from './categories.js';
 import type { Decimals } from './decimals.js';
+import { drawnElements, placementOf } from './drawing.js';
 import { translatedElement } from './element-geometry.js';
 import type { Element } from './elements.js';
 import type { Point } from './geometry.js';
@@ -17,7 +18,7 @@ import type { Mitigation } from './mitigations.js';
 import { OperationFailure } from './operation-failures.js';
 import { parseModel, type Model } from './parse.js';
 import { withId } from './records.js';
-import { elementsAcross, elementsById } from './references.js';
+import { elementsById } from './references.js';
 import { restrictRelationships } from './relationships.js';
 import type { Threat } from './threats.js';
 
@@ -56,11 +57,17 @@ export function selectionFragment(
   diagramId: DiagramId,
   selection: readonly ElementId[],
 ): Either.Either<Model, SelectionFragmentFailure> {
-  return Either.flatMap(locatedDiagram(model, diagramId), (diagram) =>
-    Either.flatMap(closedSelection(diagram.elements, selection), (included) => {
-      const elements = diagram.elements
-        .filter((element) => included.has(element.id))
-        .map((element) => restrictRelationships(element, included));
+  return Either.flatMap(locatedDiagram(model, diagramId), (diagram) => {
+    const drawn = drawnElements(model, diagram);
+    return Either.flatMap(closedSelection(drawn, selection), (included) => {
+      const copied = drawn.filter((element) => included.has(element.id));
+      const byId = elementsById(model.elements);
+      const elements = copied.flatMap((element) => {
+        const held = byId.get(element.id);
+        return held === undefined
+          ? []
+          : [restrictRelationships(held, included)];
+      });
       const threats = model.threats
         .filter((threat) => threat.elements.some((id) => included.has(id)))
         .map((threat) => ({
@@ -71,15 +78,16 @@ export function selectionFragment(
       const threatIds = new Set(threats.map((threat) => threat.id));
       return checkedFragment({
         ...model,
-        diagrams: [{ ...diagram, elements }],
+        elements,
+        diagrams: [{ ...diagram, placements: copied.map(placementOf) }],
         threats,
         mitigations: restrictedLinks(model.mitigations, threatIds),
         assumptions: restrictedLinks(model.assumptions, threatIds).map(
           (item) => ({ ...item, appliesToModel: false }),
         ),
       });
-    }),
-  );
+    });
+  });
 }
 
 /**
@@ -107,12 +115,16 @@ export function remapFragment(
   const renamedThreat = (id: string) => (held.has(id) ? id : renamed(id));
   return checkedFragment({
     ...fragment,
+    elements: fragment.elements.map((element) =>
+      renamedElement(element, renamed),
+    ),
     diagrams: fragment.diagrams.map((diagram) => ({
       ...diagram,
       id: renamed(diagram.id),
-      elements: diagram.elements.map((element) =>
-        renamedElement(translatedElement(element, offset, decimals), renamed),
-      ),
+      placements: drawnElements(fragment, diagram).map((element) => ({
+        ...placementOf(translatedElement(element, offset, decimals)),
+        element: renamed(element.id),
+      })),
     })),
     threats: fragment.threats.map((item) => ({
       ...item,
@@ -156,17 +168,18 @@ export function insertFragment(
   if (Either.isLeft(target)) {
     return Either.left(target.left);
   }
-  const elements = elementsAcross(fragment.diagrams);
-  if (elements.length === 0) {
+  if (fragment.elements.length === 0) {
     return Either.right(model);
   }
+  const placements = fragment.diagrams.flatMap((diagram) => diagram.placements);
   const { threats, mitigations, assumptions } = pastedRegister(model, fragment);
   const graph: Model = {
     ...model,
     ...numberedThreats(model, threats),
+    elements: [...model.elements, ...fragment.elements],
     diagrams: model.diagrams.map((diagram) =>
       diagram.id === diagramId
-        ? { ...diagram, elements: [...diagram.elements, ...elements] }
+        ? { ...diagram, placements: [...diagram.placements, ...placements] }
         : diagram,
     ),
   };
@@ -336,11 +349,11 @@ function renamedElement(element: Element, renamed: (id: string) => string) {
         : { trustBoundaryIds: element.trustBoundaryIds.map(renamed) }),
       source:
         element.source.kind === 'attached'
-          ? { ...element.source, element: renamed(element.source.element) }
+          ? { kind: 'attached', element: renamed(element.source.element) }
           : element.source,
       target:
         element.target.kind === 'attached'
-          ? { ...element.target, element: renamed(element.target.element) }
+          ? { kind: 'attached', element: renamed(element.target.element) }
           : element.target,
     };
   }

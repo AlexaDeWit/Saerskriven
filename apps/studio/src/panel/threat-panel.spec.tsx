@@ -46,7 +46,12 @@ import {
   textbox,
   threatsTab,
 } from '../ui/ui.fixtures.js';
-import { elementIn, softHyphen, threatId } from '@saerskriven/model/fixtures';
+import {
+  elementIn,
+  redrawn,
+  softHyphen,
+  threatId,
+} from '@saerskriven/model/fixtures';
 import { canvasModel, requestFlow } from '../canvas/canvas.fixtures.js';
 import { activeTranslator } from '../messages/locale.js';
 
@@ -398,15 +403,11 @@ describe(
       const nameless = { ...sampleElement(processElement), name: '' };
       modelStore.setState(
         {
-          ...initialState({
-            ...sampleModel,
-            diagrams: sampleModel.diagrams.map((diagram) => ({
-              ...diagram,
-              elements: diagram.elements.map((element) =>
-                element.id === processElement ? nameless : element,
-              ),
-            })),
-          }),
+          ...initialState(
+            redrawn(sampleModel, (element) =>
+              element.id === processElement ? nameless : element,
+            ),
+          ),
           selection: [processElement],
         },
         true,

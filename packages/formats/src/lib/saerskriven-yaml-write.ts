@@ -1,11 +1,12 @@
 import {
   accentField,
+  drawnElements,
   inNumberOrder,
   type Assumption,
   type BoundaryShape,
   type Diagram,
-  type Element,
-  type FlowEndpoint,
+  type DrawnElement,
+  type DrawnFlowEndpoint,
   type Mitigation,
   type Model,
   type ModelMetadata,
@@ -79,7 +80,7 @@ export function writeSaerskrivenYamlDocument(
     formatVersion: 2,
     metadata: toWireMetadata(model.metadata),
     assumptions: model.assumptions.map(toWireAssumption),
-    diagrams: model.diagrams.map(toWireDiagram),
+    diagrams: model.diagrams.map((diagram) => toWireDiagram(model, diagram)),
     mitigations: model.mitigations.map(toWireMitigation),
     threats: inNumberOrder(model.threats).map(toWireThreat),
     lastIssuedThreatNumber: model.lastIssuedThreatNumber,
@@ -97,15 +98,18 @@ function toWireMetadata(metadata: ModelMetadata): SaerskrivenYamlV2Metadata {
   };
 }
 
-function toWireDiagram(diagram: Diagram): SaerskrivenYamlV2Diagram {
+function toWireDiagram(
+  model: Model,
+  diagram: Diagram,
+): SaerskrivenYamlV2Diagram {
   return {
     id: diagram.id,
     title: diagram.title,
-    elements: diagram.elements.map(toWireElement),
+    elements: drawnElements(model, diagram).map(toWireElement),
   };
 }
 
-function toWireElement(element: Element): SaerskrivenYamlV2Element {
+function toWireElement(element: DrawnElement): SaerskrivenYamlV2Element {
   if (element.kind === 'flow') {
     return {
       kind: 'flow',
@@ -148,7 +152,7 @@ function toWireElement(element: Element): SaerskrivenYamlV2Element {
   return { kind: 'store', ...node, ...storeProperties(element) };
 }
 
-function toWireCommon(element: Element) {
+function toWireCommon(element: DrawnElement) {
   return {
     id: element.id,
     name: element.name,
@@ -159,7 +163,9 @@ function toWireCommon(element: Element) {
   };
 }
 
-function toWireEndpoint(endpoint: FlowEndpoint): SaerskrivenYamlV2Endpoint {
+function toWireEndpoint(
+  endpoint: DrawnFlowEndpoint,
+): SaerskrivenYamlV2Endpoint {
   if (endpoint.kind === 'free') {
     return { kind: 'free', position: endpoint.position };
   }

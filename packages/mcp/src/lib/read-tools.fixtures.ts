@@ -157,12 +157,9 @@ export function keptReasonTree(): ModelWorkspace {
     saerskrivenYamlCodec.write(
       parsedFixture({
         ...editableModel,
-        diagrams: editableModel.diagrams.map((diagram) => ({
-          ...diagram,
-          elements: diagram.elements.map((element) => ({
-            ...element,
-            outOfScope: false,
-          })),
+        elements: editableModel.elements.map((element) => ({
+          ...element,
+          outOfScope: false,
         })),
       }),
     ).output,

@@ -1,15 +1,17 @@
 import {
+  drawnElements,
   moveElement,
+  reconnectFlow,
   renameElement,
   resizeElement,
   setFlowDirection,
   setFlowWaypoints,
-  reconnectFlow,
+  type Element,
   type Model,
 } from '@saerskriven/model';
 import {
   elementId,
-  parsedFixture,
+  drawnFixture,
   validModelFixture,
   securityModelFixture,
   securityPropertyFixtures as properties,
@@ -28,7 +30,7 @@ import { featureCompleteText } from './threat-dragon.fixtures.js';
 import { isRecord } from './records.js';
 import { readFailureIssues } from './codec.fixtures.js';
 
-const secured = parsedFixture(securityModelFixture);
+const secured = drawnFixture(securityModelFixture);
 
 function nativeCycle(model: Model): Model {
   const written = writeSaerskrivenYaml(model);
@@ -67,33 +69,34 @@ function facts(record: unknown) {
 }
 
 function elementFacts(model: Model) {
-  return model.diagrams.flatMap((diagram) =>
-    diagram.elements.map((element) => ({ id: element.id, ...facts(element) })),
-  );
+  return model.elements.map((element) => ({
+    id: element.id,
+    ...facts(element),
+  }));
 }
 
 describe('optional security facts in native YAML', () => {
   it('retains explicit facts on every supported kind, including false, empty text and empty lists', () => {
     const cycle = nativeCycle(secured);
     expect(cycle).toStrictEqual(secured);
-    expect(cycle.diagrams[0].elements.map(facts)).toEqual(properties);
+    expect(drawnElements(cycle, cycle.diagrams[0]).map(facts)).toEqual(
+      properties,
+    );
     expect(writeSaerskrivenYamlDocument(cycle).formatVersion).toBe(2);
   });
 
   it('reads legacy fields as absent and does not turn them into explicit negatives', () => {
-    const legacy = parsedFixture(validModelFixture);
+    const legacy = drawnFixture(validModelFixture);
     const cycle = nativeCycle(legacy);
     expect(cycle).toStrictEqual(legacy);
-    expect(cycle.diagrams[0].elements.map(facts)).toEqual(
+    expect(drawnElements(cycle, cycle.diagrams[0]).map(facts)).toEqual(
       properties.map(() => ({})),
     );
   });
 
   it('preserves an explicitly empty flow protocol and boundary list', () => {
     const input = structuredClone(secured);
-    const flow = input.diagrams[0].elements.find(
-      (element) => element.kind === 'flow',
-    );
+    const flow = input.elements.find((element) => element.kind === 'flow');
     expect(flow).toBeDefined();
     if (flow === undefined) return;
     flow.protocol = '';
@@ -106,10 +109,15 @@ describe('optional security facts in native YAML', () => {
       renameElement(secured, elementId('element-api'), 'Renamed'),
     );
     edited = Either.getOrThrow(
-      moveElement(edited, elementId('element-perimeter'), { x: 1000, y: 1000 }),
+      moveElement(
+        edited,
+        secured.diagrams[0].id,
+        elementId('element-perimeter'),
+        { x: 1000, y: 1000 },
+      ),
     );
     edited = Either.getOrThrow(
-      resizeElement(edited, elementId('element-db'), {
+      resizeElement(edited, secured.diagrams[0].id, elementId('element-db'), {
         width: 200,
         height: 90,
       }),
@@ -118,11 +126,17 @@ describe('optional security facts in native YAML', () => {
       setFlowDirection(edited, elementId('element-order-flow'), true),
     );
     edited = Either.getOrThrow(
-      setFlowWaypoints(edited, elementId('element-order-flow'), []),
+      setFlowWaypoints(
+        edited,
+        secured.diagrams[0].id,
+        elementId('element-order-flow'),
+        [],
+      ),
     );
     edited = Either.getOrThrow(
       reconnectFlow(
         edited,
+        secured.diagrams[0].id,
         elementId('element-order-flow'),
         'target',
         elementId('element-api'),
@@ -156,27 +170,40 @@ describe('security facts across Threat Dragon and native YAML', () => {
     expect(actor).toBeDefined();
     if (actor === undefined) return;
     actor.zIndex = 321;
-    const edited = structuredClone(read.model);
-    const node = edited.diagrams[0].elements.find(
+    const node = read.model.elements.find(
       (element) => element.kind === 'actor',
     );
     expect(node).toBeDefined();
     if (node === undefined) return;
-    node.providesAuthentication = true;
+    const withActor = (next: Element): Model => ({
+      ...read.model,
+      elements: read.model.elements.map((element) =>
+        element.id === next.id ? next : element,
+      ),
+    });
     const changed = Either.getOrThrow(
-      readThreatDragon(writeThreatDragon(edited, source).output),
+      readThreatDragon(
+        writeThreatDragon(
+          withActor({ ...node, providesAuthentication: true }),
+          source,
+        ).output,
+      ),
     );
     expect(elementFacts(changed.model)[0]).toEqual({
       id: node.id,
       providesAuthentication: true,
     });
     expect(allCells(changed.source)[0].zIndex).toBe(321);
-    delete node.providesAuthentication;
+    const { providesAuthentication: _held, ...unauthenticated } = node;
     const removed = Either.getOrThrow(
-      readThreatDragon(writeThreatDragon(edited, source).output),
+      readThreatDragon(
+        writeThreatDragon(withActor(unauthenticated), source).output,
+      ),
     );
     expect(facts(allCells(removed.source)[0].data)).toEqual({});
-    expect(facts(removed.model.diagrams[0].elements[0])).toEqual({});
+    expect(
+      facts(drawnElements(removed.model, removed.model.diagrams[0])[0]),
+    ).toEqual({});
   });
 
   it('refuses unrepresentable security text with a model path instead of reporting a lossless read', () => {
@@ -291,7 +318,7 @@ describe('declared relationship validation and edits', () => {
 
   it('keeps ordered repeated assertions without inventing reciprocal lists', () => {
     const draft = structuredClone(secured);
-    const boundary = draft.diagrams[0].elements.find(
+    const boundary = draft.elements.find(
       (element) => element.kind === 'trust-boundary',
     );
     expect(boundary).toBeDefined();
@@ -300,9 +327,7 @@ describe('declared relationship validation and edits', () => {
       elementId('element-order-flow'),
       elementId('element-order-flow'),
     ];
-    const flow = draft.diagrams[0].elements.find(
-      (element) => element.kind === 'flow',
-    );
+    const flow = draft.elements.find((element) => element.kind === 'flow');
     expect(flow).toBeDefined();
     if (flow === undefined) return;
     delete flow.trustBoundaryIds;

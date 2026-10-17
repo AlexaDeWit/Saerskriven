@@ -65,36 +65,50 @@ export function reduce(state: State, action: Action): State {
       edited(state, setElementProperties(state.present, elementId, properties)),
     SetElementDetails: ({ elementId, change }) =>
       edited(state, setElementDetails(state.present, elementId, change)),
-    SetAccent: ({ elementIds, accent }) =>
-      edited(state, setAccent(state.present, elementIds, accent)),
+    SetAccent: ({ diagramId, elementIds, accent }) =>
+      edited(state, setAccent(state.present, diagramId, elementIds, accent)),
     InsertFragment: ({ diagramId, fragment }) =>
       edited(state, insertFragment(state.present, diagramId, fragment)),
-    ReconnectFlow: ({ elementId, side, endpointId, anchor }) =>
+    ReconnectFlow: ({ diagramId, elementId, side, endpointId, anchor }) =>
       edited(
         state,
-        reconnectFlow(state.present, elementId, side, endpointId, anchor),
+        reconnectFlow(
+          state.present,
+          diagramId,
+          elementId,
+          side,
+          endpointId,
+          anchor,
+        ),
       ),
     SetFlowDirection: ({ elementId, bidirectional }) =>
       edited(state, setFlowDirection(state.present, elementId, bidirectional)),
-    SetFlowEndPosition: ({ elementId, side, position, decimals }) =>
+    SetFlowEndPosition: ({ diagramId, elementId, side, position, decimals }) =>
       edited(
         state,
-        setFlowEndPosition(state.present, elementId, side, position, decimals),
+        setFlowEndPosition(
+          state.present,
+          diagramId,
+          elementId,
+          side,
+          position,
+          decimals,
+        ),
       ),
     ReverseFlow: ({ elementId }) =>
       edited(state, reverseFlow(state.present, elementId)),
-    SetBoundaryShape: ({ elementId, shape, decimals }) =>
+    SetBoundaryShape: ({ diagramId, elementId, shape, decimals }) =>
       edited(
         state,
-        setBoundaryShape(state.present, elementId, shape, decimals),
+        setBoundaryShape(state.present, diagramId, elementId, shape, decimals),
       ),
-    ArrangeElements: ({ moves, decimals }) =>
+    ArrangeElements: ({ diagramId, moves, decimals }) =>
       edited(
         state,
         moves.reduce<Either.Either<Model, OperationFailure>>(
           (outcome, { elementId, offset }) =>
             Either.flatMap(outcome, (model) =>
-              moveElement(model, elementId, offset, decimals),
+              moveElement(model, diagramId, elementId, offset, decimals),
             ),
           Either.right(state.present),
         ),
@@ -105,31 +119,40 @@ export function reduce(state: State, action: Action): State {
       removedElements(state, [elementId], decimals),
     RemoveElements: ({ elementIds, decimals }) =>
       removedElements(state, elementIds, decimals),
-    MoveElement: ({ elementId, offset, decimals }) =>
-      edited(state, moveElement(state.present, elementId, offset, decimals)),
-    MoveElements: ({ elementIds, offset, decimals }) =>
+    MoveElement: ({ diagramId, elementId, offset, decimals }) =>
+      edited(
+        state,
+        moveElement(state.present, diagramId, elementId, offset, decimals),
+      ),
+    MoveElements: ({ diagramId, elementIds, offset, decimals }) =>
       edited(
         state,
         editElements(state.present, elementIds, (model, elementId) =>
-          moveElement(model, elementId, offset, decimals),
+          moveElement(model, diagramId, elementId, offset, decimals),
         ),
       ),
-    ResizeElement: ({ elementId, offset, size, decimals }) =>
+    ResizeElement: ({ diagramId, elementId, offset, size, decimals }) =>
       edited(
         state,
         Either.flatMap(
-          moveElement(state.present, elementId, offset, decimals),
-          (moved) => resizeElement(moved, elementId, size, decimals),
+          moveElement(state.present, diagramId, elementId, offset, decimals),
+          (moved) => resizeElement(moved, diagramId, elementId, size, decimals),
         ),
       ),
     RenameElement: ({ elementId, name }) =>
       edited(state, renameElement(state.present, elementId, name)),
     EditNote: ({ elementId, text }) =>
       edited(state, editNote(state.present, elementId, text)),
-    SetFlowWaypoints: ({ elementId, waypoints, decimals }) =>
+    SetFlowWaypoints: ({ diagramId, elementId, waypoints, decimals }) =>
       edited(
         state,
-        setFlowWaypoints(state.present, elementId, waypoints, decimals),
+        setFlowWaypoints(
+          state.present,
+          diagramId,
+          elementId,
+          waypoints,
+          decimals,
+        ),
       ),
     AddThreat: ({ threat }) => edited(state, addThreat(state.present, threat)),
     RemoveThreat: ({ threatId }) =>
@@ -257,7 +280,10 @@ function edited(
   });
 }
 
-function addedDiagram(state: State, diagram: Diagram): State {
+function addedDiagram(
+  state: State,
+  diagram: Pick<Diagram, 'id' | 'title'>,
+): State {
   const outcome = addDiagram(state.present, diagram);
   const next = edited(state, outcome);
   return Either.isLeft(outcome) ? next : selectedDiagram(next, diagram.id);

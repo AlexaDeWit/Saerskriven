@@ -199,11 +199,19 @@ describe('the accent of the selection', () => {
   );
   const accented = reduce(
     noted,
-    Action.SetAccent({ elementIds: [actorElement], accent: 's3' }),
+    Action.SetAccent({
+      diagramId: mainDiagram,
+      elementIds: [actorElement],
+      accent: 's3',
+    }),
   );
   const accentedNote = reduce(
     accented,
-    Action.SetAccent({ elementIds: [note.id], accent: 's3' }),
+    Action.SetAccent({
+      diagramId: mainDiagram,
+      elementIds: [note.id],
+      accent: 's3',
+    }),
   );
   const selecting = (state: typeof start, ...elementIds: ElementId[]) =>
     reduce(state, Action.Select({ elementIds }));

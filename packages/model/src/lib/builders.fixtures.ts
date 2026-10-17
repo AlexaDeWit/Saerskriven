@@ -1,9 +1,10 @@
-import { parsedFixture } from '../fixtures.js';
+import { fixtureOf } from '../fixtures.js';
 import {
   assumptionSchema,
   type Assumption,
   type AssumptionInput,
 } from './assumptions.js';
+import type { Element } from './elements.js';
 import type { Point, Size } from './geometry.js';
 import {
   mitigationSchema,
@@ -11,12 +12,13 @@ import {
   type MitigationInput,
 } from './mitigations.js';
 import type { Diagram } from './model.js';
+import { parseDrawnModel } from './parse-drawn.js';
 import type { Model } from './parse.js';
 import { threatSchema, type Threat, type ThreatInput } from './threats.js';
 
 /**
- * An element drawn as a box, in scope and undescribed, in the schema's input
- * shape. Named by its id unless a name is given.
+ * An element drawn as a box, in scope and undescribed, in the drawn schema's
+ * input shape. Named by its id unless a name is given.
  */
 export const boxAt = (
   id: string,
@@ -131,23 +133,20 @@ export const assumptionOf = (
     ...fields,
   });
 
-type Parts<D, T extends { readonly number: number }, M, A> = {
+type Register<T extends { readonly number: number }, M, A> = {
   readonly title?: string;
-  readonly diagrams?: readonly D[];
   readonly threats?: readonly T[];
   readonly mitigations?: readonly M[];
   readonly assumptions?: readonly A[];
 };
 
-const envelope = <D, T extends { readonly number: number }, M, A>({
+const envelope = <T extends { readonly number: number }, M, A>({
   title = 'Sample',
-  diagrams = [],
   threats = [],
   mitigations = [],
   assumptions = [],
-}: Parts<D, T, M, A>) => ({
+}: Register<T, M, A>) => ({
   metadata: { title, owner: '', description: '', contributors: [] },
-  diagrams: [...diagrams],
   threats: [...threats],
   lastIssuedThreatNumber: Math.max(0, ...threats.map(({ number }) => number)),
   mitigations: [...mitigations],
@@ -160,14 +159,24 @@ const envelope = <D, T extends { readonly number: number }, M, A>({
  * control character in a title or a threat linked to no element the model
  * holds. The last issued number is the highest threat number.
  */
-export const modelFrom = (
-  parts: Parts<Diagram, Threat, Mitigation, Assumption>,
-): Model => envelope(parts);
+export const modelFrom = ({
+  elements = [],
+  diagrams = [],
+  ...parts
+}: Register<Threat, Mitigation, Assumption> & {
+  readonly elements?: readonly Element[];
+  readonly diagrams?: readonly Diagram[];
+}): Model => ({
+  ...envelope(parts),
+  elements: [...elements],
+  diagrams: [...diagrams],
+});
 
 /**
- * A parsed model of the given parts in the schema's input shape. `elements`
- * become one diagram `d` titled `Diagram`, `diagrams` replace it, and the
- * last issued number is the highest threat number.
+ * A parsed model of the given parts in the drawn schema's input shape, each
+ * diagram owning its elements. `elements` become one diagram `d` titled
+ * `Diagram`, `diagrams` replace it, and the last issued number is the
+ * highest threat number.
  */
 export const modelWith = ({
   elements,
@@ -175,6 +184,8 @@ export const modelWith = ({
     ? []
     : [{ id: 'd', title: 'Diagram', elements: [...elements] }],
   ...parts
-}: Parts<unknown, { readonly number: number }, unknown, unknown> & {
+}: Register<{ readonly number: number }, unknown, unknown> & {
   readonly elements?: readonly unknown[];
-}): Model => parsedFixture(envelope({ ...parts, diagrams }));
+  readonly diagrams?: readonly unknown[];
+}): Model =>
+  fixtureOf(parseDrawnModel({ ...envelope(parts), diagrams: [...diagrams] }));

@@ -5,12 +5,13 @@ import {
 } from '@saerskriven/formats';
 import {
   OperationFailure,
-  elementsAcross,
   type AssumptionStatus,
   type BoundaryShapeInput,
 } from '@saerskriven/model';
 import {
   assumptionId,
+  drawnAcross,
+  drawnAt,
   elementId,
   testDataPath,
 } from '@saerskriven/model/fixtures';
@@ -320,7 +321,7 @@ describe('what an applied edit writes', () => {
     );
     expect(Either.isRight(applied)).toBe(true);
     expect(
-      elementsAcross(heldModel(attempted)?.diagrams ?? []).find(
+      drawnAcross(heldModel(attempted)).find(
         ({ id }) => id === 'element-added',
       ),
     ).toMatchObject({ accent: 's4' });
@@ -433,7 +434,7 @@ describe('what a flow left unlabelled writes', () => {
     );
     expect(Either.isRight(written)).toBe(true);
     expect(
-      elementsAcross(heldModel(attempted)?.diagrams ?? []).find(
+      drawnAcross(heldModel(attempted)).find(
         ({ id }) => id === 'element-audit-flow',
       )?.name,
     ).toBe('');
@@ -885,9 +886,7 @@ describe('what the flow direction and metadata ops write', () => {
     ]);
     const model = heldModel(attempted);
     expect(
-      model?.diagrams[0].elements.find(
-        (element) => element.id === 'element-order-flow',
-      ),
+      drawnAt(model).find((element) => element.id === 'element-order-flow'),
     ).toMatchObject({ bidirectional: true });
     expect(
       model?.threats.find((threat) => threat.id === 'threat-tamper-order')
@@ -949,7 +948,7 @@ describe('what the flow end, reversal and boundary shape ops write', () => {
         shape: perimeterCurve,
       },
     ]);
-    const elements = elementsAcross(heldModel(attempted)?.diagrams ?? []);
+    const elements = drawnAcross(heldModel(attempted));
     expect(
       elements.find((element) => element.id === 'element-order-flow'),
     ).toMatchObject({
@@ -967,7 +966,7 @@ describe('what the flow end, reversal and boundary shape ops write', () => {
 });
 
 const elementsIn = (attempted: ReturnType<typeof attempt>, file: string) =>
-  elementsAcross(heldModel(attempted, file)?.diagrams ?? []);
+  drawnAcross(heldModel(attempted, file));
 
 describe('what set_element_details writes', () => {
   for (const [file, id] of [
@@ -1136,7 +1135,7 @@ describe('what an edit does with what this version cannot read', () => {
       expect(textOf(applied).join('\n')).toContain(named);
       expect(droppedOnRereadOf(attempted, file)).toEqual([]);
       expect(
-        heldModel(attempted, file)?.diagrams[0]?.elements.find(
+        drawnAt(heldModel(attempted, file)).find(
           (element) => element.id === 'element-db',
         )?.name,
       ).toBe('Order store');

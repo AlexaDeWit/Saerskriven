@@ -11,7 +11,7 @@ import {
   withoutId,
   type UnknownThreatFailure,
 } from './records.js';
-import { elementIdsAcross, unknownElementIn } from './references.js';
+import { unknownElementIn } from './references.js';
 import type { Threat } from './threats.js';
 
 /** The failures {@link addThreat} can produce. */
@@ -63,7 +63,7 @@ export function addThreat(
       OperationFailure.ReusedThreatNumber({ number: threat.number }),
     );
   }
-  const unlinkable = unknownElementIn(model.diagrams, threat.elements);
+  const unlinkable = unknownElementIn(model.elements, threat.elements);
   if (unlinkable) {
     return Either.left(
       OperationFailure.UnknownElement({ elementId: unlinkable }),
@@ -154,7 +154,7 @@ export function replaceThreat(
           }),
         );
       }
-      const unlinkable = unknownElementIn(model.diagrams, threat.elements);
+      const unlinkable = unknownElementIn(model.elements, threat.elements);
       return unlinkable
         ? Either.left(
             OperationFailure.UnknownElement({ elementId: unlinkable }),
@@ -290,7 +290,7 @@ function linkableThreat(
   return Either.flatMap(
     heldThreat(model, threatId),
     (threat): Either.Either<Threat, ThreatLinkFailure> =>
-      elementIdsAcross(model.diagrams).has(elementId)
+      model.elements.some(({ id }) => id === elementId)
         ? Either.right(threat)
         : Either.left(OperationFailure.UnknownElement({ elementId })),
   );

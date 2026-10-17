@@ -1,3 +1,4 @@
+import { drawnAcross } from '@saerskriven/model/fixtures';
 import { expect, test, type Page } from '@playwright/test';
 import type { Model } from '@saerskriven/model';
 import { commandChord, registeredChords } from './chords.fixtures.js';
@@ -16,11 +17,9 @@ const point = (page: Page, number: number) =>
   page.getByRole('button', { name: `Point ${String(number)}`, exact: true });
 
 const shapeNamed = (model: Model, name: string) =>
-  model.diagrams
-    .flatMap((diagram) => diagram.elements)
-    .find(
-      (element) => element.name === name && element.kind === 'trust-boundary',
-    );
+  drawnAcross(model).find(
+    (element) => element.name === name && element.kind === 'trust-boundary',
+  );
 
 test('a trust boundary curve moves a point by arrow key and by dragging, and removes one, one undo step each', async ({
   page,

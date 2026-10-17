@@ -3,8 +3,9 @@ import {
   setFlowEndPosition,
   setFlowWaypoints,
   type Decimals,
+  type DiagramId,
+  type DrawnFlow,
   type ElementId,
-  type Flow,
   type Model,
   type OperationFailure,
   type Point,
@@ -12,7 +13,8 @@ import {
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import { Action } from '../store/actions.js';
-import { dispatch } from '../store/store.js';
+import { activeDiagramId } from '../store/selectors.js';
+import { dispatch, modelStore } from '../store/store.js';
 import { sideMessages } from '../messages/enum-labels.js';
 import type { Said } from '../messages/said.js';
 import { announce, spokenElement } from './announcements.js';
@@ -51,7 +53,7 @@ export type EndTarget = AnchorTarget | AttachTarget | FreeTarget;
 
 type RouteTarget = WaypointTarget | EndTarget;
 
-const routeEdit: ElementEdit<Flow, RouteTarget> = {
+const routeEdit: ElementEdit<DrawnFlow, RouteTarget> = {
   subject: (element) => (element.kind === 'flow' ? element : undefined),
   edited: editedRoute,
   action: routeAction,
@@ -66,11 +68,17 @@ export function useFlowBends() {
     ...route,
     flow,
     remove: (index: number): void => {
-      if (flow === undefined || flow.waypoints[index] === undefined) {
+      const diagramId = activeDiagramId(modelStore.getState());
+      if (
+        flow === undefined ||
+        flow.waypoints[index] === undefined ||
+        diagramId === undefined
+      ) {
         return;
       }
       dispatch(
         Action.SetFlowWaypoints({
+          diagramId,
           elementId: flow.id,
           waypoints: flow.waypoints.filter((_point, at) => at !== index),
           decimals: undefined,
@@ -92,30 +100,46 @@ export type FlowBends = ReturnType<typeof useFlowBends>;
 
 function editedRoute(
   model: Model,
-  flow: Flow,
+  diagramId: DiagramId,
+  flow: DrawnFlow,
   target: RouteTarget,
 ): Either.Either<Model, OperationFailure> {
   if (target.kind === 'anchor') {
     const end = flow[target.end];
     return end.kind === 'attached'
-      ? reconnectFlow(model, flow.id, target.end, end.element, target.side)
+      ? reconnectFlow(
+          model,
+          diagramId,
+          flow.id,
+          target.end,
+          end.element,
+          target.side,
+        )
       : Either.right(model);
   }
   if (target.kind === 'attach') {
-    return reconnectFlow(model, flow.id, target.end, target.element);
+    return reconnectFlow(model, diagramId, flow.id, target.end, target.element);
   }
   if (target.kind === 'free') {
-    return setFlowEndPosition(model, flow.id, target.end, target.point);
+    return setFlowEndPosition(
+      model,
+      diagramId,
+      flow.id,
+      target.end,
+      target.point,
+    );
   }
   return setFlowWaypoints(
     model,
+    diagramId,
     flow.id,
     editedWaypoints(flow.waypoints, target),
   );
 }
 
 function routeAction(
-  flow: Flow,
+  diagramId: DiagramId,
+  flow: DrawnFlow,
   target: RouteTarget,
   decimals: Decimals | undefined,
 ): Action | undefined {
@@ -123,6 +147,7 @@ function routeAction(
     const end = flow[target.end];
     return end.kind === 'attached'
       ? Action.ReconnectFlow({
+          diagramId,
           elementId: flow.id,
           side: target.end,
           endpointId: end.element,
@@ -132,6 +157,7 @@ function routeAction(
   }
   if (target.kind === 'attach') {
     return Action.ReconnectFlow({
+      diagramId,
       elementId: flow.id,
       side: target.end,
       endpointId: target.element,
@@ -139,6 +165,7 @@ function routeAction(
   }
   if (target.kind === 'free') {
     return Action.SetFlowEndPosition({
+      diagramId,
       elementId: flow.id,
       side: target.end,
       position: target.point,
@@ -146,13 +173,14 @@ function routeAction(
     });
   }
   return Action.SetFlowWaypoints({
+    diagramId,
     elementId: flow.id,
     waypoints: editedWaypoints(flow.waypoints, target),
     decimals,
   });
 }
 
-function routeAnnouncement(flow: Flow, target: RouteTarget): Said {
+function routeAnnouncement(flow: DrawnFlow, target: RouteTarget): Said {
   return (t) => {
     const named = spokenElement(t, flow);
     if (target.kind === 'anchor') {
@@ -184,7 +212,7 @@ function routeAnnouncement(flow: Flow, target: RouteTarget): Said {
 }
 
 /** What freeing one end of `flow`, or moving it where it is already free, says. */
-export function freeEndSaid(flow: Flow, end: 'source' | 'target'): Said {
+export function freeEndSaid(flow: DrawnFlow, end: 'source' | 'target'): Said {
   const moved = flow[end].kind === 'free';
   return (t) => {
     const named = { flow: spokenElement(t, flow) };

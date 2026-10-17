@@ -55,6 +55,13 @@ export const issuesFrCA = catalogue(issueMessages)('fr-CA')({
     'l’identifiant d’élément « {id} » est déjà pris, et les identifiants d’élément sont uniques dans tout le modèle',
   'duplicate-diagram-id':
     'l’identifiant de diagramme « {id} » est déjà pris, et les identifiants de diagramme sont uniques dans tout le modèle',
+  'placement-element-unknown':
+    'le diagramme place « {id} », qui ne nomme aucun élément du modèle',
+  'duplicate-placement':
+    'l’élément « {id} » est placé une deuxième fois, et un élément se dessine une seule fois, sur un seul diagramme',
+  'placement-geometry-mismatch':
+    'le placement de « {id} » ne porte pas la géométrie que prend son genre',
+  'element-unplaced': 'l’élément « {id} » n’est placé sur aucun diagramme',
   'duplicate-threat-id':
     'l’identifiant de menace « {id} » est déjà pris, et les identifiants de menace sont uniques parmi les menaces',
   'duplicate-mitigation-id':

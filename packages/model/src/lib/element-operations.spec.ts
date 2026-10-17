@@ -7,8 +7,9 @@ import {
   elementIn,
   flowIn,
   modelInputArbitrary,
+  drawnFixture,
   modelWith,
-  parsedFixture,
+  placementIn,
   securityModelFixture,
   softHyphen,
   validModel,
@@ -25,7 +26,8 @@ import {
   setAccent,
   setElementDetails,
 } from './element-operations.js';
-import { elementSchema, type Element } from './elements.js';
+import { drawnElements } from './drawing.js';
+import { drawnElementSchema, type DrawnElement } from './drawn-elements.js';
 import { seededModel, validModelFixture } from './model.fixtures.js';
 import { OperationFailure } from './operation-failures.js';
 import {
@@ -49,14 +51,14 @@ import {
   withNote,
   writeFlow,
 } from './operations.fixtures.js';
+import { parseDrawnModel } from './parse-drawn.js';
 import { parseModel, type Model } from './parse.js';
-import { elementsAcross } from './references.js';
 
-const secured = parsedFixture(securityModelFixture);
+const secured = drawnFixture(securityModelFixture);
 
 const blankNames = ['', ' \t\n'];
 
-const everyKindButFlow: readonly Element[] = [
+const everyKindButFlow: readonly DrawnElement[] = [
   elementIn(validModel, 'element-customer'),
   elementIn(validModel, 'element-api'),
   elementIn(validModel, 'element-db'),
@@ -64,13 +66,15 @@ const everyKindButFlow: readonly Element[] = [
   note,
 ];
 
-const movedAtOneDecimal = (id: string): Element =>
+const movedAtOneDecimal = (id: string): DrawnElement =>
   elementIn(
-    modelOf(moveElement(noisyModel, elementId(id), { x: 5, y: 20 }, 1)),
+    modelOf(
+      moveElement(noisyModel, noisyDiagram, elementId(id), { x: 5, y: 20 }, 1),
+    ),
     id,
   );
 
-const readWith = (...added: readonly Element[]): Model =>
+const readWith = (...added: readonly DrawnElement[]): Model =>
   Either.getOrThrow(
     seededModel((draft) => {
       draft.diagrams[0].elements.push(...added);
@@ -81,6 +85,30 @@ describe('addElement', () => {
   it('adds a node to the named diagram', () => {
     const next = modelOf(addElement(validModel, mainDiagram, cache));
     expect(elementIds(next)).toContain('element-cache');
+  });
+
+  it('holds the facts at the root and the accent and geometry on the placement', () => {
+    const next = modelOf(
+      addElement(
+        validModel,
+        mainDiagram,
+        drawnElementSchema.parse({ ...storeInput, accent: 's2' }),
+      ),
+    );
+    expect(next.elements.at(-1)).toEqual({
+      kind: 'store',
+      id: 'element-cache',
+      name: 'Session cache',
+      description: '',
+      outOfScope: false,
+      reasonOutOfScope: '',
+    });
+    expect(next.diagrams[0].placements.at(-1)).toEqual({
+      element: 'element-cache',
+      accent: 's2',
+      position: { x: 600, y: 320 },
+      size: { width: 160, height: 80 },
+    });
   });
 
   it('adds a flow anchored to elements of the target diagram', () => {
@@ -94,17 +122,17 @@ describe('addElement', () => {
   it('leaves diagrams other than the target untouched', () => {
     const draft = structuredClone(validModelFixture);
     draft.diagrams.push({ id: 'diagram-annex', title: 'Annex', elements: [] });
-    const next = modelOf(addElement(parsedFixture(draft), mainDiagram, cache));
+    const next = modelOf(addElement(drawnFixture(draft), mainDiagram, cache));
     expect(next.diagrams[1]).toEqual({
       id: 'diagram-annex',
       title: 'Annex',
-      elements: [],
+      placements: [],
     });
     expect(elementIds(next)).toContain('element-cache');
   });
 
   it('adds a trust boundary', () => {
-    const zone = elementSchema.parse({
+    const zone = drawnElementSchema.parse({
       kind: 'trust-boundary',
       id: 'element-dmz',
       name: 'DMZ',
@@ -132,7 +160,10 @@ describe('addElement', () => {
   });
 
   it('fails on a duplicate element id', () => {
-    const clash = elementSchema.parse({ ...storeInput, id: 'element-api' });
+    const clash = drawnElementSchema.parse({
+      ...storeInput,
+      id: 'element-api',
+    });
     expect(errorOf(addElement(validModel, mainDiagram, clash))).toEqual(
       OperationFailure.DuplicateElementId({
         elementId: elementId('element-api'),
@@ -141,7 +172,7 @@ describe('addElement', () => {
   });
 
   it('fails on a flow endpoint anchored outside the diagram', () => {
-    const dangling = elementSchema.parse({
+    const dangling = drawnElementSchema.parse({
       ...flowInput,
       id: 'element-dangling-flow',
       target: { kind: 'attached', element: 'element-ghost' },
@@ -155,7 +186,7 @@ describe('addElement', () => {
   });
 
   it('fails on a flow anchored to itself', () => {
-    const selfAnchored = elementSchema.parse({
+    const selfAnchored = drawnElementSchema.parse({
       ...flowInput,
       id: 'element-loop-flow',
       source: { kind: 'attached', element: 'element-loop-flow' },
@@ -175,7 +206,7 @@ describe('addElement', () => {
   ] as const)(
     'refuses a flow ending on %s, as reconnectFlow does',
     (_, model, target) => {
-      const flow = elementSchema.parse({
+      const flow = drawnElementSchema.parse({
         ...flowInput,
         target: { kind: 'attached', element: target },
       });
@@ -189,7 +220,7 @@ describe('addElement', () => {
   );
 
   it('refuses a flow whose two ends attach to one element, naming its source', () => {
-    const loop = elementSchema.parse({
+    const loop = drawnElementSchema.parse({
       ...flowInput,
       target: flowInput.source,
     });
@@ -232,7 +263,7 @@ describe('addElement', () => {
       );
 
     for (const id of [noisyProcess, noisyFlow, noisyBox, noisyCurve]) {
-      expect(added(id)).toBe(elementIn(noisyModel, id));
+      expect(added(id)).toEqual(elementIn(noisyModel, id));
     }
     expect(added(noisyProcess, 1)).toMatchObject({
       position: { x: 123.6, y: 5.1 },
@@ -260,48 +291,41 @@ describe('addElement', () => {
     });
   });
 
-  it('refuses cross-diagram references and checks new elements and diagrams', () => {
-    const boundary = secured.diagrams[0].elements[4];
-    const outside = parsedFixture({
-      ...secured,
+  it('refuses cross-diagram references, as a read does', () => {
+    const drawn = drawnElements(secured, secured.diagrams[0]);
+    const boundary = drawn[4];
+    const outside = drawnFixture({
+      ...securityModelFixture,
       threats: [],
       mitigations: [],
       assumptions: [],
       diagrams: [
-        {
-          ...secured.diagrams[0],
-          elements: secured.diagrams[0].elements.slice(0, 3),
-        },
+        { ...securityModelFixture.diagrams[0], elements: drawn.slice(0, 3) },
         { id: 'other', title: 'Other', elements: [] },
       ],
     });
     expect(
       Either.isLeft(addElement(outside, diagramId('other'), boundary)),
     ).toBe(true);
-    expect(
-      Either.isLeft(
-        addDiagram(outside, {
-          id: diagramId('new'),
-          title: 'New',
-          elements: [boundary],
-        }),
-      ),
-    ).toBe(true);
     const invalid = {
-      ...outside,
+      ...securityModelFixture,
+      threats: [],
+      mitigations: [],
+      assumptions: [],
       diagrams: [
-        ...outside.diagrams,
+        { ...securityModelFixture.diagrams[0], elements: drawn.slice(0, 3) },
         { id: 'third', title: 'Third', elements: [boundary] },
       ],
     };
-    expect(Either.isLeft(parseModel(invalid))).toBe(true);
+    expect(Either.isLeft(parseDrawnModel(invalid))).toBe(true);
   });
 });
 
 describe('removeElement', () => {
-  it('removes the element from its diagram', () => {
+  it('removes the element from the model and its diagram', () => {
     const next = modelOf(removeElement(validModel, elementId('element-db')));
     expect(elementIds(next)).not.toContain('element-db');
+    expect(next.elements.map(({ id }) => id)).not.toContain('element-db');
   });
 
   it('frees the endpoints of flows anchored to the removed element', () => {
@@ -348,7 +372,7 @@ describe('removeElement', () => {
   it('keeps a threat that applies to the model when the deleted element was its last', () => {
     const draft = structuredClone(validModelFixture);
     draft.threats[0].appliesToModel = true;
-    const modelWide = parsedFixture(draft);
+    const modelWide = drawnFixture(draft);
     const next = ['element-api', 'element-order-flow'].reduce(
       (model, id) => modelOf(removeElement(model, elementId(id))),
       modelWide,
@@ -361,7 +385,7 @@ describe('removeElement', () => {
   it('keeps a threat that was already attached to no element', () => {
     const draft = structuredClone(validModelFixture);
     draft.threats[0].elements = [];
-    const unattached = parsedFixture(draft);
+    const unattached = drawnFixture(draft);
     const next = modelOf(removeElement(unattached, elementId('element-api')));
     expect(next.threats).toEqual(unattached.threats);
     expect(next.mitigations).toEqual(unattached.mitigations);
@@ -411,8 +435,8 @@ describe('removeElement', () => {
     const legacy = modelOf(
       removeElement(validModel, elementId('element-perimeter')),
     );
-    expect(legacy.diagrams[0].elements).toStrictEqual(
-      validModel.diagrams[0].elements.filter(
+    expect(legacy.elements).toStrictEqual(
+      validModel.elements.filter(
         (element) => element.id !== 'element-perimeter',
       ),
     );
@@ -434,13 +458,13 @@ describe('removeElement', () => {
   );
 
   it("frees an endpoint at the removed flow's own free endpoint", () => {
-    const spur = elementSchema.parse({
+    const spur = drawnElementSchema.parse({
       ...flowInput,
       id: 'element-spur-flow',
       source: { kind: 'free', position: { x: 500, y: 500 } },
       target: { kind: 'attached', element: 'element-db' },
     });
-    const tap = elementSchema.parse({
+    const tap = drawnElementSchema.parse({
       ...flowInput,
       id: 'element-tap-flow',
       source: { kind: 'attached', element: 'element-spur-flow' },
@@ -456,7 +480,7 @@ describe('removeElement', () => {
   });
 
   it('frees an endpoint at the canvas origin when the removed flow has no point of its own', () => {
-    const meter = elementSchema.parse({
+    const meter = drawnElementSchema.parse({
       ...flowInput,
       id: 'element-meter-flow',
       source: { kind: 'attached', element: 'element-write-flow' },
@@ -489,7 +513,10 @@ describe('removeElement', () => {
 describe('moveElement', () => {
   it('moves a node by the offset', () => {
     const next = modelOf(
-      moveElement(validModel, elementId('element-customer'), { x: 30, y: -20 }),
+      moveElement(validModel, mainDiagram, elementId('element-customer'), {
+        x: 30,
+        y: -20,
+      }),
     );
     expect(elementIn(next, 'element-customer')).toMatchObject({
       position: { x: 70, y: 100 },
@@ -498,7 +525,10 @@ describe('moveElement', () => {
 
   it('moves the waypoints and free endpoints of a flow, not its anchors', () => {
     const next = modelOf(
-      moveElement(validModel, elementId('element-order-flow'), { x: 10, y: 5 }),
+      moveElement(validModel, mainDiagram, elementId('element-order-flow'), {
+        x: 10,
+        y: 5,
+      }),
     );
     expect(flowIn(next, 'element-order-flow')).toMatchObject({
       source: { kind: 'attached', element: 'element-customer' },
@@ -509,7 +539,7 @@ describe('moveElement', () => {
 
   it('moves a trust boundary in either shape', () => {
     const box = modelOf(
-      moveElement(validModel, elementId('element-perimeter'), {
+      moveElement(validModel, mainDiagram, elementId('element-perimeter'), {
         x: -10,
         y: 10,
       }),
@@ -518,7 +548,7 @@ describe('moveElement', () => {
       shape: { kind: 'box', position: { x: 270, y: 70 } },
     });
     const curve = modelOf(
-      moveElement(validModel, elementId('element-billing-zone'), {
+      moveElement(validModel, mainDiagram, elementId('element-billing-zone'), {
         x: 5,
         y: 5,
       }),
@@ -544,7 +574,13 @@ describe('moveElement', () => {
     'lands a move from a noisy position on a number of %s decimals, where one is named',
     (decimals, position) => {
       const next = modelOf(
-        moveElement(noisyModel, noisyProcess, { x: 5, y: -5 }, decimals),
+        moveElement(
+          noisyModel,
+          noisyDiagram,
+          noisyProcess,
+          { x: 5, y: -5 },
+          decimals,
+        ),
       );
 
       expect(elementIn(next, noisyProcess)).toMatchObject({ position });
@@ -576,41 +612,55 @@ describe('moveElement', () => {
 
   it('returns the same model for a move that would store every number as it is', () => {
     const settled = modelOf(
-      moveElement(noisyModel, noisyProcess, { x: 5, y: -5 }, 1),
+      moveElement(noisyModel, noisyDiagram, noisyProcess, { x: 5, y: -5 }, 1),
     );
     const attached = modelOf(addElement(validModel, mainDiagram, writeFlow));
 
-    expect(modelOf(moveElement(settled, noisyProcess, { x: 0, y: 0 }))).toBe(
-      settled,
-    );
     expect(
-      modelOf(moveElement(settled, noisyProcess, { x: 1e-12, y: -0.04 }, 1)),
+      modelOf(moveElement(settled, noisyDiagram, noisyProcess, { x: 0, y: 0 })),
     ).toBe(settled);
     expect(
-      modelOf(moveElement(settled, noisyProcess, { x: 1e-12, y: 0 })),
+      modelOf(
+        moveElement(
+          settled,
+          noisyDiagram,
+          noisyProcess,
+          { x: 1e-12, y: -0.04 },
+          1,
+        ),
+      ),
+    ).toBe(settled);
+    expect(
+      modelOf(
+        moveElement(settled, noisyDiagram, noisyProcess, { x: 1e-12, y: 0 }),
+      ),
     ).not.toBe(settled);
-    expect(modelOf(moveElement(attached, writeFlow.id, { x: 5, y: 5 }))).toBe(
-      attached,
-    );
+    expect(
+      modelOf(moveElement(attached, mainDiagram, writeFlow.id, { x: 5, y: 5 })),
+    ).toBe(attached);
   });
 
   it('leaves the size of what it moves, and every other element, as stored', () => {
     const next = modelOf(
-      moveElement(noisyModel, noisyProcess, { x: 5, y: -5 }, 1),
+      moveElement(noisyModel, noisyDiagram, noisyProcess, { x: 5, y: -5 }, 1),
     );
 
     expect(elementIn(next, noisyProcess)).toMatchObject({
       size: { width: 120.123456, height: 60.04 },
     });
     for (const id of [noisyStore, noisyFlow, noisyBox, noisyCurve]) {
-      expect(elementIn(next, id)).toBe(elementIn(noisyModel, id));
+      expect(placementIn(next, id)).toBe(placementIn(noisyModel, id));
     }
+    expect(next.elements).toBe(noisyModel.elements);
   });
 
   it('fails on an unknown element', () => {
     expect(
       errorOf(
-        moveElement(validModel, elementId('element-ghost'), { x: 1, y: 1 }),
+        moveElement(validModel, mainDiagram, elementId('element-ghost'), {
+          x: 1,
+          y: 1,
+        }),
       ),
     ).toEqual(
       OperationFailure.UnknownElement({
@@ -618,10 +668,56 @@ describe('moveElement', () => {
       }),
     );
   });
+
+  it('fails on a diagram that does not draw the element, and on an unknown diagram', () => {
+    const twoDiagrams = modelOf(
+      addDiagram(validModel, {
+        id: diagramId('diagram-annex'),
+        title: 'Annex',
+      }),
+    );
+    expect(
+      errorOf(
+        moveElement(
+          twoDiagrams,
+          diagramId('diagram-annex'),
+          elementId('element-api'),
+          { x: 1, y: 1 },
+        ),
+      ),
+    ).toEqual(
+      OperationFailure.ElementNotOnDiagram({
+        elementId: elementId('element-api'),
+        diagramId: diagramId('diagram-annex'),
+      }),
+    );
+    expect(
+      errorOf(
+        moveElement(
+          validModel,
+          diagramId('diagram-ghost'),
+          elementId('element-api'),
+          { x: 1, y: 1 },
+        ),
+      ),
+    ).toEqual(
+      OperationFailure.UnknownDiagram({
+        diagramId: diagramId('diagram-ghost'),
+      }),
+    );
+  });
 });
 
+const drawnIn = (model: Model) =>
+  model.diagrams.flatMap((diagram) =>
+    drawnElements(model, diagram).map((element) => ({
+      diagram: diagram.id,
+      element,
+    })),
+  );
+
 describe('moveElement over generated models', () => {
-  const generatedModel = modelInputArbitrary.map(parsedFixture);
+  const generatedModel = modelInputArbitrary.map(drawnFixture);
   const coordinate = fc.double({
     min: -500,
     max: 500,
@@ -637,9 +733,9 @@ describe('moveElement over generated models', () => {
         offsetArbitrary,
         fc.constantFrom(0, 1, 3),
         (model, offset, decimals) => {
-          for (const element of elementsAcross(model.diagrams)) {
+          for (const { diagram, element } of drawnIn(model)) {
             const moved = modelOf(
-              moveElement(model, element.id, offset, decimals),
+              moveElement(model, diagram, element.id, offset, decimals),
             );
             const from = pointsOf(element);
             for (const [index, point] of pointsOf(
@@ -653,13 +749,17 @@ describe('moveElement over generated models', () => {
                 ).toBeLessThanOrEqual(0.5 / 10 ** decimals + 1e-9);
               }
             }
-            for (const other of elementsAcross(model.diagrams).filter(
-              (held) => held.id !== element.id,
+            for (const { element: other } of drawnIn(model).filter(
+              (held) => held.element.id !== element.id,
             )) {
-              expect(elementIn(moved, other.id)).toBe(other);
+              expect(placementIn(moved, other.id)).toBe(
+                placementIn(model, other.id),
+              );
             }
             expect(
-              modelOf(moveElement(model, element.id, offset, decimals)),
+              modelOf(
+                moveElement(model, diagram, element.id, offset, decimals),
+              ),
             ).toEqual(moved);
           }
         },
@@ -670,8 +770,10 @@ describe('moveElement over generated models', () => {
   it('stores what the offset computes where no count is named', () => {
     fc.assert(
       fc.property(generatedModel, offsetArbitrary, (model, offset) => {
-        for (const element of elementsAcross(model.diagrams)) {
-          const moved = modelOf(moveElement(model, element.id, offset));
+        for (const { diagram, element } of drawnIn(model)) {
+          const moved = modelOf(
+            moveElement(model, diagram, element.id, offset),
+          );
           expect(pointsOf(elementIn(moved, element.id))).toEqual(
             pointsOf(element).map((point) => ({
               x: point.x + offset.x,
@@ -687,7 +789,7 @@ describe('moveElement over generated models', () => {
 describe('resizeElement', () => {
   it('resizes a node', () => {
     const next = modelOf(
-      resizeElement(validModel, elementId('element-api'), {
+      resizeElement(validModel, mainDiagram, elementId('element-api'), {
         width: 200,
         height: 100,
       }),
@@ -699,7 +801,7 @@ describe('resizeElement', () => {
 
   it('resizes a box trust boundary', () => {
     const next = modelOf(
-      resizeElement(validModel, elementId('element-perimeter'), {
+      resizeElement(validModel, mainDiagram, elementId('element-perimeter'), {
         width: 600,
         height: 240,
       }),
@@ -720,6 +822,7 @@ describe('resizeElement', () => {
       const next = modelOf(
         resizeElement(
           noisyModel,
+          noisyDiagram,
           noisyProcess,
           { width: 125.123456, height: 60.04 },
           decimals,
@@ -735,16 +838,28 @@ describe('resizeElement', () => {
 
   it('returns the same model for a resize that would store the size the element has', () => {
     const settled = modelOf(
-      resizeElement(noisyModel, noisyProcess, { width: 125.04, height: 60 }, 1),
+      resizeElement(
+        noisyModel,
+        noisyDiagram,
+        noisyProcess,
+        { width: 125.04, height: 60 },
+        1,
+      ),
     );
 
     expect(
-      modelOf(resizeElement(settled, noisyProcess, { width: 125, height: 60 })),
+      modelOf(
+        resizeElement(settled, noisyDiagram, noisyProcess, {
+          width: 125,
+          height: 60,
+        }),
+      ),
     ).toBe(settled);
     expect(
       modelOf(
         resizeElement(
           settled,
+          noisyDiagram,
           noisyProcess,
           { width: 125.04, height: 59.96 },
           1,
@@ -753,7 +868,10 @@ describe('resizeElement', () => {
     ).toBe(settled);
     expect(
       modelOf(
-        resizeElement(settled, noisyProcess, { width: 125.04, height: 60 }),
+        resizeElement(settled, noisyDiagram, noisyProcess, {
+          width: 125.04,
+          height: 60,
+        }),
       ),
     ).not.toBe(settled);
   });
@@ -761,7 +879,14 @@ describe('resizeElement', () => {
   it('refuses a flow and a curve trust boundary', () => {
     const size = { width: 10, height: 10 };
     expect(
-      errorOf(resizeElement(validModel, elementId('element-order-flow'), size)),
+      errorOf(
+        resizeElement(
+          validModel,
+          mainDiagram,
+          elementId('element-order-flow'),
+          size,
+        ),
+      ),
     ).toEqual(
       OperationFailure.NotResizable({
         elementId: elementId('element-order-flow'),
@@ -769,7 +894,12 @@ describe('resizeElement', () => {
     );
     expect(
       errorOf(
-        resizeElement(validModel, elementId('element-billing-zone'), size),
+        resizeElement(
+          validModel,
+          mainDiagram,
+          elementId('element-billing-zone'),
+          size,
+        ),
       ),
     ).toEqual(
       OperationFailure.NotResizable({
@@ -781,7 +911,7 @@ describe('resizeElement', () => {
   it('fails on an unknown element', () => {
     expect(
       errorOf(
-        resizeElement(validModel, elementId('element-ghost'), {
+        resizeElement(validModel, mainDiagram, elementId('element-ghost'), {
           width: 10,
           height: 10,
         }),
@@ -916,7 +1046,7 @@ describe('setElementDetails', () => {
   const db = elementId('element-db');
   const heldDb = elementIn(validModel, db);
 
-  it.each(withNote.diagrams[0].elements)(
+  it.each(drawnElements(withNote, withNote.diagrams[0]))(
     'changes all three on the $kind $id in place, keeping its other fields',
     (before) => {
       const next = modelOf(setElementDetails(withNote, before.id, details));
@@ -1006,13 +1136,14 @@ describe('setAccent', () => {
   const api = elementId('element-api');
   const flow = elementId('element-order-flow');
   const perimeter = elementId('element-perimeter');
-  const everyKind = withNote.diagrams[0].elements.map((element) => element.id);
+  const everyKind = withNote.elements.map((element) => element.id);
 
-  it('gives every element named the one key in one model, a canvas note included, keeping their other fields and their order', () => {
-    const next = modelOf(setAccent(withNote, everyKind, 's2'));
+  it('gives every element named the one key on its placement in one model, a canvas note included, keeping the elements and their order', () => {
+    const next = modelOf(setAccent(withNote, mainDiagram, everyKind, 's2'));
     expect(elementIds(next)).toEqual(elementIds(withNote));
-    expect(next.diagrams[0].elements).toEqual(
-      withNote.diagrams[0].elements.map((element) => ({
+    expect(next.elements).toBe(withNote.elements);
+    expect(drawnElements(next, next.diagrams[0])).toEqual(
+      drawnElements(withNote, withNote.diagrams[0]).map((element) => ({
         ...element,
         accent: 's2',
       })),
@@ -1020,33 +1151,43 @@ describe('setAccent', () => {
   });
 
   it('clears the accent to an absent key, so a cleared model equals one never accented', () => {
-    const accented = modelOf(setAccent(validModel, [api, flow], 'l4'));
-    const cleared = modelOf(setAccent(accented, [flow, api], undefined));
+    const accented = modelOf(
+      setAccent(validModel, mainDiagram, [api, flow], 'l4'),
+    );
+    const cleared = modelOf(
+      setAccent(accented, mainDiagram, [flow, api], undefined),
+    );
     expect(cleared).toEqual(validModel);
     expect(Object.hasOwn(elementIn(cleared, api), 'accent')).toBe(false);
   });
 
   it('replaces a held accent, and leaves the elements it does not name as they were', () => {
-    const accented = modelOf(setAccent(validModel, [api, perimeter], 's1'));
-    const next = modelOf(setAccent(accented, [api], 'l3'));
+    const accented = modelOf(
+      setAccent(validModel, mainDiagram, [api, perimeter], 's1'),
+    );
+    const next = modelOf(setAccent(accented, mainDiagram, [api], 'l3'));
     expect(elementIn(next, api)).toMatchObject({ accent: 'l3' });
-    expect(elementIn(next, perimeter)).toBe(elementIn(accented, perimeter));
+    expect(placementIn(next, perimeter)).toBe(placementIn(accented, perimeter));
   });
 
   it('returns the same model where every element named already holds the key, or none to clear', () => {
-    const accented = modelOf(setAccent(validModel, [api], 's1'));
-    expect(modelOf(setAccent(accented, [api, api], 's1'))).toBe(accented);
-    expect(modelOf(setAccent(validModel, [api, flow], undefined))).toBe(
+    const accented = modelOf(setAccent(validModel, mainDiagram, [api], 's1'));
+    expect(modelOf(setAccent(accented, mainDiagram, [api, api], 's1'))).toBe(
+      accented,
+    );
+    expect(
+      modelOf(setAccent(validModel, mainDiagram, [api, flow], undefined)),
+    ).toBe(validModel);
+    expect(modelOf(setAccent(validModel, mainDiagram, [], 's1'))).toBe(
       validModel,
     );
-    expect(modelOf(setAccent(validModel, [], 's1'))).toBe(validModel);
   });
 
   it('fails on an unknown element', () => {
     const ghost = elementId('element-ghost');
-    expect(errorOf(setAccent(validModel, [api, ghost], 's1'))).toEqual(
-      OperationFailure.UnknownElement({ elementId: ghost }),
-    );
+    expect(
+      errorOf(setAccent(validModel, mainDiagram, [api, ghost], 's1')),
+    ).toEqual(OperationFailure.UnknownElement({ elementId: ghost }));
   });
 });
 
@@ -1067,17 +1208,23 @@ describe('element operations', () => {
     moveElement: {
       input: validModel,
       run: (model) =>
-        moveElement(model, elementId('element-order-flow'), { x: 10, y: 5 }),
+        moveElement(model, mainDiagram, elementId('element-order-flow'), {
+          x: 10,
+          y: 5,
+        }),
     },
     'moveElement of a box': {
       input: validModel,
       run: (model) =>
-        moveElement(model, elementId('element-api'), { x: 1, y: 1 }),
+        moveElement(model, mainDiagram, elementId('element-api'), {
+          x: 1,
+          y: 1,
+        }),
     },
     resizeElement: {
       input: validModel,
       run: (model) =>
-        resizeElement(model, elementId('element-api'), {
+        resizeElement(model, mainDiagram, elementId('element-api'), {
           width: 200,
           height: 100,
         }),
@@ -1085,7 +1232,7 @@ describe('element operations', () => {
     'resizeElement to a 5 by 5 box': {
       input: validModel,
       run: (model) =>
-        resizeElement(model, elementId('element-api'), {
+        resizeElement(model, mainDiagram, elementId('element-api'), {
           width: 5,
           height: 5,
         }),
@@ -1106,12 +1253,19 @@ describe('element operations', () => {
     },
     'moveElement at one decimal': {
       input: noisyModel,
-      run: (model) => moveElement(model, noisyFlow, { x: 5, y: 20 }, 1),
+      run: (model) =>
+        moveElement(model, noisyDiagram, noisyFlow, { x: 5, y: 20 }, 1),
     },
     'resizeElement at one decimal': {
       input: noisyModel,
       run: (model) =>
-        resizeElement(model, noisyProcess, { width: 125.04, height: 60.04 }, 1),
+        resizeElement(
+          model,
+          noisyDiagram,
+          noisyProcess,
+          { width: 125.04, height: 60.04 },
+          1,
+        ),
     },
     renameElement: {
       input: validModel,
@@ -1135,13 +1289,17 @@ describe('element operations', () => {
       run: (model) =>
         setAccent(
           model,
+          mainDiagram,
           [elementId('element-api'), elementId('element-order-flow')],
           's3',
         ),
     },
     'setAccent clearing': {
-      input: modelOf(setAccent(validModel, [elementId('element-api')], 's3')),
-      run: (model) => setAccent(model, [elementId('element-api')], undefined),
+      input: modelOf(
+        setAccent(validModel, mainDiagram, [elementId('element-api')], 's3'),
+      ),
+      run: (model) =>
+        setAccent(model, mainDiagram, [elementId('element-api')], undefined),
     },
   });
 });

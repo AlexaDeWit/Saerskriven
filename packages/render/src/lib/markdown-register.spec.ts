@@ -1,14 +1,12 @@
 import {
   assumptionStatusSchema,
   customCategorySchema,
-  diagramSchema,
   inNumberOrder,
   mitigationStatusSchema,
   severitySchema,
   threatCategorySchema,
   threatFlagSchema,
   threatStatusSchema,
-  type Diagram,
   type Model,
   type ThreatCategory,
 } from '@saerskriven/model';
@@ -109,24 +107,28 @@ const labelledMembers: readonly {
   })),
 ];
 
-function diagramOf(
-  id: string,
-  elements: readonly { readonly id: string; readonly name: string }[],
-): Diagram {
-  return diagramSchema.parse({
-    id,
-    title: id,
-    elements: elements.map((element) =>
-      boxAt(
-        element.id,
-        0,
-        0,
-        'process',
-        { width: 100, height: 60 },
-        element.name,
+type Named = { readonly id: string; readonly name: string };
+
+function drawnParts(
+  ...diagrams: readonly (readonly [id: string, elements: readonly Named[]])[]
+): Pick<Model, 'elements' | 'diagrams'> {
+  const { elements, diagrams: drawn } = modelWith({
+    diagrams: diagrams.map(([id, named]) => ({
+      id,
+      title: id,
+      elements: named.map((element) =>
+        boxAt(
+          element.id,
+          0,
+          0,
+          'process',
+          { width: 100, height: 60 },
+          element.name,
+        ),
       ),
-    ),
+    })),
   });
+  return { elements, diagrams: drawn };
 }
 
 function onUnlabelled(flow: object, name = ''): Model {
@@ -431,7 +433,7 @@ describe('a threat section', () => {
             elements: ['el-a'],
           }),
         ],
-        diagrams: [diagramOf('d0', [{ id: 'el-a', name: 'Gateway' }])],
+        ...drawnParts(['d0', [{ id: 'el-a', name: 'Gateway' }]]),
       }),
       'en-CA',
     );
@@ -445,10 +447,10 @@ describe('a threat section', () => {
     const rendered = renderRegister(
       modelFrom({
         threats: [threatOf({ number: 1, elements: ['el-a', 'el-b'] })],
-        diagrams: [
-          diagramOf('d0', [{ id: 'el-a', name: 'Gateway' }]),
-          diagramOf('d1', [{ id: 'el-b', name: 'Ledger' }]),
-        ],
+        ...drawnParts(
+          ['d0', [{ id: 'el-a', name: 'Gateway' }]],
+          ['d1', [{ id: 'el-b', name: 'Ledger' }]],
+        ),
       }),
       'en-CA',
     );
@@ -479,7 +481,7 @@ describe('a threat section', () => {
               appliesToModel: true,
             }),
           ],
-          diagrams: [diagramOf('d0', [{ id: 'el-a', name: 'Gateway' }])],
+          ...drawnParts(['d0', [{ id: 'el-a', name: 'Gateway' }]]),
         }),
         'en-CA',
       );
@@ -495,7 +497,7 @@ describe('a threat section', () => {
       const rendered = renderRegister(
         modelFrom({
           threats: [threatOf({ number: 1, elements: ['el-a'] })],
-          diagrams: [diagramOf('d0', [{ id: 'el-a', name }])],
+          ...drawnParts(['d0', [{ id: 'el-a', name }]]),
         }),
         'en-CA',
       );

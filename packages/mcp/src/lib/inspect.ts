@@ -8,7 +8,6 @@ import {
   acceptedTextSchema,
   assumptionSchema,
   diagramIdSchema,
-  elementsAcross,
   modelMetadataSchema,
   threatsOnDiagrams,
   type Diagram,
@@ -146,7 +145,7 @@ function summaryOf(
   return {
     id: diagram.id,
     title: diagram.title,
-    elements: diagram.elements.length,
+    elements: diagram.placements.length,
     threats: threatsOnDiagrams(model, [diagram]).length,
   };
 }
@@ -154,7 +153,7 @@ function summaryOf(
 function totalsOf(model: Model): z.infer<typeof totalsSchema> {
   return {
     diagrams: model.diagrams.length,
-    elements: elementsAcross(model.diagrams).length,
+    elements: model.elements.length,
     threats: model.threats.length,
     mitigations: model.mitigations.length,
     assumptions: model.assumptions.length,

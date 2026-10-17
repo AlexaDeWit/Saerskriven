@@ -4,7 +4,7 @@ import {
   diagramId,
   elementId,
   mitigationId,
-  parsedFixture,
+  drawnFixture,
   threatId,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
@@ -62,6 +62,10 @@ const failures: ByTag<OperationFailure> = {
   }),
   UnknownElement: OperationFailure.UnknownElement({
     elementId: elementId('element-api'),
+  }),
+  ElementNotOnDiagram: OperationFailure.ElementNotOnDiagram({
+    elementId: elementId('element-api'),
+    diagramId: diagramId('diagram-empty'),
   }),
   UnknownThreat: OperationFailure.UnknownThreat({
     threatId: threatId('threat-tamper-order'),
@@ -175,7 +179,7 @@ describe('the records a batch culls more than once', () => {
       threat: tamper,
     } as const;
     const applied = Either.getOrThrow(
-      applyEdits(parsedFixture(validModelFixture), [
+      applyEdits(drawnFixture(validModelFixture), [
         unlinking,
         {
           op: 'add_mitigation',

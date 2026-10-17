@@ -2,14 +2,14 @@ import * as fc from 'fast-check';
 import { assumptionStatusSchema, type AssumptionInput } from './assumptions.js';
 import { threatCategorySchema, type ThreatCategory } from './categories.js';
 import {
-  accentSchema,
-  elementSchema,
-  type ElementInput,
-  type FlowEndpointInput,
-} from './elements.js';
+  drawnElementSchema,
+  type DrawnElementInput,
+  type DrawnFlowEndpointInput,
+} from './drawn-elements.js';
 import { sides } from './geometry.js';
 import { mitigationStatusSchema, type MitigationInput } from './mitigations.js';
-import type { DiagramInput, ModelMetadataInput } from './model.js';
+import type { DrawnDiagramInput, ModelMetadataInput } from './model.js';
+import { accentSchema } from './placements.js';
 import {
   severitySchema,
   threatStatusSchema,
@@ -17,9 +17,9 @@ import {
 } from './threats.js';
 import { acceptedTextSchema } from './text.js';
 
-type ElementKind = ElementInput['kind'];
+type ElementKind = DrawnElementInput['kind'];
 
-const elementKinds: readonly ElementKind[] = elementSchema.options.map(
+const elementKinds: readonly ElementKind[] = drawnElementSchema.options.map(
   (option) => option.shape.kind.value,
 );
 
@@ -107,13 +107,14 @@ const threatNumbersArbitrary = fc
   .filter((numbers) => numbers.length < 2 || !isAscending(numbers));
 
 /**
- * `parseModel` input covering every record kind the model has. Text is drawn
- * through the model's own character rule. Category candidates are built
- * loosely and re-parsed through the union, which pairs each methodology with
- * its own categories. Threat numbers are distinct and never already
- * ascending, so a write has to reorder them. Every element holds an accent
- * or none. Ids are positional, references are drawn from ids already laid
- * out, and a flow's endpoints come from its own diagram, minus the flow.
+ * `parseDrawnModel` input covering every record kind the model has, each
+ * diagram owning its elements. Text is drawn through the model's own
+ * character rule. Category candidates are built loosely and re-parsed
+ * through the union, which pairs each methodology with its own categories.
+ * Threat numbers are distinct and never already ascending, so a write has
+ * to reorder them. Every element holds an accent or none. Ids are
+ * positional, references are drawn from ids already laid out, and a flow's
+ * endpoints come from its own diagram, minus the flow.
  */
 export const modelInputArbitrary = fc
   .record({
@@ -166,7 +167,7 @@ function diagramArbitrary(
   id: string,
   kinds: readonly ElementKind[],
   ids: readonly string[],
-): fc.Arbitrary<DiagramInput> {
+): fc.Arbitrary<DrawnDiagramInput> {
   return fc.record({
     id: fc.constant(id),
     title: fc.constant(id),
@@ -186,7 +187,7 @@ function elementArbitrary(
   kind: ElementKind,
   id: string,
   siblings: readonly string[],
-): fc.Arbitrary<ElementInput> {
+): fc.Arbitrary<DrawnElementInput> {
   if (kind === 'flow') {
     return fc
       .tuple(
@@ -250,7 +251,7 @@ function commonArbitrary(id: string) {
 
 function endpointArbitrary(
   siblings: readonly string[],
-): fc.Arbitrary<FlowEndpointInput> {
+): fc.Arbitrary<DrawnFlowEndpointInput> {
   const free = fc.record({
     kind: fc.constant('free' as const),
     position: pointArbitrary,

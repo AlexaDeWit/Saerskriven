@@ -2,20 +2,15 @@ import type { Element } from './elements.js';
 import type { ElementId } from './ids.js';
 import type { Diagram } from './model.js';
 import type { Model } from './parse.js';
-import { elementIdsAcross, elementsAcross } from './references.js';
+import { elementIdsAcross } from './references.js';
 import type { Severity, Threat } from './threats.js';
 
-/**
- * Every element of the model no threat references, across all diagrams and
- * in diagram order.
- */
+/** Every element of the model no threat references, in model order. */
 export function elementsWithoutThreats(model: Model): Element[] {
   const linked = new Set<string>(
     model.threats.flatMap((threat) => threat.elements),
   );
-  return elementsAcross(model.diagrams).filter(
-    (element) => !linked.has(element.id),
-  );
+  return model.elements.filter((element) => !linked.has(element.id));
 }
 
 /**
@@ -40,10 +35,10 @@ export function openThreatsBySeverity(
 
 /**
  * How many threats reference each element of the model, keyed by element id
- * and total over every element across all diagrams, so an element no threat
- * references maps to 0. A threat listing the same element twice counts
- * once. Threat status plays no part: the count is of threats recorded, not
- * of threats outstanding.
+ * and total over every element, so an element no threat references maps to
+ * 0. A threat listing the same element twice counts once. Threat status
+ * plays no part: the count is of threats recorded, not of threats
+ * outstanding.
  */
 export function threatCountByElement(model: Model): Map<ElementId, number> {
   const links = new Map<string, number>();
@@ -53,15 +48,12 @@ export function threatCountByElement(model: Model): Map<ElementId, number> {
     }
   }
   return new Map(
-    elementsAcross(model.diagrams).map((element) => [
-      element.id,
-      links.get(element.id) ?? 0,
-    ]),
+    model.elements.map((element) => [element.id, links.get(element.id) ?? 0]),
   );
 }
 
 /**
- * The threats that reference an element drawn on any of the given diagrams,
+ * The threats that reference an element placed on any of the given diagrams,
  * each once and in register order. A threat attached to no element is on no
  * diagram.
  */

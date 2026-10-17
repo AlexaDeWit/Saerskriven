@@ -1,3 +1,4 @@
+import { drawnAcross } from '@saerskriven/model/fixtures';
 import { expect, test, type Page } from '@playwright/test';
 import type { Model, Point } from '@saerskriven/model';
 import { commandChord, registeredChords } from './chords.fixtures.js';
@@ -30,9 +31,9 @@ const midpoint = (page: Page, segment: number) =>
   page.locator(`[data-curve-segment="${String(segment)}"]`);
 
 const curveIn = (model: Model): readonly Point[] => {
-  const boundary = model.diagrams
-    .flatMap((diagram) => diagram.elements)
-    .find((element) => element.name === 'Warehouse floor');
+  const boundary = drawnAcross(model).find(
+    (element) => element.name === 'Warehouse floor',
+  );
   return boundary?.kind === 'trust-boundary' && boundary.shape.kind === 'curve'
     ? boundary.shape.waypoints
     : [];

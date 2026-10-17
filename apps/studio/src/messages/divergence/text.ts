@@ -7,7 +7,6 @@ import {
 } from '@saerskriven/formats';
 import {
   elementIdSchema,
-  elementsAcross,
   elementsById,
   inNumberOrder,
   isEmptyName,
@@ -202,7 +201,7 @@ type Held = {
 
 function heldBy(model: Model): Held {
   return {
-    elements: elementsById(elementsAcross(model.diagrams)),
+    elements: elementsById(model.elements),
     threats: new Map(model.threats.map((threat) => [threat.id, threat])),
     mitigations: new Map(
       model.mitigations.map((record) => [record.id, record]),

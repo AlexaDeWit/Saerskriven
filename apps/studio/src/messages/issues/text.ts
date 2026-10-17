@@ -51,6 +51,14 @@ export function parseIssueDetail(t: Speaker, detail: ParseIssueDetail): string {
       return t('issues.duplicate-element-id', detail.parameters);
     case 'duplicate-diagram-id':
       return t('issues.duplicate-diagram-id', detail.parameters);
+    case 'placement-element-unknown':
+      return t('issues.placement-element-unknown', detail.parameters);
+    case 'duplicate-placement':
+      return t('issues.duplicate-placement', detail.parameters);
+    case 'placement-geometry-mismatch':
+      return t('issues.placement-geometry-mismatch', detail.parameters);
+    case 'element-unplaced':
+      return t('issues.element-unplaced', detail.parameters);
     case 'duplicate-threat-id':
       return t('issues.duplicate-threat-id', detail.parameters);
     case 'duplicate-mitigation-id':

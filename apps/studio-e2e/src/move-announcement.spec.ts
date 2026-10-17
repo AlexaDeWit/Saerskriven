@@ -1,3 +1,4 @@
+import { drawnAt } from '@saerskriven/model/fixtures';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { decimalsOf, type Model } from '@saerskriven/model';
 import { boxSelect, canvasSettled, dragBy } from './canvas.fixtures.js';
@@ -48,7 +49,7 @@ const actorTypedTo = async (page: Page, at: Shown): Promise<Locator> => {
 };
 
 const actorPosition = (model: Model) =>
-  model.diagrams[0].elements.flatMap((element) =>
+  drawnAt(model).flatMap((element) =>
     element.kind === 'actor' ? [element.position] : [],
   )[0];
 
@@ -81,8 +82,7 @@ test('each Arrow and Shift+Arrow move says the position Position and size and th
   expect(shown).toEqual({ x: '68.5', y: '-2.7' });
   const saved = await savedModel(page);
   expect(
-    saved.diagrams[0].elements.find((element) => element.kind === 'actor')
-      ?.position,
+    drawnAt(saved).find((element) => element.kind === 'actor')?.position,
   ).toEqual({ x: Number(shown.x), y: Number(shown.y) });
 });
 

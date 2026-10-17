@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { committedText } from '@saerskriven/model/fixtures';
+import { committedText, redrawn } from '@saerskriven/model/fixtures';
 import { commandChord } from './chords.fixtures.js';
 import { audit } from './accessibility.fixtures.js';
 import {
@@ -252,15 +252,9 @@ for (const { fixture, bent, bentId } of [
     const points = turnsOf(await drawnBy(line)).slice(1, -1);
     const written = await savedFile(page);
     const after = readBack(written.text).model;
-    const expected = {
-      ...before,
-      diagrams: before.diagrams.map((diagram) => ({
-        ...diagram,
-        elements: diagram.elements.map((element) =>
-          element.id === bentId ? { ...element, waypoints: points } : element,
-        ),
-      })),
-    };
+    const expected = redrawn(before, (element) =>
+      element.id === bentId ? { ...element, waypoints: points } : element,
+    );
     expect(after).toEqual(expected);
     await openText(page, written.name, written.text);
     await canvasSettled(page);

@@ -4,9 +4,14 @@ import {
   storedSize,
   type Decimals,
 } from './decimals.js';
-import type { BoundaryShape, Element, Flow, FlowEndpoint } from './elements.js';
+import type {
+  DrawnElement,
+  DrawnFlow,
+  DrawnFlowEndpoint,
+} from './drawn-elements.js';
 import type { Point, Size } from './geometry.js';
 import { sameItems } from './lists.js';
+import type { BoundaryShape } from './placements.js';
 
 const origin: Point = { x: 0, y: 0 };
 
@@ -15,10 +20,10 @@ const origin: Point = { x: 0, y: 0 };
  * references, each point it moves stored at `decimals`.
  */
 export function translatedElement(
-  element: Element,
+  element: DrawnElement,
   offset: Point,
   decimals?: Decimals,
-): Element {
+): DrawnElement {
   return withPoints(element, (point) =>
     storedPoint({ x: point.x + offset.x, y: point.y + offset.y }, decimals),
   );
@@ -30,9 +35,9 @@ export function translatedElement(
  * named.
  */
 export function storedElement(
-  element: Element,
+  element: DrawnElement,
   decimals: Decimals | undefined,
-): Element {
+): DrawnElement {
   if (decimals === undefined) {
     return element;
   }
@@ -67,7 +72,7 @@ export function storedShape(
  * The point a flow freed from `element` keeps: a node's or a box's centre, a
  * curve's first waypoint, or a flow's first bend or free end.
  */
-export function anchorPoint(element: Element): Point {
+export function anchorPoint(element: DrawnElement): Point {
   if (element.kind === 'flow') {
     return element.waypoints.at(0) ?? freeEndpointPosition(element) ?? origin;
   }
@@ -80,7 +85,10 @@ export function anchorPoint(element: Element): Point {
 }
 
 /** `element` at `size`, or undefined for a flow or a boundary curve, which carry no extent. */
-export function resized(element: Element, size: Size): Element | undefined {
+export function resized(
+  element: DrawnElement,
+  size: Size,
+): DrawnElement | undefined {
   if (element.kind === 'flow') {
     return undefined;
   }
@@ -100,7 +108,7 @@ export function resized(element: Element, size: Size): Element | undefined {
  * in order with nothing saying which is which, so two elements of different
  * shapes can hold the same list.
  */
-export function sameGeometry(left: Element, right: Element): boolean {
+export function sameGeometry(left: DrawnElement, right: DrawnElement): boolean {
   return sameItems(numbersOf(left), numbersOf(right));
 }
 
@@ -109,7 +117,7 @@ export function samePoint(left: Point, right: Point): boolean {
   return left.x === right.x && left.y === right.y;
 }
 
-function numbersOf(element: Element): number[] {
+function numbersOf(element: DrawnElement): number[] {
   if (element.kind === 'flow') {
     return [element.source, element.target]
       .flatMap((end) => (end.kind === 'free' ? [end.position] : []))
@@ -128,7 +136,10 @@ function numbersOfBox(position: Point, size: Size): number[] {
   return [position.x, position.y, size.width, size.height];
 }
 
-function withPoints(element: Element, at: (point: Point) => Point): Element {
+function withPoints(
+  element: DrawnElement,
+  at: (point: Point) => Point,
+): DrawnElement {
   if (element.kind === 'flow') {
     return {
       ...element,
@@ -154,9 +165,9 @@ function withPoints(element: Element, at: (point: Point) => Point): Element {
 }
 
 function endpointAt(
-  endpoint: FlowEndpoint,
+  endpoint: DrawnFlowEndpoint,
   at: (point: Point) => Point,
-): FlowEndpoint {
+): DrawnFlowEndpoint {
   return endpoint.kind === 'free'
     ? { ...endpoint, position: at(endpoint.position) }
     : endpoint;
@@ -169,7 +180,7 @@ function centreOf(position: Point, size: Size): Point {
   };
 }
 
-function freeEndpointPosition(flow: Flow): Point | undefined {
+function freeEndpointPosition(flow: DrawnFlow): Point | undefined {
   return [flow.source, flow.target]
     .flatMap((endpoint) =>
       endpoint.kind === 'free' ? [endpoint.position] : [],

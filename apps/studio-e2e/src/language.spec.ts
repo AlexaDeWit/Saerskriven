@@ -29,6 +29,7 @@ import {
   twoDiagramsFile,
   undoOffered,
 } from './studio.fixtures.js';
+import { drawnAcross } from '@saerskriven/model/fixtures';
 
 const readers = {
   'en-CA': {
@@ -162,9 +163,7 @@ for (const { locale, browser, prefill } of passes) {
       expect(after.name).toBe(before.name);
       expect(after.text).toBe(before.text);
       expect(
-        readBack(after.text).model.diagrams.flatMap((diagram) =>
-          diagram.elements.map((element) => element.name),
-        ),
+        drawnAcross(readBack(after.text).model).map((element) => element.name),
       ).toContain(accented);
 
       const register = await exportedFile(page, reader.register, reader.export);

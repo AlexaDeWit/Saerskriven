@@ -1,3 +1,4 @@
+import { redrawn } from '@saerskriven/model/fixtures';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { CommandSurfaceProvider } from '../commands/binding.js';
 import { recordingSurface } from '../commands/commands.fixtures.js';
@@ -27,17 +28,14 @@ const focused = (on: 'element' | 'resize'): HTMLElement =>
     : screen.getByRole('button', { name: 'Resize Reader from right' });
 
 const openPair = () => {
-  openCanvas([actorElement, processElement], {
-    ...canvasModel,
-    diagrams: canvasModel.diagrams.map((diagram) => ({
-      ...diagram,
-      elements: diagram.elements.map((element) =>
-        element.id === processElement && element.kind === 'process'
-          ? { ...element, position: { x: 300, y: 40 } }
-          : element,
-      ),
-    })),
-  });
+  openCanvas(
+    [actorElement, processElement],
+    redrawn(canvasModel, (element) =>
+      element.id === processElement && element.kind === 'process'
+        ? { ...element, position: { x: 300, y: 40 } }
+        : element,
+    ),
+  );
 };
 
 beforeEach(() => {

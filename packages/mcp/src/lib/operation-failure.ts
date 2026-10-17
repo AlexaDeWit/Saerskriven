@@ -29,6 +29,8 @@ export function describeOperationFailure(failure: OperationFailure): string {
       `Diagram ${quotedForTerminal(diagramId)} still holds ${String(elements)} elements, and only an empty diagram is removed.`,
     UnknownElement: ({ elementId }) =>
       `The model holds no element ${quotedForTerminal(elementId)}.`,
+    ElementNotOnDiagram: ({ elementId, diagramId }) =>
+      `Diagram ${quotedForTerminal(diagramId)} does not draw element ${quotedForTerminal(elementId)}.`,
     UnknownThreat: ({ threatId }) =>
       `The model holds no threat ${quotedForTerminal(threatId)}.`,
     UnknownMitigation: ({ mitigationId }) =>

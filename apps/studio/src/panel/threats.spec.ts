@@ -1,5 +1,4 @@
 import {
-  elementsAcross,
   elementsById,
   reconnectFlow,
   renameElement,
@@ -12,7 +11,12 @@ import {
   type Threat,
 } from '@saerskriven/model';
 import { locales, type Locale } from '@saerskriven/i18n';
-import { elementId, elementIn, threatId } from '@saerskriven/model/fixtures';
+import {
+  elementId,
+  elementIn,
+  redrawn,
+  threatId,
+} from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import {
   canvasModel,
@@ -23,6 +27,7 @@ import { Action } from '../store/actions.js';
 import { initialState, type State } from '../store/state.js';
 import {
   actorElement,
+  mainDiagram,
   namedElements,
   namelessElements,
   newProcess,
@@ -122,7 +127,7 @@ const { t } = activeTranslator();
 
 const french = inLocale('fr-CA');
 
-const sampleElements = elementsById(elementsAcross(sampleModel.diagrams));
+const sampleElements = elementsById(sampleModel.elements);
 
 const unlabelled = (model: Model, ...flows: readonly ElementId[]): Model =>
   flows.reduce(
@@ -132,25 +137,15 @@ const unlabelled = (model: Model, ...flows: readonly ElementId[]): Model =>
 
 const unlabelledCanvas = unlabelled(canvasModel, requestFlow, probeFlow);
 
-const spacedCanvas: Model = {
-  ...canvasModel,
-  diagrams: canvasModel.diagrams.map((diagram) => ({
-    ...diagram,
-    elements: diagram.elements.map((element) =>
-      element.id === requestFlow ? { ...element, name: ' ' } : element,
-    ),
-  })),
-};
+const spacedCanvas: Model = redrawn(canvasModel, (element) =>
+  element.id === requestFlow ? { ...element, name: ' ' } : element,
+);
 
 const fromReaderToStudio = (speak: typeof t): string =>
   speak('tools.flow-from-to', { source: 'Reader', target: 'Studio' });
 
 const labelIn = (model: Model, id: ElementId, speak = t): string =>
-  elementLabel(
-    elementIn(model, id),
-    elementsById(elementsAcross(model.diagrams)),
-    speak,
-  );
+  elementLabel(elementIn(model, id), elementsById(model.elements), speak);
 
 describe('elementLabel', () => {
   it('is what the element is called', () => {
@@ -186,7 +181,13 @@ describe('elementLabel', () => {
 
   it('follows an end to the element it moves to', () => {
     const moved = Either.getOrThrow(
-      reconnectFlow(unlabelledCanvas, probeFlow, 'target', actorElement),
+      reconnectFlow(
+        unlabelledCanvas,
+        mainDiagram,
+        probeFlow,
+        'target',
+        actorElement,
+      ),
     );
     expect(labelIn(moved, probeFlow)).toBe('Flow from Studio to Reader');
   });
@@ -205,7 +206,7 @@ describe('elementLabel', () => {
 });
 
 const namelessOfEveryKind: readonly Element[] = [
-  ...canvasModel.diagrams[0].elements,
+  ...canvasModel.elements,
   sampleElement(storeElement),
 ]
   .filter(({ kind }) => kind !== 'flow')
@@ -253,7 +254,7 @@ describe('elementHeading', () => {
     expect(
       elementHeading(
         elementIn(unlabelledCanvas, requestFlow),
-        elementsById(elementsAcross(unlabelledCanvas.diagrams)),
+        elementsById(unlabelledCanvas.elements),
         t,
       ),
     ).toBe('Flow from Reader to Studio');
@@ -264,7 +265,7 @@ describe('the element lists of a threat', () => {
   const [, onFlow] = unlabelledCanvas.threats;
 
   it('list a flow left unlabelled by its ends, with no id', () => {
-    expect(threatAttachments(unlabelledCanvas.diagrams, onFlow, t)).toEqual([
+    expect(threatAttachments(unlabelledCanvas, onFlow, t)).toEqual([
       {
         id: requestFlow,
         label: 'Flow from Reader to Studio',
@@ -275,7 +276,7 @@ describe('the element lists of a threat', () => {
 
   it('detach a flow left unlabelled under the message each language words around its ends', () => {
     expect(
-      threatAttachments(unlabelledCanvas.diagrams, onFlow, french).map(
+      threatAttachments(unlabelledCanvas, onFlow, french).map(
         ({ detach }) => detach,
       ),
     ).toEqual([
@@ -293,7 +294,7 @@ describe('the element lists of a threat', () => {
     );
     expect(
       threatAttachments(
-        lookalike.diagrams,
+        lookalike,
         { ...onFlow, elements: [requestFlow, probeFlow] },
         t,
       ).map(({ detach }) => detach),
@@ -305,15 +306,13 @@ describe('the element lists of a threat', () => {
 
   it('detach a named element under its name', () => {
     expect(
-      threatAttachments(canvasModel.diagrams, onFlow, t).map(
-        ({ detach }) => detach,
-      ),
+      threatAttachments(canvasModel, onFlow, t).map(({ detach }) => detach),
     ).toEqual(['Detach Opens a model']);
   });
 
   it('offer a flow left unlabelled by its ends', () => {
     expect(
-      attachableElements(unlabelledCanvas.diagrams, sampleThreat, t).find(
+      attachableElements(unlabelledCanvas, sampleThreat, t).find(
         ({ id }) => id === probeFlow,
       )?.text,
     ).toEqual({
@@ -325,18 +324,24 @@ describe('the element lists of a threat', () => {
   it('tell apart two flows left unlabelled between the same ends by their ids', () => {
     const twin = Either.getOrThrow(
       Either.flatMap(
-        reconnectFlow(unlabelledCanvas, probeFlow, 'target', actorElement),
+        reconnectFlow(
+          unlabelledCanvas,
+          mainDiagram,
+          probeFlow,
+          'target',
+          actorElement,
+        ),
         (moved) => reverseFlow(moved, probeFlow),
       ),
     );
     expect(
-      attachableElements(twin.diagrams, sampleThreat, t)
+      attachableElements(twin, sampleThreat, t)
         .filter(({ id }) => id === requestFlow || id === probeFlow)
         .map(({ text }) => text.suffix),
     ).toEqual([`(${requestFlow})`, `(${probeFlow})`]);
     expect(
       threatAttachments(
-        twin.diagrams,
+        twin,
         { ...onFlow, elements: [requestFlow, probeFlow] },
         t,
       ).map(({ detach }) => detach),
@@ -361,7 +366,7 @@ describe('attachSaid', () => {
 
   it('words a flow left unlabelled in the message of its kind, with its ends', () => {
     const flow = elementIn(unlabelledCanvas, requestFlow);
-    const elements = elementsById(elementsAcross(unlabelledCanvas.diagrams));
+    const elements = elementsById(unlabelledCanvas.elements);
     expect(attachSaid(sampleThreat, flow, elements)(french)).toBe(
       french('canvas.threat-attached-to-flow', {
         number,
@@ -371,7 +376,7 @@ describe('attachSaid', () => {
   });
 
   it('words a flow a file holds under white space alone with its ends', () => {
-    const elements = elementsById(elementsAcross(spacedCanvas.diagrams));
+    const elements = elementsById(spacedCanvas.elements);
     expect(
       attachSaid(
         sampleThreat,
@@ -434,7 +439,7 @@ describe('detachSaid', () => {
       elements: [requestFlow, actorElement],
     };
     const kept = { ...onFlow, elements: [actorElement] };
-    const elements = elementsById(elementsAcross(unlabelledCanvas.diagrams));
+    const elements = elementsById(unlabelledCanvas.elements);
     expect(
       detachSaid(
         onFlowAndReader,
@@ -638,7 +643,7 @@ describe.each(locales)(
         title,
       }));
       const choices = attachableElements(
-        diagrams,
+        { ...sampleModel, diagrams },
         sampleThreat,
         inLocale(locale),
       );

@@ -6,6 +6,7 @@ import {
   addElement,
   boundaryShapeSchema,
   diagramIdSchema,
+  diagramsOf,
   droppedRecords,
   droppedThreats,
   editNote,
@@ -32,6 +33,9 @@ import {
   sideSchema,
   sizeSchema,
   waypointsSchema,
+  type Accent,
+  type DiagramId,
+  type ElementId,
   type Model,
   type RecordReference,
   type Threat,
@@ -274,11 +278,17 @@ function applyEdit(
     case 'remove_element':
       return removeElement(model, edit.element);
     case 'move_element':
-      return moveElement(model, edit.element, edit.offset);
+      return onItsDiagram(model, edit.element, (diagram) =>
+        moveElement(model, diagram, edit.element, edit.offset),
+      );
     case 'resize_element':
-      return resizeElement(model, edit.element, edit.size);
+      return onItsDiagram(model, edit.element, (diagram) =>
+        resizeElement(model, diagram, edit.element, edit.size),
+      );
     case 'set_boundary_shape':
-      return setBoundaryShape(model, edit.element, edit.shape);
+      return onItsDiagram(model, edit.element, (diagram) =>
+        setBoundaryShape(model, diagram, edit.element, edit.shape),
+      );
     case 'rename_element':
       return renameElement(model, edit.element, edit.name);
     case 'edit_note':
@@ -286,33 +296,42 @@ function applyEdit(
     case 'set_element_details':
       return setElementDetails(model, edit.element, edit);
     case 'set_accent':
-      return setAccent(
+      return accented(
         model,
         edit.elements,
         edit.accent === noAccent ? undefined : edit.accent,
       );
     case 'set_flow_waypoints':
-      return setFlowWaypoints(model, edit.element, edit.waypoints);
+      return onItsDiagram(model, edit.element, (diagram) =>
+        setFlowWaypoints(model, diagram, edit.element, edit.waypoints),
+      );
     case 'set_flow_direction':
       return setFlowDirection(model, edit.element, edit.bidirectional);
     case 'reconnect_flow':
-      return reconnectFlow(
-        model,
-        edit.element,
-        edit.side,
-        edit.endpoint,
-        edit.anchor,
+      return onItsDiagram(model, edit.element, (diagram) =>
+        reconnectFlow(
+          model,
+          diagram,
+          edit.element,
+          edit.side,
+          edit.endpoint,
+          edit.anchor,
+        ),
       );
     case 'set_flow_end_position':
-      return setFlowEndPosition(model, edit.element, edit.side, edit.position);
+      return onItsDiagram(model, edit.element, (diagram) =>
+        setFlowEndPosition(
+          model,
+          diagram,
+          edit.element,
+          edit.side,
+          edit.position,
+        ),
+      );
     case 'reverse_flow':
       return reverseFlow(model, edit.element);
     case 'add_diagram':
-      return addDiagram(model, {
-        id: edit.diagram,
-        title: edit.title,
-        elements: [],
-      });
+      return addDiagram(model, { id: edit.diagram, title: edit.title });
     case 'rename_diagram':
       return renameDiagram(model, edit.diagram, edit.title);
     case 'remove_diagram':
@@ -326,8 +345,35 @@ function applyEdit(
 
 function placementIndex(model: Model, diagramId: string): number {
   return (
-    model.diagrams.find((diagram) => diagram.id === diagramId)?.elements
+    model.diagrams.find((diagram) => diagram.id === diagramId)?.placements
       .length ?? 0
+  );
+}
+
+function onItsDiagram(
+  model: Model,
+  elementId: ElementId,
+  edit: (diagramId: DiagramId) => Either.Either<Model, OperationFailure>,
+): Either.Either<Model, OperationFailure> {
+  const [diagram] = diagramsOf(model, elementId);
+  return diagram === undefined
+    ? Either.left(OperationFailure.UnknownElement({ elementId }))
+    : edit(diagram.id);
+}
+
+function accented(
+  model: Model,
+  elementIds: readonly ElementId[],
+  accent: Accent | undefined,
+): Either.Either<Model, OperationFailure> {
+  return elementIds.reduce<Either.Either<Model, OperationFailure>>(
+    (outcome, elementId) =>
+      Either.flatMap(outcome, (current) =>
+        onItsDiagram(current, elementId, (diagram) =>
+          setAccent(current, diagram, [elementId], accent),
+        ),
+      ),
+    Either.right(model),
   );
 }
 

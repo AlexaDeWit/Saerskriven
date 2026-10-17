@@ -1,9 +1,12 @@
 import { Either } from 'effect';
+import { drawnElement, elementOf, placementOf } from './drawing.js';
+import type { DrawnElement } from './drawn-elements.js';
 import type { Element, FlowEndpoint } from './elements.js';
 import type { DiagramId, ElementId } from './ids.js';
 import type { Diagram } from './model.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
+import type { Placement } from './placements.js';
 import { relationshipIssues } from './relationships.js';
 import { isEmptyName } from './text.js';
 
@@ -19,26 +22,59 @@ export type UnknownDiagramFailure = Extract<
   { _tag: 'UnknownDiagram' }
 >;
 
-/** An element and the index of the diagram holding it. */
-export type Located<Held extends Element> = {
+/** The failures for an element a diagram does not draw. */
+export type UndrawnElementFailure = Extract<
+  OperationFailure,
+  { _tag: 'UnknownDiagram' | 'UnknownElement' | 'ElementNotOnDiagram' }
+>;
+
+/** An element the model holds. */
+export type Located<Held extends Element> = { readonly element: Held };
+
+/** An element as one diagram draws it, and the index of that diagram. */
+export type LocatedDrawn<Held extends DrawnElement> = {
   readonly diagramIndex: number;
-  readonly element: Held;
+  readonly drawn: Held;
 };
 
-/** The element `elementId` names, in whichever diagram holds it. */
+/** The element `elementId` names. */
 export function locatedElement(
   model: Model,
   elementId: ElementId,
 ): Either.Either<Located<Element>, UnknownElementFailure> {
-  for (const [diagramIndex, diagram] of model.diagrams.entries()) {
-    const element = diagram.elements.find(
-      (candidate) => candidate.id === elementId,
-    );
-    if (element) {
-      return Either.right({ diagramIndex, element });
-    }
-  }
-  return Either.left(OperationFailure.UnknownElement({ elementId }));
+  const element = model.elements.find(({ id }) => id === elementId);
+  return element === undefined
+    ? Either.left(OperationFailure.UnknownElement({ elementId }))
+    : Either.right({ element });
+}
+
+/** The element `elementId` names, as the diagram `diagramId` names draws it. */
+export function locatedDrawn(
+  model: Model,
+  diagramId: DiagramId,
+  elementId: ElementId,
+): Either.Either<LocatedDrawn<DrawnElement>, UndrawnElementFailure> {
+  return Either.flatMap(diagramIndexOf(model, diagramId), (diagramIndex) =>
+    Either.flatMap(
+      locatedElement(model, elementId),
+      ({
+        element,
+      }): Either.Either<LocatedDrawn<DrawnElement>, UndrawnElementFailure> => {
+        const placement = model.diagrams[diagramIndex].placements.find(
+          (candidate) => candidate.element === elementId,
+        );
+        const drawn =
+          placement === undefined
+            ? undefined
+            : drawnElement(element, placement);
+        return drawn === undefined
+          ? Either.left(
+              OperationFailure.ElementNotOnDiagram({ elementId, diagramId }),
+            )
+          : Either.right({ diagramIndex, drawn });
+      },
+    ),
+  );
 }
 
 /** The diagram `diagramId` names. */
@@ -81,18 +117,44 @@ export function withDiagram(
   };
 }
 
-/** `model` with the element carrying `next.id` in that diagram replaced by `next`. */
-export function withElement(
+/** `model` with the element carrying `next.id` replaced by `next`. */
+export function withElement(model: Model, next: Element): Model {
+  return {
+    ...model,
+    elements: model.elements.map((element) =>
+      element.id === next.id ? next : element,
+    ),
+  };
+}
+
+/** `model` with the placement of `next.element` on the diagram at `diagramIndex` replaced by `next`. */
+export function withPlacement(
   model: Model,
   diagramIndex: number,
-  next: Element,
+  next: Placement,
 ): Model {
   return withDiagram(model, diagramIndex, (diagram) => ({
     ...diagram,
-    elements: diagram.elements.map((element) =>
-      element.id === next.id ? next : element,
+    placements: diagram.placements.map((placement) =>
+      placement.element === next.element ? next : placement,
     ),
   }));
+}
+
+/**
+ * `model` with the element `next` draws replaced by its facts, and its
+ * placement on the diagram at `diagramIndex` by its geometry there.
+ */
+export function withDrawn(
+  model: Model,
+  diagramIndex: number,
+  next: DrawnElement,
+): Model {
+  return withPlacement(
+    withElement(model, elementOf(next)),
+    diagramIndex,
+    placementOf(next),
+  );
 }
 
 type InvalidFlowEndpointFailure = Extract<
@@ -104,11 +166,12 @@ const flowAnchorKinds = new Set<Element['kind']>(['actor', 'process', 'store']);
 
 /**
  * The refusal of a flow's `side` end, or undefined where the edit operations
- * accept it: free, or attached to an actor, process or store of `diagram`
- * that `other`, the flow's other end, is not attached to. Parse does not
- * apply this rule, so a flow read from a file can already break it.
+ * accept it: free, or attached to an actor, process or store `diagram`
+ * places that `other`, the flow's other end, is not attached to. Parse does
+ * not apply this rule, so a flow read from a file can already break it.
  */
 export function flowEndFailure(
+  model: Model,
   diagram: Diagram,
   side: 'source' | 'target',
   end: FlowEndpoint,
@@ -117,8 +180,12 @@ export function flowEndFailure(
   if (end.kind === 'free') {
     return undefined;
   }
-  const anchor = diagram.elements.find((element) => element.id === end.element);
-  return anchor !== undefined &&
+  const placed = diagram.placements.some(
+    ({ element }) => element === end.element,
+  );
+  const anchor = model.elements.find(({ id }) => id === end.element);
+  return placed &&
+    anchor !== undefined &&
     flowAnchorKinds.has(anchor.kind) &&
     !(other.kind === 'attached' && other.element === end.element)
     ? undefined
@@ -127,12 +194,25 @@ export function flowEndFailure(
 
 /** The refusal of a flow's first end, source first, that {@link flowEndFailure} refuses in `diagram`. */
 export function flowEndpointFailure(
+  model: Model,
   element: Element,
   diagram: Diagram,
 ): InvalidFlowEndpointFailure | undefined {
   return element.kind === 'flow'
-    ? (flowEndFailure(diagram, 'source', element.source, element.target) ??
-        flowEndFailure(diagram, 'target', element.target, element.source))
+    ? (flowEndFailure(
+        model,
+        diagram,
+        'source',
+        element.source,
+        element.target,
+      ) ??
+        flowEndFailure(
+          model,
+          diagram,
+          'target',
+          element.target,
+          element.source,
+        ))
     : undefined;
 }
 
@@ -150,7 +230,9 @@ export function emptyNameFailure(
 }
 
 /** `element` as the edit operations store it: a name of white space alone held as `''`. */
-export function withStoredName(element: Element): Element {
+export function withStoredName<Held extends Element | DrawnElement>(
+  element: Held,
+): Held {
   return element.name !== '' && isEmptyName(element.name)
     ? { ...element, name: '' }
     : element;
@@ -170,4 +252,35 @@ export function invalidRelationships(
         elementId: element.id,
         issues,
       });
+}
+
+/** The elements the diagram at `diagramIndex` places, keyed by id. */
+export function elementsOnDiagram(
+  model: Model,
+  diagramIndex: number,
+): Map<ElementId, Element> {
+  const placed = new Set<string>(
+    model.diagrams[diagramIndex].placements.map(({ element }) => element),
+  );
+  return new Map(
+    model.elements
+      .filter(({ id }) => placed.has(id))
+      .map((element) => [element.id, element]),
+  );
+}
+
+/**
+ * The elements of the diagram that places `elementId`, keyed by id, which
+ * is where its relationship lists resolve. Empty where no diagram places it.
+ */
+export function elementsDrawnWith(
+  model: Model,
+  elementId: ElementId,
+): Map<ElementId, Element> {
+  const diagramIndex = model.diagrams.findIndex((diagram) =>
+    diagram.placements.some(({ element }) => element === elementId),
+  );
+  return diagramIndex === -1
+    ? new Map<ElementId, Element>()
+    : elementsOnDiagram(model, diagramIndex);
 }

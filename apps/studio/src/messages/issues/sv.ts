@@ -50,6 +50,13 @@ export const issuesSv = catalogue(issueMessages)('sv')({
     'element-id:t ”{id}” är redan taget, och element-id är unika i hela modellen',
   'duplicate-diagram-id':
     'diagram-id:t ”{id}” är redan taget, och diagram-id är unika i hela modellen',
+  'placement-element-unknown':
+    'diagrammet placerar ”{id}”, som inte namnger något element i modellen',
+  'duplicate-placement':
+    'elementet ”{id}” placeras en andra gång, och ett element ritas en gång, i ett diagram',
+  'placement-geometry-mismatch':
+    'placeringen av ”{id}” bär inte den geometri som dess slag tar',
+  'element-unplaced': 'elementet ”{id}” är inte placerat i något diagram',
   'duplicate-threat-id':
     'hot-id:t ”{id}” är redan taget, och hot-id är unika bland hoten',
   'duplicate-mitigation-id':

@@ -1,8 +1,10 @@
 import {
-  elementsAcross,
+  drawnElementOn,
+  drawnElements,
   type Accent,
   type Diagram,
   type DiagramId,
+  type DrawnElement,
   type Element,
   type ElementId,
   type Model,
@@ -83,14 +85,33 @@ export function severalDiagrams(state: State): boolean {
   return state.present.diagrams.length > 1;
 }
 
-/** The element `elementId` names, in whichever diagram holds it. */
+/**
+ * The model's elements and diagrams, which is all drawing a diagram reads.
+ * The object is rebuilt on every call, so read it through `useShallow`.
+ */
+export function elementsAndDiagrams(
+  state: State,
+): Pick<Model, 'elements' | 'diagrams'> {
+  return { elements: state.present.elements, diagrams: state.present.diagrams };
+}
+
+/** The element `elementId` names, on whichever diagram it is drawn. */
 export function elementById(
   state: State,
   elementId: ElementId,
 ): Element | undefined {
-  return elementsAcross(state.present.diagrams).find(
-    (element) => element.id === elementId,
-  );
+  return state.present.elements.find((element) => element.id === elementId);
+}
+
+/** The element `elementId` names as the diagram on screen draws it. */
+export function drawnElementById(
+  state: State,
+  elementId: ElementId,
+): DrawnElement | undefined {
+  const diagram = activeDiagram(state);
+  return diagram === undefined
+    ? undefined
+    : drawnElementOn(state.present, diagram, elementId);
 }
 
 /** The selected element ID where exactly one is selected. */
@@ -98,10 +119,10 @@ export function selectedElement(state: State): ElementId | undefined {
   return state.selection.length === 1 ? state.selection.at(0) : undefined;
 }
 
-/** The record of the one selected element. */
-export function selectedElementRecord(state: State): Element | undefined {
+/** The one selected element, as the diagram on screen draws it. */
+export function selectedElementRecord(state: State): DrawnElement | undefined {
   const selected = selectedElement(state);
-  return selected === undefined ? undefined : elementById(state, selected);
+  return selected === undefined ? undefined : drawnElementById(state, selected);
 }
 
 /** The selected element IDs, in selection order. */
@@ -109,11 +130,12 @@ export function selectedElements(state: State): readonly ElementId[] {
   return state.selection;
 }
 
-/** The records of the selected elements the model holds, in selection order. */
-export function selectedElementRecords(state: State): readonly Element[] {
+/** The selected elements, as the diagram on screen draws them, in selection order. */
+export function selectedElementRecords(state: State): readonly DrawnElement[] {
   const selected = new Set<string>(state.selection);
+  const diagram = activeDiagram(state);
   const held = new Map(
-    elementsAcross(state.present.diagrams)
+    (diagram === undefined ? [] : drawnElements(state.present, diagram))
       .filter((element) => selected.has(element.id))
       .map((element) => [element.id, element]),
   );

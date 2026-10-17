@@ -1,12 +1,17 @@
 import {
+  drawnElementSchema,
+  drawnFlowEndpointSchema,
+  drawnFlowSchema,
+} from './drawn-elements.js';
+import {
   actorSchema,
-  boundaryShapeSchema,
   elementKindSchema,
   elementSchema,
   flowEndpointSchema,
   flowSchema,
   type Element,
 } from './elements.js';
+import { boundaryShapeSchema } from './placements.js';
 
 const actor = {
   kind: 'actor',
@@ -46,29 +51,60 @@ describe('actorSchema', () => {
   });
 });
 
+describe('elementSchema', () => {
+  it('holds no accent and no geometry, which belong to a placement', () => {
+    expect(elementSchema.parse({ ...actor, accent: 's1' })).toEqual({
+      kind: 'actor',
+      id: 'element-customer',
+      name: 'Customer',
+      description: 'Places orders from a browser.',
+      outOfScope: false,
+      reasonOutOfScope: '',
+    });
+    expect(elementSchema.parse(attachedFlow)).not.toHaveProperty('waypoints');
+  });
+});
+
 describe('accent', () => {
-  it('is held by every kind, a canvas note included', () => {
-    const accented = elementSchema.options
+  it('is drawn on every kind, a canvas note included', () => {
+    const accented = drawnElementSchema.options
       .filter((option) => Object.hasOwn(option.shape, 'accent'))
       .map((option) => option.shape.kind.value);
     expect(accented).toEqual(elementKindSchema.options);
     expect(
-      elementSchema.parse({ ...actor, kind: 'text', text: '', accent: 's1' }),
+      drawnElementSchema.parse({
+        ...actor,
+        kind: 'text',
+        text: '',
+        accent: 's1',
+      }),
     ).toHaveProperty('accent', 's1');
   });
 });
 
 describe('flowEndpointSchema', () => {
+  it('names the element an attached end is on, and leaves its side to each diagram', () => {
+    expect(
+      flowEndpointSchema.parse({
+        kind: 'attached',
+        element: 'api',
+        side: 'bottom',
+      }),
+    ).toEqual({ kind: 'attached', element: 'api' });
+  });
+});
+
+describe('drawnFlowEndpointSchema', () => {
   it('parses an attached endpoint pinned to a side, and refuses a side that is not one', () => {
     expect(
-      flowEndpointSchema.safeParse({
+      drawnFlowEndpointSchema.safeParse({
         kind: 'attached',
         element: 'api',
         side: 'bottom',
       }).success,
     ).toBe(true);
     expect(
-      flowEndpointSchema.safeParse({
+      drawnFlowEndpointSchema.safeParse({
         kind: 'attached',
         element: 'api',
         side: 'middle',
@@ -78,9 +114,9 @@ describe('flowEndpointSchema', () => {
 });
 
 describe('flowSchema', () => {
-  it('rejects a flow without waypoints', () => {
+  it('draws no flow without waypoints', () => {
     const { waypoints: _waypoints, ...rest } = attachedFlow;
-    expect(flowSchema.safeParse(rest).success).toBe(false);
+    expect(drawnFlowSchema.safeParse(rest).success).toBe(false);
   });
 
   it('requires the direction rather than defaulting it', () => {

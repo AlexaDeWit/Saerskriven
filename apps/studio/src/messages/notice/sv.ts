@@ -66,6 +66,7 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
       'Diagram {id} kan inte tas bort medan det innehåller objekt, och det innehåller {count}.',
   },
   'op-unknown-element': 'Modellen innehåller inget objekt {id}.',
+  'op-not-on-diagram': 'Diagrammet {diagram} ritar inte objektet {id}.',
   'op-unknown-threat': 'Modellen innehåller inget hot {id}.',
   'op-unknown-mitigation': 'Modellen innehåller ingen åtgärd {id}.',
   'op-unknown-assumption': 'Modellen innehåller inget antagande {id}.',

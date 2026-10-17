@@ -1,5 +1,5 @@
-import type { ModelInput } from '@saerskriven/model';
-import { parsedFixture } from '@saerskriven/model/fixtures';
+import type { DrawnModelInput, ModelInput } from '@saerskriven/model';
+import { drawnFixture } from '@saerskriven/model/fixtures';
 import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { renderDivergences } from './divergence.js';
 import { planThreats } from './threat-dragon-threats.js';
@@ -12,13 +12,13 @@ import {
 
 const featureComplete = threatDragonReading(featureCompleteText);
 
-const richer = parsedFixture(richerThanFormatFixture);
+const richer = drawnFixture(richerThanFormatFixture);
 
 const model = (
   threats: ModelInput['threats'],
   lastIssuedThreatNumber: number,
 ) =>
-  parsedFixture({
+  drawnFixture({
     metadata: { title: '', owner: '', description: '', contributors: [] },
     diagrams: [
       {
@@ -42,7 +42,7 @@ const model = (
     lastIssuedThreatNumber,
     mitigations: [],
     assumptions: [],
-  } satisfies ModelInput);
+  } satisfies DrawnModelInput);
 
 const threat = (number: number): ModelInput['threats'][number] => ({
   id: `threat-${number}`,
@@ -185,7 +185,7 @@ describe('a threat that applies to the model', () => {
   });
 
   it('has the link reported once for the threat, beside the split, where two cells hold a copy', () => {
-    const onTwo = parsedFixture({
+    const onTwo = drawnFixture({
       ...richerThanFormatFixture,
       threats: [onModel({ elements: ['element-ledger', 'element-vault'] })],
       mitigations: [],
@@ -227,7 +227,7 @@ describe('a threat that applies to the model', () => {
 });
 
 describe('a threat on a text note', () => {
-  const onNote = parsedFixture({
+  const onNote = drawnFixture({
     ...richerThanFormatFixture,
     threats: [{ ...threat(1), elements: ['element-note', 'element-ledger'] }],
     mitigations: [],

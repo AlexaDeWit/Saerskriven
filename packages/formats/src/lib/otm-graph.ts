@@ -1,7 +1,7 @@
 import {
   autoExtent,
   autoPlacement,
-  type ElementInput,
+  type DrawnElementInput,
 } from '@saerskriven/model';
 import type { OtmDocument } from '@saerskriven/wire-otm';
 import {
@@ -77,8 +77,8 @@ function otmComponents(
   representation: string | undefined,
   assets: AssetDescriptions,
   context: ImportContext,
-): ElementInput[] {
-  const elements: ElementInput[] = [];
+): DrawnElementInput[] {
+  const elements: DrawnElementInput[] = [];
   for (const component of components) {
     context.fields(component, [
       'id',
@@ -117,8 +117,8 @@ function otmZones(
   representation: string | undefined,
   offset: number,
   context: ImportContext,
-): ElementInput[] {
-  return zones.map((zone, index): ElementInput => {
+): DrawnElementInput[] {
+  return zones.map((zone, index): DrawnElementInput => {
     context.fields(zone, ['id', 'name', 'description', 'representations']);
     return {
       ...importElement(
@@ -141,8 +141,8 @@ function otmFlows(
   componentIds: ReadonlyMap<string, Component>,
   assets: AssetDescriptions,
   context: ImportContext,
-): ElementInput[] {
-  return flows.map((flow): ElementInput => {
+): DrawnElementInput[] {
+  return flows.map((flow): DrawnElementInput => {
     context.fields(flow, [
       'id',
       'name',

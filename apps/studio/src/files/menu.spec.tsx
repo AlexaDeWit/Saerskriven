@@ -247,7 +247,7 @@ describe('what the menu offers', () => {
           {
             id: diagramId('diagram-other'),
             title: 'Other diagram',
-            elements: [],
+            placements: [],
           },
         ],
       }),

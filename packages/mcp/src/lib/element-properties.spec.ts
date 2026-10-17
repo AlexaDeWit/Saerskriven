@@ -5,7 +5,8 @@ import {
 } from '@saerskriven/formats';
 import { elementPropertiesSchema } from '@saerskriven/model';
 import {
-  parsedFixture,
+  drawnAcross,
+  drawnFixture,
   securityModelFixture,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
@@ -24,8 +25,8 @@ import { searchElementsResultSchema } from './search-elements.js';
 import type { McpSession } from '../fixtures.js';
 import { session } from './server.fixtures.js';
 
-const model = parsedFixture(securityModelFixture);
-const elements = model.diagrams.flatMap((diagram) => diagram.elements);
+const model = drawnFixture(securityModelFixture);
+const elements = drawnAcross(model);
 const cases = elements.map((element) => ({
   element,
   properties: elementPropertiesSchema.parse(element),
@@ -108,9 +109,7 @@ for (const { format, codec } of [
         expect(result.isError).toBeFalsy();
         expect((await detail(id)).row).toMatchObject({ id, ...properties });
         expect(
-          readDisk()
-            .diagrams.flatMap((diagram) => diagram.elements)
-            .find((entry) => entry.id === id),
+          drawnAcross(readDisk()).find((entry) => entry.id === id),
         ).toMatchObject(properties);
       },
     );
@@ -171,9 +170,9 @@ for (const { format, codec } of [
           expect(found.text).not.toContain(`${field}:`);
         }
         const saved = readDisk();
-        const actual = saved.diagrams
-          .flatMap((diagram) => diagram.elements)
-          .find((entry) => entry.id === element.id);
+        const actual = drawnAcross(saved).find(
+          (entry) => entry.id === element.id,
+        );
         for (const field of fields) expect(actual).not.toHaveProperty(field);
         expect(actual).toMatchObject({ id: element.id, name: 'Renamed' });
         expect(saved.threats).toEqual(model.threats);

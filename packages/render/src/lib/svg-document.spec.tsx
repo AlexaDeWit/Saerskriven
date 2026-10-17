@@ -133,8 +133,8 @@ const forbiddenCharacterModel: Model = {
   diagrams: cleanCharacterModel.diagrams.map((diagram) => ({
     ...diagram,
     title: `${diagram.title}${forbidden}`,
-    elements: diagram.elements.map(carryingForbidden),
   })),
+  elements: cleanCharacterModel.elements.map(carryingForbidden),
 };
 
 const twoDiagramModel = modelWith({
@@ -531,7 +531,9 @@ describe.each([
   ...goldenDocuments.map((entry) => ({
     name: entry.name,
     drawn: renderSvg(diagramOf(entry), entry.model, 'en-CA'),
-    accented: diagramOf(entry).elements.some((element) => 'accent' in element),
+    accented: diagramOf(entry).placements.some(
+      (placement) => 'accent' in placement,
+    ),
   })),
   {
     name: 'text XML forbids',

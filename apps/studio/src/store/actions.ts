@@ -14,7 +14,7 @@ import type {
   Decimals,
   Diagram,
   DiagramId,
-  Element,
+  DrawnElement,
   ElementDetailsChange,
   ElementId,
   ElementProperties,
@@ -34,9 +34,11 @@ import type { InlineEditor, LinkFailure } from './state.js';
 import type { SyncedState } from './sync.js';
 
 /**
- * Every state change the reducer accepts. An edit that writes geometry carries
- * `decimals`, the count its model operation stores at, and says `undefined`
- * where it means the operation to store what it computes.
+ * Every state change the reducer accepts. An edit of an element's geometry or
+ * accent carries `diagramId`, the diagram on screen it was made on. An edit
+ * that writes geometry carries `decimals`, the count its model operation
+ * stores at, and says `undefined` where it means the operation to store what
+ * it computes.
  */
 export type Action = Data.TaggedEnum<{
   SetElementProperties: {
@@ -48,16 +50,18 @@ export type Action = Data.TaggedEnum<{
     readonly change: ElementDetailsChange;
   };
   SetAccent: {
+    readonly diagramId: DiagramId;
     readonly elementIds: readonly ElementId[];
     readonly accent: Accent | undefined;
   };
   AddElement: {
     readonly diagramId: DiagramId;
-    readonly element: Element;
+    readonly element: DrawnElement;
     readonly decimals: Decimals | undefined;
   };
   InsertFragment: { readonly diagramId: DiagramId; readonly fragment: Model };
   ArrangeElements: {
+    readonly diagramId: DiagramId;
     readonly moves: readonly {
       readonly elementId: ElementId;
       readonly offset: Point;
@@ -65,6 +69,7 @@ export type Action = Data.TaggedEnum<{
     readonly decimals: Decimals | undefined;
   };
   ReconnectFlow: {
+    readonly diagramId: DiagramId;
     readonly elementId: ElementId;
     readonly side: 'source' | 'target';
     readonly endpointId: ElementId;
@@ -75,6 +80,7 @@ export type Action = Data.TaggedEnum<{
     readonly bidirectional: boolean;
   };
   SetFlowEndPosition: {
+    readonly diagramId: DiagramId;
     readonly elementId: ElementId;
     readonly side: 'source' | 'target';
     readonly position: Point;
@@ -82,6 +88,7 @@ export type Action = Data.TaggedEnum<{
   };
   ReverseFlow: { readonly elementId: ElementId };
   SetBoundaryShape: {
+    readonly diagramId: DiagramId;
     readonly elementId: ElementId;
     readonly shape: BoundaryShape;
     readonly decimals: Decimals | undefined;
@@ -95,16 +102,19 @@ export type Action = Data.TaggedEnum<{
     readonly decimals: Decimals | undefined;
   };
   MoveElement: {
+    readonly diagramId: DiagramId;
     readonly elementId: ElementId;
     readonly offset: Point;
     readonly decimals: Decimals | undefined;
   };
   MoveElements: {
+    readonly diagramId: DiagramId;
     readonly elementIds: readonly ElementId[];
     readonly offset: Point;
     readonly decimals: Decimals | undefined;
   };
   ResizeElement: {
+    readonly diagramId: DiagramId;
     readonly elementId: ElementId;
     readonly offset: Point;
     readonly size: Size;
@@ -113,6 +123,7 @@ export type Action = Data.TaggedEnum<{
   RenameElement: { readonly elementId: ElementId; readonly name: string };
   EditNote: { readonly elementId: ElementId; readonly text: string };
   SetFlowWaypoints: {
+    readonly diagramId: DiagramId;
     readonly elementId: ElementId;
     readonly waypoints: readonly Point[];
     readonly decimals: Decimals | undefined;
@@ -155,7 +166,7 @@ export type Action = Data.TaggedEnum<{
   LinkAssumptionToModel: { readonly assumptionId: AssumptionId };
   UnlinkAssumptionFromModel: { readonly assumptionId: AssumptionId };
   SetModelMetadata: { readonly change: ModelMetadataChange };
-  AddDiagram: { readonly diagram: Diagram };
+  AddDiagram: { readonly diagram: Pick<Diagram, 'id' | 'title'> };
   RenameDiagram: { readonly diagramId: DiagramId; readonly title: string };
   Undo: {};
   Redo: {};

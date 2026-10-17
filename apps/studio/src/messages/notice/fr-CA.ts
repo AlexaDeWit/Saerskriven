@@ -73,6 +73,7 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
       'Le diagramme {id} ne peut pas être supprimé tant qu’il contient des éléments, et il en contient {count}.',
   },
   'op-unknown-element': 'Le modèle ne contient aucun élément {id}.',
+  'op-not-on-diagram': 'Le diagramme {diagram} ne dessine pas l’élément {id}.',
   'op-unknown-threat': 'Le modèle ne contient aucune menace {id}.',
   'op-unknown-mitigation': 'Le modèle ne contient aucune mesure {id}.',
   'op-unknown-assumption': 'Le modèle ne contient aucune hypothèse {id}.',

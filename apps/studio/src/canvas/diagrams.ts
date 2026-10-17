@@ -1,4 +1,5 @@
 import {
+  diagramsOf,
   generateDiagramId,
   type Diagram,
   type DiagramId,
@@ -50,11 +51,7 @@ export function showDiagram(
  * whether the model holds the element.
  */
 export function revealElement(elementId: ElementId): boolean {
-  const diagram = modelStore
-    .getState()
-    .present.diagrams.find((held) =>
-      held.elements.some(({ id }) => id === elementId),
-    );
+  const [diagram] = diagramsOf(modelStore.getState().present, elementId);
   if (diagram === undefined) {
     return false;
   }
@@ -96,7 +93,6 @@ export function createDiagram(): boolean {
   const diagram = {
     id: generateDiagramId(),
     title: activeTranslator().t('defaults.untitled-diagram'),
-    elements: [],
   };
   if (!changedModel(Action.AddDiagram({ diagram }))) {
     return false;

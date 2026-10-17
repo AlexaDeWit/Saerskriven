@@ -1,7 +1,7 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
 import {
-  parsedFixture,
+  drawnFixture,
   testDataPath,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
@@ -68,7 +68,7 @@ draft.diagrams.push({
  * canvas note and an empty diagram beside it, which are what the note and
  * diagram edits need and what no other fixture holds.
  */
-export const editableModel: Model = parsedFixture(draft);
+export const editableModel: Model = drawnFixture(draft);
 
 const editableYaml = saerskrivenYamlCodec.write(editableModel).output;
 

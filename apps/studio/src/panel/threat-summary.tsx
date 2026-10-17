@@ -1,6 +1,8 @@
 import type { ElementId, Threat } from '@saerskriven/model';
+import { useShallow } from 'zustand/react/shallow';
 import type { StudioTranslator } from '../messages/catalogues.js';
 import { useTranslator } from '../messages/locale.js';
+import { elementsAndDiagrams } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { categoryLabel } from '../ui/category-field.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
@@ -16,10 +18,10 @@ export function ThreatSummary({
   readonly threat: Threat;
   readonly on: ElementId | undefined;
 }) {
-  const diagrams = useModelStore((state) => state.present.diagrams);
+  const model = useModelStore(useShallow(elementsAndDiagrams));
   const { t } = useTranslator();
   const category = categoryLabel(threat.category, t);
-  const named = threatSummaryElements(diagrams, threat, t)
+  const named = threatSummaryElements(model, threat, t)
     .filter(({ id }) => id !== on)
     .map(({ label }) => label);
   const elements = elementsLine(on, named, threat.appliesToModel, t);

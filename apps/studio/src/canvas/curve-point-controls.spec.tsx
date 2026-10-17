@@ -19,6 +19,7 @@ import {
 } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { followKeyboardMoves } from './keyboard-moves.js';
+import { mainDiagram } from '../store/store.fixtures.js';
 
 const press = (key: string, shiftKey = false): void => {
   fireEvent.keyDown(document.activeElement ?? document.body, { key, shiftKey });
@@ -55,6 +56,7 @@ const reshaped = (
   act(() => {
     dispatch(
       Action.SetBoundaryShape({
+        diagramId: mainDiagram,
         elementId: boundaryElement,
         shape: { kind: 'curve', waypoints: [...waypoints] },
         decimals: undefined,

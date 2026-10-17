@@ -1,17 +1,18 @@
 import {
   accentField,
   decimalsOf,
+  drawnElements,
   storedNumber,
   type Accent,
   type Diagram,
-  type Element,
+  type DrawnElement,
+  type DrawnFlow,
+  type DrawnFlowEndpoint,
+  type DrawnTrustBoundary,
   type ElementId,
-  type Flow,
-  type FlowEndpoint,
   type Model,
   type Point,
   type Size,
-  type TrustBoundary,
 } from '@saerskriven/model';
 import { badgesByElement, type ThreatBadge } from './badges.js';
 import { drawnBounds, type CanvasBounds } from './bounds.js';
@@ -115,9 +116,10 @@ export type CanvasLayout = {
  */
 export function layoutDiagram(diagram: Diagram, model: Model): CanvasLayout {
   const badges = badgesByElement(model);
-  const nodes = diagram.elements.flatMap((element) => nodesOf(element, badges));
+  const elements = drawnElements(model, diagram);
+  const nodes = elements.flatMap((element) => nodesOf(element, badges));
   const boxes = nodeBoxesOf(nodes);
-  const placed = diagram.elements.flatMap((element) =>
+  const placed = elements.flatMap((element) =>
     element.kind === 'flow' ? [placeFlow(element, boxes, badges)] : [],
   );
   const ordered = settledCurveNames([
@@ -149,7 +151,7 @@ export function isBoundary(node: CanvasNode): node is CanvasBoundaryNode {
  * the noise of that arithmetic.
  */
 export function canvasNodeOf(
-  element: Element,
+  element: DrawnElement,
   badge?: ThreatBadge,
 ): CanvasNode | undefined {
   if (element.kind === 'flow') {
@@ -193,7 +195,7 @@ type PlacedFlow = {
 };
 
 function nodesOf(
-  element: Element,
+  element: DrawnElement,
   badges: ReadonlyMap<ElementId, ThreatBadge>,
 ): CanvasNode[] {
   const node = canvasNodeOf(element, badges.get(element.id));
@@ -201,7 +203,7 @@ function nodesOf(
 }
 
 function boundaryNode(
-  element: TrustBoundary,
+  element: DrawnTrustBoundary,
   badge: ThreatBadge | undefined,
 ): CanvasNode {
   const base = {
@@ -251,7 +253,7 @@ function sumOf(...terms: readonly number[]): number {
 }
 
 function placeFlow(
-  flow: Flow,
+  flow: DrawnFlow,
   boxes: ReadonlyMap<ElementId, NodeBox>,
   badges: ReadonlyMap<ElementId, ThreatBadge>,
 ): PlacedFlow {
@@ -296,7 +298,7 @@ function placeFlow(
 }
 
 function resolveEndpoint(
-  endpoint: FlowEndpoint,
+  endpoint: DrawnFlowEndpoint,
   boxes: ReadonlyMap<ElementId, NodeBox>,
 ): ResolvedEndpoint {
   if (endpoint.kind === 'free') {
@@ -309,7 +311,7 @@ function resolveEndpoint(
 }
 
 function unplacedOf(
-  flow: Flow,
+  flow: DrawnFlow,
   side: 'source' | 'target',
   resolved: ResolvedEndpoint,
 ): UnplacedEndpoint[] {
@@ -318,6 +320,6 @@ function unplacedOf(
     : [];
 }
 
-function pinOf(endpoint: FlowEndpoint): HandleSide | undefined {
+function pinOf(endpoint: DrawnFlowEndpoint): HandleSide | undefined {
   return endpoint.kind === 'attached' ? endpoint.side : undefined;
 }

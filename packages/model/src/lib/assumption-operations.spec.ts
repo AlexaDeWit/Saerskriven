@@ -1,7 +1,7 @@
 import { Either } from 'effect';
 import {
   assumptionId,
-  parsedFixture,
+  drawnFixture,
   registerModel,
   threatId,
 } from '../fixtures.js';
@@ -28,7 +28,7 @@ const tamperPayment = threatId('threat-tamper-payment');
 const ghostThreat = threatId('threat-ghost');
 const ghostAssumption = assumptionId('assumption-ghost');
 
-const unlinkedFromFile = parsedFixture({
+const unlinkedFromFile = drawnFixture({
   ...threatRegisterFixture,
   assumptions: [
     {

@@ -1,10 +1,17 @@
 import type { CanvasNode } from '@saerskriven/canvas';
 import { act, fireEvent } from '@testing-library/react';
-import type { ElementId, Model, Point, ThreatStatus } from '@saerskriven/model';
+import type {
+  DrawnModelInput,
+  ElementId,
+  Model,
+  Point,
+  ThreatStatus,
+} from '@saerskriven/model';
 import {
   assumptionId,
+  drawnAt,
+  drawnFixture,
   elementId,
-  parsedFixture,
 } from '@saerskriven/model/fixtures';
 import { initialState } from '../store/state.js';
 import {
@@ -31,7 +38,7 @@ export const boundaryElement = elementId('boundary-perimeter');
 /** The note beside them, which no flow ends on either. */
 export const noteElement = elementId('text-note');
 
-const document = {
+const document: DrawnModelInput = {
   metadata: {
     title: 'Canvas fixture',
     owner: 'Saerskriven',
@@ -145,7 +152,7 @@ const document = {
 };
 
 /** Two nodes, a boundary, a note, two flows, and three threats for mounted canvas specs. */
-export const canvasModel: Model = parsedFixture(document);
+export const canvasModel: Model = drawnFixture(document);
 
 /** The three points {@link curvedCanvasModel} draws its trust boundary through. */
 export const boundaryCurve = [
@@ -155,13 +162,16 @@ export const boundaryCurve = [
 ] as const;
 
 /** {@link canvasModel} with its trust boundary drawn as a curve through {@link boundaryCurve}. */
-export const curvedCanvasModel: Model = parsedFixture({
+export const curvedCanvasModel: Model = drawnFixture({
   ...document,
   diagrams: document.diagrams.map((diagram) => ({
     ...diagram,
     elements: diagram.elements.map((element) =>
-      element.id === boundaryElement
-        ? { ...element, shape: { kind: 'curve', waypoints: boundaryCurve } }
+      element.kind === 'trust-boundary' && element.id === boundaryElement
+        ? {
+            ...element,
+            shape: { kind: 'curve', waypoints: [...boundaryCurve] },
+          }
         : element,
     ),
   })),
@@ -221,8 +231,7 @@ export const laidOutNode = (id: ElementId): CanvasNode => {
 };
 
 /** The element the store's first diagram holds last, which is the one a placement added. */
-export const lastPlaced = () =>
-  modelStore.getState().present.diagrams[0].elements.at(-1);
+export const lastPlaced = () => drawnAt(modelStore.getState().present).at(-1);
 
 /** Starts a primary pointer at a screen point with the supplied targets. */
 export const primaryPointer = <
