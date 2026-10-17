@@ -13,7 +13,7 @@ const read = Either.getOrThrow(
 
 const record = (
   id: string,
-  threats: readonly string[],
+  threats: string[],
   fields: Partial<Pick<Mitigation, 'title' | 'prose' | 'status'>> = {},
 ) => ({
   id,
@@ -24,9 +24,8 @@ const record = (
   ...fields,
 });
 
-const withRecords = (
-  mitigations: readonly ReturnType<typeof record>[],
-): Model => parsedFixture({ ...read.model, mitigations });
+const withRecords = (mitigations: ReturnType<typeof record>[]): Model =>
+  parsedFixture({ ...read.model, mitigations });
 
 const writtenOnto = (model: Model) => {
   const written = writeThreatDragon(model, read.source);

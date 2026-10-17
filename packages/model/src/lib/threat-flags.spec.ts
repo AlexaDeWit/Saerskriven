@@ -1,5 +1,5 @@
 import * as fc from 'fast-check';
-import { modelInputArbitrary, parsedFixture } from '../fixtures.js';
+import { modelInputArbitrary, drawnFixture } from '../fixtures.js';
 import { threatRegisterFixture } from './model.fixtures.js';
 import type { MitigationStatus } from './mitigations.js';
 import type { AssumptionStatus } from './assumptions.js';
@@ -12,7 +12,7 @@ import {
 } from './threat-flags.js';
 import type { ThreatStatus } from './threats.js';
 
-const generatedModel = modelInputArbitrary.map(parsedFixture);
+const generatedModel = modelInputArbitrary.map(drawnFixture);
 
 const threatsLinkedBy = (
   records: readonly { readonly threats: readonly string[] }[],
@@ -24,7 +24,7 @@ const flagsOf = (
   assumptions: readonly AssumptionStatus[],
 ): ThreatFlag[] => {
   const [threat] = threatRegisterFixture.threats;
-  const model = parsedFixture({
+  const model = drawnFixture({
     ...threatRegisterFixture,
     threats: [{ ...threat, status }],
     mitigations: mitigations.map((mitigationStatus, index) => ({
@@ -108,7 +108,7 @@ describe('threatFlags on each boundary', () => {
 });
 
 const flaggedByModelWideAssumption = (threats: readonly string[]): string[] => {
-  const model = parsedFixture({
+  const model = drawnFixture({
     ...threatRegisterFixture,
     assumptions: [
       {

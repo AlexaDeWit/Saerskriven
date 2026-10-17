@@ -1,6 +1,6 @@
 import {
   mitigationId,
-  parsedFixture,
+  drawnFixture,
   registerModel,
   threatId,
 } from '../fixtures.js';
@@ -25,7 +25,7 @@ const floodCheckout = threatId('threat-flood-checkout');
 const ghostThreat = threatId('threat-ghost');
 const ghostMitigation = mitigationId('mitigation-ghost');
 
-const unlinkedFromFile = parsedFixture({
+const unlinkedFromFile = drawnFixture({
   ...threatRegisterFixture,
   mitigations: [
     {

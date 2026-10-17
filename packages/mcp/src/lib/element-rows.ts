@@ -4,16 +4,18 @@ import {
   accentField,
   accentSchema,
   diagramIdSchema,
+  drawnElements,
+  drawnElementSchema,
   elementIdSchema,
   elementKindSchema,
-  elementSchema,
   elementsById,
   flowEndName,
   flowEnds,
   unlabelledFlow,
   type Diagram,
-  type Element,
-  type FlowEndpoint,
+  type DrawnElement,
+  type DrawnFlowEndpoint,
+  type Model,
   type Point,
   type Size,
 } from '@saerskriven/model';
@@ -40,7 +42,7 @@ export const elementRowSchema = elementContextSchema.extend({
     .describe('The accent key the element is drawn with, where it holds one.'),
 });
 
-const [firstElementSchema, ...otherElementSchemas] = elementSchema.options;
+const [firstElementSchema, ...otherElementSchemas] = drawnElementSchema.options;
 
 /** Detailed reads carry the complete model variant, including future model fields. */
 export const elementDetailSchema = z.discriminatedUnion('kind', [
@@ -65,24 +67,30 @@ export const elementResultSchema = z.union([
 /** One end of a flow, as an edit names it and a drawing reports it. */
 export const flowEndSchema = z.enum(['source', 'target']);
 
-/** One element of a diagram, paired with the diagram that owns it. */
+/**
+ * One element as a diagram draws it, paired with that diagram and with every
+ * element the diagram draws.
+ */
 export type ElementOnDiagram = {
-  readonly element: Element;
+  readonly element: DrawnElement;
   readonly diagram: Diagram;
+  readonly drawn: readonly DrawnElement[];
 };
 
-/** Every element of the given diagrams, each paired with its own diagram. */
+/** Every element the given diagrams draw, each paired with its diagram. */
 export function elementsOnDiagrams(
+  model: Model,
   diagrams: readonly Diagram[],
 ): readonly ElementOnDiagram[] {
-  return diagrams.flatMap((diagram) =>
-    diagram.elements.map((element) => ({ element, diagram })),
-  );
+  return diagrams.flatMap((diagram) => {
+    const drawn = drawnElements(model, diagram);
+    return drawn.map((element) => ({ element, diagram, drawn }));
+  });
 }
 
 /** The identifying fields of one element, and its count in `counts`. */
 export function elementRow(
-  { element, diagram }: ElementOnDiagram,
+  { element, diagram, drawn }: ElementOnDiagram,
   counts: ReadonlyMap<string, number>,
 ): ElementRow {
   return {
@@ -93,20 +101,20 @@ export function elementRow(
     outOfScope: element.outOfScope,
     ...accentField(element),
     threats: threatsOn(element, counts),
-    ...namedFromEnds(element, diagram),
+    ...namedFromEnds(element, drawn),
   };
 }
 
 /** One element's whole record, geometry included, and its count in `counts`. */
 export function elementDetail(
-  { element, diagram }: ElementOnDiagram,
+  { element, diagram, drawn }: ElementOnDiagram,
   counts: ReadonlyMap<string, number>,
 ): ElementDetail {
   return {
     ...element,
     diagram: diagram.id,
     threats: threatsOn(element, counts),
-    ...namedFromEnds(element, diagram),
+    ...namedFromEnds(element, drawn),
   };
 }
 
@@ -188,17 +196,14 @@ function geometryLines(row: ElementDetail): readonly string[] {
 }
 
 function namedFromEnds(
-  element: Element,
-  diagram: Diagram,
+  element: DrawnElement,
+  drawn: readonly DrawnElement[],
 ): { readonly namedFromEnds?: string } {
   const flow = unlabelledFlow(element);
   if (flow === undefined) {
     return {};
   }
-  const { source, target, bidirectional } = flowEnds(
-    flow,
-    elementsById(diagram.elements),
-  );
+  const { source, target, bidirectional } = flowEnds(flow, elementsById(drawn));
   const from = flowEndName(source, 'a free point');
   const to = flowEndName(target, 'a free point');
   return {
@@ -209,13 +214,13 @@ function namedFromEnds(
 }
 
 function threatsOn(
-  element: Element,
+  element: DrawnElement,
   counts: ReadonlyMap<string, number>,
 ): number {
   return counts.get(element.id) ?? 0;
 }
 
-function renderEndpoint(endpoint: FlowEndpoint): string {
+function renderEndpoint(endpoint: DrawnFlowEndpoint): string {
   return endpoint.kind === 'attached'
     ? `element ${endpoint.element}${endpoint.side === undefined ? '' : ` on its ${endpoint.side}`}`
     : `free at ${renderPoint(endpoint.position)}`;

@@ -1,4 +1,4 @@
-import type { ModelInput } from '@saerskriven/model';
+import type { DrawnModelInput, ModelInput } from '@saerskriven/model';
 import { committedText } from '@saerskriven/model/fixtures';
 import type {
   ThreatDragonDocument,
@@ -105,7 +105,7 @@ const fromText = (
  * highest number 40, and each security fact the file states, `false` and
  * empty ones included.
  */
-export const featureCompleteModel: ModelInput = {
+export const featureCompleteModel: DrawnModelInput = {
   metadata: {
     title: 'Clinic booking',
     owner: 'Alexandra de Wit',
@@ -884,7 +884,7 @@ export const unmodelledFixture: ThreatDragonDocument = {
  * flow end and each end of the boundary curve are whole, which is what Threat
  * Dragon's own JSON Schema demands of a diagram it will open.
  */
-export const richerThanFormatFixture: ModelInput = {
+export const richerThanFormatFixture: DrawnModelInput = {
   metadata: {
     title: 'Ledger',
     owner: 'Alexandra de Wit',

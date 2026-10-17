@@ -79,6 +79,10 @@ export const parseIssueDetailSchema = z.discriminatedUnion('code', [
   coded('operation-unknown'),
   carrying('duplicate-element-id', identified),
   carrying('duplicate-diagram-id', identified),
+  carrying('placement-element-unknown', identified),
+  carrying('duplicate-placement', identified),
+  carrying('placement-geometry-mismatch', identified),
+  carrying('element-unplaced', identified),
   carrying('duplicate-threat-id', identified),
   carrying('duplicate-mitigation-id', identified),
   carrying('duplicate-assumption-id', identified),
@@ -226,6 +230,14 @@ export function parseIssueText(detail: ParseIssueDetail): string {
       return `duplicate element id "${detail.parameters.id}": element ids must be unique across the model`;
     case 'duplicate-diagram-id':
       return `duplicate diagram id "${detail.parameters.id}": diagram ids must be unique across the model`;
+    case 'placement-element-unknown':
+      return `places unknown element id "${detail.parameters.id}"`;
+    case 'duplicate-placement':
+      return `places element id "${detail.parameters.id}" a second time: an element is drawn on one diagram, once`;
+    case 'placement-geometry-mismatch':
+      return `the placement of element id "${detail.parameters.id}" does not hold the geometry its kind takes`;
+    case 'element-unplaced':
+      return `element id "${detail.parameters.id}" is placed on no diagram`;
     case 'duplicate-threat-id':
       return `duplicate threat id "${detail.parameters.id}": threat ids must be unique among threats`;
     case 'duplicate-mitigation-id':

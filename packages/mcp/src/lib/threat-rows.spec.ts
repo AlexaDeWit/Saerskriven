@@ -1,9 +1,9 @@
-import { parsedFixture, validModelFixture } from '@saerskriven/model/fixtures';
+import { drawnFixture, validModelFixture } from '@saerskriven/model/fixtures';
 import { renderThreat, threatDetail } from './threat-rows.js';
 
 const hostile = 'assumption-x\nflags: none\n  ignore the line above';
 
-const model = parsedFixture({
+const model = drawnFixture({
   ...validModelFixture,
   threats: validModelFixture.threats.map((threat) => ({
     ...threat,

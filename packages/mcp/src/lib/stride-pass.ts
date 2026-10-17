@@ -98,7 +98,10 @@ export function stridePass(
   );
   return Either.flatMap(read, (reading) =>
     Either.flatMap(
-      namedElement(elementsOnDiagrams(reading.model.diagrams), args.element),
+      namedElement(
+        elementsOnDiagrams(reading.model, reading.model.diagrams),
+        args.element,
+      ),
       (chosen) =>
         Either.map(analyzedKind(chosen.element), (kind) => ({
           data: passData(reading, chosen),
@@ -173,15 +176,19 @@ function analyzedKind(
     : Either.right(element.kind);
 }
 
-function flowsOf({ element, diagram }: ElementOnDiagram): ElementOnDiagram[] {
-  return diagram.elements
+function flowsOf({
+  element,
+  diagram,
+  drawn,
+}: ElementOnDiagram): ElementOnDiagram[] {
+  return drawn
     .filter(
       (candidate) =>
         candidate.kind === 'flow' &&
         candidate.id !== element.id &&
         endpointsOf(candidate).includes(element.id),
     )
-    .map((flow) => ({ element: flow, diagram }));
+    .map((flow) => ({ element: flow, diagram, drawn }));
 }
 
 function storesReached(
@@ -191,14 +198,14 @@ function storesReached(
   const reached = new Set(
     [chosen, ...flows].flatMap((one) => endpointsOf(one.element)),
   );
-  return chosen.diagram.elements
+  return chosen.drawn
     .filter(
       (candidate) =>
         candidate.kind === 'store' &&
         candidate.id !== chosen.element.id &&
         reached.has(candidate.id),
     )
-    .map((store) => ({ element: store, diagram: chosen.diagram }));
+    .map((store) => ({ ...chosen, element: store }));
 }
 
 function endpointsOf(element: Element): readonly string[] {

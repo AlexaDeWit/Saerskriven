@@ -6,7 +6,7 @@ import {
 import {
   assumptionId,
   mitigationId,
-  parsedFixture,
+  drawnFixture,
   registerModel,
   softHyphen,
   threatId,
@@ -292,7 +292,7 @@ describe('replace_assumption', () => {
   const managedDb = assumptionId('assumption-managed-db');
   const modelWide = Either.getOrThrow(
     linkAssumptionToModel(
-      parsedFixture({
+      drawnFixture({
         ...validModelFixture,
         assumptions: validModelFixture.assumptions.map((assumption) => ({
           ...assumption,

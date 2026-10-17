@@ -1,8 +1,10 @@
-import type {
-  Element,
-  ElementDetailsChange,
-  ElementId,
-  ElementProperties,
+import {
+  diagramsOf,
+  drawnElements,
+  type Element,
+  type ElementDetailsChange,
+  type ElementId,
+  type ElementProperties,
 } from '@saerskriven/model';
 import { Collapsible } from 'radix-ui';
 import { useEffect, useState } from 'react';
@@ -50,11 +52,9 @@ export function ElementPropertiesEditor({
   readonly drafts?: ElementPropertyDrafts;
 }) {
   const { t } = useTranslator();
-  const diagrams = useModelStore((state) => state.present.diagrams);
-  const diagram = diagrams.find((candidate) =>
-    candidate.elements.some((element) => element.id === elementId),
-  );
-  const element = diagram?.elements.find(
+  const model = useModelStore((state) => state.present);
+  const [diagram] = diagramsOf(model, elementId);
+  const element = model.elements.find(
     (candidate) => candidate.id === elementId,
   );
   const [refusals, setRefusals] = useState(
@@ -134,7 +134,7 @@ export function ElementPropertiesEditor({
             {hasOpened && (
               <PropertyFields
                 element={element}
-                elements={diagram.elements}
+                elements={drawnElements(model, diagram)}
                 commit={commit}
                 refused={refused}
                 drafts={current}

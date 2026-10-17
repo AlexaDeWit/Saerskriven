@@ -1,6 +1,7 @@
 import type {
   Decimals,
-  Element,
+  DiagramId,
+  DrawnElement,
   Model,
   OperationFailure,
 } from '@saerskriven/model';
@@ -8,7 +9,11 @@ import { Either } from 'effect';
 import { useMemo, useState } from 'react';
 import type { Said } from '../messages/said.js';
 import type { Action } from '../store/actions.js';
-import { selectedElement, selectedElementRecord } from '../store/selectors.js';
+import {
+  activeDiagramId,
+  selectedElement,
+  selectedElementRecord,
+} from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore, useModelStore } from '../store/store.js';
 import { announce } from './announcements.js';
@@ -16,18 +21,21 @@ import { currentLayout } from './layout.js';
 import { currentTool, useTool } from './tools.js';
 
 /**
- * How the selected element of one kind is edited: which element it is, what
- * a target does to the model while previewed, the one action that commits
- * it at a count of decimals, and what the committed edit says.
+ * How the selected element of one kind is edited on the diagram on screen:
+ * which element it is, what a target does to the model while previewed, the
+ * one action that commits it at a count of decimals, and what the committed
+ * edit says.
  */
-export type ElementEdit<Subject extends Element, Target extends object> = {
-  readonly subject: (element: Element) => Subject | undefined;
+export type ElementEdit<Subject extends DrawnElement, Target extends object> = {
+  readonly subject: (element: DrawnElement) => Subject | undefined;
   readonly edited: (
     model: Model,
+    diagramId: DiagramId,
     subject: Subject,
     target: Target,
   ) => Either.Either<Model, OperationFailure>;
   readonly action: (
+    diagramId: DiagramId,
     subject: Subject,
     target: Target,
     decimals: Decimals | undefined,
@@ -37,6 +45,7 @@ export type ElementEdit<Subject extends Element, Target extends object> = {
 
 type Draft<Subject, Target> = Target & {
   readonly subject: Subject;
+  readonly diagramId: DiagramId;
   readonly state: State;
   readonly transition: number;
 };
@@ -49,17 +58,20 @@ type Draft<Subject, Target> = Target & {
  * the decimals its edit stores, and says `undefined` to store its points as
  * they are.
  */
-export function useElementDraft<Subject extends Element, Target extends object>(
-  edit: ElementEdit<Subject, Target>,
-) {
+export function useElementDraft<
+  Subject extends DrawnElement,
+  Target extends object,
+>(edit: ElementEdit<Subject, Target>) {
   const state = useModelStore((value) => value);
   const tool = useTool();
   const [held, setHeld] = useState<Draft<Subject, Target> | undefined>();
   const element = selectedElementRecord(state);
+  const diagramId = activeDiagramId(state);
   const subject =
     tool.active === 'select' &&
     state.inlineEditor === undefined &&
-    element !== undefined
+    element !== undefined &&
+    diagramId !== undefined
       ? edit.subject(element)
       : undefined;
   const context = useMemo(
@@ -74,7 +86,7 @@ export function useElementDraft<Subject extends Element, Target extends object>(
     () =>
       draft === undefined
         ? undefined
-        : edit.edited(state.present, draft.subject, draft),
+        : edit.edited(state.present, draft.diagramId, draft.subject, draft),
     [edit, state.present, draft],
   );
   const present =
@@ -88,13 +100,20 @@ export function useElementDraft<Subject extends Element, Target extends object>(
     draft,
     layout: currentLayout({ present, activeDiagram: state.activeDiagram }),
     preview: (target: Target): void => {
-      if (subject !== undefined) {
-        setHeld({ ...target, subject, state, transition: tool.transition });
+      if (subject !== undefined && diagramId !== undefined) {
+        setHeld({
+          ...target,
+          subject,
+          diagramId,
+          state,
+          transition: tool.transition,
+        });
       }
     },
     commit: (target: Target, decimals: Decimals | undefined): void => {
       if (
         subject === undefined ||
+        diagramId === undefined ||
         modelStore.getState().present !== state.present ||
         selectedElement(modelStore.getState()) !== subject.id ||
         currentTool().transition !== tool.transition ||
@@ -102,7 +121,7 @@ export function useElementDraft<Subject extends Element, Target extends object>(
       ) {
         return;
       }
-      const action = edit.action(subject, target, decimals);
+      const action = edit.action(diagramId, subject, target, decimals);
       if (action === undefined) {
         return;
       }
@@ -119,7 +138,7 @@ export function useElementDraft<Subject extends Element, Target extends object>(
   };
 }
 
-function currentDraft<Subject extends Element, Target>(
+function currentDraft<Subject extends DrawnElement, Target>(
   draft: Draft<Subject, Target>,
 ): boolean {
   const state = modelStore.getState();

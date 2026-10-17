@@ -106,6 +106,10 @@ const operationFailures: ByTag<OperationFailure> = {
   UnknownElement: OperationFailure.UnknownElement({
     elementId: elementId('element-missing'),
   }),
+  ElementNotOnDiagram: OperationFailure.ElementNotOnDiagram({
+    elementId: elementId('element-api'),
+    diagramId: diagramId('diagram-main'),
+  }),
   UnknownThreat: OperationFailure.UnknownThreat({
     threatId: threatId('threat-missing'),
   }),

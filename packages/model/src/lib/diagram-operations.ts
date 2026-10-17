@@ -1,33 +1,19 @@
 import { Either } from 'effect';
 import {
   diagramIndexOf,
-  emptyNameFailure,
-  flowEndpointFailure,
-  invalidRelationships,
   locatedDiagram,
   withDiagram,
-  withStoredName,
 } from './diagram-edits.js';
 import type { DiagramId } from './ids.js';
 import type { Diagram } from './model.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
-import { elementIdsAcross, elementsById } from './references.js';
 import { firstRefusedCharacter, isEmptyName } from './text.js';
 
 /** The failures {@link addDiagram} can produce. */
 export type AddDiagramFailure = Extract<
   OperationFailure,
-  {
-    _tag:
-      | 'DuplicateDiagramId'
-      | 'DuplicateElementId'
-      | 'EmptyName'
-      | 'InvalidFlowEndpoint'
-      | 'InvalidElementRelationship'
-      | 'EmptyTitle'
-      | 'RefusedTitleCharacter';
-  }
+  { _tag: 'DuplicateDiagramId' | 'EmptyTitle' | 'RefusedTitleCharacter' }
 >;
 
 /** The failures {@link renameDiagram} can produce. */
@@ -43,14 +29,12 @@ export type RemoveDiagramFailure = Extract<
 >;
 
 /**
- * Appends a diagram with a valid title, new element IDs, element names that
- * are more than white space on every kind but a flow, flow ends
- * `reconnectFlow` would accept, and valid local boundary references. A flow
- * named with white space alone is stored unlabelled, as `''`.
+ * Appends an empty diagram under a new id with a valid title. An element
+ * joins it through `addElement` or a paste.
  */
 export function addDiagram(
   model: Model,
-  diagram: Diagram,
+  diagram: Pick<Diagram, 'id' | 'title'>,
 ): Either.Either<Model, AddDiagramFailure> {
   if (model.diagrams.some((existing) => existing.id === diagram.id)) {
     return Either.left(
@@ -61,31 +45,11 @@ export function addDiagram(
   if (titleRefusal !== undefined) {
     return Either.left(titleRefusal);
   }
-  const taken = elementIdsAcross(model.diagrams);
-  const own = new Set<string>();
-  for (const element of diagram.elements) {
-    if (taken.has(element.id) || own.has(element.id)) {
-      return Either.left(
-        OperationFailure.DuplicateElementId({ elementId: element.id }),
-      );
-    }
-    own.add(element.id);
-  }
-  const known = elementsById(diagram.elements);
-  for (const element of diagram.elements) {
-    const failure =
-      emptyNameFailure(element) ??
-      flowEndpointFailure(element, diagram) ??
-      invalidRelationships(element, known);
-    if (failure !== undefined) {
-      return Either.left(failure);
-    }
-  }
   return Either.right({
     ...model,
     diagrams: [
       ...model.diagrams,
-      { ...diagram, elements: diagram.elements.map(withStoredName) },
+      { id: diagram.id, title: diagram.title, placements: [] },
     ],
   });
 }
@@ -112,7 +76,7 @@ export function renameDiagram(
   );
 }
 
-/** Removes only an empty diagram. Explicit element deletion must precede diagram deletion. */
+/** Removes only a diagram that places no element. Explicit element deletion must precede diagram deletion. */
 export function removeDiagram(
   model: Model,
   diagramId: DiagramId,
@@ -120,11 +84,11 @@ export function removeDiagram(
   return Either.flatMap(
     locatedDiagram(model, diagramId),
     (diagram): Either.Either<Model, RemoveDiagramFailure> =>
-      diagram.elements.length > 0
+      diagram.placements.length > 0
         ? Either.left(
             OperationFailure.DiagramNotEmpty({
               diagramId,
-              elements: diagram.elements.length,
+              elements: diagram.placements.length,
             }),
           )
         : Either.right({

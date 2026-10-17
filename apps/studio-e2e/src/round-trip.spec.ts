@@ -1,7 +1,8 @@
 import { type DetectedRead } from '@saerskriven/formats';
+import { drawnElements } from '@saerskriven/model';
 import { expect, test } from '@playwright/test';
 import { canvasClassNames } from '@saerskriven/canvas';
-import { committedText } from '@saerskriven/model/fixtures';
+import { committedText, drawnAt } from '@saerskriven/model/fixtures';
 import { registeredChords } from './chords.fixtures.js';
 import { differingPaths, identified } from './differing-paths.fixtures.js';
 import { dragBy, placeOf } from './canvas.fixtures.js';
@@ -23,16 +24,18 @@ import {
 const addedTitle = 'Paper archive holds records nobody filed';
 
 const idNamed = (model: DetectedRead['model'], name: string): string => {
-  const element = model.diagrams[0].elements.find((one) => one.name === name);
+  const element = drawnAt(model).find((one) => one.name === name);
   expect(element, `${name} is not in the fixture`).toBeDefined();
   return element?.id ?? '';
 };
 
 const byIdentity = (model: DetectedRead['model']): unknown => ({
   ...model,
+  elements: undefined,
   diagrams: model.diagrams.map((diagram) => ({
     ...diagram,
-    elements: identified(diagram.elements),
+    placements: undefined,
+    elements: identified(drawnElements(model, diagram)),
   })),
   threats: identified(model.threats),
 });
@@ -103,7 +106,7 @@ test('opens a Threat Dragon file, edits it on both surfaces, and saves a valid, 
   expect(after.format).toBe('threat-dragon');
   expect(after.divergences).toStrictEqual(before.divergences);
 
-  const held = before.model.diagrams[0].elements;
+  const held = drawnAt(before.model);
   const bookingId = idNamed(before.model, 'Booking service');
   const archiveId = idNamed(before.model, 'Paper archive');
   const cellOf = (id: string): number => held.findIndex((one) => one.id === id);
@@ -121,9 +124,7 @@ test('opens a Threat Dragon file, edits it on both surfaces, and saves a valid, 
   ]);
 
   const kept = new Set(held.map((one) => one.id));
-  const [store, flow] = after.model.diagrams[0].elements.filter(
-    (one) => !kept.has(one.id),
-  );
+  const [store, flow] = drawnAt(after.model).filter((one) => !kept.has(one.id));
   const [threat] = after.model.threats.filter(
     (one) => one.number > before.model.lastIssuedThreatNumber,
   );

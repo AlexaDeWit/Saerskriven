@@ -1,4 +1,5 @@
 import {
+  drawnElements,
   elementsById,
   flowEnds,
   generateThreatId,
@@ -6,9 +7,9 @@ import {
   nextThreatNumber,
   threatSchema,
   unlabelledFlow,
-  type Diagram,
   type Element,
   type ElementId,
+  type Model,
   type Threat,
   type ThreatId,
 } from '@saerskriven/model';
@@ -174,14 +175,15 @@ export function attachableThreats(
 
 /** Offers unattached elements with the title of the diagram that draws each one. */
 export function attachableElements(
-  diagrams: readonly Diagram[],
+  model: Model,
   threat: Threat,
   t: StudioTranslator['t'],
 ): readonly Choice<ElementId>[] {
   return distinctTexts(
-    diagrams.flatMap((diagram) => {
-      const elements = elementsById(diagram.elements);
-      return diagram.elements
+    model.diagrams.flatMap((diagram) => {
+      const drawn = drawnElements(model, diagram);
+      const elements = elementsById(drawn);
+      return drawn
         .filter((element) => !threat.elements.includes(element.id))
         .map((element) => ({
           ...labelledElement(element, elements, t),
@@ -248,13 +250,14 @@ export function removedSaid(threat: Pick<Threat, 'number'>): Said {
 }
 
 function attachedElements(
-  diagrams: readonly Diagram[],
+  model: Model,
   threat: Threat,
   t: StudioTranslator['t'],
 ) {
-  return diagrams.flatMap((diagram) => {
-    const elements = elementsById(diagram.elements);
-    return diagram.elements
+  return model.diagrams.flatMap((diagram) => {
+    const drawn = drawnElements(model, diagram);
+    const elements = elementsById(drawn);
+    return drawn
       .filter((element) => threat.elements.includes(element.id))
       .map((element) => {
         const ends = unlabelledFlowEnds(element, elements, t);
@@ -271,7 +274,7 @@ function attachedElements(
 
 /** Flow labels stay stand-alone here, while Detach uses the shared flow phrase. */
 export function threatAttachments(
-  diagrams: readonly Diagram[],
+  model: Model,
   threat: Threat,
   t: StudioTranslator['t'],
 ): readonly {
@@ -279,7 +282,7 @@ export function threatAttachments(
   readonly label: string;
   readonly detach: string;
 }[] {
-  return distinctTexts(attachedElements(diagrams, threat, t)).map(
+  return distinctTexts(attachedElements(model, threat, t)).map(
     ([{ id, label, flowPhrase }, text]) => ({
       id,
       label: optionName(text),
@@ -295,12 +298,12 @@ export function threatAttachments(
 
 /** Summary names use noun phrases and distinguish collisions across those phrases. */
 export function threatSummaryElements(
-  diagrams: readonly Diagram[],
+  model: Model,
   threat: Threat,
   t: StudioTranslator['t'],
 ): readonly { readonly id: ElementId; readonly label: string }[] {
   return distinctTexts(
-    attachedElements(diagrams, threat, t).map((element) => ({
+    attachedElements(model, threat, t).map((element) => ({
       ...element,
       label: element.flowPhrase ?? element.label,
     })),

@@ -1,8 +1,5 @@
 import type { Model } from '@saerskriven/model';
-import {
-  incompressibleModel,
-  parsedFixture,
-} from '@saerskriven/model/fixtures';
+import { incompressibleModel, drawnFixture } from '@saerskriven/model/fixtures';
 import { Either, Option } from 'effect';
 import { readFileSync } from 'node:fs';
 import { brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
@@ -315,7 +312,7 @@ describe.skipIf(brotliUnbuilt)('a link read on the path a file takes', () => {
       await readShareLink(holding(readFileSync(frozenV021Path)), brotliWasm()),
     );
     expect(read.source.formatVersion).toBe(2);
-    expect(read.model).toStrictEqual(parsedFixture(frozenV021Model));
+    expect(read.model).toStrictEqual(drawnFixture(frozenV021Model));
   });
 
   it('refuses a link holding a YAML alias expansion as the native read refuses the file', async () => {

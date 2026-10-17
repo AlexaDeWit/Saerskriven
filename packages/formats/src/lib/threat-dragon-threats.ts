@@ -1,5 +1,4 @@
 import {
-  elementsAcross,
   type Element,
   type Model,
   type Threat,
@@ -139,7 +138,7 @@ export function planThreats(
 
 function elementKinds(model: Model): ReadonlyMap<string, Element['kind']> {
   return new Map(
-    elementsAcross(model.diagrams).map((element): [string, Element['kind']] => [
+    model.elements.map((element): [string, Element['kind']] => [
       element.id,
       element.kind,
     ]),

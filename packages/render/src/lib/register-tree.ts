@@ -1,6 +1,5 @@
 import type { Locale } from '@saerskriven/i18n';
 import {
-  elementsAcross,
   elementsById,
   flowEndName,
   flowEnds,
@@ -136,7 +135,7 @@ export function registerDocument(
     messages: exportText(locale),
     terms: renderTerms(locale),
     model,
-    elements: elementsById(elementsAcross(model.diagrams)),
+    elements: elementsById(model.elements),
     depth: boundedDepth(first + (options.title === false ? 0 : 1)),
   };
   return {

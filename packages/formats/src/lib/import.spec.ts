@@ -1,3 +1,4 @@
+import { drawnElements } from '@saerskriven/model';
 import type { Model } from '@saerskriven/model';
 import { committedText } from '@saerskriven/model/fixtures';
 import { otmWireSchema } from '@saerskriven/wire-otm';
@@ -33,7 +34,7 @@ it.each(['otm', 'tmbom'] as const)(
     expect(Either.getOrThrow(importModel(yaml))).toEqual(imported);
     expect(imported.format).toBe(format);
     expect(
-      imported.model.diagrams[0].elements.filter(
+      drawnElements(imported.model, imported.model.diagrams[0]).filter(
         (element) => element.kind === 'flow',
       ),
     ).toHaveLength(format === 'otm' ? 2 : 9);
@@ -55,7 +56,7 @@ it.each(['otm', 'tmbom'] as const)(
 
 it('places an OTM component the diagram representation misses on the shared grid', () => {
   const read = Either.getOrThrow(importModel(importTexts.otm));
-  const placed = read.model.diagrams[0].elements.find(
+  const placed = drawnElements(read.model, read.model.diagrams[0]).find(
     (element) => element.name === 'Class CustomerDatabase',
   );
   expect(placed).toMatchObject({ position: { x: 840, y: 60 } });
@@ -71,8 +72,8 @@ it('places an OTM component the diagram representation misses on the shared grid
 
 it('places TM-BOM nodes on the same grid, offset by their trust-zone band', () => {
   const read = Either.getOrThrow(importModel(importTexts.tmbom));
-  const placed = read.model.diagrams[0].elements.find((element) =>
-    element.name.startsWith('Host Filesystem'),
+  const placed = drawnElements(read.model, read.model.diagrams[0]).find(
+    (element) => element.name.startsWith('Host Filesystem'),
   );
   expect(placed).toMatchObject({ position: { x: 320, y: 920 } });
 });
@@ -102,12 +103,12 @@ it('keeps differing OTM occurrence states, bidirectional flows, and asset names'
     read.model.mitigations.slice(0, 2).map((mitigation) => mitigation.status),
   ).toEqual(['implemented', 'proposed']);
   expect(
-    read.model.diagrams[0].elements
+    drawnElements(read.model, read.model.diagrams[0])
       .filter((element) => element.kind === 'flow')
       .some((flow) => flow.description.includes('Credit')),
   ).toBe(true);
   expect(
-    read.model.diagrams[0].elements.flatMap((element) =>
+    drawnElements(read.model, read.model.diagrams[0]).flatMap((element) =>
       element.kind === 'flow' ? [element.bidirectional] : [],
     ),
   ).toEqual([false, true]);
@@ -465,7 +466,9 @@ it('generates distinct canvas-compatible identifiers for punctuation and Unicode
   document.threats = [];
   document.mitigations = [];
   const read = Either.getOrThrow(importModel(JSON.stringify(document)));
-  const ids = read.model.diagrams[0].elements.map((element) => element.id);
+  const ids = drawnElements(read.model, read.model.diagrams[0]).map(
+    (element) => element.id,
+  );
   expect(new Set(ids).size).toBe(ids.length);
   expect(ids.every((id) => /^[A-Za-z0-9_-]+$/u.test(id))).toBe(true);
 });
@@ -588,12 +591,10 @@ const imported = (document: unknown) =>
 
 const namesIn = (model: Model): ReadonlyMap<string, string> =>
   new Map<string, string>([
-    ...model.diagrams.flatMap((diagram) =>
-      diagram.elements.map((element): [string, string] => [
-        element.id,
-        element.name,
-      ]),
-    ),
+    ...model.elements.map((element): [string, string] => [
+      element.id,
+      element.name,
+    ]),
     ...model.threats.map((threat): [string, string] => [
       threat.id,
       threat.title,
@@ -605,7 +606,10 @@ const registerOf = (model: Model) => {
   const named = (ids: readonly string[]) => ids.map((id) => names.get(id));
   return {
     elements: model.diagrams.flatMap((diagram) =>
-      diagram.elements.map((element) => [element.kind, element.name]),
+      drawnElements(model, diagram).map((element) => [
+        element.kind,
+        element.name,
+      ]),
     ),
     threats: model.threats.map((threat) => [
       threat.title,
@@ -659,7 +663,7 @@ describe('the feature-complete OTM document', () => {
       ['flow', 'Store booking'],
     ]);
     expect(
-      read.model.diagrams[0].elements.flatMap((element) =>
+      drawnElements(read.model, read.model.diagrams[0]).flatMap((element) =>
         element.kind === 'flow' ? [element.bidirectional] : [],
       ),
     ).toEqual([true, false]);

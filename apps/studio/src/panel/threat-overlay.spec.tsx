@@ -5,6 +5,7 @@ import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
   actorElement,
+  mainDiagram,
   nativeSource,
   processElement,
   sampleModel,
@@ -127,6 +128,7 @@ describe('ThreatOverlay', () => {
     act(() => {
       dispatch(
         Action.MoveElement({
+          diagramId: mainDiagram,
           elementId: actorElement,
           offset: { x: 20, y: 0 },
           decimals: undefined,

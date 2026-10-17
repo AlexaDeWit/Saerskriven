@@ -1,4 +1,4 @@
-import { assumptionId } from '@saerskriven/model/fixtures';
+import { assumptionId, drawnAt, redrawn } from '@saerskriven/model/fixtures';
 import {
   elementsById,
   type ElementId,
@@ -85,18 +85,20 @@ const run = (action: Action): void => {
   });
 };
 
-const flowModel: Model = {
-  ...canvasModel,
-  diagrams: canvasModel.diagrams.map((diagram) => ({
-    ...diagram,
-    elements: [
-      ...diagram.elements.filter(({ id }) => id === requestFlow),
-      ...diagram.elements.filter(({ id }) => id !== requestFlow),
-    ].map((element) =>
-      element.id === requestFlow ? { ...element, name: '' } : element,
-    ),
-  })),
-};
+const flowModel: Model = redrawn(
+  {
+    ...canvasModel,
+    diagrams: canvasModel.diagrams.map((diagram) => ({
+      ...diagram,
+      placements: [
+        ...diagram.placements.filter(({ element }) => element === requestFlow),
+        ...diagram.placements.filter(({ element }) => element !== requestFlow),
+      ],
+    })),
+  },
+  (element) =>
+    element.id === requestFlow ? { ...element, name: '' } : element,
+);
 
 const flowNames = {
   'en-CA': {
@@ -146,22 +148,19 @@ describe('ThreatSummary', () => {
       expect(named(flowNames[locale].also)).not.toBeNull();
 
       const t = inLocale(locale);
-      const attachments = threatAttachments(flowModel.diagrams, threat, t);
+      const attachments = threatAttachments(flowModel, threat, t);
       expect(attachments[0]).toMatchObject({
         label: flowNames[locale].label,
         detach: flowNames[locale].detach,
       });
       expect(
-        attachableElements(
-          flowModel.diagrams,
-          { ...threat, elements: [] },
-          t,
-        )[0].text.label,
+        attachableElements(flowModel, { ...threat, elements: [] }, t)[0].text
+          .label,
       ).toBe(attachments[0].label);
-      const diagram = flowModel.diagrams[0];
-      expect(
-        elementHeading(diagram.elements[0], elementsById(diagram.elements), t),
-      ).toBe(attachments[0].label);
+      const drawn = drawnAt(flowModel);
+      expect(elementHeading(drawn[0], elementsById(drawn), t)).toBe(
+        attachments[0].label,
+      );
     },
   );
 
@@ -169,26 +168,18 @@ describe('ThreatSummary', () => {
     'keeps named elements and unnamed actors unchanged in %s',
     (locale) => {
       chooseLanguage(locale);
-      const model = {
-        ...flowModel,
-        diagrams: flowModel.diagrams.map((diagram) => ({
-          ...diagram,
-          elements: diagram.elements.map((element) =>
-            element.id === actorElement ? { ...element, name: '' } : element,
-          ),
-        })),
-      };
+      const model = redrawn(flowModel, (element) =>
+        element.id === actorElement ? { ...element, name: '' } : element,
+      );
       modelStore.setState(initialState(model), true);
       const threat = {
         ...model.threats[0],
         elements: [actorElement, processElement, probeFlow],
       };
       showSummaryOn(undefined, threat);
-      const names = threatAttachments(
-        model.diagrams,
-        threat,
-        inLocale(locale),
-      ).map(({ label }) => label);
+      const names = threatAttachments(model, threat, inLocale(locale)).map(
+        ({ label }) => label,
+      );
       expect(names).toContain('Studio');
       expect(names).toContain('Reads a file');
       expect(names.some((label) => label.includes(`(${actorElement})`))).toBe(
@@ -204,20 +195,12 @@ describe('ThreatSummary', () => {
     'distinguishes two unlabelled flows between the same ends in %s',
     (locale) => {
       chooseLanguage(locale);
-      const source = flowModel.diagrams[0].elements.find(
-        ({ id }) => id === requestFlow,
+      const source = drawnAt(flowModel).find(({ id }) => id === requestFlow);
+      const twin = redrawn(flowModel, (element) =>
+        element.id === probeFlow && source?.kind === 'flow'
+          ? { ...source, id: probeFlow }
+          : element,
       );
-      const twin = {
-        ...flowModel,
-        diagrams: flowModel.diagrams.map((diagram) => ({
-          ...diagram,
-          elements: diagram.elements.map((element) =>
-            element.id === probeFlow && source?.kind === 'flow'
-              ? { ...source, id: probeFlow }
-              : element,
-          ),
-        })),
-      };
       modelStore.setState(initialState(twin), true);
       showSummaryOn(undefined, {
         ...twin.threats[0],
@@ -230,22 +213,14 @@ describe('ThreatSummary', () => {
 
   it('distinguishes a flow phrase from a named element with the same normalized text', () => {
     const phrase = 'the flow from Reader to Studio';
-    const model = {
-      ...flowModel,
-      diagrams: flowModel.diagrams.map((diagram) => ({
-        ...diagram,
-        elements: diagram.elements.map((element) =>
-          element.id === probeFlow
-            ? { ...element, name: `${phrase} ` }
-            : element,
-        ),
-      })),
-    };
+    const model = redrawn(flowModel, (element) =>
+      element.id === probeFlow ? { ...element, name: `${phrase} ` } : element,
+    );
     modelStore.setState(initialState(model), true);
     const threat = { ...model.threats[0], elements: [requestFlow, probeFlow] };
     showSummaryOn(undefined, threat);
     const labels = threatSummaryElements(
-      model.diagrams,
+      model,
       threat,
       activeTranslator().t,
     ).map(({ label }) => label);

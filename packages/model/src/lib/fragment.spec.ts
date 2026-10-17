@@ -6,6 +6,7 @@ import {
   elementId,
   flowIn,
   mitigationOf,
+  drawnFixture,
   modelWith,
   parsedFixture,
   securityModelFixture,
@@ -13,6 +14,7 @@ import {
   threatOf,
   validModel,
 } from '../fixtures.js';
+import { drawnElements } from './drawing.js';
 import { removeElement } from './element-operations.js';
 import {
   seededModel,
@@ -38,6 +40,8 @@ import type { Threat } from './threats.js';
 
 const diagram = diagramId('diagram-main');
 
+const drawnOn = (model: Model) => drawnElements(model, model.diagrams[0]);
+
 const tamper = 'threat-tamper-order';
 
 function pasted(source: Model, target: Model) {
@@ -56,7 +60,7 @@ function pasted(source: Model, target: Model) {
 function withRecords(
   records: Pick<typeof validModelFixture, 'mitigations' | 'assumptions'>,
 ): Model {
-  return parsedFixture({ ...validModelFixture, ...records });
+  return drawnFixture({ ...validModelFixture, ...records });
 }
 
 const [mitigation] = validModelFixture.mitigations;
@@ -70,7 +74,7 @@ const apiFragment = () =>
 describe('selectionFragment', () => {
   it('copies each threat, mitigation and assumption the selection links once', () => {
     const fragment = apiFragment();
-    expect(fragment.diagrams[0].elements.map((element) => element.id)).toEqual([
+    expect(drawnOn(fragment).map((element) => element.id)).toEqual([
       'element-api',
     ]);
     expect(fragment.threats.map(({ id }) => id)).toEqual([
@@ -108,7 +112,7 @@ describe('selectionFragment', () => {
   });
 
   it('copies an assumption without the model link its source holds', () => {
-    const modelWide = parsedFixture({
+    const modelWide = drawnFixture({
       ...validModelFixture,
       assumptions: validModelFixture.assumptions.map((record) => ({
         ...record,
@@ -122,7 +126,7 @@ describe('selectionFragment', () => {
   });
 
   it('copies a threat without the model link its source holds', () => {
-    const modelWide = parsedFixture({
+    const modelWide = drawnFixture({
       ...validModelFixture,
       threats: validModelFixture.threats.map((threat) => ({
         ...threat,
@@ -140,8 +144,8 @@ describe('selectionFragment', () => {
     const fragment = Either.getOrThrow(
       selectionFragment(validModel, diagram, [flow.id]),
     );
-    expect(fragment.diagrams[0].elements).toContainEqual(flow);
-    expect(fragment.diagrams[0].elements.map((element) => element.id)).toEqual(
+    expect(drawnOn(fragment)).toContainEqual(flow);
+    expect(drawnOn(fragment).map((element) => element.id)).toEqual(
       expect.arrayContaining(['element-order-flow', 'element-customer']),
     );
     expect(Either.isRight(parseModel(fragment))).toBe(true);
@@ -156,16 +160,16 @@ describe('selectionFragment', () => {
       throw new Error('The fixture has no flow.');
     }
     flow.target = { kind: 'attached', element: 'element-api' };
-    const connected = parsedFixture(input);
+    const connected = drawnFixture(input);
     const fragment = Either.getOrThrow(
       selectionFragment(connected, diagram, [
         elementId('element-customer'),
         elementId('element-api'),
       ]),
     );
-    expect(
-      fragment.diagrams[0].elements.map((element) => element.id),
-    ).toContain('element-order-flow');
+    expect(drawnOn(fragment).map((element) => element.id)).toContain(
+      'element-order-flow',
+    );
   });
 
   it('refuses a missing diagram and a missing element', () => {
@@ -185,7 +189,7 @@ const whole = () => {
     selectionFragment(
       validModel,
       diagram,
-      validModel.diagrams[0].elements.map((element) => element.id),
+      drawnOn(validModel).map((element) => element.id),
     ),
   );
   const fresh = Either.getOrThrow(
@@ -201,11 +205,11 @@ describe('remapFragment and insertFragment', () => {
   it('remaps element ids under the prefix and offsets their geometry', () => {
     const { fresh, inserted } = whole();
     expect(
-      inserted.diagrams[0].elements
-        .slice(validModel.diagrams[0].elements.length)
+      drawnOn(inserted)
+        .slice(drawnOn(validModel).length)
         .every((element) => element.id.startsWith('fresh:')),
     ).toBe(true);
-    expect(fresh.diagrams[0].elements[0]).toMatchObject({
+    expect(drawnOn(fresh)[0]).toMatchObject({
       position: { x: 60, y: 150 },
     });
   });
@@ -225,7 +229,7 @@ describe('remapFragment and insertFragment', () => {
         remapFragment(copied, 'copy', { x: 24, y: 24 }, noisyModel, decimals),
       );
 
-      expect(remapped.diagrams[0].elements[0]).toMatchObject({
+      expect(drawnOn(remapped)[0]).toMatchObject({
         position,
         size: { width: 120.123456, height: 60.04 },
       });
@@ -277,7 +281,7 @@ describe('remapFragment and insertFragment', () => {
       selectionFragment(
         source,
         diagram,
-        source.diagrams[0].elements.map((element) => element.id),
+        drawnOn(source).map((element) => element.id),
       ),
     );
     const remapped = Either.getOrThrow(
@@ -299,7 +303,7 @@ describe('remapFragment and insertFragment', () => {
     );
   });
   it('restricts copied lists to selected targets and remaps every retained relationship', () => {
-    const secured = parsedFixture(securityModelFixture);
+    const secured = drawnFixture(securityModelFixture);
     const partial = Either.getOrThrow(
       selectionFragment(secured, diagram, [
         elementId('element-perimeter'),
@@ -307,24 +311,22 @@ describe('remapFragment and insertFragment', () => {
       ]),
     );
     expect(
-      partial.diagrams[0].elements.find(
-        (element) => element.kind === 'trust-boundary',
-      ),
+      drawnOn(partial).find((element) => element.kind === 'trust-boundary'),
     ).toMatchObject({ containedElements: ['element-api'], crossingFlows: [] });
     const full = Either.getOrThrow(
       selectionFragment(
         secured,
         diagram,
-        secured.diagrams[0].elements.map((element) => element.id),
+        drawnOn(secured).map((element) => element.id),
       ),
     );
     const remapped = Either.getOrThrow(
       remapFragment(full, 'copy', { x: 20, y: 30 }, secured),
     );
-    expect(remapped.diagrams[0].elements[3]).toMatchObject({
+    expect(drawnOn(remapped)[3]).toMatchObject({
       trustBoundaryIds: ['copy:element-perimeter'],
     });
-    expect(remapped.diagrams[0].elements[4]).toMatchObject({
+    expect(drawnOn(remapped)[4]).toMatchObject({
       containedElements: ['copy:element-api', 'copy:element-db'],
       crossingFlows: ['copy:element-order-flow'],
     });
@@ -332,12 +334,9 @@ describe('remapFragment and insertFragment', () => {
       insertFragment(secured, diagram, remapped),
     );
     expect(Either.isRight(parseModel(inserted))).toBe(true);
-    expect(
-      inserted.diagrams[0].elements.slice(
-        0,
-        secured.diagrams[0].elements.length,
-      ),
-    ).toStrictEqual(secured.diagrams[0].elements);
+    expect(drawnOn(inserted).slice(0, drawnOn(secured).length)).toStrictEqual(
+      drawnOn(secured),
+    );
   });
 });
 
@@ -476,7 +475,7 @@ describe('pasting records', () => {
   });
 
   it('links to an identical record another model holds and clones into one without it', () => {
-    const other = parsedFixture({
+    const other = drawnFixture({
       ...validModelFixture,
       threats: [{ ...validModelFixture.threats[0], id: 'threat-other' }],
       mitigations: [{ ...mitigation, threats: ['threat-other'] }],

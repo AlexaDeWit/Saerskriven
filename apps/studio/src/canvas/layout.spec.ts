@@ -6,6 +6,7 @@ import { reduce } from '../store/reducer.js';
 import { initialState } from '../store/state.js';
 import {
   actorElement,
+  mainDiagram,
   otherElement,
   processElement,
   secondDiagram,
@@ -25,6 +26,7 @@ const start = initialState(canvasModel);
 const moved = reduce(
   start,
   Action.MoveElement({
+    diagramId: mainDiagram,
     elementId: actorElement,
     offset: { x: 10, y: 0 },
     decimals: undefined,

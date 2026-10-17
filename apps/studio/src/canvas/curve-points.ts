@@ -2,19 +2,20 @@ import { curveMidpoints, type CurveMidpoint } from '@saerskriven/canvas';
 import {
   setBoundaryShape,
   type CurveBoundaryShape,
-  type Element,
+  type DrawnElement,
+  type DrawnTrustBoundary,
   type Point,
-  type TrustBoundary,
 } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
-import { dispatch } from '../store/store.js';
+import { activeDiagramId } from '../store/selectors.js';
+import { dispatch, modelStore } from '../store/store.js';
 import { announce, spokenElement } from './announcements.js';
 import { useElementDraft, type ElementEdit } from './element-draft.js';
 import { commandDecimals } from './stored-decimals.js';
 import { editedWaypoints, type WaypointTarget } from './waypoints.js';
 
 /** A trust boundary drawn as a curve. */
-export type CurveBoundary = TrustBoundary & {
+export type CurveBoundary = DrawnTrustBoundary & {
   readonly shape: CurveBoundaryShape;
 };
 
@@ -30,10 +31,16 @@ const fewestCurvePoints = 2;
 
 const pointEdit: ElementEdit<CurveBoundary, WaypointTarget> = {
   subject: (element) => (isCurveBoundary(element) ? element : undefined),
-  edited: (model, boundary, target) =>
-    setBoundaryShape(model, boundary.id, editedCurve(boundary, target)),
-  action: (boundary, target, decimals) =>
+  edited: (model, diagramId, boundary, target) =>
+    setBoundaryShape(
+      model,
+      diagramId,
+      boundary.id,
+      editedCurve(boundary, target),
+    ),
+  action: (diagramId, boundary, target, decimals) =>
     Action.SetBoundaryShape({
+      diagramId,
       elementId: boundary.id,
       shape: editedCurve(boundary, target),
       decimals,
@@ -109,7 +116,11 @@ export function useCurvePoints() {
       return target.index;
     },
     remove: (index: number): boolean => {
-      if (boundary?.shape.waypoints[index] === undefined) {
+      const diagramId = activeDiagramId(modelStore.getState());
+      if (
+        boundary?.shape.waypoints[index] === undefined ||
+        diagramId === undefined
+      ) {
         return false;
       }
       if (boundary.shape.waypoints.length <= fewestCurvePoints) {
@@ -118,6 +129,7 @@ export function useCurvePoints() {
       }
       dispatch(
         Action.SetBoundaryShape({
+          diagramId,
           elementId: boundary.id,
           shape: {
             kind: 'curve',
@@ -143,7 +155,7 @@ export function useCurvePoints() {
 /** The state and operations exposed to the curve point controls. */
 export type CurvePoints = ReturnType<typeof useCurvePoints>;
 
-function isCurveBoundary(element: Element): element is CurveBoundary {
+function isCurveBoundary(element: DrawnElement): element is CurveBoundary {
   return element.kind === 'trust-boundary' && element.shape.kind === 'curve';
 }
 

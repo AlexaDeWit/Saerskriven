@@ -2,7 +2,6 @@ import { gridSpacing } from '@saerskriven/canvas';
 import { saerskrivenYamlCodec, withinTextLimit } from '@saerskriven/formats';
 import {
   elementIdsAcross,
-  elementsAcross,
   fragmentHeldThreats,
   fragmentRecordCounts,
   generateElementId,
@@ -181,9 +180,7 @@ function insertCopy(fragment: Model, distance: number, said: Said): boolean {
   if (modelStore.getState().present === state.present) {
     return false;
   }
-  const ids = elementsAcross(remapped.right.diagrams).map(
-    (element) => element.id,
-  );
+  const ids = remapped.right.elements.map((element) => element.id);
   dispatch(Action.Select({ elementIds: ids }));
   const first = ids[0];
   if (first !== undefined) {

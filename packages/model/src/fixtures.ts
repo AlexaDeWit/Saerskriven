@@ -3,7 +3,14 @@ import { createHash } from 'node:crypto';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { threatCategorySchema } from './lib/categories.js';
-import type { Element, Flow } from './lib/elements.js';
+import {
+  drawnElementOn,
+  drawnElements,
+  elementOf,
+  placementOf,
+  placementOn,
+} from './lib/drawing.js';
+import type { DrawnElement, DrawnFlow } from './lib/drawn-elements.js';
 import {
   emptyRegisterFixture,
   threatRegisterFixture,
@@ -21,8 +28,11 @@ import {
   type MitigationId,
   type ThreatId,
 } from './lib/ids.js';
+import type { DrawnModelInput, ModelInput } from './lib/model.js';
+import { parseDrawnModel } from './lib/parse-drawn.js';
+import type { Placement } from './lib/placements.js';
 import { issueLine, parseIssueText } from './lib/parse-issue.js';
-import { parseModel, type Model } from './lib/parse.js';
+import { parseModel, type Model, type ParseFailure } from './lib/parse.js';
 import type { Threat } from './lib/threats.js';
 
 export {
@@ -70,9 +80,22 @@ export const assumptionId = (value: string): AssumptionId =>
   assumptionIdSchema.parse(value);
 
 /** A broken fixture throws with the model's path-bearing issues. */
-export function parsedFixture(input: unknown): Model {
+export function parsedFixture(input: ModelInput): Model {
+  return fixtureOf(parseModel(input));
+}
+
+/**
+ * A fixture whose diagrams own their elements, parsed through
+ * `parseDrawnModel`. A broken one throws with its path-bearing issues.
+ */
+export function drawnFixture(input: DrawnModelInput): Model {
+  return fixtureOf(parseDrawnModel(input));
+}
+
+/** The model a parse produced, throwing with its path-bearing issues where it refused. */
+export function fixtureOf(parsed: Either.Either<Model, ParseFailure>): Model {
   return Either.getOrThrowWith(
-    parseModel(input),
+    parsed,
     (failure) =>
       new Error(
         `Fixture does not parse: ${failure.issues.map((issue) => issueLine(issue, parseIssueText)).join('; ')}`,
@@ -81,13 +104,13 @@ export function parsedFixture(input: unknown): Model {
 }
 
 /** {@link validModelFixture}, parsed. */
-export const validModel: Model = parsedFixture(validModelFixture);
+export const validModel: Model = drawnFixture(validModelFixture);
 
 /** {@link threatRegisterFixture}, parsed. */
-export const registerModel: Model = parsedFixture(threatRegisterFixture);
+export const registerModel: Model = drawnFixture(threatRegisterFixture);
 
 /** {@link emptyRegisterFixture}, parsed. */
-export const emptyRegisterModel: Model = parsedFixture(emptyRegisterFixture);
+export const emptyRegisterModel: Model = drawnFixture(emptyRegisterFixture);
 
 /**
  * Each methodology with a closed category list, beside that list, read from
@@ -157,7 +180,7 @@ export const incompressibleModel = (model: Model, bytes: number): Model => ({
  * among its nx test inputs.
  */
 export const committedModel = (name: string): Model =>
-  parsedFixture(JSON.parse(committedText(name)));
+  fixtureOf(parseModel(JSON.parse(committedText(name))));
 
 /**
  * Every diagram the canvas and render suites draw from committed data: a test
@@ -184,19 +207,116 @@ export const committedDiagrams: readonly {
   { name: 'every accent', file: 'accents.model.json', diagram: 0 },
 ];
 
-/** The element of any diagram under the id, throwing where none is. */
-export const elementIn = (model: Model, id: string): Element => {
+/**
+ * The element under the id as the first diagram placing it draws it,
+ * throwing where no diagram does.
+ */
+export const elementIn = (model: Model, id: string): DrawnElement => {
   const element = model.diagrams
-    .flatMap((diagram) => diagram.elements)
-    .find((candidate) => candidate.id === id);
+    .map((diagram) => drawnElementOn(model, diagram, elementId(id)))
+    .find((candidate) => candidate !== undefined);
   if (!element) {
     throw new Error(`Element ${id} is missing from the model.`);
   }
   return element;
 };
 
-/** The flow under the id, throwing where the element is missing or no flow. */
-export const flowIn = (model: Model, id: string): Flow => {
+/**
+ * The elements of the model's diagram at `index`, the first where none is
+ * named, as that diagram draws them: empty where the model holds no such
+ * diagram, and where there is no model.
+ */
+export const drawnAt = (
+  model: Model | undefined,
+  index = 0,
+): DrawnElement[] => {
+  const diagram = model?.diagrams.at(index);
+  return model === undefined || diagram === undefined
+    ? []
+    : drawnElements(model, diagram);
+};
+
+/**
+ * Every element the model's diagrams draw, as they draw them, in diagram
+ * order: empty where there is no model.
+ */
+export const drawnAcross = (model: Model | undefined): DrawnElement[] =>
+  model === undefined
+    ? []
+    : model.diagrams.flatMap((diagram) => drawnElements(model, diagram));
+
+/**
+ * `model` with each element as `redraw` returns it from the diagram that
+ * draws it, given its index in that diagram's draw order, split back into
+ * the element and its placement. No parse runs, so
+ * a spec can hand over a model the parser would refuse.
+ */
+export const redrawn = (
+  model: Model,
+  redraw: (element: DrawnElement, index: number) => DrawnElement,
+): Model => {
+  const diagrams = model.diagrams.map((diagram) => ({
+    diagram,
+    drawn: drawnElements(model, diagram).map((element, index) =>
+      redraw(element, index),
+    ),
+  }));
+  const byId = new Map(
+    diagrams.flatMap(({ drawn }) =>
+      drawn.map((element) => [element.id, element] as const),
+    ),
+  );
+  return {
+    ...model,
+    elements: model.elements.map((element) => {
+      const drawn = byId.get(element.id);
+      return drawn === undefined ? element : elementOf(drawn);
+    }),
+    diagrams: diagrams.map(({ diagram, drawn }) => ({
+      ...diagram,
+      placements: drawn.map(placementOf),
+    })),
+  };
+};
+
+/**
+ * `model` with each of `added` held at its root and placed last on the
+ * diagram at `index`, the first where none is named. No parse runs, as for
+ * {@link redrawn}.
+ */
+export const drawnOnto = (
+  model: Model,
+  added: readonly DrawnElement[],
+  index = 0,
+): Model => ({
+  ...model,
+  elements: [...model.elements, ...added.map(elementOf)],
+  diagrams: model.diagrams.map((diagram, at) =>
+    at === index
+      ? {
+          ...diagram,
+          placements: [...diagram.placements, ...added.map(placementOf)],
+        }
+      : diagram,
+  ),
+});
+
+/**
+ * The placement of the element under the id on the first diagram placing
+ * it, the object the model holds, throwing where no diagram places it.
+ */
+export const placementIn = (model: Model, id: string): Placement => {
+  const placement = model.diagrams
+    .map((diagram) => placementOn(diagram, elementId(id)))
+    .find((candidate) => candidate !== undefined);
+  if (!placement) {
+    throw new Error(`Element ${id} is placed on no diagram.`);
+  }
+  return placement;
+};
+
+/** The flow under the id as it is drawn, throwing where the element is missing or no flow. */
+export const flowIn = (model: Model, id: string): DrawnFlow => {
   const element = elementIn(model, id);
   if (element.kind !== 'flow') {
     throw new Error(`Element ${id} is not a flow.`);

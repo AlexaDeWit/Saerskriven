@@ -1,7 +1,7 @@
 import {
   autoExtent,
   autoPlacement,
-  type ElementInput,
+  type DrawnElementInput,
 } from '@saerskriven/model';
 import type { TmbomDocument } from '@saerskriven/wire-tmbom';
 import { importElement, type ImportContext } from './import-model.js';
@@ -117,7 +117,7 @@ function zoneLayout(
   zoneIndex: ReadonlyMap<string, Zone>,
   descriptions: ReadonlyMap<string, readonly string[]>,
   context: ImportContext,
-): ElementInput[] {
+): DrawnElementInput[] {
   const groups = new Map<string | undefined, PlacedNode[]>();
   for (const node of nodes) {
     const zone =
@@ -137,7 +137,7 @@ function zoneLayout(
       groups.set(zone.symbolic_name, []);
     }
   }
-  const elements: ElementInput[] = [];
+  const elements: DrawnElementInput[] = [];
   let top = firstBandTop;
   for (const [zoneName, members] of groups) {
     const height =
@@ -193,8 +193,8 @@ function tmbomFlows(
   flows: readonly Flow[],
   indexes: NodeIndexes,
   context: ImportContext,
-): ElementInput[] {
-  return flows.map((flow): ElementInput => {
+): DrawnElementInput[] {
+  return flows.map((flow): DrawnElementInput => {
     context.fields(flow, [
       'symbolic_name',
       'title',

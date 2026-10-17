@@ -1,3 +1,4 @@
+import { drawnAcross } from '@saerskriven/model/fixtures';
 import { expect, test, type Page } from '@playwright/test';
 import type { Model, Point } from '@saerskriven/model';
 import { commandChord, registeredChords } from './chords.fixtures.js';
@@ -21,9 +22,9 @@ const settledPoints = [
 const pointerRounding = 1;
 
 const curveIn = (model: Model) => {
-  const boundary = model.diagrams
-    .flatMap((diagram) => diagram.elements)
-    .find((element) => element.id === 'boundary-records');
+  const boundary = drawnAcross(model).find(
+    (element) => element.id === 'boundary-records',
+  );
   return {
     name: boundary?.name,
     points:

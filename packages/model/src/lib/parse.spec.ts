@@ -1,13 +1,19 @@
 import { Either, Option } from 'effect';
 import { z } from 'zod';
+import { validModel } from '../fixtures.js';
+import { drawnElements } from './drawing.js';
 import { floodingEntries } from './issue-flood.fixtures.js';
+import type { ModelInput } from './model.js';
 import {
   issuesOf,
   seededModel,
+  seededPlacedModel,
   unnamedWithLoopedFlow,
   validModelFixture,
 } from './model.fixtures.js';
+import { parseDrawnModel } from './parse-drawn.js';
 import { issueFloodCode, type ParseIssueDetail } from './parse-issue.js';
+import type { PlacementInput } from './placements.js';
 import { boundedParse, parseModel, schemaFailureIssues } from './parse.js';
 
 const plantEverywhere = (value: unknown): unknown =>
@@ -25,18 +31,216 @@ const plantEverywhere = (value: unknown): unknown =>
         }
       : value;
 
-type Rejection = {
+type Rejection<Draft> = {
   readonly named: string;
-  readonly mutate: (draft: typeof validModelFixture) => void;
+  readonly mutate: (draft: Draft) => void;
   readonly path: readonly (string | number)[];
   readonly detail: ParseIssueDetail;
 };
 
+const remoteProcess = {
+  kind: 'process',
+  id: 'element-remote',
+  name: 'Remote',
+  description: '',
+  outOfScope: false,
+  reasonOutOfScope: '',
+} as const;
+
+const onSecondDiagram = (
+  draft: ModelInput,
+  ...placements: readonly PlacementInput[]
+) => {
+  draft.elements.push(remoteProcess);
+  draft.diagrams.push({
+    id: 'diagram-second',
+    title: 'Second',
+    placements: [
+      {
+        element: 'element-remote',
+        position: { x: 0, y: 0 },
+        size: { width: 100, height: 60 },
+      },
+      ...placements,
+    ],
+  });
+};
+
 describe('parseModel', () => {
-  it('parses the committed valid fixture', () => {
-    expect(Either.getOrNull(parseModel(validModelFixture))).toEqual(
-      validModelFixture,
+  it('parses the model a drawn read gives it into an equal model', () => {
+    expect(Either.getOrNull(parseModel(validModel))).toEqual(validModel);
+  });
+
+  it('strips a key no schema declares rather than refusing the model', () => {
+    expect(Either.getOrNull(parseModel(plantEverywhere(validModel)))).toEqual(
+      validModel,
     );
+  });
+
+  it.each<Rejection<ModelInput>>([
+    {
+      named: 'a duplicate element id',
+      mutate: (draft) => {
+        draft.elements.push(structuredClone(draft.elements[0]));
+      },
+      path: ['elements', 6, 'id'],
+      detail: {
+        code: 'duplicate-element-id',
+        parameters: { id: 'element-customer' },
+      },
+    },
+    {
+      named: 'a placement of an element the model does not hold',
+      mutate: (draft) => {
+        draft.diagrams[0].placements.push({
+          element: 'element-ghost',
+          position: { x: 0, y: 0 },
+          size: { width: 100, height: 60 },
+        });
+      },
+      path: ['diagrams', 0, 'placements', 6, 'element'],
+      detail: {
+        code: 'placement-element-unknown',
+        parameters: { id: 'element-ghost' },
+      },
+    },
+    {
+      named: 'a second placement of an element on its diagram',
+      mutate: (draft) => {
+        draft.diagrams[0].placements.push(
+          structuredClone(draft.diagrams[0].placements[0]),
+        );
+      },
+      path: ['diagrams', 0, 'placements', 6, 'element'],
+      detail: {
+        code: 'duplicate-placement',
+        parameters: { id: 'element-customer' },
+      },
+    },
+    {
+      named: 'a placement of an element on a second diagram',
+      mutate: (draft) => {
+        onSecondDiagram(
+          draft,
+          structuredClone(draft.diagrams[0].placements[0]),
+        );
+      },
+      path: ['diagrams', 1, 'placements', 1, 'element'],
+      detail: {
+        code: 'duplicate-placement',
+        parameters: { id: 'element-customer' },
+      },
+    },
+    {
+      named: 'an element no diagram places',
+      mutate: (draft) => {
+        draft.diagrams[0].placements.splice(2, 1);
+      },
+      path: ['elements', 2],
+      detail: { code: 'element-unplaced', parameters: { id: 'element-db' } },
+    },
+    {
+      named: "a placement holding another kind's geometry",
+      mutate: (draft) => {
+        draft.diagrams[0].placements[0] = {
+          element: 'element-customer',
+          shape: {
+            kind: 'box',
+            position: { x: 0, y: 0 },
+            size: { width: 100, height: 60 },
+          },
+        };
+      },
+      path: ['diagrams', 0, 'placements', 0],
+      detail: {
+        code: 'placement-geometry-mismatch',
+        parameters: { id: 'element-customer' },
+      },
+    },
+    {
+      named: 'a free flow end placed with no position',
+      mutate: (draft) => {
+        draft.diagrams[0].placements[3] = {
+          element: 'element-order-flow',
+          waypoints: [],
+          source: {},
+          target: {},
+        };
+      },
+      path: ['diagrams', 0, 'placements', 3],
+      detail: {
+        code: 'placement-geometry-mismatch',
+        parameters: { id: 'element-order-flow' },
+      },
+    },
+    {
+      named: 'an attached flow end drawn away from its element, at a position',
+      mutate: (draft) => {
+        draft.diagrams[0].placements[3] = {
+          element: 'element-order-flow',
+          waypoints: [],
+          source: { position: { x: 0, y: 0 } },
+          target: { position: { x: 280, y: 160 } },
+        };
+      },
+      path: ['diagrams', 0, 'placements', 3],
+      detail: {
+        code: 'placement-geometry-mismatch',
+        parameters: { id: 'element-order-flow' },
+      },
+    },
+    {
+      named: 'a flow end attached to an element another diagram places',
+      mutate: (draft) => {
+        onSecondDiagram(draft);
+        draft.elements[3] = {
+          ...structuredClone(draft.elements[3]),
+          kind: 'flow',
+          source: { kind: 'attached', element: 'element-remote' },
+          target: { kind: 'free' },
+          bidirectional: false,
+        };
+      },
+      path: ['elements', 3, 'source', 'element'],
+      detail: {
+        code: 'flow-endpoint-foreign',
+        parameters: { id: 'element-remote' },
+      },
+    },
+    {
+      named: 'a boundary listing an element another diagram places',
+      mutate: (draft) => {
+        onSecondDiagram(draft);
+        draft.elements[4] = {
+          ...structuredClone(draft.elements[4]),
+          kind: 'trust-boundary',
+          containedElements: ['element-remote'],
+        };
+      },
+      path: ['elements', 4, 'containedElements', 0],
+      detail: {
+        code: 'related-element-unknown',
+        parameters: { id: 'element-remote' },
+      },
+    },
+  ])('rejects $named', ({ mutate, path, detail }) => {
+    expect(issuesOf(seededPlacedModel(mutate))).toContainEqual({
+      path,
+      detail,
+    });
+  });
+});
+
+describe('parseDrawnModel', () => {
+  it('moves each element to the root and leaves its placement on its diagram, in order', () => {
+    const parsed = Either.getOrThrow(parseDrawnModel(validModelFixture));
+    expect(drawnElements(parsed, parsed.diagrams[0])).toEqual(
+      validModelFixture.diagrams[0].elements,
+    );
+    expect(parsed.elements.map(({ id }) => id)).toEqual(
+      validModelFixture.diagrams[0].elements.map(({ id }) => id),
+    );
+    expect(parsed.threats).toEqual(validModelFixture.threats);
   });
 
   it('keeps a mitigation and an assumption linked to no threat', () => {
@@ -66,14 +270,14 @@ describe('parseModel', () => {
 
   it('strips a key no schema declares rather than refusing the model', () => {
     expect(
-      Either.getOrNull(parseModel(plantEverywhere(validModelFixture))),
-    ).toEqual(validModelFixture);
+      Either.getOrNull(parseDrawnModel(plantEverywhere(validModelFixture))),
+    ).toEqual(Either.getOrNull(parseDrawnModel(validModelFixture)));
   });
 
   it('reports violations as plain tagged data that survives a JSON round trip', () => {
     const failure = Option.getOrUndefined(
       Either.getLeft(
-        parseModel({
+        parseDrawnModel({
           ...validModelFixture,
           metadata: 'Saerskriven',
         }),
@@ -93,7 +297,7 @@ describe('parseModel', () => {
     });
   });
 
-  it.each<Rejection>([
+  it.each<Rejection<typeof validModelFixture>>([
     {
       named: 'a duplicate element id across diagrams',
       mutate: (draft) => {
@@ -358,7 +562,7 @@ describe('boundedParse', () => {
 
   it('refuses a model with more invalid entries than zod 4.6.2 gathers on V8', () => {
     const flooded = {
-      ...validModelFixture,
+      ...validModel,
       threats: [{ elements: floodingEntries(1) }],
     };
 

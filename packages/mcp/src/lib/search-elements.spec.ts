@@ -6,7 +6,7 @@ import {
 } from '@saerskriven/model';
 import {
   elementId,
-  parsedFixture,
+  drawnFixture,
   validModel,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
@@ -245,7 +245,7 @@ describe('the row of a flow left unlabelled', () => {
   it('names a flow a file holds under white space alone from its ends', () => {
     const spaced = treeHolding(
       saerskrivenYamlCodec.write(
-        parsedFixture({
+        drawnFixture({
           ...validModelFixture,
           diagrams: validModelFixture.diagrams.map((diagram) => ({
             ...diagram,
@@ -280,7 +280,12 @@ describe('the accent of an element row', () => {
   const accented = treeHolding(
     saerskrivenYamlCodec.write(
       Either.getOrThrow(
-        setAccent(validModel, [elementId('element-api')], 's2'),
+        setAccent(
+          validModel,
+          validModel.diagrams[0].id,
+          [elementId('element-api')],
+          's2',
+        ),
       ),
     ).output,
   );

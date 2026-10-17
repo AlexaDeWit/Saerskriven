@@ -7,18 +7,323 @@
       "Alexandra de Wit"
     ]
   },
+  "elements": [
+    {
+      "kind": "trust-boundary",
+      "id": "el-shop-network",
+      "name": "Shop network",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "actor",
+      "id": "el-shopper",
+      "name": "Shopper",
+      "description": "Browses and pays.",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "process",
+      "id": "el-web-shop",
+      "name": "Web shop",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "store",
+      "id": "el-catalogue",
+      "name": "Catalogue",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "store",
+      "id": "el-ledger",
+      "name": "Order ledger",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "process",
+      "id": "el-payment",
+      "name": "Payment\ngateway",
+      "description": "",
+      "outOfScope": true,
+      "reasonOutOfScope": "Run by the payment provider."
+    },
+    {
+      "kind": "text",
+      "id": "el-card-note",
+      "name": "Card note",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "text": "Card numbers never reach the shop."
+    },
+    {
+      "kind": "flow",
+      "id": "el-browse",
+      "name": "browse the catalogue and fill a basket",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "el-shopper"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "el-web-shop"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "el-page",
+      "name": "return the rendered page",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "el-web-shop"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "el-shopper"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "el-listings",
+      "name": "read the product listings",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "el-web-shop"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "el-catalogue"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "el-charge",
+      "name": "authorise the card payment",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "el-web-shop"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "el-payment"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "el-confirm",
+      "name": "confirm the authorisation",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "el-payment"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "el-web-shop"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "el-record",
+      "name": "record the paid order",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "el-web-shop"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "el-ledger"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "el-callback",
+      "name": "card network callback",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "free"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "el-payment"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "trust-boundary",
+      "id": "el-warehouse-floor",
+      "name": "Warehouse floor",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "store",
+      "id": "el-stock",
+      "name": "Stock",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "process",
+      "id": "el-dispatch",
+      "name": "Dispatch",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "process",
+      "id": "el-label-printer",
+      "name": "Label printer",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "actor",
+      "id": "el-picker",
+      "name": "Picker",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "actor",
+      "id": "el-courier",
+      "name": "Courier",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "flow",
+      "id": "el-reserve",
+      "name": "reserve the stock for the order",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "el-stock"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "el-dispatch"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "el-picked",
+      "name": "report the picked items",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "el-picker"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "el-dispatch"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "el-collect",
+      "name": "collect the parcel",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "el-courier"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "el-dispatch"
+      },
+      "bidirectional": true
+    },
+    {
+      "kind": "flow",
+      "id": "el-print",
+      "name": "print the shipping label",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "el-dispatch"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "el-label-printer"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "el-hand-over",
+      "name": "hand over the parcel",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "el-picker"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "el-courier"
+      },
+      "bidirectional": false
+    }
+  ],
   "diagrams": [
     {
       "id": "storefront",
       "title": "Taking an order",
-      "elements": [
+      "placements": [
         {
-          "kind": "trust-boundary",
-          "id": "el-shop-network",
-          "name": "Shop network",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-shop-network",
           "shape": {
             "kind": "box",
             "position": {
@@ -32,12 +337,7 @@
           }
         },
         {
-          "kind": "actor",
-          "id": "el-shopper",
-          "name": "Shopper",
-          "description": "Browses and pays.",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-shopper",
           "position": {
             "x": 0,
             "y": 220
@@ -48,12 +348,7 @@
           }
         },
         {
-          "kind": "process",
-          "id": "el-web-shop",
-          "name": "Web shop",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-web-shop",
           "position": {
             "x": 460,
             "y": 200
@@ -64,12 +359,7 @@
           }
         },
         {
-          "kind": "store",
-          "id": "el-catalogue",
-          "name": "Catalogue",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-catalogue",
           "position": {
             "x": 680,
             "y": 60
@@ -80,12 +370,7 @@
           }
         },
         {
-          "kind": "store",
-          "id": "el-ledger",
-          "name": "Order ledger",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-ledger",
           "position": {
             "x": 680,
             "y": 420
@@ -96,12 +381,7 @@
           }
         },
         {
-          "kind": "process",
-          "id": "el-payment",
-          "name": "Payment\ngateway",
-          "description": "",
-          "outOfScope": true,
-          "reasonOutOfScope": "Run by the payment provider.",
+          "element": "el-payment",
           "position": {
             "x": 1040,
             "y": 200
@@ -112,13 +392,7 @@
           }
         },
         {
-          "kind": "text",
-          "id": "el-card-note",
-          "name": "Card note",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "text": "Card numbers never reach the shop.",
+          "element": "el-card-note",
           "position": {
             "x": 0,
             "y": 420
@@ -129,152 +403,65 @@
           }
         },
         {
-          "kind": "flow",
-          "id": "el-browse",
-          "name": "browse the catalogue and fill a basket",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": {
-            "kind": "attached",
-            "element": "el-shopper"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "el-web-shop"
-          },
+          "element": "el-browse",
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "el-page",
-          "name": "return the rendered page",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": {
-            "kind": "attached",
-            "element": "el-web-shop"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "el-shopper"
-          },
+          "element": "el-page",
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "el-listings",
-          "name": "read the product listings",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": {
-            "kind": "attached",
-            "element": "el-web-shop"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "el-catalogue"
-          },
+          "element": "el-listings",
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "el-charge",
-          "name": "authorise the card payment",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": {
-            "kind": "attached",
-            "element": "el-web-shop"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "el-payment"
-          },
+          "element": "el-charge",
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "el-confirm",
-          "name": "confirm the authorisation",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": {
-            "kind": "attached",
-            "element": "el-payment"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "el-web-shop"
-          },
+          "element": "el-confirm",
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "el-record",
-          "name": "record the paid order",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": {
-            "kind": "attached",
-            "element": "el-web-shop"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "el-ledger"
-          },
+          "element": "el-record",
           "waypoints": [
             {
               "x": 530,
               "y": 460
             }
           ],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "el-callback",
-          "name": "card network callback",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-callback",
+          "waypoints": [],
           "source": {
-            "kind": "free",
             "position": {
               "x": 1240,
               "y": 480
             }
           },
-          "target": {
-            "kind": "attached",
-            "element": "el-payment"
-          },
-          "waypoints": [],
-          "bidirectional": false
+          "target": {}
         }
       ]
     },
     {
       "id": "fulfilment",
       "title": "Shipping an order",
-      "elements": [
+      "placements": [
         {
-          "kind": "trust-boundary",
-          "id": "el-warehouse-floor",
-          "name": "Warehouse floor",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-warehouse-floor",
           "shape": {
             "kind": "curve",
             "waypoints": [
@@ -294,12 +481,7 @@
           }
         },
         {
-          "kind": "store",
-          "id": "el-stock",
-          "name": "Stock",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-stock",
           "position": {
             "x": 40,
             "y": 80
@@ -310,12 +492,7 @@
           }
         },
         {
-          "kind": "process",
-          "id": "el-dispatch",
-          "name": "Dispatch",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-dispatch",
           "position": {
             "x": 400,
             "y": 60
@@ -326,12 +503,7 @@
           }
         },
         {
-          "kind": "process",
-          "id": "el-label-printer",
-          "name": "Label printer",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-label-printer",
           "position": {
             "x": 760,
             "y": 70
@@ -342,12 +514,7 @@
           }
         },
         {
-          "kind": "actor",
-          "id": "el-picker",
-          "name": "Picker",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-picker",
           "position": {
             "x": 40,
             "y": 480
@@ -358,12 +525,7 @@
           }
         },
         {
-          "kind": "actor",
-          "id": "el-courier",
-          "name": "Courier",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "el-courier",
           "position": {
             "x": 760,
             "y": 480
@@ -374,99 +536,39 @@
           }
         },
         {
-          "kind": "flow",
-          "id": "el-reserve",
-          "name": "reserve the stock for the order",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": {
-            "kind": "attached",
-            "element": "el-stock"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "el-dispatch"
-          },
+          "element": "el-reserve",
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "el-picked",
-          "name": "report the picked items",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": {
-            "kind": "attached",
-            "element": "el-picker"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "el-dispatch"
-          },
+          "element": "el-picked",
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "el-collect",
-          "name": "collect the parcel",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": {
-            "kind": "attached",
-            "element": "el-courier"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "el-dispatch"
-          },
+          "element": "el-collect",
           "waypoints": [],
-          "bidirectional": true
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "el-print",
-          "name": "print the shipping label",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": {
-            "kind": "attached",
-            "element": "el-dispatch"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "el-label-printer"
-          },
+          "element": "el-print",
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "el-hand-over",
-          "name": "hand over the parcel",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": {
-            "kind": "attached",
-            "element": "el-picker"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "el-courier"
-          },
+          "element": "el-hand-over",
           "waypoints": [
             {
               "x": 470,
               "y": 620
             }
           ],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         }
       ]
     }

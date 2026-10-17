@@ -1,12 +1,22 @@
 # Internal model schema
 
 The whole internal model, expanded from the zod schemas that define it.
+Each element is stored once, in `elements`, and each diagram holds
+placements of elements in the order it draws them: the element, the
+accent it takes there, and its geometry there.
+
 `parseModel` is the only way a model value comes into existence, and it
 enforces more than the shapes below: element, diagram, threat, mitigation
 and assumption ids unique where they must be, threat numbers unique and
-never above `lastIssuedThreatNumber`, flow endpoints anchored inside their
-own diagram and never to the flow itself, and every element and threat
-reference resolving.
+never above `lastIssuedThreatNumber`, and every element and threat
+reference resolving. Every element is placed once, on one diagram, and its
+placement holds the geometry its kind takes: `position` and `size` for an
+actor, a process, a store or a note, `shape` for a trust boundary, and
+`waypoints`, `source` and `target` for a flow. A note takes no accent. A
+flow end attached to an element holds no `position`, and the element is
+placed on the flow's own diagram. A free end holds a `position` and no
+`side`. No flow end anchors to its own flow, and a boundary's or a flow's
+relationship lists name elements of its own diagram.
 
 A field of type `text` accepts every letter, mark, number, punctuation,
 symbol and space separator Unicode defines, plus tab, line feed and
@@ -38,16 +48,75 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
   - `owner`: text
   - `description`: text
   - `contributors`: list of text
+- `elements`: list of one of 6, told apart by `kind`
+  - when `kind` is `actor`
+    - `id`: ElementId (text, at least 2 characters)
+    - `name`: text
+    - `description`: text
+    - `outOfScope`: boolean
+    - `reasonOutOfScope`: text
+    - `providesAuthentication`: optional, boolean
+  - when `kind` is `process`
+    - `id`: ElementId (text, at least 2 characters)
+    - `name`: text
+    - `description`: text
+    - `outOfScope`: boolean
+    - `reasonOutOfScope`: text
+    - `handlesCardPayment`: optional, boolean
+    - `handlesGoodsOrServices`: optional, boolean
+    - `isWebApplication`: optional, boolean
+    - `privilegeLevel`: optional, text
+  - when `kind` is `store`
+    - `id`: ElementId (text, at least 2 characters)
+    - `name`: text
+    - `description`: text
+    - `outOfScope`: boolean
+    - `reasonOutOfScope`: text
+    - `isALog`: optional, boolean
+    - `isEncrypted`: optional, boolean
+    - `isSigned`: optional, boolean
+    - `storesCredentials`: optional, boolean
+    - `storesInventory`: optional, boolean
+  - when `kind` is `flow`
+    - `id`: ElementId (text, at least 2 characters)
+    - `name`: text
+    - `description`: text
+    - `outOfScope`: boolean
+    - `reasonOutOfScope`: text
+    - `protocol`: optional, text
+    - `isEncrypted`: optional, boolean
+    - `isPublicNetwork`: optional, boolean
+    - `trustBoundaryIds`: optional, list of ElementId (text, at least 2 characters)
+    - `source`: one of 2, told apart by `kind`
+      - when `kind` is `attached`
+        - `element`: ElementId (text, at least 2 characters)
+      - when `kind` is `free`
+    - `target`: one of 2, told apart by `kind`
+      - when `kind` is `attached`
+        - `element`: ElementId (text, at least 2 characters)
+      - when `kind` is `free`
+    - `bidirectional`: boolean
+  - when `kind` is `trust-boundary`
+    - `id`: ElementId (text, at least 2 characters)
+    - `name`: text
+    - `description`: text
+    - `outOfScope`: boolean
+    - `reasonOutOfScope`: text
+    - `containedElements`: optional, list of ElementId (text, at least 2 characters)
+    - `crossingFlows`: optional, list of ElementId (text, at least 2 characters)
+  - when `kind` is `text`
+    - `id`: ElementId (text, at least 2 characters)
+    - `name`: text
+    - `description`: text
+    - `outOfScope`: boolean
+    - `reasonOutOfScope`: text
+    - `text`: text
 - `diagrams`: list of object
   - `id`: DiagramId (text, at least 1 character)
   - `title`: text
-  - `elements`: list of one of 6, told apart by `kind`
-    - when `kind` is `actor`
-      - `id`: ElementId (text, at least 2 characters)
-      - `name`: text
-      - `description`: text
-      - `outOfScope`: boolean
-      - `reasonOutOfScope`: text
+  - `placements`: list of one of 3
+    - when it holds `position` and `size`
+      - `element`: ElementId (text, at least 2 characters)
       - `accent`: optional, one of `s1`, `s2`, `s3`, `s4`, `l1`, `l2`, `l3`, `l4`
       - `position`: object
         - `x`: number, -1000000 or more, 1000000 or less
@@ -55,82 +124,9 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
       - `size`: object
         - `width`: number, 1 or more, 1000000 or less
         - `height`: number, 1 or more, 1000000 or less
-      - `providesAuthentication`: optional, boolean
-    - when `kind` is `process`
-      - `id`: ElementId (text, at least 2 characters)
-      - `name`: text
-      - `description`: text
-      - `outOfScope`: boolean
-      - `reasonOutOfScope`: text
+    - when it holds `shape`
+      - `element`: ElementId (text, at least 2 characters)
       - `accent`: optional, one of `s1`, `s2`, `s3`, `s4`, `l1`, `l2`, `l3`, `l4`
-      - `position`: object
-        - `x`: number, -1000000 or more, 1000000 or less
-        - `y`: number, -1000000 or more, 1000000 or less
-      - `size`: object
-        - `width`: number, 1 or more, 1000000 or less
-        - `height`: number, 1 or more, 1000000 or less
-      - `handlesCardPayment`: optional, boolean
-      - `handlesGoodsOrServices`: optional, boolean
-      - `isWebApplication`: optional, boolean
-      - `privilegeLevel`: optional, text
-    - when `kind` is `store`
-      - `id`: ElementId (text, at least 2 characters)
-      - `name`: text
-      - `description`: text
-      - `outOfScope`: boolean
-      - `reasonOutOfScope`: text
-      - `accent`: optional, one of `s1`, `s2`, `s3`, `s4`, `l1`, `l2`, `l3`, `l4`
-      - `position`: object
-        - `x`: number, -1000000 or more, 1000000 or less
-        - `y`: number, -1000000 or more, 1000000 or less
-      - `size`: object
-        - `width`: number, 1 or more, 1000000 or less
-        - `height`: number, 1 or more, 1000000 or less
-      - `isALog`: optional, boolean
-      - `isEncrypted`: optional, boolean
-      - `isSigned`: optional, boolean
-      - `storesCredentials`: optional, boolean
-      - `storesInventory`: optional, boolean
-    - when `kind` is `flow`
-      - `id`: ElementId (text, at least 2 characters)
-      - `name`: text
-      - `description`: text
-      - `outOfScope`: boolean
-      - `reasonOutOfScope`: text
-      - `accent`: optional, one of `s1`, `s2`, `s3`, `s4`, `l1`, `l2`, `l3`, `l4`
-      - `protocol`: optional, text
-      - `isEncrypted`: optional, boolean
-      - `isPublicNetwork`: optional, boolean
-      - `trustBoundaryIds`: optional, list of ElementId (text, at least 2 characters)
-      - `source`: one of 2, told apart by `kind`
-        - when `kind` is `attached`
-          - `element`: ElementId (text, at least 2 characters)
-          - `side`: optional, one of `top`, `right`, `bottom`, `left`
-        - when `kind` is `free`
-          - `position`: object
-            - `x`: number, -1000000 or more, 1000000 or less
-            - `y`: number, -1000000 or more, 1000000 or less
-      - `target`: one of 2, told apart by `kind`
-        - when `kind` is `attached`
-          - `element`: ElementId (text, at least 2 characters)
-          - `side`: optional, one of `top`, `right`, `bottom`, `left`
-        - when `kind` is `free`
-          - `position`: object
-            - `x`: number, -1000000 or more, 1000000 or less
-            - `y`: number, -1000000 or more, 1000000 or less
-      - `waypoints`: list of object
-        - `x`: number, -1000000 or more, 1000000 or less
-        - `y`: number, -1000000 or more, 1000000 or less
-      - `bidirectional`: boolean
-    - when `kind` is `trust-boundary`
-      - `id`: ElementId (text, at least 2 characters)
-      - `name`: text
-      - `description`: text
-      - `outOfScope`: boolean
-      - `reasonOutOfScope`: text
-      - `accent`: optional, one of `s1`, `s2`, `s3`, `s4`, `l1`, `l2`, `l3`, `l4`
-      - `containedElements`: optional, list of ElementId (text, at least 2 characters)
-      - `crossingFlows`: optional, list of ElementId (text, at least 2 characters)
       - `shape`: one of 2, told apart by `kind`
         - when `kind` is `box`
           - `position`: object
@@ -143,20 +139,22 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
           - `waypoints`: list of at least 2 object
             - `x`: number, -1000000 or more, 1000000 or less
             - `y`: number, -1000000 or more, 1000000 or less
-    - when `kind` is `text`
-      - `id`: ElementId (text, at least 2 characters)
-      - `name`: text
-      - `description`: text
-      - `outOfScope`: boolean
-      - `reasonOutOfScope`: text
+    - when it holds `waypoints`, `source` and `target`
+      - `element`: ElementId (text, at least 2 characters)
       - `accent`: optional, one of `s1`, `s2`, `s3`, `s4`, `l1`, `l2`, `l3`, `l4`
-      - `position`: object
+      - `waypoints`: list of object
         - `x`: number, -1000000 or more, 1000000 or less
         - `y`: number, -1000000 or more, 1000000 or less
-      - `size`: object
-        - `width`: number, 1 or more, 1000000 or less
-        - `height`: number, 1 or more, 1000000 or less
-      - `text`: text
+      - `source`: object
+        - `side`: optional, one of `top`, `right`, `bottom`, `left`
+        - `position`: optional, object
+          - `x`: number, -1000000 or more, 1000000 or less
+          - `y`: number, -1000000 or more, 1000000 or less
+      - `target`: object
+        - `side`: optional, one of `top`, `right`, `bottom`, `left`
+        - `position`: optional, object
+          - `x`: number, -1000000 or more, 1000000 or less
+          - `y`: number, -1000000 or more, 1000000 or less
 - `threats`: list of object
   - `id`: ThreatId (text, at least 2 characters)
   - `number`: integer, greater than 0

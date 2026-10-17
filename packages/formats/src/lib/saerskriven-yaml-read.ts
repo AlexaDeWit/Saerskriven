@@ -4,12 +4,12 @@ import {
   type Accent,
   type AssumptionInput,
   type BoundaryShapeInput,
-  type DiagramInput,
-  type ElementInput,
-  type FlowEndpointInput,
+  type DrawnDiagramInput,
+  type DrawnElementInput,
+  type DrawnFlowEndpointInput,
+  type DrawnModelInput,
   type MitigationInput,
   type Model,
-  type ModelInput,
   type ModelMetadataInput,
   type ThreatInput,
 } from '@saerskriven/model';
@@ -61,7 +61,7 @@ import { undeclaredDivergences } from './undeclared.js';
  * the version's schema does not declare is dropped and reported, so a file
  * from a later release still reads. Records are mapped field by field onto
  * the model's input types, mirroring `saerskriven-yaml-write.ts`, and ids
- * cross as plain strings for `parseModel` to brand. A threat that leaves
+ * cross as plain strings for `parseDrawnModel` to brand. A threat that leaves
  * `appliesToModel` out does not apply to the model. An element whose
  * `accent` is none of the model's keys is read with no accent and reported
  * as `narrowed`.
@@ -102,7 +102,7 @@ function mapDocument(
   );
 }
 
-function toModelInput(document: SaerskrivenYamlV2Document): ModelInput {
+function toModelInput(document: SaerskrivenYamlV2Document): DrawnModelInput {
   return {
     metadata: toMetadata(document.metadata),
     diagrams: document.diagrams.map(toDiagram),
@@ -122,7 +122,7 @@ function toMetadata(metadata: SaerskrivenYamlV2Metadata): ModelMetadataInput {
   };
 }
 
-function toDiagram(diagram: SaerskrivenYamlV2Diagram): DiagramInput {
+function toDiagram(diagram: SaerskrivenYamlV2Diagram): DrawnDiagramInput {
   return {
     id: diagram.id,
     title: diagram.title,
@@ -130,7 +130,7 @@ function toDiagram(diagram: SaerskrivenYamlV2Diagram): DiagramInput {
   };
 }
 
-function toElement(element: SaerskrivenYamlV2Element): ElementInput {
+function toElement(element: SaerskrivenYamlV2Element): DrawnElementInput {
   if (element.kind === 'flow') {
     return {
       kind: 'flow',
@@ -215,7 +215,9 @@ function unknownAccents(document: SaerskrivenYamlV2Document): Divergence[] {
     });
 }
 
-function toEndpoint(endpoint: SaerskrivenYamlV2Endpoint): FlowEndpointInput {
+function toEndpoint(
+  endpoint: SaerskrivenYamlV2Endpoint,
+): DrawnFlowEndpointInput {
   if (endpoint.kind === 'free') {
     return { kind: 'free', position: endpoint.position };
   }

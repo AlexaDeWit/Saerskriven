@@ -27,9 +27,9 @@ export function markdownWithDiagrams(
   const childDepth = boundedDepth(depth + 1);
   const diagrams = model.diagrams.flatMap((diagram): RootContent[] => {
     const title = heading(childDepth, headingText(diagram.title) || diagram.id);
-    if (diagram.elements.length === 0)
+    if (diagram.placements.length === 0)
       return [title, paragraph(messages.t('register.diagram-empty'))];
-    const { source, notes } = mermaidDiagram(diagram, locale);
+    const { source, notes } = mermaidDiagram(model, diagram, locale);
     const content: RootContent[] = [title];
     if (source.trim() !== 'flowchart LR')
       content.push({ type: 'code', lang: 'mermaid', value: source.trimEnd() });

@@ -9,6 +9,7 @@ import { parseModel, type Model } from './parse.js';
 export const emptyModel: Model = Either.getOrThrowWith(
   parseModel({
     metadata: { title: '', owner: '', description: '', contributors: [] },
+    elements: [],
     diagrams: [],
     threats: [],
     lastIssuedThreatNumber: 0,

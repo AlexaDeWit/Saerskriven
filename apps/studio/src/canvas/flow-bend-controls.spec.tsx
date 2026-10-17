@@ -1,5 +1,5 @@
 import type { ElementId } from '@saerskriven/model';
-import { elementIn } from '@saerskriven/model/fixtures';
+import { drawnAt, elementIn } from '@saerskriven/model/fixtures';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Action } from '../store/actions.js';
@@ -59,6 +59,7 @@ const extra = { x: 300, y: 120 };
 const bent = (): void => {
   dispatch(
     Action.SetFlowWaypoints({
+      diagramId: mainDiagram,
       elementId: requestFlow,
       waypoints: [{ x: 210, y: 30 }],
       decimals: undefined,
@@ -125,6 +126,7 @@ describe('DiagramCanvas, dragging while adding a bend', () => {
   it('inserts in the settled segment when a preview precedes that segment', () => {
     dispatch(
       Action.SetFlowWaypoints({
+        diagramId: mainDiagram,
         elementId: requestFlow,
         waypoints: [
           { x: 210, y: 30 },
@@ -359,11 +361,9 @@ describe('DiagramCanvas, a bend on a flow', () => {
     press('Backspace');
     expect(points()).toEqual([]);
     expect(
-      modelStore
-        .getState()
-        .present.diagrams[0].elements.some(
-          (element) => element.id === requestFlow,
-        ),
+      drawnAt(modelStore.getState().present).some(
+        (element) => element.id === requestFlow,
+      ),
     ).toBe(true);
     add();
     press('Enter');
@@ -443,6 +443,7 @@ describe('DiagramCanvas, what a route gesture stores', () => {
   it('stores a bend at one decimal once an arrow key moves it, and at three once a drag does', () => {
     dispatch(
       Action.SetFlowWaypoints({
+        diagramId: mainDiagram,
         elementId: requestFlow,
         waypoints: [{ x: 210.123456, y: 30.98765 }],
         decimals: undefined,
@@ -462,6 +463,7 @@ describe('DiagramCanvas, what a route gesture stores', () => {
     openCanvas([probeFlow]);
     dispatch(
       Action.SetFlowEndPosition({
+        diagramId: mainDiagram,
         elementId: probeFlow,
         side: 'target',
         position: { x: 500.123456, y: 200.98765 },
@@ -485,6 +487,7 @@ describe('DiagramCanvas, what a route gesture stores', () => {
   it('stores a bend placed by Enter, or by pressing its handle while placing, at one decimal, and one placed by a click at three', () => {
     dispatch(
       Action.MoveElement({
+        diagramId: mainDiagram,
         elementId: actorElement,
         offset: { x: 0.123456, y: 0.98765 },
         decimals: undefined,

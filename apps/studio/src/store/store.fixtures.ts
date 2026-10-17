@@ -1,8 +1,8 @@
 import { threatDragonCodec, type RetainedSource } from '@saerskriven/formats';
 import {
-  elementsAcross,
   type DiagramId,
-  type Element,
+  type DrawnElement,
+  type DrawnModelInput,
   type ElementId,
   type Model,
   type Point,
@@ -13,8 +13,9 @@ import {
   diagramId,
   elementId,
   elementIn,
+  drawnAt,
+  drawnFixture,
   mitigationId,
-  parsedFixture,
   threatId,
   validModel,
 } from '@saerskriven/model/fixtures';
@@ -107,7 +108,7 @@ export const secondDiagram = diagramId('diagram-second');
 /** The one element of {@link secondDiagram}. */
 export const otherElement = elementId('actor-other');
 
-const document = {
+const document: DrawnModelInput = {
   metadata: {
     title: 'Store fixture',
     owner: 'Saerskriven',
@@ -171,7 +172,7 @@ const document = {
 };
 
 /** The model the store specs edit: one diagram of three elements and one threat. */
-export const sampleModel: Model = parsedFixture(document);
+export const sampleModel: Model = drawnFixture(document);
 
 /** The fixture threat, as the register holds it. */
 export const sampleThreat: Threat = sampleModel.threats[0];
@@ -189,7 +190,7 @@ export const firstAssumption = assumptionId('assumption-signed-in');
  * The sample model with a second threat, and one mitigation and one
  * assumption on the first threat alone, for the specs that edit records.
  */
-export const recordedModel: Model = parsedFixture({
+export const recordedModel: Model = drawnFixture({
   ...document,
   threats: [
     ...document.threats,
@@ -227,7 +228,7 @@ export const recordedModel: Model = parsedFixture({
  * The sample model with a second diagram of one actor after the first, for
  * the specs that switch between diagrams.
  */
-export const twoDiagramModel: Model = parsedFixture({
+export const twoDiagramModel: Model = drawnFixture({
   ...document,
   diagrams: [
     ...document.diagrams,
@@ -251,9 +252,9 @@ export const twoDiagramModel: Model = parsedFixture({
 });
 
 /** The sample model's element of `id`, or a process of that id where it holds none. */
-export function sampleElement(id: ElementId): Element {
+export function sampleElement(id: ElementId): DrawnElement {
   return (
-    sampleModel.diagrams[0].elements.find((element) => element.id === id) ??
+    drawnAt(sampleModel).find((element) => element.id === id) ??
     newProcess(id, 'Missing')
   );
 }
@@ -263,7 +264,7 @@ export function newProcess(
   id: string,
   name: string,
   position: Point = { x: 0, y: 200 },
-): Element {
+): DrawnElement {
   return {
     kind: 'process',
     id: elementId(id),
@@ -277,7 +278,7 @@ export function newProcess(
 }
 
 /** A text note the specs add, which draws prose rather than a name. */
-export function newNote(id: string, text: string): Element {
+export function newNote(id: string, text: string): DrawnElement {
   return {
     kind: 'text',
     id: elementId(id),
@@ -296,7 +297,7 @@ export function newNote(id: string, text: string): Element {
  * spec title gives it: a masculine and a feminine kind in French, which a
  * message putting "de" or "à" before an element words apart.
  */
-export const namelessElements: readonly (readonly [string, Element])[] = [
+export const namelessElements: readonly (readonly [string, DrawnElement])[] = [
   ['nameless process', newProcess('process-unnamed', '')],
   [
     'nameless trust boundary',
@@ -308,7 +309,7 @@ export const namelessElements: readonly (readonly [string, Element])[] = [
  * {@link namelessElements} named, and a store whose name starts with a vowel,
  * which French would elide "de" before.
  */
-export const namedElements: readonly (readonly [string, Element])[] = [
+export const namedElements: readonly (readonly [string, DrawnElement])[] = [
   ['named process', newProcess('process-named', 'Studio')],
   ['named trust boundary', elementIn(validModel, 'element-perimeter')],
   [
@@ -359,7 +360,7 @@ export const undoable = (): number => modelStore.getState().past.length;
 
 /** How many elements a state's model holds, across all of its diagrams. */
 export const elementCount = (state: State): number =>
-  elementsAcross(state.present.diagrams).length;
+  state.present.elements.length;
 
 /** How many elements the store's model holds, across its diagrams. */
 export const heldElements = (): number => elementCount(modelStore.getState());

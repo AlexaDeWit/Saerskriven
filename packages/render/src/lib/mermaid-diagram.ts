@@ -1,5 +1,6 @@
 import type { Locale } from '@saerskriven/i18n';
 import {
+  drawnElements,
   elementsById,
   reversed,
   isEmptyName,
@@ -8,6 +9,7 @@ import {
   type ElementId,
   type Flow,
   type FlowEndpoint,
+  type Model,
 } from '@saerskriven/model';
 import { exportText, type ExportText } from '../messages/catalogues.js';
 import { headingText } from './markdown-nodes.js';
@@ -31,21 +33,23 @@ type NodeElement = Exclude<Element, { kind: 'flow' | 'trust-boundary' }>;
 
 /** One diagram's Mermaid source and structural notes, without Markdown framing. */
 export function mermaidDiagram(
+  model: Model,
   diagram: Diagram,
   locale: Locale,
 ): { readonly source: string; readonly notes: MermaidNotes } {
+  const elements = drawnElements(model, diagram);
   const drawing: Drawing = {
     messages: exportText(locale),
-    elements: elementsById(diagram.elements),
+    elements: elementsById(elements),
     identifiers: new Map(
-      diagram.elements.map((element, index) => [element.id, `n${index}`]),
+      elements.map((element, index) => [element.id, `n${index}`]),
     ),
     lines: ['flowchart LR'],
     references: new Map(),
   };
-  const groups = mermaidGroups(diagram);
-  writeNodes(diagram, groups, drawing);
-  for (const element of diagram.elements) {
+  const groups = mermaidGroups(elements);
+  writeNodes(elements, groups, drawing);
+  for (const element of elements) {
     if (element.kind !== 'flow') continue;
     const source = endpoint(element.source, element, 'source', drawing);
     const target = endpoint(element.target, element, 'target', drawing);
@@ -61,7 +65,7 @@ export function mermaidDiagram(
     notes: {
       boundaries: [
         ...new Set(
-          diagram.elements
+          elements
             .filter(
               (element) =>
                 element.kind === 'trust-boundary' && !groups.has(element.id),
@@ -75,13 +79,13 @@ export function mermaidDiagram(
 }
 
 function writeNodes(
-  diagram: Diagram,
+  elements: readonly Element[],
   groups: ReadonlyMap<ElementId, readonly ElementId[]>,
   drawing: Drawing,
 ): void {
   const contained = new Set([...groups.values()].flat());
   const stack: (Element | 'end')[] = reversed(
-    diagram.elements.filter((element) => !contained.has(element.id)),
+    elements.filter((element) => !contained.has(element.id)),
   );
   while (stack.length > 0) {
     const item = stack.pop();

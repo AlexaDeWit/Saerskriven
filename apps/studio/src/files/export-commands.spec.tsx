@@ -1,5 +1,10 @@
-import type { Model } from '@saerskriven/model';
-import { diagramId, parsedFixture } from '@saerskriven/model/fixtures';
+import type { DrawnFlowInput, Model } from '@saerskriven/model';
+import {
+  diagramId,
+  drawnAt,
+  drawnFixture,
+  parsedFixture,
+} from '@saerskriven/model/fixtures';
 import { renderRegister, renderSvg, renderTypst } from '@saerskriven/render';
 import { PdfFailure } from '@saerskriven/render/pdf';
 import { drawingFace, ResvgFailure } from '@saerskriven/render/png';
@@ -63,27 +68,28 @@ const openedState = (model: Model = sampleModel) => ({
   file: FileLifecycle.Opened({ name: 'model.json', source: foreignSource }),
 });
 
-const flow = (id: string, target: string): Record<string, unknown> => ({
+const flow = (id: string, target: string): DrawnFlowInput => ({
   kind: 'flow',
   id,
   name: id,
   description: '',
   outOfScope: false,
   reasonOutOfScope: '',
-  source: { kind: 'attached', element: sampleModel.diagrams[0].elements[0].id },
+  source: { kind: 'attached', element: drawnAt(sampleModel)[0].id },
   target: { kind: 'attached', element: target },
   waypoints: [],
   bidirectional: false,
 });
 
-const unplacedModel = parsedFixture({
+const unplacedModel = drawnFixture({
   ...sampleModel,
   diagrams: [
     {
-      ...sampleModel.diagrams[0],
+      id: sampleModel.diagrams[0].id,
+      title: sampleModel.diagrams[0].title,
       elements: [
-        ...sampleModel.diagrams[0].elements,
-        flow('flow-1', sampleModel.diagrams[0].elements[1].id),
+        ...drawnAt(sampleModel),
+        flow('flow-1', drawnAt(sampleModel)[1].id),
         flow('flow-2', 'flow-1'),
       ],
     },
@@ -98,7 +104,7 @@ const badgedModel = parsedFixture({
   })),
 });
 
-const selectableElement = sampleModel.diagrams[0].elements[0].id;
+const selectableElement = drawnAt(sampleModel)[0].id;
 
 beforeEach(() => {
   modelStore.setState(openedState(), true);
@@ -114,7 +120,7 @@ const severalDiagrams = (title: string) => ({
   ...sampleModel,
   diagrams: [
     sampleModel.diagrams[0],
-    { id: diagramId('other'), title, elements: [] },
+    { id: diagramId('other'), title, placements: [] },
   ],
 });
 

@@ -139,6 +139,9 @@ export function describeOperation(
     UnknownElement: ({ elementId }) => [
       t('notice.op-unknown-element', { id: elementId }),
     ],
+    ElementNotOnDiagram: ({ elementId, diagramId }) => [
+      t('notice.op-not-on-diagram', { id: elementId, diagram: diagramId }),
+    ],
     UnknownThreat: ({ threatId }) => [
       t('notice.op-unknown-threat', { id: threatId }),
     ],

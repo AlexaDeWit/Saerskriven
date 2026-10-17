@@ -8,7 +8,7 @@ import {
 } from '@saerskriven/model';
 import { useState, type FormEvent } from 'react';
 import { Action } from '../store/actions.js';
-import { selectedElementRecord } from '../store/selectors.js';
+import { activeDiagramId, selectedElementRecord } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { changedModel } from '../store/store.js';
 import { announce } from './announcements.js';
@@ -71,7 +71,8 @@ export function EndpointEditor({
   const end = t(side === 'source' ? 'tools.source' : 'tools.target');
   const commit = (event: FormEvent) => {
     event.preventDefault();
-    if (flow === undefined || target === undefined) {
+    const diagramId = activeDiagramId(state);
+    if (flow === undefined || target === undefined || diagramId === undefined) {
       return;
     }
     if (target === freePoint) {
@@ -86,6 +87,7 @@ export function EndpointEditor({
       }
       const moved = changedModel(
         Action.SetFlowEndPosition({
+          diagramId,
           elementId: flow.id,
           side,
           position: at.data,
@@ -100,6 +102,7 @@ export function EndpointEditor({
     }
     const reconnected = changedModel(
       Action.ReconnectFlow({
+        diagramId,
         elementId: flow.id,
         side,
         endpointId: target,

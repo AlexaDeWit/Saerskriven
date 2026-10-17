@@ -9,6 +9,7 @@ import {
 import { useId, useState, type FormEvent } from 'react';
 import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
+import { activeDiagramId } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
@@ -85,9 +86,11 @@ export function GeometryEditor({
       );
     } else {
       const offset = { x: at.data.x - origin.x, y: at.data.y - origin.y };
-      if (offset.x !== 0 || offset.y !== 0) {
+      const diagramId = activeDiagramId(state);
+      if (diagramId !== undefined && (offset.x !== 0 || offset.y !== 0)) {
         dispatch(
           Action.MoveElements({
+            diagramId,
             elementIds: state.selection,
             offset,
             decimals: typedDecimals([at.data.x, at.data.y]),

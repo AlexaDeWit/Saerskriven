@@ -1,6 +1,9 @@
 import {
+  drawnAt,
+  drawnFixture,
+  drawnOnto,
   elementId,
-  parsedFixture,
+  redrawn,
   softHyphen,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
@@ -20,7 +23,7 @@ import {
 } from './element-properties.js';
 import { chooseFrom, editorTimeout } from './panel.fixtures.js';
 
-const base = parsedFixture(validModelFixture);
+const base = drawnFixture(validModelFixture);
 const flagCases = [
   ['element-customer', 'Provides authentication', 'providesAuthentication'],
   ['element-api', 'Handles card payments', 'handlesCardPayment'],
@@ -67,9 +70,7 @@ const relationships = [
   ],
 ] as const;
 const current = (id: string) =>
-  modelStore
-    .getState()
-    .present.diagrams[0].elements.find((element) => element.id === id);
+  drawnAt(modelStore.getState().present).find((element) => element.id === id);
 
 async function open(id: string, drafts?: ElementPropertyDrafts) {
   const shown = render(
@@ -297,21 +298,10 @@ describe(
     });
     it('distinguishes same-named relationship targets by ID', async () => {
       const duplicate = {
-        ...base.diagrams[0].elements[1],
+        ...drawnAt(base)[1],
         id: elementId('element-duplicate'),
       };
-      modelStore.setState(
-        initialState({
-          ...base,
-          diagrams: [
-            {
-              ...base.diagrams[0],
-              elements: [...base.diagrams[0].elements, duplicate],
-            },
-          ],
-        }),
-        true,
-      );
+      modelStore.setState(initialState(drawnOnto(base, [duplicate])), true);
       const user = userEvent.setup();
       await open('element-perimeter');
       await chooseFrom('Contained elements recording', 'Recorded');
@@ -334,7 +324,7 @@ describe(
       ]);
     });
     it('keeps final labels distinct when names imitate ID suffixes and numbered labels', async () => {
-      const queue = { ...base.diagrams[0].elements[1], name: 'Queue' };
+      const queue = { ...drawnAt(base)[1], name: 'Queue' };
       const added = [
         { ...queue, id: elementId('element-duplicate') },
         {
@@ -349,20 +339,14 @@ describe(
         },
       ];
       modelStore.setState(
-        initialState({
-          ...base,
-          diagrams: [
-            {
-              ...base.diagrams[0],
-              elements: [
-                ...base.diagrams[0].elements.map((element) =>
-                  element.id === queue.id ? queue : element,
-                ),
-                ...added,
-              ],
-            },
-          ],
-        }),
+        initialState(
+          drawnOnto(
+            redrawn(base, (element) =>
+              element.id === queue.id ? queue : element,
+            ),
+            added,
+          ),
+        ),
         true,
       );
       const user = userEvent.setup();

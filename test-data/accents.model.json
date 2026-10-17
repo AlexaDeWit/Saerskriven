@@ -7,18 +7,281 @@
       "Alexandra de Wit"
     ]
   },
+  "elements": [
+    {
+      "kind": "trust-boundary",
+      "id": "ac-zone-strong",
+      "name": "Strong boundary",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "trust-boundary",
+      "id": "ac-zone-light",
+      "name": "Light boundary",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "trust-boundary",
+      "id": "ac-edge-strong",
+      "name": "Strong curve",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "trust-boundary",
+      "id": "ac-zone-out",
+      "name": "Out-of-scope boundary",
+      "description": "",
+      "outOfScope": true,
+      "reasonOutOfScope": "Run by another team."
+    },
+    {
+      "kind": "actor",
+      "id": "ac-strong-1",
+      "name": "Strong 1",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "process",
+      "id": "ac-strong-2",
+      "name": "Strong 2",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "store",
+      "id": "ac-strong-3",
+      "name": "Strong 3",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "actor",
+      "id": "ac-strong-4",
+      "name": "Strong 4",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "actor",
+      "id": "ac-light-1",
+      "name": "Light 1",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "process",
+      "id": "ac-light-2",
+      "name": "Light 2",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "store",
+      "id": "ac-light-3",
+      "name": "Light 3",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "actor",
+      "id": "ac-light-4",
+      "name": "Light 4",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "actor",
+      "id": "ac-plain",
+      "name": "No accent",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "process",
+      "id": "ac-badged",
+      "name": "Strong, with threats",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": ""
+    },
+    {
+      "kind": "store",
+      "id": "ac-out-strong",
+      "name": "Out of scope, strong",
+      "description": "",
+      "outOfScope": true,
+      "reasonOutOfScope": "Run by another team."
+    },
+    {
+      "kind": "actor",
+      "id": "ac-out-light",
+      "name": "Out of scope, light",
+      "description": "",
+      "outOfScope": true,
+      "reasonOutOfScope": "Run by another team."
+    },
+    {
+      "kind": "text",
+      "id": "ac-note-strong",
+      "name": "Strong note",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "text": "A strong note: a bar and a tint."
+    },
+    {
+      "kind": "text",
+      "id": "ac-note-light",
+      "name": "Light note",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "text": "A light note: a bar alone."
+    },
+    {
+      "kind": "text",
+      "id": "ac-note-out",
+      "name": "Out-of-scope note",
+      "description": "",
+      "outOfScope": true,
+      "reasonOutOfScope": "Drawn elsewhere.",
+      "text": "Out of scope, strong."
+    },
+    {
+      "kind": "text",
+      "id": "ac-note",
+      "name": "Note",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "text": "A note with no accent."
+    },
+    {
+      "kind": "flow",
+      "id": "ac-flow-strong",
+      "name": "Strong flow",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "ac-strong-1"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "ac-strong-2"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "ac-flow-both",
+      "name": "Strong, both ways",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "ac-strong-3"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "ac-strong-4"
+      },
+      "bidirectional": true
+    },
+    {
+      "kind": "flow",
+      "id": "ac-flow-light",
+      "name": "Light flow",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "ac-light-1"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "ac-light-2"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "ac-flow-badged",
+      "name": "Light, with a threat",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "ac-light-3"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "ac-light-4"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "ac-flow-plain",
+      "name": "No accent",
+      "description": "",
+      "outOfScope": false,
+      "reasonOutOfScope": "",
+      "source": {
+        "kind": "attached",
+        "element": "ac-plain"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "ac-badged"
+      },
+      "bidirectional": false
+    },
+    {
+      "kind": "flow",
+      "id": "ac-flow-out",
+      "name": "Out of scope, strong",
+      "description": "",
+      "outOfScope": true,
+      "reasonOutOfScope": "Run by another team.",
+      "source": {
+        "kind": "attached",
+        "element": "ac-out-strong"
+      },
+      "target": {
+        "kind": "attached",
+        "element": "ac-out-light"
+      },
+      "bidirectional": false
+    }
+  ],
   "diagrams": [
     {
       "id": "diagram-accents",
       "title": "Every accent",
-      "elements": [
+      "placements": [
         {
-          "kind": "trust-boundary",
-          "id": "ac-zone-strong",
-          "name": "Strong boundary",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-zone-strong",
           "accent": "s3",
           "shape": {
             "kind": "box",
@@ -33,12 +296,7 @@
           }
         },
         {
-          "kind": "trust-boundary",
-          "id": "ac-zone-light",
-          "name": "Light boundary",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-zone-light",
           "accent": "l2",
           "shape": {
             "kind": "box",
@@ -53,12 +311,7 @@
           }
         },
         {
-          "kind": "trust-boundary",
-          "id": "ac-edge-strong",
-          "name": "Strong curve",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-edge-strong",
           "accent": "s4",
           "shape": {
             "kind": "curve",
@@ -83,12 +336,7 @@
           }
         },
         {
-          "kind": "trust-boundary",
-          "id": "ac-zone-out",
-          "name": "Out-of-scope boundary",
-          "description": "",
-          "outOfScope": true,
-          "reasonOutOfScope": "Run by another team.",
+          "element": "ac-zone-out",
           "accent": "l1",
           "shape": {
             "kind": "box",
@@ -103,12 +351,7 @@
           }
         },
         {
-          "kind": "actor",
-          "id": "ac-strong-1",
-          "name": "Strong 1",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-strong-1",
           "accent": "s1",
           "position": {
             "x": 60,
@@ -120,12 +363,7 @@
           }
         },
         {
-          "kind": "process",
-          "id": "ac-strong-2",
-          "name": "Strong 2",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-strong-2",
           "accent": "s2",
           "position": {
             "x": 320,
@@ -137,12 +375,7 @@
           }
         },
         {
-          "kind": "store",
-          "id": "ac-strong-3",
-          "name": "Strong 3",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-strong-3",
           "accent": "s3",
           "position": {
             "x": 580,
@@ -154,12 +387,7 @@
           }
         },
         {
-          "kind": "actor",
-          "id": "ac-strong-4",
-          "name": "Strong 4",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-strong-4",
           "accent": "s4",
           "position": {
             "x": 840,
@@ -171,12 +399,7 @@
           }
         },
         {
-          "kind": "actor",
-          "id": "ac-light-1",
-          "name": "Light 1",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-light-1",
           "accent": "l1",
           "position": {
             "x": 60,
@@ -188,12 +411,7 @@
           }
         },
         {
-          "kind": "process",
-          "id": "ac-light-2",
-          "name": "Light 2",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-light-2",
           "accent": "l2",
           "position": {
             "x": 320,
@@ -205,12 +423,7 @@
           }
         },
         {
-          "kind": "store",
-          "id": "ac-light-3",
-          "name": "Light 3",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-light-3",
           "accent": "l3",
           "position": {
             "x": 580,
@@ -222,12 +435,7 @@
           }
         },
         {
-          "kind": "actor",
-          "id": "ac-light-4",
-          "name": "Light 4",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-light-4",
           "accent": "l4",
           "position": {
             "x": 840,
@@ -239,12 +447,7 @@
           }
         },
         {
-          "kind": "actor",
-          "id": "ac-plain",
-          "name": "No accent",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-plain",
           "position": {
             "x": 60,
             "y": 480
@@ -255,12 +458,7 @@
           }
         },
         {
-          "kind": "process",
-          "id": "ac-badged",
-          "name": "Strong, with threats",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-badged",
           "accent": "s1",
           "position": {
             "x": 320,
@@ -272,12 +470,7 @@
           }
         },
         {
-          "kind": "store",
-          "id": "ac-out-strong",
-          "name": "Out of scope, strong",
-          "description": "",
-          "outOfScope": true,
-          "reasonOutOfScope": "Run by another team.",
+          "element": "ac-out-strong",
           "accent": "s2",
           "position": {
             "x": 580,
@@ -289,12 +482,7 @@
           }
         },
         {
-          "kind": "actor",
-          "id": "ac-out-light",
-          "name": "Out of scope, light",
-          "description": "",
-          "outOfScope": true,
-          "reasonOutOfScope": "Run by another team.",
+          "element": "ac-out-light",
           "accent": "l4",
           "position": {
             "x": 840,
@@ -306,12 +494,7 @@
           }
         },
         {
-          "kind": "text",
-          "id": "ac-note-strong",
-          "name": "Strong note",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-note-strong",
           "accent": "s3",
           "position": {
             "x": 60,
@@ -320,16 +503,10 @@
           "size": {
             "width": 220,
             "height": 40
-          },
-          "text": "A strong note: a bar and a tint."
+          }
         },
         {
-          "kind": "text",
-          "id": "ac-note-light",
-          "name": "Light note",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-note-light",
           "accent": "l4",
           "position": {
             "x": 300,
@@ -338,16 +515,10 @@
           "size": {
             "width": 220,
             "height": 40
-          },
-          "text": "A light note: a bar alone."
+          }
         },
         {
-          "kind": "text",
-          "id": "ac-note-out",
-          "name": "Out-of-scope note",
-          "description": "",
-          "outOfScope": true,
-          "reasonOutOfScope": "Drawn elsewhere.",
+          "element": "ac-note-out",
           "accent": "s2",
           "position": {
             "x": 540,
@@ -356,16 +527,10 @@
           "size": {
             "width": 220,
             "height": 40
-          },
-          "text": "Out of scope, strong."
+          }
         },
         {
-          "kind": "text",
-          "id": "ac-note",
-          "name": "Note",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-note",
           "position": {
             "x": 780,
             "y": 610
@@ -373,121 +538,48 @@
           "size": {
             "width": 220,
             "height": 40
-          },
-          "text": "A note with no accent."
+          }
         },
         {
-          "kind": "flow",
-          "id": "ac-flow-strong",
-          "name": "Strong flow",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-flow-strong",
           "accent": "s1",
-          "source": {
-            "kind": "attached",
-            "element": "ac-strong-1"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "ac-strong-2"
-          },
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "ac-flow-both",
-          "name": "Strong, both ways",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-flow-both",
           "accent": "s4",
-          "source": {
-            "kind": "attached",
-            "element": "ac-strong-3"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "ac-strong-4"
-          },
           "waypoints": [],
-          "bidirectional": true
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "ac-flow-light",
-          "name": "Light flow",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-flow-light",
           "accent": "l3",
-          "source": {
-            "kind": "attached",
-            "element": "ac-light-1"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "ac-light-2"
-          },
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "ac-flow-badged",
-          "name": "Light, with a threat",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
+          "element": "ac-flow-badged",
           "accent": "l1",
-          "source": {
-            "kind": "attached",
-            "element": "ac-light-3"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "ac-light-4"
-          },
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "ac-flow-plain",
-          "name": "No accent",
-          "description": "",
-          "outOfScope": false,
-          "reasonOutOfScope": "",
-          "source": {
-            "kind": "attached",
-            "element": "ac-plain"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "ac-badged"
-          },
+          "element": "ac-flow-plain",
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         },
         {
-          "kind": "flow",
-          "id": "ac-flow-out",
-          "name": "Out of scope, strong",
-          "description": "",
-          "outOfScope": true,
-          "reasonOutOfScope": "Run by another team.",
+          "element": "ac-flow-out",
           "accent": "s2",
-          "source": {
-            "kind": "attached",
-            "element": "ac-out-strong"
-          },
-          "target": {
-            "kind": "attached",
-            "element": "ac-out-light"
-          },
           "waypoints": [],
-          "bidirectional": false
+          "source": {},
+          "target": {}
         }
       ]
     }

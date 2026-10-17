@@ -1,12 +1,14 @@
 import { expect, test } from '@playwright/test';
 import type {
-  Element,
-  FlowEndpoint,
+  DrawnElement,
+  DrawnFlowEndpoint,
   Model,
   Point as ModelPoint,
 } from '@saerskriven/model';
 import {
   committedModel,
+  drawnAt,
+  drawnOnto,
   elementId,
   threatId,
 } from '@saerskriven/model/fixtures';
@@ -35,10 +37,10 @@ const lowered = (point: ModelPoint, by: number): ModelPoint => ({
   y: point.y + by,
 });
 
-const copyOf = (element: Element, copy: number): Element => {
+const copyOf = (element: DrawnElement, copy: number): DrawnElement => {
   const by = copy * copyGap;
   const renamed = (id: string) => elementId(`${id}-copy-${String(copy)}`);
-  const end = (endpoint: FlowEndpoint): FlowEndpoint =>
+  const end = (endpoint: DrawnFlowEndpoint): DrawnFlowEndpoint =>
     endpoint.kind === 'attached'
       ? { ...endpoint, element: renamed(endpoint.element) }
       : { ...endpoint, position: lowered(endpoint.position, by) };
@@ -75,8 +77,8 @@ const copyOf = (element: Element, copy: number): Element => {
 
 const crowdedStorefront = (): Model => {
   const model = committedModel('two-diagrams.model.json');
-  const [storefront, ...others] = model.diagrams;
-  const drawn = new Set<string>(storefront.elements.map(({ id }) => id));
+  const storefront = drawnAt(model);
+  const drawn = new Set<string>(storefront.map(({ id }) => id));
   const threatened = model.threats.filter(
     ({ elements }) =>
       elements.length > 0 && elements.every((id) => drawn.has(id)),
@@ -100,19 +102,12 @@ const crowdedStorefront = (): Model => {
     })),
   );
   return {
-    ...model,
-    diagrams: [
-      {
-        ...storefront,
-        elements: [
-          ...storefront.elements,
-          ...added.flatMap((copy) =>
-            storefront.elements.map((element) => copyOf(element, copy)),
-          ),
-        ],
-      },
-      ...others,
-    ],
+    ...drawnOnto(
+      model,
+      added.flatMap((copy) =>
+        storefront.map((element) => copyOf(element, copy)),
+      ),
+    ),
     threats: [...model.threats, ...threats],
     lastIssuedThreatNumber: model.lastIssuedThreatNumber + threats.length,
   };
@@ -139,13 +134,13 @@ test('a drag of an element with flows at both ends drops no frames, after a warm
 }) => {
   test.setTimeout(warmUpWithin + dragWithin + roomForTheRest);
   const scene = crowdedStorefront();
-  const [drawn] = scene.diagrams;
+  const drawn = drawnAt(scene);
   await openModelDocument(page, scene);
   await expect(elementNodes(page)).toHaveCount(
-    drawn.elements.filter(({ kind }) => kind !== 'flow').length,
+    drawn.filter(({ kind }) => kind !== 'flow').length,
   );
   await expect(page.locator('.react-flow__edge')).toHaveCount(
-    drawn.elements.filter(({ kind }) => kind === 'flow').length,
+    drawn.filter(({ kind }) => kind === 'flow').length,
   );
   const dragged = page.locator('.react-flow__node[data-id="el-web-shop"]');
   const period = await displayPeriod(page, periodFrames);

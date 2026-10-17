@@ -61,7 +61,7 @@ describe('layoutDiagram', () => {
       );
       expect(
         layout.nodes.length + layout.edges.length + layout.unplaced.length,
-      ).toBe(model.diagrams[diagram].elements.length);
+      ).toBe(model.diagrams[diagram].placements.length);
     },
   );
 
@@ -118,13 +118,11 @@ describe('layoutDiagram', () => {
       diagrams: [
         {
           ...diagram,
-          elements: [
-            ...diagram.elements.filter(
-              (element) => element.kind !== 'trust-boundary',
+          placements: [
+            ...diagram.placements.filter(
+              (placement) => !('shape' in placement),
             ),
-            ...diagram.elements.filter(
-              (element) => element.kind === 'trust-boundary',
-            ),
+            ...diagram.placements.filter((placement) => 'shape' in placement),
           ],
         },
       ],
@@ -303,7 +301,8 @@ describe('layoutDiagram, an accent', () => {
     const cleared = Either.getOrThrow(
       setAccent(
         accentsModel,
-        accentsModel.diagrams[0].elements.map((element) => element.id),
+        accentsModel.diagrams[0].id,
+        accentsModel.elements.map((element) => element.id),
         undefined,
       ),
     );

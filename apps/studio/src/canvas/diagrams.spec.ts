@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
-import { diagramId } from '@saerskriven/model/fixtures';
+import { diagramId, drawnAt } from '@saerskriven/model/fixtures';
 import { locales } from '@saerskriven/i18n';
 import { chooseLanguage } from '../messages/locale.js';
 import { inLocale } from '../messages/messages.fixtures.js';
@@ -175,7 +175,7 @@ describe('createDiagram', () => {
     const state = modelStore.getState();
     expect(state.present.diagrams).toHaveLength(3);
     expect(state.present.diagrams[2].title).toBe(untitledDiagram);
-    expect(state.present.diagrams[2].elements).toEqual([]);
+    expect(drawnAt(state.present, 2)).toEqual([]);
     expect(shown()).toBe(state.present.diagrams[2].id);
     expect(state.past).toHaveLength(1);
     expect(result.current).toBe(state.present.diagrams[2].id);

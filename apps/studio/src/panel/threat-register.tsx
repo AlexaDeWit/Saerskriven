@@ -175,11 +175,11 @@ function RegisterRow({
   readonly onChoose: () => void;
   readonly onFollow: (elementId: ElementId) => void;
 }) {
-  const diagrams = useModelStore((state) => state.present.diagrams);
+  const model = useModelStore((state) => state.present);
   const { t, locale } = useTranslator();
   const placed: readonly Placement[] = [
     ...(threat.appliesToModel ? [{ label: t('panel.whole-model') }] : []),
-    ...threatAttachments(diagrams, threat, t),
+    ...threatAttachments(model, threat, t),
   ];
 
   return (

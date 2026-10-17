@@ -1,6 +1,6 @@
 import {
   boundedParse,
-  parseModel,
+  parseDrawnModel,
   schemaFailureIssues,
   type Model,
   type ParseIssue,
@@ -77,7 +77,8 @@ export type WriteResult = {
  * stopped. `MalformedText` carries the parser's message, since no path into
  * a document exists yet. `InvalidWireDocument` has paths into the wire
  * document, with an import's own codes beside the parse issue codes, and
- * `InvalidModel` paths into the internal model.
+ * `InvalidModel` paths into the model a read mapped the file to, each of its
+ * diagrams owning its elements.
  */
 export type ReadFailure = Data.TaggedEnum<{
   ExceededReadLimit: {
@@ -109,9 +110,12 @@ export function parseWire<Wire>(
   );
 }
 
-/** A mapped model input through `parseModel`, refused as `InvalidModel`. */
+/**
+ * A mapped model input whose diagrams own their elements through
+ * `parseDrawnModel`, refused as `InvalidModel`.
+ */
 export function modelFrom(input: unknown): Either.Either<Model, ReadFailure> {
-  return Either.mapLeft(parseModel(input), (failure) =>
+  return Either.mapLeft(parseDrawnModel(input), (failure) =>
     ReadFailure.InvalidModel({ issues: failure.issues }),
   );
 }

@@ -32,6 +32,10 @@ export type OperationFailure = Data.TaggedEnum<{
     readonly elements: number;
   };
   UnknownElement: { readonly elementId: ElementId };
+  ElementNotOnDiagram: {
+    readonly elementId: ElementId;
+    readonly diagramId: DiagramId;
+  };
   UnknownThreat: { readonly threatId: ThreatId };
   UnknownMitigation: { readonly mitigationId: MitigationId };
   UnknownAssumption: { readonly assumptionId: AssumptionId };

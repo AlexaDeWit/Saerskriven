@@ -1,3 +1,4 @@
+import { drawnAt } from '@saerskriven/model/fixtures';
 import { expect, test, type Page } from '@playwright/test';
 import { commandChord } from './chords.fixtures.js';
 import { audit } from './accessibility.fixtures.js';
@@ -109,7 +110,7 @@ test('edits every element kind and preserves security facts through save, undo, 
     .click();
 
   const saved = await savedModel(page);
-  const elements = saved.diagrams[0].elements;
+  const elements = drawnAt(saved);
   expect(elements.find((element) => element.id === 'el-shopper')).toMatchObject(
     {
       providesAuthentication: false,
@@ -190,7 +191,7 @@ test('edits the description and scope of a process and a note through undo, save
   await note.press('Tab');
   await chooseInPanel(page, 'Out of scope', 'Yes');
 
-  const elements = (await savedModel(page)).diagrams[0].elements;
+  const elements = drawnAt(await savedModel(page));
   expect(
     elements.find((element) => element.id === 'el-web-shop'),
   ).toMatchObject({
@@ -330,7 +331,7 @@ test('deletion and copying update declared relationships through the editor', as
   const boundary = page.locator('.react-flow__node[data-id="el-shop-network"]');
   await boundary.focus();
   await page.keyboard.press(await commandChord(page, 'ControlOrMeta+d'));
-  const copied = (await savedModel(page)).diagrams[0].elements;
+  const copied = drawnAt(await savedModel(page));
   const boundaries = copied.filter(
     (element) =>
       element.kind === 'trust-boundary' && element.name === 'Shop network',
@@ -348,6 +349,6 @@ test('deletion and copying update declared relationships through the editor', as
   await page.keyboard.press('Delete');
   const removed = await savedModel(page);
   expect(
-    removed.diagrams[0].elements.find((element) => element.id === 'el-browse'),
+    drawnAt(removed).find((element) => element.id === 'el-browse'),
   ).toMatchObject({ trustBoundaryIds: [] });
 });

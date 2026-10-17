@@ -83,6 +83,30 @@ describe('renderSchema', () => {
     ).toBe('- `either`: one of 2');
   });
 
+  it('tells the objects of a union apart by the keys each holds alone', () => {
+    expect(
+      renderSchema(
+        z.object({
+          either: z.union([
+            z.object({ id: z.string(), x: z.number(), y: z.number() }),
+            z.object({ id: z.string(), z: z.boolean() }),
+          ]),
+        }),
+      ),
+    ).toBe(
+      [
+        '- `either`: one of 2',
+        '  - when it holds `x` and `y`',
+        '    - `id`: string',
+        '    - `x`: number',
+        '    - `y`: number',
+        '  - when it holds `z`',
+        '    - `id`: string',
+        '    - `z`: boolean',
+      ].join('\n'),
+    );
+  });
+
   it('names every value a literal admits', () => {
     expect(renderSchema(z.object({ side: z.literal(['left', 'right']) }))).toBe(
       '- `side`: `left` or `right`',

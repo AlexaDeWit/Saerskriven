@@ -1,6 +1,6 @@
 import {
-  elementSchema,
-  type Element,
+  drawnElementSchema,
+  type DrawnElement,
   type Point,
   type Size,
 } from '@saerskriven/model';
@@ -13,7 +13,8 @@ import {
 } from './threat-dragon-cells.js';
 import { portSides } from './threat-dragon-document.js';
 
-const elementOf = (input: unknown): Element => elementSchema.parse(input);
+const elementOf = (input: unknown): DrawnElement =>
+  drawnElementSchema.parse(input);
 
 const box = { position: { x: 10, y: 20 }, size: { width: 100, height: 60 } };
 
@@ -26,13 +27,15 @@ const named = {
 
 const store = elementOf({ kind: 'store', id: 'cell-1', ...named, ...box });
 
-const mergedOf = (element: Element, held?: ThreatDragonCell): MergedCell =>
+const mergedOf = (element: DrawnElement, held?: ThreatDragonCell): MergedCell =>
   mergeCell(element, held, [], 0, new Map());
 
-const cellOf = (element: Element, held?: ThreatDragonCell): ThreatDragonCell =>
-  mergedOf(element, held).cell;
+const cellOf = (
+  element: DrawnElement,
+  held?: ThreatDragonCell,
+): ThreatDragonCell => mergedOf(element, held).cell;
 
-const curveThrough = (waypoints: readonly Point[]): Element =>
+const curveThrough = (waypoints: readonly Point[]): DrawnElement =>
   elementOf({
     kind: 'trust-boundary',
     id: 'cell-1',
@@ -171,7 +174,7 @@ const freeFlow = (
   source: Point,
   target: Point,
   waypoints: readonly Point[] = [],
-): Element =>
+): DrawnElement =>
   elementOf({
     kind: 'flow',
     id: 'cell-1',
@@ -250,7 +253,7 @@ describe('a point end, which Threat Dragon types as two whole numbers', () => {
   });
 });
 
-const sized = (kind: string, size: Size): Element =>
+const sized = (kind: string, size: Size): DrawnElement =>
   elementOf({
     kind,
     id: 'cell-1',
@@ -493,7 +496,7 @@ const heldFlow = (port?: string): ThreatDragonCell => ({
   data: { type: 'tm.Flow', name: 'Ledger', isBidirectional: false },
 });
 
-const flowTo = (side?: string, bidirectional = false): Element =>
+const flowTo = (side?: string, bidirectional = false): DrawnElement =>
   elementOf({
     kind: 'flow',
     id: 'flow-1',

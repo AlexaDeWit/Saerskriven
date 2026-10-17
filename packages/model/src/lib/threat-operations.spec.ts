@@ -1,7 +1,7 @@
 import {
   elementId,
   emptyRegisterModel,
-  parsedFixture,
+  drawnFixture,
   registerModel,
   threatId,
   threatIn,
@@ -158,7 +158,7 @@ describe('removeThreat', () => {
   });
 
   it('keeps an assumption that applies to the model when its only threat goes', () => {
-    const modelWide = parsedFixture({
+    const modelWide = drawnFixture({
       ...threatRegisterFixture,
       assumptions: [
         { ...threatRegisterFixture.assumptions[0], appliesToModel: true },
@@ -170,7 +170,7 @@ describe('removeThreat', () => {
   });
 
   it('keeps a record that had no threat link before the removal', () => {
-    const unlinked = parsedFixture({
+    const unlinked = drawnFixture({
       ...threatRegisterFixture,
       assumptions: [{ ...threatRegisterFixture.assumptions[0], threats: [] }],
     });
@@ -359,7 +359,7 @@ describe('detachThreat', () => {
   });
 
   it('keeps an assumption that applies to the model when its only threat goes', () => {
-    const modelWide = parsedFixture({
+    const modelWide = drawnFixture({
       ...threatRegisterFixture,
       assumptions: [
         { ...threatRegisterFixture.assumptions[0], appliesToModel: true },

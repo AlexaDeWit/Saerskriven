@@ -1,3 +1,4 @@
+import { drawnAt } from '@saerskriven/model/fixtures';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -100,9 +101,7 @@ describe('Toolbox', () => {
       await user.click(remove);
 
       const state = modelStore.getState();
-      const remaining = state.present.diagrams[0].elements.map(
-        (element) => element.id,
-      );
+      const remaining = drawnAt(state.present).map((element) => element.id);
       for (const id of selection) {
         expect(remaining).not.toContain(id);
       }
@@ -127,7 +126,7 @@ describe('Toolbox', () => {
 
     const model = modelStore.getState().present;
     expect(
-      model.diagrams[0].elements.find((element) => element.id === requestFlow),
+      drawnAt(model).find((element) => element.id === requestFlow),
     ).toMatchObject({
       source: { kind: 'free' },
     });

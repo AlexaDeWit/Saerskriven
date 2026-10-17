@@ -4,7 +4,11 @@ import type { ElementId, Point } from '@saerskriven/model';
 import type { NodeChange } from '@xyflow/react';
 import { act, fireEvent, renderHook } from '@testing-library/react';
 import { Action } from '../store/actions.js';
-import { actorElement, processElement } from '../store/store.fixtures.js';
+import {
+  actorElement,
+  mainDiagram,
+  processElement,
+} from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { laidOutNode, openCanvas } from './canvas.fixtures.js';
 import { currentLayout } from './layout.js';
@@ -237,6 +241,7 @@ describe('useNodeDrag', () => {
     act(() => {
       dispatch(
         Action.MoveElement({
+          diagramId: mainDiagram,
           elementId: actorElement,
           offset: { x: 15, y: 0 },
           decimals: undefined,

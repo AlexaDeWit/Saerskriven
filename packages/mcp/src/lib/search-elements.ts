@@ -134,7 +134,7 @@ function searched(
   args: SearchElementsArguments,
 ): Either.Either<readonly ElementOnDiagram[], readonly string[]> {
   return Either.map(diagramsOf(model, args.diagram), (diagrams) =>
-    elementsOnDiagrams(diagrams).filter((placed) => keeps(placed, args)),
+    elementsOnDiagrams(model, diagrams).filter((placed) => keeps(placed, args)),
   );
 }
 

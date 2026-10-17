@@ -1,11 +1,12 @@
 import {
   generateElementId,
   inNumberOrder,
+  parseDrawnModel,
   renameElement,
   setAccent,
   type BoundaryShape,
-  type Element,
   type Model,
+  type Placement,
   type Point,
   type Size,
 } from '@saerskriven/model';
@@ -15,7 +16,8 @@ import {
 } from '@saerskriven/wire-saerskriven-yaml-v2';
 import {
   elementId,
-  parsedFixture,
+  drawnFixture,
+  fixtureOf,
   validModel,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
@@ -55,17 +57,17 @@ function backwardsShape(shape: BoundaryShape): BoundaryShape {
     : { waypoints: shape.waypoints.map(backwardsPoint), kind: 'curve' };
 }
 
-function backwardsElement(element: Element): Element {
-  if (element.kind === 'flow') {
-    return { ...element, waypoints: element.waypoints.map(backwardsPoint) };
+function backwardsPlacement(placement: Placement): Placement {
+  if ('waypoints' in placement) {
+    return { ...placement, waypoints: placement.waypoints.map(backwardsPoint) };
   }
-  if (element.kind === 'trust-boundary') {
-    return { ...element, shape: backwardsShape(element.shape) };
+  if ('shape' in placement) {
+    return { ...placement, shape: backwardsShape(placement.shape) };
   }
   return {
-    ...element,
-    position: backwardsPoint(element.position),
-    size: backwardsSize(element.size),
+    ...placement,
+    position: backwardsPoint(placement.position),
+    size: backwardsSize(placement.size),
   };
 }
 
@@ -86,8 +88,9 @@ const backwards: Model = {
   })),
   diagrams: featureComplete.diagrams.map((diagram) => ({
     ...diagram,
-    elements: diagram.elements.map(backwardsElement),
+    placements: diagram.placements.map(backwardsPlacement),
   })),
+  elements: featureComplete.elements,
   metadata: featureComplete.metadata,
 };
 
@@ -234,7 +237,7 @@ describe('a Saerskriven YAML write of mitigations', () => {
 describe('a Saerskriven YAML write of an assumption that applies to the model', () => {
   const [assumption] = validModelFixture.assumptions;
   const model = (threats: readonly string[]) =>
-    parsedFixture({
+    drawnFixture({
       ...validModelFixture,
       assumptions: [
         { ...assumption, threats: [...threats], appliesToModel: true },
@@ -257,7 +260,9 @@ describe('a Saerskriven YAML write of accents', () => {
   const api = elementId('element-api');
   const flow = elementId('element-order-flow');
   const plain = writeSaerskrivenYaml(validModel).output;
-  const accented = Either.getOrThrow(setAccent(validModel, [api, flow], 's2'));
+  const accented = Either.getOrThrow(
+    setAccent(validModel, validModel.diagrams[0].id, [api, flow], 's2'),
+  );
   const result = writeSaerskrivenYaml(accented);
 
   it('states the key after the scope fields on each element that holds one, and on no other', () => {
@@ -288,7 +293,14 @@ describe('a Saerskriven YAML write of accents', () => {
   it("states a note's key after its scope fields, as on any other kind", () => {
     const note = elementId('note-hours');
     const output = writeSaerskrivenYaml(
-      Either.getOrThrow(setAccent(featureComplete, [note], 's3')),
+      Either.getOrThrow(
+        setAccent(
+          featureComplete,
+          featureComplete.diagrams[0].id,
+          [note],
+          's3',
+        ),
+      ),
     ).output;
     const notes = listOf(
       at(listOf(at(parseDocument(output), 'diagrams'))[0], 'elements'),
@@ -302,7 +314,7 @@ describe('a Saerskriven YAML write of accents', () => {
 
   it('writes a model whose accents were cleared as it wrote the model before any was set', () => {
     const cleared = Either.getOrThrow(
-      setAccent(accented, [api, flow], undefined),
+      setAccent(accented, accented.diagrams[0].id, [api, flow], undefined),
     );
     expect(writeSaerskrivenYaml(cleared).output).toBe(plain);
   });
@@ -341,11 +353,13 @@ describe('a Saerskriven YAML write of a flow left unlabelled', () => {
 
 describe('a Saerskriven YAML write of a model holding a minted id', () => {
   const minted = generateElementId();
-  const model = parsedFixture(
-    JSON.parse(
-      JSON.stringify(validModelFixture).replaceAll(
-        'element-order-flow',
-        minted,
+  const model = fixtureOf(
+    parseDrawnModel(
+      JSON.parse(
+        JSON.stringify(validModelFixture).replaceAll(
+          'element-order-flow',
+          minted,
+        ),
       ),
     ),
   );

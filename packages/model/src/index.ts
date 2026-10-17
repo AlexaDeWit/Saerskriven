@@ -14,6 +14,30 @@ export {
   type Decimals,
 } from './lib/decimals.js';
 export * from './lib/elements.js';
+export * from './lib/placements.js';
+export {
+  drawnActorSchema,
+  drawnElementSchema,
+  drawnFlowEndpointSchema,
+  drawnFlowSchema,
+  drawnProcessSchema,
+  drawnStoreSchema,
+  drawnTextSchema,
+  drawnTrustBoundarySchema,
+  type DrawnActor,
+  type DrawnElement,
+  type DrawnElementInput,
+  type DrawnFlow,
+  type DrawnFlowEndpoint,
+  type DrawnFlowEndpointInput,
+  type DrawnFlowInput,
+  type DrawnProcess,
+  type DrawnStore,
+  type DrawnText,
+  type DrawnTrustBoundary,
+  type DrawnTrustBoundaryInput,
+} from './lib/drawn-elements.js';
+export * from './lib/drawing.js';
 export * from './lib/element-properties.js';
 export * from './lib/categories.js';
 export * from './lib/threats.js';
@@ -25,6 +49,8 @@ export {
   modelMetadataSchema,
   type Diagram,
   type DiagramInput,
+  type DrawnDiagramInput,
+  type DrawnModelInput,
   type ModelInput,
   type ModelMetadata,
   type ModelMetadataChange,
@@ -47,6 +73,7 @@ export {
   type ValueKind,
 } from './lib/parse-issue.js';
 export * from './lib/parse.js';
+export { parseDrawnModel } from './lib/parse-drawn.js';
 export * from './lib/empty.js';
 export * from './lib/operation-failures.js';
 export * from './lib/element-operations.js';
@@ -79,7 +106,6 @@ export {
   DiagramChoiceFailure,
   elementIdsAcross,
   elementIdsIn,
-  elementsAcross,
   elementsById,
   flowEndName,
   flowEnds,

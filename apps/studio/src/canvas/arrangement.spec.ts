@@ -1,5 +1,10 @@
 import type { Point, Size } from '@saerskriven/model';
-import { elementIn } from '@saerskriven/model/fixtures';
+import {
+  drawnAt,
+  drawnOnto,
+  elementIn,
+  redrawn,
+} from '@saerskriven/model/fixtures';
 import {
   commandById,
   runCommand,
@@ -22,36 +27,34 @@ import { currentLayout } from './layout.js';
 
 const unequalModel = (starts: readonly number[] = [0, 70, 300]) => {
   const sizes = [40, 80, 60];
-  return {
-    ...sampleModel,
-    diagrams: sampleModel.diagrams.map((diagram) => ({
-      ...diagram,
-      elements: diagram.elements.map((element, index) =>
-        'position' in element
-          ? {
-              ...element,
-              position: { x: starts[index], y: starts[index] },
-              size: { width: sizes[index], height: sizes[index] },
-            }
-          : element,
-      ),
-    })),
-  };
+  return redrawn(sampleModel, (element, index) =>
+    'position' in element
+      ? {
+          ...element,
+          position: { x: starts[index], y: starts[index] },
+          size: { width: sizes[index], height: sizes[index] },
+        }
+      : element,
+  );
 };
 
 const selectedPair = (
   placed: readonly { readonly position: Point; readonly size?: Size }[],
 ) => {
-  const model = {
-    ...sampleModel,
-    diagrams: sampleModel.diagrams.map((diagram) => ({
-      ...diagram,
-      elements: [actorElement, processElement].map((id, index) => ({
-        ...elementIn(sampleModel, id),
-        ...placed[index],
+  const model = drawnOnto(
+    {
+      ...sampleModel,
+      elements: [],
+      diagrams: sampleModel.diagrams.map((diagram) => ({
+        ...diagram,
+        placements: [],
       })),
+    },
+    [actorElement, processElement].map((id, index) => ({
+      ...elementIn(sampleModel, id),
+      ...placed[index],
     })),
-  };
+  );
   modelStore.setState(
     { ...initialState(model), selection: [actorElement, processElement] },
     true,
@@ -63,7 +66,7 @@ const selectedAll = (model: ReturnType<typeof unequalModel>) => {
   modelStore.setState(
     {
       ...initialState(model),
-      selection: model.diagrams[0].elements.map((element) => element.id),
+      selection: drawnAt(model).map((element) => element.id),
     },
     true,
   );
@@ -120,7 +123,7 @@ const alignments: readonly (readonly [
 
 describe('arrangeSelected', () => {
   it('aligns against outer bounds without changing flow metadata or creating a no-op history entry', () => {
-    openCanvas(canvasModel.diagrams[0].elements.map((element) => element.id));
+    openCanvas(drawnAt(canvasModel).map((element) => element.id));
     arrangeSelected('left');
     const state = modelStore.getState();
     expect(state.past).toEqual([canvasModel]);
@@ -254,11 +257,8 @@ describe('arrangeSelected', () => {
       ]);
       runCommand(commandById(command), recordingSurface().surface);
       expect(
-        modelStore
-          .getState()
-          .present.diagrams[0].elements.filter(
-            (element) => 'position' in element,
-          )
+        drawnAt(modelStore.getState().present)
+          .filter((element) => 'position' in element)
           .map((element) =>
             'position' in element
               ? [element.position.x, element.position.y]
@@ -308,7 +308,7 @@ describe('arrangeSelected', () => {
     'leaves the store alone for $command over $selected selected nodes, too few to arrange',
     ({ command, model, selected }) => {
       openCanvas(
-        model.diagrams[0].elements
+        drawnAt(model)
           .slice(0, selected)
           .map((element) => element.id),
         model,

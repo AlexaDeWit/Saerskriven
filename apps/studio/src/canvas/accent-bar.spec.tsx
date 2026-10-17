@@ -8,8 +8,12 @@ import {
 } from '../commands/commands.fixtures.js';
 import { withLanguage } from '../messages/locale.fixtures.js';
 import { Action } from '../store/actions.js';
-import { elementById } from '../store/selectors.js';
-import { actorElement, processElement } from '../store/store.fixtures.js';
+import { drawnElementById } from '../store/selectors.js';
+import {
+  actorElement,
+  mainDiagram,
+  processElement,
+} from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { AccentBar } from './accent-bar.js';
 import {
@@ -43,7 +47,7 @@ const pressed = (): (string | null)[] =>
     .map((control) => control.getAttribute('aria-label'));
 
 const accentOf = (id: ElementId) =>
-  elementById(modelStore.getState(), id)?.accent;
+  drawnElementById(modelStore.getState(), id)?.accent;
 
 const accentable = [actorElement, requestFlow, boundaryElement, noteElement];
 
@@ -99,7 +103,13 @@ describe('AccentBar', () => {
     expect(pressed()).toEqual(['Light accent 3']);
 
     act(() => {
-      dispatch(Action.SetAccent({ elementIds: [requestFlow], accent: 's1' }));
+      dispatch(
+        Action.SetAccent({
+          diagramId: mainDiagram,
+          elementIds: [requestFlow],
+          accent: 's1',
+        }),
+      );
     });
     expect(pressed()).toEqual([]);
 

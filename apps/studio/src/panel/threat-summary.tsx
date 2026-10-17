@@ -16,10 +16,10 @@ export function ThreatSummary({
   readonly threat: Threat;
   readonly on: ElementId | undefined;
 }) {
-  const diagrams = useModelStore((state) => state.present.diagrams);
+  const model = useModelStore((state) => state.present);
   const { t } = useTranslator();
   const category = categoryLabel(threat.category, t);
-  const named = threatSummaryElements(diagrams, threat, t)
+  const named = threatSummaryElements(model, threat, t)
     .filter(({ id }) => id !== on)
     .map(({ label }) => label);
   const elements = elementsLine(on, named, threat.appliesToModel, t);

@@ -50,6 +50,13 @@ export const issuesEnCA = catalogue(issueMessages)('en-CA')({
     'the element id "{id}" is already used, and element ids are unique across the model',
   'duplicate-diagram-id':
     'the diagram id "{id}" is already used, and diagram ids are unique across the model',
+  'placement-element-unknown':
+    'the diagram places "{id}", which names no element of the model',
+  'duplicate-placement':
+    'the element "{id}" is placed a second time, and an element is drawn once, on one diagram',
+  'placement-geometry-mismatch':
+    'the placement of "{id}" does not hold the geometry its kind takes',
+  'element-unplaced': 'the element "{id}" is placed on no diagram',
   'duplicate-threat-id':
     'the threat id "{id}" is already used, and threat ids are unique among threats',
   'duplicate-mitigation-id':

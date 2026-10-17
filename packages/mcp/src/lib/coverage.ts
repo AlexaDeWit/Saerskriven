@@ -80,7 +80,7 @@ export function renderCoverage(result: CoverageResult): readonly string[] {
 export function coverageOf(reading: ModelReading): CoverageResult {
   const { model } = reading;
   const counts = threatCountByElement(model);
-  const placed = elementsOnDiagrams(model.diagrams);
+  const placed = elementsOnDiagrams(model, model.diagrams);
   const unanalyzed = new Set<string>(
     elementsWithoutThreats(model).map((element) => element.id),
   );

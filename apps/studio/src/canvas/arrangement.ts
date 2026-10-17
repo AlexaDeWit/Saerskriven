@@ -2,6 +2,7 @@ import type { CanvasNode } from '@saerskriven/canvas';
 import { storedNumber } from '@saerskriven/model';
 import { z } from 'zod';
 import { Action } from '../store/actions.js';
+import { activeDiagramId } from '../store/selectors.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { announce } from './announcements.js';
 import { currentLayout } from './layout.js';
@@ -115,6 +116,10 @@ function distributed(nodes: readonly CanvasNode[], axis: Axis): Moves {
  */
 export function arrangeSelected(operation: Arrangement): void {
   const state = modelStore.getState();
+  const diagramId = activeDiagramId(state);
+  if (diagramId === undefined) {
+    return;
+  }
   const nodes = currentLayout(state).nodes.filter((node) =>
     state.selection.includes(node.id),
   );
@@ -123,7 +128,9 @@ export function arrangeSelected(operation: Arrangement): void {
     share === undefined
       ? distributed(nodes, axis)
       : aligned(nodes, axis, share);
-  dispatch(Action.ArrangeElements({ moves, decimals: commandDecimals }));
+  dispatch(
+    Action.ArrangeElements({ diagramId, moves, decimals: commandDecimals }),
+  );
   if (modelStore.getState().present !== state.present) {
     announce((t) => t('canvas.arranged', { count: nodes.length }));
   }

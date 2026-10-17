@@ -1,8 +1,7 @@
 import {
   elementId,
-  elementIn,
   emptyRegisterModel,
-  parsedFixture,
+  drawnFixture,
   registerModel,
   threatIn,
 } from '../fixtures.js';
@@ -24,8 +23,8 @@ const idsOfThreats = (threats: Threat[]): string[] =>
 
 describe('elementsWithoutThreats', () => {
   it('returns the elements no threat references, across every diagram', () => {
-    expect(elementsWithoutThreats(registerModel)).toEqual([
-      elementIn(registerModel, 'element-ledger'),
+    expect(idsOfElements(elementsWithoutThreats(registerModel))).toEqual([
+      'element-ledger',
     ]);
   });
 
@@ -68,7 +67,7 @@ describe('threatCountByElement', () => {
     const doubled = structuredClone(threatRegisterFixture);
     doubled.threats[0].elements.push('element-shopper');
     expect(
-      threatCountByElement(parsedFixture(doubled)).get(
+      threatCountByElement(drawnFixture(doubled)).get(
         elementId('element-shopper'),
       ),
     ).toBe(1);

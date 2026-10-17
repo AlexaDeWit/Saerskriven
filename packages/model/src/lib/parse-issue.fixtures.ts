@@ -26,6 +26,16 @@ export const parseIssueSamples: readonly ParseIssueDetail[] = [
   { code: 'operation-unknown' },
   { code: 'duplicate-element-id', parameters: { id: 'element-twice' } },
   { code: 'duplicate-diagram-id', parameters: { id: 'diagram-twice' } },
+  {
+    code: 'placement-element-unknown',
+    parameters: { id: 'element-unheld' },
+  },
+  { code: 'duplicate-placement', parameters: { id: 'element-placed-twice' } },
+  {
+    code: 'placement-geometry-mismatch',
+    parameters: { id: 'element-misdrawn' },
+  },
+  { code: 'element-unplaced', parameters: { id: 'element-undrawn' } },
   { code: 'duplicate-threat-id', parameters: { id: 'threat-twice' } },
   { code: 'duplicate-mitigation-id', parameters: { id: 'mitigation-twice' } },
   { code: 'duplicate-assumption-id', parameters: { id: 'assumption-twice' } },

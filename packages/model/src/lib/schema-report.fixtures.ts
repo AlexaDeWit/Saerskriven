@@ -44,12 +44,22 @@ const brands: readonly (readonly [Schema, string])[] = [
 
 const preamble = [
   'The whole internal model, expanded from the zod schemas that define it.',
+  'Each element is stored once, in `elements`, and each diagram holds',
+  'placements of elements in the order it draws them: the element, the',
+  'accent it takes there, and its geometry there.',
+  '',
   '`parseModel` is the only way a model value comes into existence, and it',
   'enforces more than the shapes below: element, diagram, threat, mitigation',
   'and assumption ids unique where they must be, threat numbers unique and',
-  'never above `lastIssuedThreatNumber`, flow endpoints anchored inside their',
-  'own diagram and never to the flow itself, and every element and threat',
-  'reference resolving.',
+  'never above `lastIssuedThreatNumber`, and every element and threat',
+  'reference resolving. Every element is placed once, on one diagram, and its',
+  'placement holds the geometry its kind takes: `position` and `size` for an',
+  'actor, a process, a store or a note, `shape` for a trust boundary, and',
+  '`waypoints`, `source` and `target` for a flow. A note takes no accent. A',
+  'flow end attached to an element holds no `position`, and the element is',
+  "placed on the flow's own diagram. A free end holds a `position` and no",
+  "`side`. No flow end anchors to its own flow, and a boundary's or a flow's",
+  'relationship lists name elements of its own diagram.',
   '',
   'A field of type `text` accepts every letter, mark, number, punctuation,',
   'symbol and space separator Unicode defines, plus tab, line feed and',
@@ -116,7 +126,26 @@ function expand(schema: Schema, indent: string): string[] {
       variant(option, discriminator, indent),
     );
   }
+  if (def.options?.every((option) => option.def.shape !== undefined)) {
+    return holdingVariants(def.options, indent);
+  }
   return [];
+}
+
+function holdingVariants(options: readonly Schema[], indent: string): string[] {
+  const keysOf = (option: Schema) => Object.keys(option.def.shape ?? {});
+  const shared = keysOf(options[0]).filter((key) =>
+    options.every((option) => keysOf(option).includes(key)),
+  );
+  return options.flatMap((option) => {
+    const own = keysOf(option).filter((key) => !shared.includes(key));
+    return [
+      `${indent}- when it holds ${listed(own.map((key) => `\`${key}\``))}`,
+      ...Object.entries({ ...option.def.shape }).flatMap(([name, field]) =>
+        fieldLines(name, field, `${indent}  `),
+      ),
+    ];
+  });
 }
 
 function fieldLines(name: string, schema: Schema, indent: string): string[] {
@@ -153,7 +182,7 @@ function summary(schema: Schema): string {
     return 'object';
   }
   if (def.element) {
-    return `list of ${listed(def)}${summary(def.element)}`;
+    return `list of ${atLeast(def)}${summary(def.element)}`;
   }
   if (def.options) {
     const total = `one of ${String(def.options.length)}`;
@@ -172,7 +201,13 @@ function summary(schema: Schema): string {
   return scalar(def);
 }
 
-function listed(def: SchemaDef): string {
+function listed(names: readonly string[]): string {
+  return names.length < 2
+    ? names.join('')
+    : `${names.slice(0, -1).join(', ')} and ${names.at(-1) ?? ''}`;
+}
+
+function atLeast(def: SchemaDef): string {
   const least = (def.checks ?? []).find(
     (check) => check._zod.def.check === 'min_length',
   )?._zod.def.minimum;

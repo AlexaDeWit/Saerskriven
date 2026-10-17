@@ -1,15 +1,16 @@
 import {
+  diagramsOf,
   moveElement,
   resizeElement,
   setAccent,
+  type DrawnModelInput,
   type Model,
-  type ModelInput,
   type Size,
 } from '@saerskriven/model';
 import {
   elementId,
   elementIn,
-  parsedFixture,
+  drawnFixture,
 } from '@saerskriven/model/fixtures';
 import type {
   ThreatDragonCell,
@@ -74,12 +75,20 @@ const drawing = (
 
 const featureComplete = threatDragonReading(featureCompleteText);
 
-const richer = parsedFixture(richerThanFormatFixture);
+const richer = drawnFixture(richerThanFormatFixture);
 
 const projected = threatDragonCodec.write(richer);
 
+const onDiagramOf = (model: Model, id: string) =>
+  diagramsOf(model, elementId(id))[0].id;
+
 const movedByHalf = (id: string): Model =>
-  Either.getOrThrow(moveElement(richer, elementId(id), { x: 0.5, y: 0.5 }));
+  Either.getOrThrow(
+    moveElement(richer, onDiagramOf(richer, id), elementId(id), {
+      x: 0.5,
+      y: 0.5,
+    }),
+  );
 
 const underTen: readonly (readonly [id: string, size: Size])[] = [
   ['element-clerk', { width: 1, height: 80 }],
@@ -91,7 +100,9 @@ const underTen: readonly (readonly [id: string, size: Size])[] = [
 
 const shrunk = underTen.reduce(
   (model, [id, size]) =>
-    Either.getOrThrow(resizeElement(model, elementId(id), size)),
+    Either.getOrThrow(
+      resizeElement(model, onDiagramOf(model, id), elementId(id), size),
+    ),
   richer,
 );
 
@@ -132,7 +143,7 @@ describe('writing the feature-complete model back onto the file it came from', (
 
   it('reads back as the model written out by hand', () => {
     expect(threatDragonReading(written.output).model).toStrictEqual(
-      parsedFixture(featureCompleteModel),
+      drawnFixture(featureCompleteModel),
     );
   });
 
@@ -317,7 +328,15 @@ describe('writing a model that holds accents', () => {
   ];
   const accented = Either.getOrThrow(
     setAccent(
-      Either.getOrThrow(setAccent(richer, accentedIds.map(elementId), 's1')),
+      Either.getOrThrow(
+        setAccent(
+          richer,
+          onDiagramOf(richer, 'element-clerk'),
+          accentedIds.map(elementId),
+          's1',
+        ),
+      ),
+      onDiagramOf(richer, 'element-ledger'),
       [elementId('element-ledger')],
       'l3',
     ),
@@ -581,7 +600,7 @@ describe('a merge onto a document an edit has moved out from under', () => {
     ['Alexandra de Wit'],
   );
 
-  const edited = parsedFixture({
+  const edited = drawnFixture({
     metadata: {
       title: 'Edited',
       owner: '',
@@ -633,7 +652,7 @@ describe('a merge onto a document an edit has moved out from under', () => {
     lastIssuedThreatNumber: 4,
     mitigations: [],
     assumptions: [],
-  } satisfies ModelInput);
+  } satisfies DrawnModelInput);
 
   const written = threatDragonCodec.write(edited, source);
   const document = documentOf(written.output);
@@ -705,7 +724,7 @@ describe('a threat an edit detached from one of the cells holding it', () => {
     cell('cell-b', '9', true),
   ]);
 
-  const detached = parsedFixture({
+  const detached = drawnFixture({
     metadata: {
       title: 'Detached',
       owner: '',
@@ -735,7 +754,7 @@ describe('a threat an edit detached from one of the cells holding it', () => {
     lastIssuedThreatNumber: 1,
     mitigations: [],
     assumptions: [],
-  } satisfies ModelInput);
+  } satisfies DrawnModelInput);
 
   const written = threatDragonCodec.write(detached, source);
   const cells = documentOf(written.output).detail.diagrams[0]?.cells ?? [];

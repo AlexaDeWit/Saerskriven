@@ -4,7 +4,7 @@ import {
   type CanvasLayout,
   type NodeBox,
 } from '@saerskriven/canvas';
-import type { Element, Point } from '@saerskriven/model';
+import type { DrawnElement, Point } from '@saerskriven/model';
 import type { ReactFlowInstance } from '@xyflow/react';
 import {
   useCallback,
@@ -77,7 +77,7 @@ type PlacementGesture = {
   readonly screen: Point;
   readonly flow: Point;
   readonly geometry: NodeBox;
-  readonly element: Element;
+  readonly element: DrawnElement;
 };
 
 type CurveDraft = {

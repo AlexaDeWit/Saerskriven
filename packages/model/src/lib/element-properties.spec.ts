@@ -1,7 +1,7 @@
 import { Either } from 'effect';
 import {
   elementId,
-  parsedFixture,
+  drawnFixture,
   securityModelFixture,
   validModel,
   validModelFixture,
@@ -9,7 +9,7 @@ import {
 import { setElementProperties } from './element-operations.js';
 import { parseModel } from './parse.js';
 
-const edits = parsedFixture(securityModelFixture).diagrams[0].elements.flatMap(
+const edits = drawnFixture(securityModelFixture).elements.flatMap(
   (properties) =>
     properties.kind === 'text' ? [] : [{ id: properties.id, properties }],
 );
@@ -18,16 +18,13 @@ describe('setElementProperties', () => {
   it.each(edits)(
     'edits $properties.kind facts without changing identity, geometry or register data',
     ({ id, properties }) => {
-      const before = validModel.diagrams[0].elements.find(
-        (element) => element.id === id,
-      );
+      const before = validModel.elements.find((element) => element.id === id);
       const result = Either.getOrThrow(
         setElementProperties(validModel, elementId(id), properties),
       );
-      const after = result.diagrams[0].elements.find(
-        (element) => element.id === id,
-      );
+      const after = result.elements.find((element) => element.id === id);
       expect(after).toMatchObject({ ...before, ...properties });
+      expect(result.diagrams).toBe(validModel.diagrams);
       expect(result.threats).toBe(validModel.threats);
       expect(result.lastIssuedThreatNumber).toBe(
         validModel.lastIssuedThreatNumber,
@@ -68,9 +65,7 @@ describe('setElementProperties', () => {
         isEncrypted: undefined,
       }),
     );
-    const flow = cleared.diagrams[0].elements.find(
-      (element) => element.id === id,
-    );
+    const flow = cleared.elements.find((element) => element.id === id);
     expect(flow).toMatchObject({ protocol: '', trustBoundaryIds: [] });
     expect(flow).not.toHaveProperty('isEncrypted');
     expect(
@@ -121,7 +116,7 @@ describe('setElementProperties', () => {
         containedElements: [elementId('element-perimeter')],
       }),
     ).toMatchObject({ left: { _tag: 'InvalidElementRelationship' } });
-    expect(validModel).toStrictEqual(parsedFixture(validModelFixture));
+    expect(validModel).toStrictEqual(drawnFixture(validModelFixture));
   });
 
   it('preserves relationship order and repeated assertions without adding reciprocal links', () => {
@@ -135,12 +130,10 @@ describe('setElementProperties', () => {
       }),
     );
     expect(
-      result.diagrams[0].elements.find((element) => element.kind === 'flow'),
+      result.elements.find((element) => element.kind === 'flow'),
     ).not.toHaveProperty('trustBoundaryIds');
     expect(
-      result.diagrams[0].elements.find(
-        (element) => element.id === 'element-perimeter',
-      ),
+      result.elements.find((element) => element.id === 'element-perimeter'),
     ).toMatchObject({
       crossingFlows: ['element-order-flow', 'element-order-flow'],
     });

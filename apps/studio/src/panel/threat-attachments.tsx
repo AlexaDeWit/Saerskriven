@@ -30,13 +30,13 @@ export function AttachmentGroup({
   onDetach,
   onModelLink,
 }: AttachmentGroupProps) {
-  const diagrams = useModelStore((state) => state.present.diagrams);
+  const model = useModelStore((state) => state.present);
   const { t } = useTranslator();
   const group = useRef<HTMLFieldSetElement>(null);
   const modelLink = useRef<HTMLButtonElement>(null);
   const detached = useRef<number | undefined>(undefined);
-  const attachments = threatAttachments(diagrams, threat, t);
-  const attachable = attachableElements(diagrams, threat, t);
+  const attachments = threatAttachments(model, threat, t);
+  const attachable = attachableElements(model, threat, t);
 
   useEffect(() => {
     const index = detached.current;

@@ -7,7 +7,7 @@ import {
   within,
 } from '@testing-library/react';
 import type { Point } from '@saerskriven/model';
-import { elementIn } from '@saerskriven/model/fixtures';
+import { drawnAt, elementIn, redrawn } from '@saerskriven/model/fixtures';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -48,9 +48,9 @@ import {
 import { currentLayout } from './layout.js';
 
 const flowOf = () =>
-  modelStore
-    .getState()
-    .present.diagrams[0].elements.find((element) => element.kind === 'flow');
+  drawnAt(modelStore.getState().present).find(
+    (element) => element.kind === 'flow',
+  );
 
 const sourceDrawn = () =>
   currentLayout(modelStore.getState()).edges.find(
@@ -65,17 +65,12 @@ const opened = (form: CommandId) => {
   runRegistered(form);
 };
 
-const curvedThrough = (waypoints: Point[]) => ({
-  ...curvedCanvasModel,
-  diagrams: curvedCanvasModel.diagrams.map((diagram) => ({
-    ...diagram,
-    elements: diagram.elements.map((element) =>
-      element.id === boundaryElement && element.kind === 'trust-boundary'
-        ? { ...element, shape: { kind: 'curve' as const, waypoints } }
-        : element,
-    ),
-  })),
-});
+const curvedThrough = (waypoints: Point[]) =>
+  redrawn(curvedCanvasModel, (element) =>
+    element.id === boundaryElement && element.kind === 'trust-boundary'
+      ? { ...element, shape: { kind: 'curve' as const, waypoints } }
+      : element,
+  );
 
 beforeEach(() => {
   openCanvas([actorElement]);
@@ -128,6 +123,7 @@ describe('SelectionControls', () => {
   it('stores at most six decimals, so a long number in one field does not spoil the one typed in another', () => {
     dispatch(
       Action.MoveElement({
+        diagramId: mainDiagram,
         elementId: actorElement,
         offset: { x: 3742.089, y: 80.1234567890123 },
         decimals: undefined,
@@ -155,7 +151,14 @@ describe('SelectionControls', () => {
       [actorElement, { x: 10.5, y: 20 }],
       [processElement, { x: 0.456, y: 80.75 }],
     ] as const) {
-      dispatch(Action.MoveElement({ elementId, offset, decimals: 3 }));
+      dispatch(
+        Action.MoveElement({
+          diagramId: mainDiagram,
+          elementId,
+          offset,
+          decimals: 3,
+        }),
+      );
     }
     expect(laidOutNode(processElement).position).toEqual({
       x: 300.456,
@@ -179,6 +182,7 @@ describe('SelectionControls', () => {
     openCanvas([actorElement, processElement]);
     dispatch(
       Action.MoveElements({
+        diagramId: mainDiagram,
         elementIds: [actorElement, processElement],
         offset: { x: 40, y: 40 },
         decimals: undefined,
@@ -331,15 +335,15 @@ describe('SelectionControls', () => {
 
   it('moves a multi-selection by one offset and invalidates a draft on tool changes', () => {
     openCanvas(
-      sampleModel.diagrams[0].elements.map((element) => element.id),
+      drawnAt(sampleModel).map((element) => element.id),
       sampleModel,
     );
     opened('edit-geometry');
     expect(screen.queryByRole('spinbutton', { name: 'Width' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Decrease Y' }));
     fireEvent.click(screen.getByRole('button', { name: 'Apply geometry' }));
-    expect(modelStore.getState().present.diagrams[0].elements).toEqual(
-      sampleModel.diagrams[0].elements.map((element) =>
+    expect(drawnAt(modelStore.getState().present)).toEqual(
+      drawnAt(sampleModel).map((element) =>
         'position' in element
           ? {
               ...element,
@@ -443,6 +447,7 @@ describe('SelectionControls', () => {
     openCanvas([requestFlow]);
     dispatch(
       Action.MoveElement({
+        diagramId: mainDiagram,
         elementId: actorElement,
         offset: { x: -123.636, y: 0.98765 },
         decimals: undefined,
@@ -467,6 +472,7 @@ describe('SelectionControls', () => {
     openCanvas([requestFlow]);
     dispatch(
       Action.SetFlowEndPosition({
+        diagramId: mainDiagram,
         elementId: requestFlow,
         side: 'source',
         position: { x: 12.3456789, y: 30 },

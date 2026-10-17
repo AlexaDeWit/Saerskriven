@@ -1,4 +1,8 @@
-import { inNumberOrder, type Model, type ModelInput } from '@saerskriven/model';
+import {
+  inNumberOrder,
+  type DrawnModelInput,
+  type Model,
+} from '@saerskriven/model';
 import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
 import {
   committedText,
@@ -32,7 +36,7 @@ export const featureCompleteYaml: string = committedText(
  * 40 with the last issued number 42, and every security fact the file
  * states, `false` and empty ones included.
  */
-export const featureCompleteYamlModel: ModelInput = {
+export const featureCompleteYamlModel: DrawnModelInput = {
   metadata: {
     title: 'Clinic booking',
     owner: 'Alexandra de Wit',
@@ -825,7 +829,7 @@ const pilot = 'f1646094-9885-422a-b7e7-7888c72905ef';
  * text in threat number order, `implemented` under a mitigated threat and
  * `proposed` under any other.
  */
-export const frozenV021Model: ModelInput = {
+export const frozenV021Model: DrawnModelInput = {
   metadata: {
     title: '',
     owner: 'Alexandra de Wit',
