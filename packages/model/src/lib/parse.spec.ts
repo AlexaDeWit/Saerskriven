@@ -66,6 +66,33 @@ const onSecondDiagram = (
   });
 };
 
+const twinFlow = {
+  kind: 'flow',
+  id: 'element-twin',
+  name: 'Twin route',
+  description: '',
+  outOfScope: false,
+  reasonOutOfScope: '',
+  source: { kind: 'free' },
+  target: { kind: 'free' },
+  bidirectional: false,
+} as const;
+
+const twinProcess = { ...remoteProcess, id: 'element-twin' } as const;
+
+const twinBox: PlacementInput = {
+  element: 'element-twin',
+  position: { x: 0, y: 0 },
+  size: { width: 100, height: 60 },
+};
+
+const twinRoute: PlacementInput = {
+  element: 'element-twin',
+  waypoints: [],
+  source: { position: { x: 0, y: 0 } },
+  target: { position: { x: 200, y: 0 } },
+};
+
 describe('parseModel', () => {
   it('parses the model a drawn read gives it into an equal model', () => {
     expect(Either.getOrNull(parseModel(validModel))).toEqual(validModel);
@@ -226,6 +253,43 @@ describe('parseModel', () => {
   ])('rejects $named, and nothing else', ({ mutate, path, detail }) => {
     expect(issuesOf(seededPlacedModel(mutate))).toEqual([{ path, detail }]);
   });
+
+  it.each<readonly [string, (draft: ModelInput) => void]>([
+    [
+      'on two diagrams',
+      (draft) => {
+        draft.diagrams[0].placements.push(twinBox);
+        draft.diagrams.push({
+          id: 'diagram-second',
+          title: 'Second',
+          placements: [twinRoute],
+        });
+      },
+    ],
+    [
+      'on one diagram',
+      (draft) => {
+        draft.diagrams[0].placements.push(twinBox, twinRoute);
+      },
+    ],
+  ])(
+    'pairs each copy of a repeated id with the placement that fits it, %s, and reports the id alone',
+    (_named, place) => {
+      const result = seededPlacedModel((draft) => {
+        draft.elements.push(twinFlow, twinProcess);
+        place(draft);
+      });
+      expect(issuesOf(result)).toEqual([
+        {
+          path: ['elements', 7, 'id'],
+          detail: {
+            code: 'duplicate-element-id',
+            parameters: { id: 'element-twin' },
+          },
+        },
+      ]);
+    },
+  );
 });
 
 describe('parseDrawnModel', () => {

@@ -13,9 +13,10 @@ type StructuralModel = z.infer<typeof modelSchema>;
  * What the model's own rules refuse in a structurally valid model: unique
  * identities, one placement of every element that fits it, issuance
  * bookkeeping, and references local to the diagram drawing an element.
- * Elements sharing an id pair with that id's placements in turn, in diagram
- * order, so each copy is checked on the diagram that draws it and a repeated
- * id reports only as a duplicate id.
+ * Each element sharing an id pairs with the first of that id's placements
+ * left, in diagram order, whose geometry fits it, or with the first left
+ * where none fits. Each copy is checked on the diagram that draws it, so
+ * copies placed once each report only as a duplicate id.
  */
 export function collectViolations(model: StructuralModel): ParseIssue[] {
   const drawings = drawingsOf(model);
@@ -174,6 +175,7 @@ type Drawings = {
   readonly diagramOf: readonly (number | undefined)[];
   readonly drawnBy: readonly (readonly (Element | undefined)[])[];
   readonly neighbours: readonly ReadonlyMap<ElementId, Element>[];
+  readonly ids: readonly ReadonlySet<ElementId>[];
 };
 
 function drawingsOf(model: StructuralModel): Drawings {
@@ -189,7 +191,15 @@ function drawingsOf(model: StructuralModel): Drawings {
     placements.map((): Element | undefined => undefined),
   );
   const diagramOf = model.elements.map((element) => {
-    const drawing = queued.get(element.id)?.shift();
+    const queue = queued.get(element.id) ?? [];
+    const fitting = queue.findIndex(
+      ([diagramIndex, placementIndex]) =>
+        drawnElement(
+          element,
+          model.diagrams[diagramIndex].placements[placementIndex],
+        ) !== undefined,
+    );
+    const [drawing] = queue.splice(Math.max(fitting, 0), 1);
     if (drawing === undefined) {
       return undefined;
     }
@@ -208,7 +218,8 @@ function drawingsOf(model: StructuralModel): Drawings {
         }),
       ),
   );
-  return { diagramOf, drawnBy, neighbours };
+  const ids = neighbours.map((drawn) => new Set(drawn.keys()));
+  return { diagramOf, drawnBy, neighbours, ids };
 }
 
 function placementViolations(
@@ -272,15 +283,14 @@ function unplacedViolations(model: StructuralModel): ParseIssue[] {
 
 function flowEndpointViolations(
   model: StructuralModel,
-  { diagramOf, neighbours }: Drawings,
+  { diagramOf, ids }: Drawings,
 ): ParseIssue[] {
   return model.elements.flatMap((element, elementIndex) => {
     const diagramIndex = diagramOf[elementIndex];
     if (element.kind !== 'flow' || diagramIndex === undefined) {
       return [];
     }
-    const drawnWith = new Set(neighbours[diagramIndex].keys());
-    return endpointViolationsOf(element, drawnWith).map(
+    return endpointViolationsOf(element, ids[diagramIndex]).map(
       ({ side, reference, reason }): ParseIssue => ({
         path: ['elements', elementIndex, side, 'element'],
         detail: {
