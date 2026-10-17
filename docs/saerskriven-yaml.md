@@ -146,7 +146,8 @@ tools say when they write one:
 
 - The studio shows a report under the card at the edit that moves the model
   from version 2 to version 3, worked out from the model before and after the
-  edit.
+  edit, and at the open of an OTM or TM-BOM file whose model saves as
+  version 3.
 - `saer_edit` answers `movedToVersion3` for a batch that moves a file from
   version 2 to version 3, worked out the same way ([writing](mcp.md#writing)).
 - `saer convert` warns on standard error whenever the document it writes is

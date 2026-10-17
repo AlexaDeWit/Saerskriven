@@ -345,8 +345,10 @@ native YAML format keeps one element on several diagrams.
 `saer_create` writes a new model in the native YAML format at version 2, with
 the `title` it is given and any of `owner`, `description` and `contributors`,
 each left out written empty. `saer_import` converts an OTM or TM-BOM file into
-one ([what each format becomes](studio.md#otm-and-tm-bom)). Both refuse a path
-that is already taken.
+one ([what each format becomes](studio.md#otm-and-tm-bom)), written as version
+3 where the converted model has an element, a dataflow included, on more than
+one diagram ([which version](saerskriven-yaml.md#which-version-a-save-writes)).
+Both refuse a path that is already taken.
 
 A read refuses a file past 8 MiB in UTF-8, and `saer_edit`, `saer_create` and
 `saer_import` all refuse a write whose output would be past that size, leaving

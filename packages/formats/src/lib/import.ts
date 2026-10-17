@@ -3,7 +3,7 @@ import { otmWireSchema, type OtmDocument } from '@saerskriven/wire-otm';
 import { tmbomWireSchema, type TmbomDocument } from '@saerskriven/wire-tmbom';
 import { Either } from 'effect';
 import { z } from 'zod';
-import { modelFrom, parseWire, ReadFailure } from './codec.js';
+import { parseWire, ReadFailure } from './codec.js';
 import {
   DetectionFailure,
   readAnyFormat,
@@ -135,7 +135,7 @@ function convert(
   if (mapped.context.failure !== undefined) {
     return Either.left(mapped.context.failure);
   }
-  return Either.map(modelFrom(mapped.input, 'diagram'), (model) => ({
+  return Either.map(mapped.model(), (model) => ({
     format,
     model,
     divergences: [...undeclared, ...mapped.context.divergences],

@@ -5,7 +5,7 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import type { State } from '../store/state.js';
 import { modelStore } from '../store/store.js';
-import { formatOf } from './session.js';
+import { formatOf, type LossReport } from './session.js';
 
 /**
  * Whether the report region says that earlier releases can no longer open
@@ -35,8 +35,25 @@ export function versionNoticeAfter(
   );
 }
 
-/** {@link versionNoticeAfter} over the studio's store, and the Dismiss that puts it away. */
-export function useVersionNotice(): {
+/**
+ * Whether `report`, standing under the card, raises the version report: the
+ * open of a file in a format Saerskriven only reads, whose model saves as
+ * version 3, does, as no edit moved it there. A shared link's report does
+ * not, since the link held native text at version 3 already.
+ */
+export function versionNoticeAtReport(report: LossReport | undefined): boolean {
+  return (
+    report?.readOnlyFormat !== undefined &&
+    writtenSaerskrivenYamlVersion(report.model) === 3
+  );
+}
+
+/**
+ * {@link versionNoticeAfter} over the studio's store, raised too where
+ * {@link versionNoticeAtReport} says the file session's `report` raises it,
+ * and the Dismiss that puts it away.
+ */
+export function useVersionNotice(report: LossReport | undefined): {
   readonly shown: boolean;
   readonly dismiss: () => void;
 } {
@@ -48,6 +65,13 @@ export function useVersionNotice(): {
       }),
     [],
   );
+  const [seenReport, setSeenReport] = useState(report);
+  if (report !== seenReport) {
+    setSeenReport(report);
+    if (versionNoticeAtReport(report)) {
+      setShown(true);
+    }
+  }
   const dismiss = useCallback((): void => {
     setShown(false);
   }, []);

@@ -1,11 +1,8 @@
 import type { TmbomDocument } from '@saerskriven/wire-tmbom';
 import { Either } from 'effect';
 import { importModel } from './import.js';
-import { importTexts, tmbomFixture } from './import.fixtures.js';
+import { imported, importTexts, tmbomFixture } from './import.fixtures.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
-
-const imported = (document: TmbomDocument) =>
-  Either.getOrThrow(importModel(JSON.stringify(document)));
 
 const paragraphs = (description: string) => description.split('\n\n');
 

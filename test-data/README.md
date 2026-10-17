@@ -63,6 +63,7 @@ no target writes them. They are read as follows:
 | `threat-dragon/schema/*.json`             | `packages/formats`                                                                                                              |
 | `threat-dragon/i18n/*.json`               | `packages/formats`                                                                                                              |
 | `otm/example.json`                        | `packages/wire-otm`, `packages/formats`, `packages/mcp`, `apps/studio`, `apps/studio-e2e`                                       |
+| `otm/multi-diagram.json`                  | `packages/formats`, `apps/studio`                                                                                               |
 | `tmbom/example.json`                      | `packages/wire-tmbom`, `packages/formats`, `packages/mcp`                                                                       |
 | `tmbom/vault-invalid-zones.json`          | `packages/formats`                                                                                                              |
 | `adversarial/deep-nesting.json`           | `packages/formats`, `apps/cli`, `apps/studio`                                                                                   |
@@ -107,6 +108,17 @@ committed data under the same terms as `v0.2.1.yaml`, never regenerated.
 back as the version 2 file to the byte, and compares its version 3 projection
 with these bytes. `packages/mcp` and `apps/cli` rewrite it as version 2, and
 `apps/studio` restores it from a recovery snapshot.
+
+## `otm/multi-diagram.json`
+
+An OTM 0.2.0 file written by hand for this project, under its licence rather
+than the upstream example's: two diagram representations and a code one, a
+component and a trust zone on both diagrams at different geometry, a
+component on each diagram alone, a component with no entry, a second entry
+for one diagram, and dataflows within one diagram and between the two.
+`packages/formats` imports it and checks the placements, the ends drawn away,
+and that the model saves as version 3, and `apps/studio` opens it and shows
+the version report.
 
 ## `saerskriven/two-diagrams.yaml`
 

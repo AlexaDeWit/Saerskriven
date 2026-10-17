@@ -1,6 +1,13 @@
+import type { Divergence } from '@saerskriven/formats';
 import { placedOnto, placementIn } from '@saerskriven/model/fixtures';
 import { drawnElementSchema, type Model } from '@saerskriven/model';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ReactFlowProvider } from '@xyflow/react';
 import { closeAddExisting, openAddExisting } from '../canvas/add-existing.js';
@@ -17,8 +24,9 @@ import {
 import { dispatch, modelStore } from '../store/store.js';
 import { useFileSession } from './file-commands.js';
 import { FileReports } from './file-reports.js';
-import { specBridge } from './files.fixtures.js';
-import { versionNoticeAfter } from './version-notice.js';
+import { specBridge, vendoredFile, type SpecBridge } from './files.fixtures.js';
+import { linkReport, openReport } from './session.js';
+import { versionNoticeAfter, versionNoticeAtReport } from './version-notice.js';
 
 const shared = placedOnto(
   twoDiagramModel,
@@ -129,9 +137,58 @@ describe('the version report', () => {
   });
 });
 
+const undeclared: Divergence = {
+  subject: { kind: 'model' },
+  detail: { code: 'key-undeclared', parameters: { path: 'laterKey' } },
+  reason: 'undeclared',
+};
+
+const importedAs = (model: Model) =>
+  openReport(
+    Action.Imported({
+      model,
+      name: 'model.yaml',
+      format: 'otm',
+      divergences: [],
+    }),
+  );
+
+describe('the version report at an open report', () => {
+  it('rises for an import whose model saves as version 3', () => {
+    expect(versionNoticeAtReport(importedAs(shared))).toBe(true);
+  });
+
+  it('stays down for an import whose model saves as version 2', () => {
+    expect(versionNoticeAtReport(importedAs(twoDiagramModel))).toBe(false);
+  });
+
+  it('stays down for a shared link at version 3', () => {
+    const report = linkReport(shared, [undeclared]);
+    expect(report).toBeDefined();
+    expect(versionNoticeAtReport(report)).toBe(false);
+  });
+});
+
 function Reports() {
   const session = useFileSession(specBridge());
   return <FileReports session={session} />;
+}
+
+function OpeningReports({ bridge }: { readonly bridge: SpecBridge }) {
+  const session = useFileSession(bridge);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          session.commands.open();
+        }}
+      >
+        Open
+      </button>
+      <FileReports session={session} />
+    </>
+  );
 }
 
 describe('the version report under the chrome card', () => {
@@ -155,6 +212,38 @@ describe('the version report under the chrome card', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Dismiss version report' }),
     );
+    expect(screen.queryByTestId('version-report')).toBeNull();
+  });
+
+  it('shows at the open of an OTM file whose diagrams share elements, until Dismiss', async () => {
+    render(
+      <OpeningReports
+        bridge={specBridge({ offers: vendoredFile('otm/multi-diagram.json') })}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    await waitFor(() => {
+      expect(screen.queryByTestId('version-report')).not.toBeNull();
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Dismiss version report' }),
+    );
+    expect(screen.queryByTestId('version-report')).toBeNull();
+  });
+
+  it('stays down at the open of an OTM file of one diagram', async () => {
+    render(
+      <OpeningReports
+        bridge={specBridge({ offers: vendoredFile('otm/example.json') })}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    await waitFor(() => {
+      expect(modelStore.getState().file).toMatchObject({
+        name: 'example.yaml',
+      });
+    });
     expect(screen.queryByTestId('version-report')).toBeNull();
   });
 

@@ -35,9 +35,9 @@ export type ModelMetadataChange = z.infer<typeof modelMetadataChangeSchema>;
 /**
  * One diagram: a titled canvas holding placements of the model's elements,
  * in the order they are drawn. Diagram ids must be unique across the model,
- * a placement must name an element the model holds, and an element is
- * placed at most once in the whole model. parseModel enforces all three, so
- * this schema alone accepts duplicates and dangling ids.
+ * a placement must name an element the model holds, and a diagram places an
+ * element at most once. parseModel enforces all three, so this schema alone
+ * accepts duplicates and dangling ids.
  */
 export const diagramSchema = z.object({
   id: diagramIdSchema,
@@ -63,8 +63,8 @@ export type DiagramInput = z.input<typeof diagramSchema>;
  * number above the last issued) are parseModel's refinements, so this schema
  * alone accepts duplicates, dangling ids, and a mark below a threat it
  * holds. Internal to the package: every Model value comes through
- * parseModel, which the native read calls, and parseDrawnModel for the read
- * of any other format.
+ * parseModel, which the native read and the OTM import call, and
+ * parseDrawnModel for the read of any other format.
  */
 export const modelSchema = z.object({
   metadata: modelMetadataSchema,
