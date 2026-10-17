@@ -6,6 +6,7 @@ import {
   forgedLinesIn,
   forgedPathTree,
   recordLinksTree,
+  sharedTree,
 } from './read-tools.fixtures.js';
 import { workspaceTree } from './workspace.fixtures.js';
 import { openWorkspace } from './workspace.js';
@@ -25,6 +26,7 @@ describe('what an inspection reads as', () => {
     expect(rendered('small.yaml')).toEqual([
       'file: small.yaml',
       'format: saerskriven-yaml',
+      'saves as: version 2',
       expect.stringMatching(/^revision: sha256:[0-9a-f]{64}$/u),
       'title: Small',
       'owner: Owner',
@@ -53,6 +55,34 @@ describe('what an inspection reads as', () => {
         (inspection) => inspection.result.kind,
       ),
     ).toEqual(Either.right('inspected'));
+  });
+});
+
+describe('an inspection of a model sharing elements between diagrams', () => {
+  const inspection = Either.getOrThrow(inspect(sharedTree(), {}));
+  const { result } = inspection;
+
+  it('counts the elements on more than one diagram, so the counts of the diagrams add up', () => {
+    expect(result.kind === 'inspected' ? result.totals.sharedElements : 0).toBe(
+      4,
+    );
+    expect(
+      result.kind === 'inspected'
+        ? result.diagrams.reduce((sum, { elements }) => sum + elements, 0)
+        : 0,
+    ).toBe(
+      result.kind === 'inspected'
+        ? result.totals.elements + result.totals.sharedElements
+        : -1,
+    );
+  });
+
+  it('names that count and the version the model saves as in its text', () => {
+    const lines = renderInspection(inspection);
+    expect(lines).toContain('saves as: version 3');
+    expect(lines.find((line) => line.startsWith('totals: '))).toMatch(
+      /, elements \d+ \(4 on more than one diagram\), /u,
+    );
   });
 });
 

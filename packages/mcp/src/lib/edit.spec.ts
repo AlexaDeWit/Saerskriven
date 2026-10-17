@@ -10,6 +10,7 @@ import {
 } from '@saerskriven/model';
 import {
   assumptionId,
+  committedText,
   drawnAcross,
   drawnAt,
   elementId,
@@ -41,6 +42,7 @@ import {
   type EditResult,
 } from './edit.js';
 import { getThreat } from './get-threat.js';
+import { referencingYaml } from './native-yaml.fixtures.js';
 import { describeOperationFailure } from './operation-failure.js';
 import { revisionOf } from './revision.js';
 import { searchThreats } from './search-threats.js';
@@ -253,6 +255,7 @@ describe('what an applied edit writes', () => {
     expect(Either.getOrUndefined(applied)).toEqual({
       file: modelFile,
       format: 'saerskriven-yaml',
+      savesAsVersion: 2,
       revision: written,
       applied: 1,
       culled: [],
@@ -273,7 +276,7 @@ describe('what an applied edit writes', () => {
     const lines = renderEdit({ ...applied, movedToVersion3: true });
     expect(lines).toHaveLength(textOf(Either.right(applied)).length + 1);
     expect(lines[1]).toMatch(
-      /^format version: moved from Saerskriven YAML version 2 to version 3/u,
+      /^format version: moved to Saerskriven YAML version 3/u,
     );
   });
 
@@ -284,9 +287,12 @@ describe('what an applied edit writes', () => {
       revisionIn(attempted, modelFile),
       [placingStore],
     );
-    expect(Either.getOrUndefined(applied)?.movedToVersion3).toBe(true);
+    expect(Either.getOrUndefined(applied)).toMatchObject({
+      movedToVersion3: true,
+      savesAsVersion: 3,
+    });
     expect(textOf(applied)[1]).toMatch(
-      /^format version: moved from Saerskriven YAML version 2 to version 3/u,
+      /^format version: moved to Saerskriven YAML version 3/u,
     );
     expect(
       attempted
@@ -315,7 +321,7 @@ describe('what an applied edit writes', () => {
       ],
     });
     expect(textOf(applied).slice(1, 4)).toEqual([
-      expect.stringMatching(/^format version: moved from Saerskriven YAML/u),
+      expect.stringMatching(/^format version: moved to Saerskriven YAML/u),
       'merged:',
       'element "element-db-copy" into "element-db": placement moved on "diagram-empty", placement dropped on none, threats moved none, flows moved none',
     ]);
@@ -325,6 +331,47 @@ describe('what an applied edit writes', () => {
         .toString('utf8')
         .startsWith('formatVersion: 3\n'),
     ).toBe(true);
+  });
+
+  it('moves a version 1 file to version 3, and says so', () => {
+    const attempted = attempt();
+    const file = attempted.place(
+      'version-1.yaml',
+      referencingYaml('element-1'),
+    );
+    const applied = attempted.edit(file, revisionIn(attempted, file), [
+      { op: 'add_diagram', diagram: 'second', title: 'Second' },
+      {
+        op: 'place_element',
+        element: 'element-1',
+        diagram: 'second',
+        placement: 'auto',
+      },
+    ]);
+    expect(Either.getOrUndefined(applied)?.movedToVersion3).toBe(true);
+  });
+
+  it('says nothing of a move for a file read as version 3, even one whose model version 2 held before the batch', () => {
+    const attempted = attempt();
+    const file = attempted.place(
+      'version-3.yaml',
+      committedText('saerskriven/feature-complete-v3.yaml'),
+    );
+    const applied = attempted.edit(file, revisionIn(attempted, file), [
+      {
+        op: 'place_element',
+        element: 'actor-clerk',
+        diagram: 'diagram-booking',
+        placement: 'auto',
+      },
+    ]);
+    expect(Either.getOrUndefined(applied)).toMatchObject({
+      movedToVersion3: false,
+      savesAsVersion: 3,
+    });
+    expect(
+      textOf(applied).some((line) => line.startsWith('format version:')),
+    ).toBe(false);
   });
 
   it('writes the file back as version 2 once unplace_element unshares its last shared element', () => {
@@ -341,7 +388,10 @@ describe('what an applied edit writes', () => {
         },
       ],
     );
-    expect(Either.getOrUndefined(unplaced)?.movedToVersion3).toBe(false);
+    expect(Either.getOrUndefined(unplaced)).toMatchObject({
+      movedToVersion3: false,
+      savesAsVersion: 2,
+    });
     expect(
       attempted
         .bytes(modelFile)
@@ -367,6 +417,7 @@ describe('what an applied edit writes', () => {
       'Nothing dropped.',
       `file: ${modelFile}`,
       'format: saerskriven-yaml',
+      'saves as: version 2',
       `revision: ${revisionIn(attempted, modelFile)}`,
       'divergences:',
       'No divergence recorded.',

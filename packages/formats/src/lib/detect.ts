@@ -11,6 +11,7 @@ import {
 } from './codec.js';
 import type { Divergence } from './divergence.js';
 import type { WireIssueDetail } from './import-issue-detail.js';
+import type { SaerskrivenYamlRead } from './saerskriven-yaml-read.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import { threatDragonCodec } from './threat-dragon.js';
 
@@ -23,11 +24,16 @@ export type FormatName = z.infer<typeof formatNameSchema>;
 /**
  * A read and the codec that answered it, one member per registered codec.
  * Narrowing on `format` pairs `source` with its own codec, so
- * `codec.write(model, source)` type-checks without an assertion.
+ * `codec.write(model, source)` type-checks without an assertion, and gives a
+ * native read its `statedVersion`.
  */
 export type DetectedRead =
   | Answer<'threat-dragon', typeof threatDragonWireSchema>
-  | Answer<'saerskriven-yaml', typeof saerskrivenYamlV3WireSchema>;
+  | Answer<
+      'saerskriven-yaml',
+      typeof saerskrivenYamlV3WireSchema,
+      SaerskrivenYamlRead
+    >;
 
 /**
  * A format paired with the wire document a later write merges onto, for a
@@ -67,9 +73,11 @@ export const DetectionFailure = Data.taggedEnum<DetectionFailure>();
  * document, and a wire parse that threw, so the schema's defect and its
  * reason reach the reader in place of a claim by nobody. A claimed failure
  * is returned as that codec's own, and an `ExceededReadLimit` stops
- * detection outright, since the next codec would pay the same cost. A file
- * from an unmodelled release, such as a `formatVersion` other than 1 to 3,
- * is claimed by nobody.
+ * detection outright, since the next codec would pay the same cost. The
+ * native codec claims a `LaterFormatVersion`, so a file a later release wrote
+ * says so. A Threat Dragon file of a major above 2, and a text whose
+ * `formatVersion` is missing or is not a whole number above 0, are claimed by
+ * nobody.
  */
 export function readAnyFormat(
   text: string,
@@ -162,7 +170,8 @@ type Verdict = 'bounded' | 'claimed' | 'declined';
 type Answer<
   Name extends FormatName,
   WireSchema extends z.ZodType<object>,
-> = ReadResult<WireSchema> & {
+  Read extends ReadResult<WireSchema> = ReadResult<WireSchema>,
+> = Read & {
   readonly format: Name;
   readonly codec: Codec<WireSchema>;
 };
@@ -206,9 +215,13 @@ const registry: readonly Attempt[] = [
   ),
 ];
 
-function attempt<Name extends FormatName, WireSchema extends z.ZodType<object>>(
+function attempt<
+  Name extends FormatName,
+  WireSchema extends z.ZodType<object>,
+  Read extends ReadResult<WireSchema>,
+>(
   format: Name,
-  codec: Codec<WireSchema>,
+  codec: Codec<WireSchema, Read>,
   discriminators: readonly DiscriminatorPath[],
 ) {
   return {
@@ -237,6 +250,7 @@ function verdictOn(
   return ReadFailure.$match(failure, {
     ExceededReadLimit: (): Verdict => 'bounded',
     MalformedText: (): Verdict => 'declined',
+    LaterFormatVersion: (): Verdict => 'claimed',
     InvalidWireDocument: ({ issues }): Verdict =>
       issues.some((issue) => stoppedParseCodes.has(issue.detail.code)) ||
       !issues.some((issue) =>

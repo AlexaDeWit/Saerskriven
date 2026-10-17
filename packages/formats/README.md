@@ -35,7 +35,9 @@ Two codecs are registered:
   [`@saerskriven/wire-saerskriven-yaml`](../wire-saerskriven-yaml/README.md) for
   version 1. A read takes all three, migrating each to the next in
   [`saerskriven-yaml-migration.ts`](src/lib/saerskriven-yaml-migration.ts) up to
-  version 3. A write emits version 2 while version 2 holds the model and
+  version 3, and names the version the file stated (`statedVersion`). A file
+  stating a later version is refused as `LaterFormatVersion`, naming it and the
+  versions this release reads. A write emits version 2 while version 2 holds the model and
   version 3 once it does not, the rule `writtenSaerskrivenYamlVersion`
   ([`saerskriven-yaml-version.ts`](src/lib/saerskriven-yaml-version.ts)) states,
   and `movesToSaerskrivenYamlVersion3` says whether an edit moves a file from

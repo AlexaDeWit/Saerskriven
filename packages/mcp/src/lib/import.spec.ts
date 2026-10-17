@@ -1,4 +1,5 @@
 import { readAnyFormat } from '@saerskriven/formats';
+import { testDataPath } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { copyFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -21,6 +22,9 @@ const converted = (root: string, file: string, target: string) =>
     Either.getOrThrow(openWorkspace({ root })),
     importArgumentsSchema.parse({ file, target }),
   );
+
+const linesOf = (answer: ReturnType<typeof converted>): readonly string[] =>
+  Either.match(answer, { onLeft: (lines) => lines, onRight: renderImport });
 
 describe('converting a foreign model', () => {
   it('writes the native format, names the format it read, carries what it could not take over, and reads as text lines', () => {
@@ -49,6 +53,34 @@ describe('converting a foreign model', () => {
         onRight: renderImport,
       })[0],
     ).toEqual(`converted: ${otmFile} (otm)`);
+  });
+
+  it('says when it wrote version 3, in its result and in a line', () => {
+    const tree = editableTree();
+    copyFileSync(
+      testDataPath('otm/multi-diagram.json'),
+      join(tree.root, 'multi-diagram.json'),
+    );
+    const answer = converted(tree.root, 'multi-diagram.json', 'converted.yaml');
+    expect(Either.getOrUndefined(answer)).toMatchObject({
+      movedToVersion3: true,
+      savesAsVersion: 3,
+    });
+    expect(linesOf(answer)[1]).toMatch(
+      /^format version: moved to Saerskriven YAML version 3/u,
+    );
+  });
+
+  it('says nothing of version 3 where version 2 holds the model', () => {
+    const tree = editableTree();
+    const answer = converted(tree.root, otmFile, 'converted.yaml');
+    expect(Either.getOrUndefined(answer)).toMatchObject({
+      movedToVersion3: false,
+      savesAsVersion: 2,
+    });
+    expect(
+      linesOf(answer).some((line) => line.startsWith('format version:')),
+    ).toBe(false);
   });
 
   it('reads TM-BOM as well, and says which it read', () => {

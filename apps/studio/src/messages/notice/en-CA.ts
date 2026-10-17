@@ -21,6 +21,9 @@ export const noticeEnCA = catalogue(noticeMessages)('en-CA')({
   'read-limit-detail':
     '{limit}: the bound is {bound}, the file reached {observed}.',
   'malformed-text': '{name} is not valid text of the format that claimed it.',
+  'later-format-version': '{name} is from a later release of Saerskriven.',
+  'later-format-version-detail':
+    'It is Saerskriven YAML version {stated}, and this release reads versions {first} to {last}. Open it in a later release.',
   'invalid-document':
     '{name} is not a valid document of the format that claimed it.',
   'invalid-model':

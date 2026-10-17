@@ -2,6 +2,8 @@ import {
   escapedForTerminal,
   formatNameSchema,
   quotedForTerminal,
+  writtenSaerskrivenYamlVersion,
+  writtenSaerskrivenYamlVersionSchema,
   type Divergence,
   type FormatName,
 } from '@saerskriven/formats';
@@ -36,6 +38,11 @@ export type ModelReading = {
 export const readingSchema = z.object({
   file: z.string(),
   format: formatNameSchema,
+  savesAsVersion: writtenSaerskrivenYamlVersionSchema
+    .optional()
+    .describe(
+      'The Saerskriven YAML version a save of this model writes: 2 while version 2 holds the model, and 3 once it holds what version 2 cannot. A release that reads only versions 1 and 2 refuses a version 3 file. Absent for a Threat Dragon file.',
+    ),
   revision: z.string(),
 });
 
@@ -70,8 +77,24 @@ export function renderReading(reading: Reading): readonly string[] {
   return [
     `file: ${escapedForTerminal(reading.file)}`,
     `format: ${reading.format}`,
+    ...(reading.savesAsVersion === undefined
+      ? []
+      : [`saves as: version ${String(reading.savesAsVersion)}`]),
     `revision: ${reading.revision}`,
   ];
+}
+
+/**
+ * The `savesAsVersion` a reading of `model` in `format` carries, and nothing
+ * for a Threat Dragon file.
+ */
+export function savedVersion(
+  format: FormatName,
+  model: Model,
+): Pick<Reading, 'savesAsVersion'> {
+  return format === 'saerskriven-yaml'
+    ? { savesAsVersion: writtenSaerskrivenYamlVersion(model) }
+    : {};
 }
 
 /**
@@ -88,6 +111,7 @@ export function reportedReading(reading: ModelReading): Reading {
   return {
     file: reading.file,
     format: reading.format,
+    ...savedVersion(reading.format, reading.model),
     revision: reading.revision,
   };
 }

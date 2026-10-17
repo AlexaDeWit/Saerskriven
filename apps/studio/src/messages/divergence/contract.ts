@@ -52,7 +52,7 @@ export const divergenceMessages = {
   'split-into-copies': plural('count'),
   'element-split-across-diagrams': text({ diagrams: 'text' }),
   'flow-end-drawn-away-freed': text(name),
-  'relationships-off-diagram-dropped': plural('count'),
+  'relationships-off-diagram-dropped': plural('count', { diagram: 'text' }),
   'note-name-dropped': text(),
   'scope-marking-dropped': text(),
   'accents-dropped': plural('count'),

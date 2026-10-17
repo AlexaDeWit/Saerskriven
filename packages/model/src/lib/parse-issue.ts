@@ -270,7 +270,7 @@ export function parseIssueText(detail: ParseIssueDetail): string {
     case 'related-flow-unknown':
       return `references "${detail.parameters.id}", which must name a flow of the model`;
     case 'related-off-diagram':
-      return `references "${detail.parameters.id}", which is on another diagram, and this file relates only elements of one diagram`;
+      return `references "${detail.parameters.id}", which is on another diagram, and this file relates only elements of one diagram, a limit Saerskriven YAML version 3 lifts`;
     case 'issue-flood':
       return 'the input has more problems than a parse can list';
     case 'schema-threw':

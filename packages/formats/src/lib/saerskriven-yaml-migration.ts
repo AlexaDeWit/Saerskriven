@@ -39,6 +39,16 @@ export type SaerskrivenYamlVersionedDocument = z.infer<
   typeof saerskrivenYamlVersionsSchema
 >;
 
+/** A version of Saerskriven YAML this release reads. */
+export type SaerskrivenYamlVersion =
+  SaerskrivenYamlVersionedDocument['formatVersion'];
+
+/** Every version of Saerskriven YAML this release reads, oldest first. */
+export const saerskrivenYamlVersionsRead: readonly SaerskrivenYamlVersion[] =
+  saerskrivenYamlVersionsSchema.options.map(
+    (option) => option.shape.formatVersion.value,
+  );
+
 /** A document in the current version, and what bringing it there cost. */
 export type CurrentSaerskrivenYaml = {
   readonly document: SaerskrivenYamlV3Document;

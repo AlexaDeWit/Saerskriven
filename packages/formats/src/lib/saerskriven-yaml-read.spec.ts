@@ -2,6 +2,7 @@ import { drawnAt } from '@saerskriven/model/fixtures';
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
 import { parse } from 'yaml';
+import { ReadFailure } from './codec.js';
 import { readFailureIssues } from './codec.fixtures.js';
 import {
   saerskrivenYamlText,
@@ -189,10 +190,20 @@ describe('a Saerskriven YAML read', () => {
     expect(issuePathsOf(without)).toEqual([['formatVersion']]);
   });
 
-  it('refuses a file stamped with a release it does not know at that path', () => {
+  it('refuses a file stamped above every version it reads, naming the stamp and those versions', () => {
     const later = minimalYamlV1.replace('formatVersion: 1', 'formatVersion: 4');
-    expect(failureOf(later)?._tag).toBe('InvalidWireDocument');
-    expect(issuePathsOf(later)).toEqual([['formatVersion']]);
+    expect(failureOf(later)).toEqual(
+      ReadFailure.LaterFormatVersion({ stated: 4, read: [1, 2, 3] }),
+    );
+  });
+
+  it('refuses a file stamped with no version any release writes at that path', () => {
+    const unwritten = minimalYamlV1.replace(
+      'formatVersion: 1',
+      'formatVersion: 0',
+    );
+    expect(failureOf(unwritten)?._tag).toBe('InvalidWireDocument');
+    expect(issuePathsOf(unwritten)).toEqual([['formatVersion']]);
   });
 
   it('refuses a version 2 file broken below formatVersion with a path into it', () => {

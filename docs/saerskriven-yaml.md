@@ -116,9 +116,10 @@ Sharing an element is a change an older release cannot pass over. Had it been
 an optional key of version 2, a release of version 2 would open the file and
 drop what it does not declare, and the studio's save, which does not refuse
 that ([Reading](#reading)), would write the file without it. A release that
-does not know version 3 refuses the whole file at `formatVersion` instead, so
-it cannot damage one. The accent also moves from the element to its
-placement, a rename, which the rule under `formatVersion` makes breaking.
+does not know version 3 refuses the whole file instead, so it cannot damage
+one ([what a read of a later version shows](#formatversion)). The accent also
+moves from the element to its placement, a rename, which the rule under
+`formatVersion` makes breaking.
 [The proposal on #847](https://github.com/AlexaDeWit/Saerskriven/issues/847#issuecomment-6226181435)
 sets out the design and its reasons.
 
@@ -141,20 +142,23 @@ written as version 2. No file changes version unless its content needs it, so
 a file an earlier release opens stays one it opens, and a tracked file's diff
 moves every element only at the edit that needs version 3.
 
-A release that reads only versions 1 and 2 refuses a version 3 file, so three
+A release that reads only versions 1 and 2 refuses a version 3 file, so four
 tools say when they write one:
 
 - The studio shows a report under the card at the edit that moves the model
   from version 2 to version 3, worked out from the model before and after the
   edit, and at the open of an OTM or TM-BOM file whose model saves as
   version 3.
-- `saer_edit` answers `movedToVersion3` for a batch that moves a file from
-  version 2 to version 3, worked out the same way ([writing](mcp.md#writing)).
+- `saer_edit` answers `movedToVersion3` for a batch that moves a file read as
+  version 1 or 2 to version 3 ([writing](mcp.md#writing)).
+- `saer_import` answers `movedToVersion3` where the model it converts is
+  written as version 3.
 - `saer convert` warns on standard error whenever the document it writes is
   version 3, since a conversion is not an edit and holds no earlier model.
 
-`saer_create` and `saer_import` write a new file and say nothing of its
-version, and nothing is said at a move back to version 2. A share link, the
+`saer_create` writes an empty model, which is version 2, and nothing is said
+at a move back to version 2. `saer validate` and every MCP result that names a
+Saerskriven YAML file name the version a save of the model writes. A share link, the
 studio's clipboard and its recovery snapshot carry the text or the document a
 save writes, so they follow the same rule, and the snapshot keeps no retained
 document for a Saerskriven YAML file, which its save does not read.
@@ -165,10 +169,11 @@ The version carries the compatibility contract set out below, and it is also wha
 tells a Saerskriven file apart from a JSON format without consulting the file
 extension.
 
-- **Missing**: the read fails, with the issue at path `formatVersion`.
-- **A version this release does not know**: the read fails, with the issue at
-  path `formatVersion`, and the file is refused whole rather than read in
-  part.
+- **A whole number above every version this release reads**: the file is
+  refused whole, naming the version it states and the versions this release
+  reads, and saying to upgrade, since a later release wrote it.
+- **Missing, or not a whole number above 0**: no format claims the file, and
+  the refusal names the formats tried, as for a file in no format at all.
 
 A change to the format is additive when the absence of what it adds means
 something. A new key is then optional on read, the mapping in
@@ -219,8 +224,8 @@ version to the next lives in `@saerskriven/formats`, which the layer matrix
 makes the only place allowed to know two wire packages. A write emits version
 2 or version 3, as [Which version a save writes](#which-version-a-save-writes)
 sets out. A release that reads only versions 1 and 2 refuses a version 3 file
-whole, at `formatVersion`, and a release from before version 2 refuses a
-version 2 file the same way.
+whole, and a release from before version 2 refuses a version 2 file the same
+way.
 
 Every released version reads, for good. A read dispatches on the version the
 file states: a version 3 file goes straight to the mapping, a version 2 file

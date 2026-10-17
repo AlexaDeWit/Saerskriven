@@ -39,8 +39,8 @@ export const divergenceEnCA = catalogue(divergenceMessages)('en-CA')({
     'one element, now a copy on each of {diagrams}',
   'flow-end-drawn-away-freed': 'its end at {name}, now a free end',
   'relationships-off-diagram-dropped': {
-    one: 'its link to {count} element on another diagram',
-    other: 'its links to {count} elements on other diagrams',
+    one: 'its link on {diagram} to {count} element on another diagram',
+    other: 'its links on {diagram} to {count} elements on other diagrams',
   },
   'note-name-dropped': 'its name',
   'scope-marking-dropped': 'its out-of-scope marking',

@@ -4,12 +4,14 @@ import {
   importModel,
   quotedForTerminal,
   renderReadFailure,
+  writtenSaerskrivenYamlVersion,
 } from '@saerskriven/formats';
 import { Either, pipe } from 'effect';
 import { z } from 'zod';
 import { pathReach } from './path-arguments.js';
 import {
   createdModel,
+  movedToVersion3Lines,
   readBoundPhrase,
   renderWriteReport,
   writeReportSchema,
@@ -36,6 +38,11 @@ export type ImportArguments = z.infer<typeof importArgumentsSchema>;
 /** What `saer_import` answers with. */
 export const importResultSchema = writeReportSchema.extend({
   source: z.object({ file: z.string(), format: importFormatSchema }),
+  movedToVersion3: z
+    .boolean()
+    .describe(
+      'Whether the converted model was written as Saerskriven YAML version 3, because it holds what version 2 cannot, such as an element on more than one diagram. A release that reads only versions 1 and 2 refuses the file whole.',
+    ),
 });
 
 /** What `saer_import` answers with. */
@@ -46,6 +53,7 @@ export const importDescription = [
   'Convert an Open Threat Model (OTM) or TM-BOM file into a new Saerskriven model in the native YAML format, and write it to a path that is free.',
   'Both formats are read only: Saerskriven maps them onto its own model and never writes them back, so the conversion is a one-way step and the file it produces is what later edits go to. Pass `file` as the source and `target` as the path to write. A target already holding a file is refused rather than replaced.',
   'Every TM-BOM assumption becomes an assumption that applies to the model, and a TM-BOM threat naming no affected component becomes a threat that applies to the model. An OTM threat no component or dataflow names becomes a threat on no element, which does not apply to the model. A mitigation that would link no threat (a TM-BOM control naming none, an OTM mitigation no threat occurrence names) becomes a line of the model description instead of a record.',
+  'The model is written as Saerskriven YAML version 2 while version 2 holds it, and as version 3 once it does not, such as where an OTM file places an element on more than one diagram. A release that reads only versions 1 and 2 refuses a version 3 file whole, and `movedToVersion3` in the result says when the model was written there.',
   'What the conversion could not carry over comes back in the divergences of the result: a key the wire schema does not declare, a value reduced to fit, a mitigation kept as description prose, and geometry generated for a record whose source file states none. Read them before you rely on the converted model.',
   `A converted model past ${readBoundPhrase}, is refused and not written, since the server could not open it again.`,
   'To read a Threat Dragon or Saerskriven file, call saer_inspect instead: those formats are read and written in place and need no conversion.',
@@ -79,6 +87,7 @@ export function importIntoModel(
         (report): ImportResult => ({
           ...report,
           source: { file: args.file, format: imported.format },
+          movedToVersion3: writtenSaerskrivenYamlVersion(imported.model) === 3,
         }),
       ),
     ),
@@ -89,6 +98,7 @@ export function importIntoModel(
 export function renderImport(result: ImportResult): readonly string[] {
   return [
     `converted: ${escapedForTerminal(result.source.file)} (${result.source.format})`,
+    ...movedToVersion3Lines(result.movedToVersion3),
     ...renderWriteReport(result),
   ];
 }

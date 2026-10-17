@@ -128,7 +128,10 @@ const reported: readonly DivergenceDetail[] = [
     code: 'flow-end-drawn-away-freed',
     parameters: { element: 'away-element' },
   },
-  { code: 'relationships-off-diagram-dropped', parameters: { count: 25 } },
+  {
+    code: 'relationships-off-diagram-dropped',
+    parameters: { count: 25, diagram: 'off-diagram-home' },
+  },
   {
     code: 'threat-category-unnamed',
     parameters: { methodology: 'unnamed-method', category: 'unnamed-category' },
@@ -326,6 +329,23 @@ describe('the divergences a studio report shows', () => {
 
   it.each(reported)('reads %j from the entry its own code names', (detail) => {
     expect(readsFrom(entryOf(detail), modelLine(detail))).toBe(true);
+  });
+
+  it('words a split boundary once per diagram, each line naming its diagram', () => {
+    const lines = linesOf(
+      ['High level', 'Payments'].map((diagram) =>
+        divergenceOn(
+          { kind: 'model' },
+          {
+            code: 'relationships-off-diagram-dropped',
+            parameters: { count: 1, diagram },
+          },
+        ),
+      ),
+    );
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toContain('High level');
+    expect(lines[1]).toContain('Payments');
   });
 
   it.each([
