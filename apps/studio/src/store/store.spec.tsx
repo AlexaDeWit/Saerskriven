@@ -335,7 +335,10 @@ describe('session recovery', () => {
 
     runtime.dispatch(addedProcess);
 
-    expect(stored?.document.diagrams[0].elements).toHaveLength(4);
+    const written = stored?.document;
+    expect(
+      written?.formatVersion === 2 ? written.diagrams[0].elements : undefined,
+    ).toHaveLength(4);
     expect(runtime.modelStore.getState().recoveryCurrent).toBe(true);
   });
 

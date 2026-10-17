@@ -29,6 +29,7 @@ import { allCells, threatsOf } from './threat-dragon-document.js';
 import { featureCompleteText } from './threat-dragon.fixtures.js';
 import { isRecord } from './records.js';
 import { readFailureIssues } from './codec.fixtures.js';
+import { version2DocumentOf } from './saerskriven-yaml.fixtures.js';
 
 const secured = drawnFixture(securityModelFixture);
 
@@ -302,7 +303,7 @@ describe('declared relationship validation and edits', () => {
     ['crossingFlows', 'element-api'],
     ['containedElements', 'element-perimeter'],
   ])('refuses invalid %s targets with a field path', (field, reference) => {
-    const source = writeSaerskrivenYamlDocument(secured);
+    const source = version2DocumentOf(secured);
     const index = field === 'trustBoundaryIds' ? 3 : 4;
     Object.assign(source.diagrams[0].elements[index], { [field]: [reference] });
     const result = readSaerskrivenYaml(JSON.stringify(source));

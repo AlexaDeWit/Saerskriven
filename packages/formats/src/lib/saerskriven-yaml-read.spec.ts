@@ -3,12 +3,20 @@ import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { Either } from 'effect';
 import { parse } from 'yaml';
 import { readFailureIssues } from './codec.fixtures.js';
-import { writeSaerskrivenYaml } from './saerskriven-yaml-write.js';
+import {
+  saerskrivenYamlText,
+  saerskrivenYamlV3Document,
+  writeSaerskrivenYaml,
+} from './saerskriven-yaml-write.js';
 import {
   readSaerskrivenYaml,
   readSaerskrivenYamlDocument,
 } from './saerskriven-yaml-read.js';
-import { minimalYamlV1, oneThreatYamlV1 } from './saerskriven-yaml.fixtures.js';
+import {
+  minimalYamlV1,
+  oneThreatYamlV1,
+  readOrThrow,
+} from './saerskriven-yaml.fixtures.js';
 
 const oneFlowDocument = oneThreatYamlV1.replace(
   'threats:',
@@ -182,7 +190,7 @@ describe('a Saerskriven YAML read', () => {
   });
 
   it('refuses a file stamped with a release it does not know at that path', () => {
-    const later = minimalYamlV1.replace('formatVersion: 1', 'formatVersion: 3');
+    const later = minimalYamlV1.replace('formatVersion: 1', 'formatVersion: 4');
     expect(failureOf(later)?._tag).toBe('InvalidWireDocument');
     expect(issuePathsOf(later)).toEqual([['formatVersion']]);
   });
@@ -261,6 +269,47 @@ describe('a Saerskriven YAML read', () => {
   });
 });
 
+describe('a version 3 file', () => {
+  const oneThreatInVersion3 = saerskrivenYamlText(
+    saerskrivenYamlV3Document(readOrThrow(oneThreatYamlV1).model),
+  );
+
+  it('reads as the model its version 1 text reads as, with nothing diverging', () => {
+    expect(readingOf(oneThreatInVersion3)?.model).toEqual(
+      readingOf(oneThreatYamlV1)?.model,
+    );
+    expect(readingOf(oneThreatInVersion3)?.divergences).toEqual([]);
+  });
+
+  it('refuses what the model refuses at the path the file holds it: a placement for geometry, the root element for the rest', () => {
+    const outside = oneThreatInVersion3
+      .replace('          x: 0', '          x: 1000001')
+      .replace('    name: Gateway', '    name: "Gateway\u202E"');
+    expect(failureOf(outside)?._tag).toBe('InvalidModel');
+    expect(issuePathsOf(outside)).toEqual([
+      ['elements', 0, 'name'],
+      ['diagrams', 0, 'placements', 0, 'position', 'x'],
+    ]);
+  });
+
+  it('reads an accent no release knows on a placement as no accent, reported as narrowed and naming the element', () => {
+    const reading = readingOf(
+      oneThreatInVersion3.replace(
+        '      - element: element-1\n',
+        '      - element: element-1\n        accent: s9\n',
+      ),
+    );
+    expect(drawnAt(reading?.model)[0]).not.toHaveProperty('accent');
+    expect(reading?.divergences).toEqual([
+      {
+        subject: { kind: 'element', id: 'element-1' },
+        detail: { code: 'accent-unknown', parameters: { accent: 's9' } },
+        reason: 'narrowed',
+      },
+    ]);
+  });
+});
+
 describe('a version 1 assumption that links elements', () => {
   it('reads with its threat links and without its element links', () => {
     expect(
@@ -289,11 +338,11 @@ describe('a version 1 assumption that links elements', () => {
     ]);
   });
 
-  it('hands back a version 2 source document, which holds no element links', () => {
+  it('hands back a version 3 source document, which holds no element links', () => {
     const source = readingOf(
       elementLinkedAssumption(['element-1', 'element-2']),
     )?.source;
-    expect(source?.formatVersion).toBe(2);
+    expect(source?.formatVersion).toBe(3);
     expect(source?.assumptions).toEqual([
       {
         id: 'assumption-1',

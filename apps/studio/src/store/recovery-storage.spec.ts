@@ -183,7 +183,29 @@ describe('local recovery storage', () => {
     expect(source?.document).toEqual(
       saerskrivenYamlCodec.wire.parse(source?.document),
     );
-    expect(source?.document).toMatchObject({ formatVersion: 2 });
+    expect(source?.document).toMatchObject({ formatVersion: 3 });
+  });
+
+  it('stores the document a save writes, and restores a version 3 document and retained source', () => {
+    expect(current.document.formatVersion).toBe(2);
+    const read = Either.getOrThrow(
+      saerskrivenYamlCodec.read(
+        committedText('saerskriven/feature-complete-v3.yaml'),
+      ),
+    );
+    const file = FileLifecycle.Opened({
+      name: 'model.yaml',
+      source: { format: 'saerskriven-yaml', document: read.source },
+    });
+    const restored = loadStored(
+      JSON.stringify({
+        ...recoverySnapshot(read.model, false, file),
+        document: read.source,
+      }),
+    );
+    expect(restored).toEqual(
+      Either.right(expectedRestore(read.model, false, file)),
+    );
   });
 
   it('restores a version 2 snapshot, keeping the model link of an assumption that links threats', () => {
@@ -289,14 +311,18 @@ describe('local recovery storage', () => {
         ...current,
         document: {
           ...current.document,
-          diagrams: current.document.diagrams.map((diagram) => ({
-            ...diagram,
-            elements: diagram.elements.map((element) =>
-              'position' in element
-                ? { ...element, position: { x: 1_000_001, y: 0 } }
-                : element,
-            ),
-          })),
+          diagrams: current.document.diagrams.map((diagram) =>
+            'elements' in diagram
+              ? {
+                  ...diagram,
+                  elements: diagram.elements.map((element) =>
+                    'position' in element
+                      ? { ...element, position: { x: 1_000_001, y: 0 } }
+                      : element,
+                  ),
+                }
+              : diagram,
+          ),
         },
       }),
       RecoveryProblem.Unsupported(),

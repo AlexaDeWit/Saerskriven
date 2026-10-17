@@ -16,14 +16,8 @@ type DrawnModel = z.infer<typeof drawnModelSchema>;
 
 type Origin = readonly [diagram: number, element: number];
 
-const refinedDrawnModelSchema = refusingViolations(
-  drawnModelSchema,
-  (drawn) => {
-    const origins = originsOf(drawn);
-    return collectViolations(placedFrom(drawn)).map((issue) =>
-      drawnIssue(issue, origins),
-    );
-  },
+const refinedDrawnModelSchema = refusingViolations(drawnModelSchema, (drawn) =>
+  atDrawnPaths(collectViolations(placedFrom(drawn)), drawn.diagrams),
 );
 
 /**
@@ -42,14 +36,12 @@ export function parseDrawnModel(
     Either.mapLeft(boundedParse(refinedDrawnModelSchema, input), (failure) =>
       ParseFailure.InvalidModel({ issues: schemaFailureIssues(failure) }),
     ),
-    (drawn) => {
-      const origins = originsOf(drawn);
-      return Either.mapLeft(parseModel(placedFrom(drawn)), ({ issues }) =>
+    (drawn) =>
+      Either.mapLeft(parseModel(placedFrom(drawn)), ({ issues }) =>
         ParseFailure.InvalidModel({
-          issues: issues.map((issue) => drawnIssue(issue, origins)),
+          issues: atDrawnPaths(issues, drawn.diagrams),
         }),
-      );
-    },
+      ),
   );
 }
 
@@ -66,13 +58,23 @@ function placedFrom(drawn: DrawnModel) {
   };
 }
 
-function originsOf(drawn: DrawnModel): readonly Origin[] {
-  return drawn.diagrams.flatMap((diagram, diagramIndex) =>
+/**
+ * `issues`, found in a model split from `diagrams` as {@link parseDrawnModel}
+ * splits one, at the paths `diagrams` holds them: an element of the model's
+ * root at its place in the diagram that held it, and a placement at the
+ * element it was split from.
+ */
+export function atDrawnPaths(
+  issues: readonly ParseIssue[],
+  diagrams: readonly { readonly elements: readonly unknown[] }[],
+): ParseIssue[] {
+  const origins = diagrams.flatMap((diagram, diagramIndex) =>
     diagram.elements.map((_element, elementIndex): Origin => [
       diagramIndex,
       elementIndex,
     ]),
   );
+  return issues.map((issue) => drawnIssue(issue, origins));
 }
 
 function drawnIssue(issue: ParseIssue, origins: readonly Origin[]): ParseIssue {

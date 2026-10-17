@@ -9,6 +9,7 @@ import type { ReadFailure } from './lib/codec.js';
 import { adversarialText, vendoredTexts } from './lib/corpus.fixtures.js';
 import { exceededReadLimit, readLimits } from './lib/read-limits.js';
 import {
+  featureCompleteV3Yaml,
   featureCompleteYaml,
   frozenV021Model,
   frozenV021Path,
@@ -307,12 +308,21 @@ describe.skipIf(brotliUnbuilt)('the limit', () => {
 });
 
 describe.skipIf(brotliUnbuilt)('a link read on the path a file takes', () => {
-  it('reads a link holding the file v0.2.1 wrote as the model it describes, migrated to version 2', async () => {
+  it('reads a link holding the file v0.2.1 wrote as the model it describes, migrated to version 3', async () => {
     const read = Either.getOrThrow(
       await readShareLink(holding(readFileSync(frozenV021Path)), brotliWasm()),
     );
-    expect(read.source.formatVersion).toBe(2);
+    expect(read.source.formatVersion).toBe(3);
     expect(read.model).toStrictEqual(drawnFixture(frozenV021Model));
+  });
+
+  it('reads a link holding a version 3 file as the native read reads the file', async () => {
+    expect(
+      await readShareLink(
+        holding(Buffer.from(featureCompleteV3Yaml)),
+        brotliWasm(),
+      ),
+    ).toEqual(saerskrivenYamlCodec.read(featureCompleteV3Yaml));
   });
 
   it('refuses a link holding a YAML alias expansion as the native read refuses the file', async () => {

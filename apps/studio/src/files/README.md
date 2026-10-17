@@ -8,19 +8,20 @@ person sees, and what an OTM or TM-BOM file becomes, is in
 
 ## Modules
 
-| Module                                                           | What it holds                                                                                                              |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `bridge.ts`, `browser-bridge.ts`                                 | The bridge interface, and the browser's: the File System Access API where it exists, a file input and a download otherwise |
-| `session.ts`                                                     | What the studio does with a file, as pure functions: read, write, and `formatFiles`                                        |
-| `file-commands.ts`                                               | The one session the app owns: file and export commands, reports, and the questions the menu asks                           |
-| `export-commands.ts`, `render-assets.ts`                         | The projections through `@saerskriven/render`, and the loader for the WebAssembly modules and faces                        |
-| `share-link.ts`, `share-notice.ts`                               | Share, reading a shared link when it arrives, the question it asks over unsaved work, and the share report                 |
-| `menu.tsx`, `menu-items.tsx`, `submenu.tsx`, `radio-choices.tsx` | The burger menu, the items it and the switcher share, the second level, and a one-of-several group                         |
-| `recent-store.ts`, `recent-files.ts`, `recent-menu.tsx`          | The recent list: the handles IndexedDB keeps, the list and the reopen question a session holds, and the submenu            |
-| `settings-menu.tsx`                                              | The appearance and language submenus                                                                                       |
-| `diagram-switcher.tsx`                                           | The control joined to the burger that names, switches, adds and renames diagrams                                           |
-| `file-reports.tsx`                                               | The failure notice, the crossing report, the export report and the share report, hung under the chrome card                |
-| `../system-clipboard.ts`                                         | The one write to the system clipboard, which Copy, Cut and Share go through                                                |
+| Module                                                           | What it holds                                                                                                                   |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `bridge.ts`, `browser-bridge.ts`                                 | The bridge interface, and the browser's: the File System Access API where it exists, a file input and a download otherwise      |
+| `session.ts`                                                     | What the studio does with a file, as pure functions: read, write, and `formatFiles`                                             |
+| `file-commands.ts`                                               | The one session the app owns: file and export commands, reports, and the questions the menu asks                                |
+| `export-commands.ts`, `render-assets.ts`                         | The projections through `@saerskriven/render`, and the loader for the WebAssembly modules and faces                             |
+| `share-link.ts`, `share-notice.ts`                               | Share, reading a shared link when it arrives, the question it asks over unsaved work, and the share report                      |
+| `menu.tsx`, `menu-items.tsx`, `submenu.tsx`, `radio-choices.tsx` | The burger menu, the items it and the switcher share, the second level, and a one-of-several group                              |
+| `recent-store.ts`, `recent-files.ts`, `recent-menu.tsx`          | The recent list: the handles IndexedDB keeps, the list and the reopen question a session holds, and the submenu                 |
+| `settings-menu.tsx`                                              | The appearance and language submenus                                                                                            |
+| `diagram-switcher.tsx`                                           | The control joined to the burger that names, switches, adds and renames diagrams                                                |
+| `file-reports.tsx`                                               | The failure notice, the crossing report, the export report, the share report and the version report, hung under the chrome card |
+| `version-notice.ts`                                              | When the version report shows: from the edit that moves the model to Saerskriven YAML version 3                                 |
+| `../system-clipboard.ts`                                         | The one write to the system clipboard, which Copy, Cut and Share go through                                                     |
 
 ## The bridge
 
@@ -154,8 +155,17 @@ also holds the fallback picker's input and the guard on closing the tab, which
 stands only while the model is dirty and the latest recovery write is
 unconfirmed. A notice or report cannot go inside the menu, which owns items and
 groups only, so `file-reports.tsx` hangs them under the card. The crossing
-report, the export report and the share report share one named live region
-there, and the failure notice holds its own.
+report, the export report, the share report and the version report share one
+named live region there, and the failure notice holds its own.
+
+The version report says that earlier releases can no longer open the model.
+`versionNoticeAfter` raises it at an edit or a redo that moves a model saved as
+Saerskriven YAML from version 2 to version 3, worked out from the model before
+and after the change ([which version a save
+writes](../../../../docs/saerskriven-yaml.md#which-version-a-save-writes)). It
+stands through edits that keep the model at version 3, and goes at Dismiss,
+at an edit back to version 2, and at any other change of the model on screen,
+an undo, an open or another tab's model among them.
 
 ## Exports
 

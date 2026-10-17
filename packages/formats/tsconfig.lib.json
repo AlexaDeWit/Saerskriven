@@ -20,6 +20,9 @@
       "path": "../wire-threat-dragon/tsconfig.lib.json"
     },
     {
+      "path": "../wire-saerskriven-yaml-v3/tsconfig.lib.json"
+    },
+    {
       "path": "../wire-saerskriven-yaml-v2/tsconfig.lib.json"
     },
     {

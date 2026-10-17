@@ -61,6 +61,25 @@ describe('convert', () => {
     expect(outcome.err).toContain('warning: ');
   });
 
+  it('rewrites a version 3 file version 2 holds in place as version 2, saying nothing', () => {
+    const path = fixtureFile(
+      directory,
+      'version-3/model.yaml',
+      readFileSync(
+        testDataPath('saerskriven/feature-complete-v3.yaml'),
+        'utf8',
+      ),
+    );
+    expect(convert(path, { to: 'saerskriven-yaml', out: path })).toEqual({
+      code: 0,
+      out: '',
+      err: '',
+    });
+    expect(readFileSync(path, 'utf8')).toEqual(
+      readFileSync(testDataPath('saerskriven/feature-complete.yaml'), 'utf8'),
+    );
+  });
+
   it('rewrites a file in place, leaving no temporary file beside it', () => {
     const path = fixtureFile(
       directory,
@@ -210,7 +229,7 @@ describe('convert', () => {
       readFileSync(
         testDataPath('saerskriven/two-diagrams.yaml'),
         'utf8',
-      ).replace('formatVersion: 2', 'formatVersion: 3'),
+      ).replace('formatVersion: 2', 'formatVersion: 4'),
     );
     expect(convert(path, toYaml)).toMatchObject({ code: 1, out: '' });
   });

@@ -53,8 +53,9 @@ Dragon and license it under the same Apache License 2.0. See
 | Project                             | What it holds                                                                                                                                                                                                                                                                                                                                                                        |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `packages/model`                    | The internal data structures and operations on them                                                                                                                                                                                                                                                                                                                                  |
-| `packages/wire-saerskriven-yaml`    | The Saerskriven YAML format, version 1, as a schema and nothing else. A read migrates it to version 2                                                                                                                                                                                                                                                                                |
-| `packages/wire-saerskriven-yaml-v2` | The Saerskriven YAML format, version 2, as a schema and nothing else. A write emits it                                                                                                                                                                                                                                                                                               |
+| `packages/wire-saerskriven-yaml`    | The Saerskriven YAML format, version 1, as a schema and nothing else. A read migrates it to version 3, through version 2                                                                                                                                                                                                                                                             |
+| `packages/wire-saerskriven-yaml-v2` | The Saerskriven YAML format, version 2, as a schema and nothing else. A read migrates it to version 3, and a write emits it while version 2 holds the model                                                                                                                                                                                                                          |
+| `packages/wire-saerskriven-yaml-v3` | The Saerskriven YAML format, version 3, as a schema and nothing else. A write emits it for a model version 2 cannot hold                                                                                                                                                                                                                                                             |
 | `packages/wire-threat-dragon`       | The Threat Dragon v2 format as a schema and nothing else                                                                                                                                                                                                                                                                                                                             |
 | `packages/formats`                  | File-format codecs, and the mappings between a file and the model                                                                                                                                                                                                                                                                                                                    |
 | `packages/i18n`                     | Typed messages over `Intl`: locales, plural categories, catalogue checks, locale negotiation                                                                                                                                                                                                                                                                                         |
@@ -256,14 +257,18 @@ which the executable carries as WebAssembly modules together with the fonts
 they set text in, so both formats work with no network and on a machine that
 has neither Typst nor a browser installed.
 
-`convert` writes the model in the format `--to` names, `saerskriven-yaml` at
-the current `formatVersion` or `threat-dragon`, to the path `--out` names or
+`convert` writes the model in the format `--to` names, `saerskriven-yaml` or
+`threat-dragon`, to the path `--out` names or
 to standard output with `--out -`. It reads OTM and TM-BOM files as well,
 converting them as the studio's [Open](docs/studio.md#otm-and-tm-bom) does. A
 file already in the target format is merged onto the document it was read
 from, so a Threat Dragon file keeps what the model does not describe, and a
 Saerskriven YAML file comes out in the current writer's form, which moves a
-version 1 file to version 2.
+version 1 file to version 2. Saerskriven YAML is written as version 2 while
+version 2 holds the model and as version 3 once it does not
+([which version a save writes](docs/saerskriven-yaml.md#which-version-a-save-writes)),
+and a version 3 write says so on standard error, since a release reading only
+versions 1 and 2 refuses that file.
 `--out` may name the input file itself when `--to` is the format it is already
 in: the document is written to a temporary file beside it and renamed over it
 once complete, following a symbolic link to the file it names, and a file the

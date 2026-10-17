@@ -30,6 +30,9 @@ export const reportsEnCA = catalogue(reportMessages)('en-CA')({
   'share-clipboard-refused':
     'The browser did not let Saerskriven put the link on the clipboard.',
   'dismiss-share': 'Dismiss link report',
+  'newer-version':
+    'Earlier releases of Saerskriven can no longer open this model.',
+  'dismiss-version': 'Dismiss version report',
   unplaced:
     'A flow endpoint names an element the canvas draws as no box, so its flow is not in the drawing.',
   'unplaced-source': 'The source of flow {flow} names {element}.',

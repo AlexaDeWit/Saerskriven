@@ -10,14 +10,17 @@ import {
   type Point,
   type Size,
 } from '@saerskriven/model';
+import { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
 import {
-  saerskrivenYamlV2WireSchema,
-  type SaerskrivenYamlV2Document,
-} from '@saerskriven/wire-saerskriven-yaml-v2';
+  saerskrivenYamlV3WireSchema,
+  type SaerskrivenYamlV3Document,
+} from '@saerskriven/wire-saerskriven-yaml-v3';
 import {
   elementId,
   drawnFixture,
   fixtureOf,
+  placedOnto,
+  placementIn,
   validModel,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
@@ -94,8 +97,8 @@ const backwards: Model = {
   metadata: featureComplete.metadata,
 };
 
-const otherDocument: SaerskrivenYamlV2Document = {
-  formatVersion: 2,
+const otherDocument: SaerskrivenYamlV3Document = {
+  formatVersion: 3,
   metadata: {
     title: 'Another file entirely',
     owner: '',
@@ -103,6 +106,7 @@ const otherDocument: SaerskrivenYamlV2Document = {
     contributors: [],
   },
   diagrams: [],
+  elements: [],
   threats: [],
   lastIssuedThreatNumber: 0,
   mitigations: [],
@@ -185,6 +189,51 @@ describe('the feature-complete model as a Saerskriven YAML file', () => {
         at(parseDocument(writeSaerskrivenYaml(reversed).output), 'threats'),
       ).map((threat) => at(threat, 'number')),
     ).toEqual(numbers);
+  });
+});
+
+describe('a Saerskriven YAML write of an element on a second diagram', () => {
+  const placedAgain = {
+    ...placementIn(featureComplete, 'actor-patient'),
+    position: { x: 520, y: 120 },
+  };
+  const shared = placedOnto(featureComplete, [placedAgain], 1);
+  const sharedWrite = writeSaerskrivenYaml(shared);
+  const document = parseDocument(sharedWrite.output);
+
+  it('writes version 3, each element once at the root and that one placed on both diagrams', () => {
+    expect(at(document, 'formatVersion')).toBe(3);
+    expect(
+      listOf(at(document, 'elements')).map((element) => at(element, 'id')),
+    ).toEqual(featureComplete.elements.map(({ id }) => id));
+    expect(
+      listOf(at(document, 'diagrams')).map(
+        (diagram) =>
+          listOf(at(diagram, 'placements')).filter(
+            (placement) => at(placement, 'element') === 'actor-patient',
+          ).length,
+      ),
+    ).toEqual([1, 1]);
+  });
+
+  it('writes the root keys in the order the version 3 schema declares them, and the same bytes each time', () => {
+    expect(keysOf(document)).toEqual(
+      Object.keys(saerskrivenYamlV3WireSchema.shape),
+    );
+    expect(writeSaerskrivenYaml(shared).output).toBe(sharedWrite.output);
+  });
+
+  it('writes version 2 again, to the byte, once the element is on one diagram again', () => {
+    const unshared = {
+      ...shared,
+      diagrams: shared.diagrams.map((diagram) => ({
+        ...diagram,
+        placements: diagram.placements.filter(
+          (placement) => placement !== placedAgain,
+        ),
+      })),
+    };
+    expect(writeSaerskrivenYaml(unshared).output).toBe(written.output);
   });
 });
 

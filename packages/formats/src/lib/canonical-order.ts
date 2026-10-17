@@ -3,9 +3,10 @@ import { isRecord } from './records.js';
 /**
  * A value rebuilt with its keys in the order its schema declares them, the
  * discriminator of a tagged variant first, which makes two writes of one
- * model byte-identical. The walk follows the schema's depth rather than the
- * value's, so a cycle a YAML alias built cannot drive it deeper. A key the
- * schema does not declare is dropped.
+ * model byte-identical. An untagged union orders a value by the first member
+ * whose required keys it holds. The walk follows the schema's depth rather
+ * than the value's, so a cycle a YAML alias built cannot drive it deeper. A
+ * key the schema does not declare is dropped.
  */
 export function canonicalOrder(schema: Schema, value: unknown): unknown {
   const { shape, element, options, discriminator } = schema.def;
@@ -17,8 +18,10 @@ export function canonicalOrder(schema: Schema, value: unknown): unknown {
       ? value.map((item: unknown) => canonicalOrder(element, item))
       : value;
   }
-  if (options !== undefined && discriminator !== undefined) {
-    return orderedVariant(options, discriminator, value);
+  if (options !== undefined) {
+    return discriminator === undefined
+      ? orderedMember(options, value)
+      : orderedVariant(options, discriminator, value);
   }
   return value;
 }
@@ -48,6 +51,23 @@ function orderedVariant(
   return shape === undefined
     ? value
     : orderedFields(shape, value, discriminator);
+}
+
+function orderedMember(options: readonly Schema[], value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value;
+  }
+  const shape = options
+    .map((option) => option.def.shape)
+    .find(
+      (candidate) =>
+        candidate !== undefined &&
+        Object.entries(candidate).every(
+          ([key, field]) =>
+            field.def.type === 'optional' || Object.hasOwn(value, key),
+        ),
+    );
+  return shape === undefined ? value : orderedFields(shape, value);
 }
 
 function variantShape(

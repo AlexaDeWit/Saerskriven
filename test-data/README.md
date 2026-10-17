@@ -51,6 +51,7 @@ no target writes them. They are read as follows:
 | `render/two-diagrams.snapshot.pdf.sha256` | `apps/cli`, `apps/studio-e2e`, `scripts/release/install-smoke.sh`                                                               |
 | `threat-dragon/feature-complete.json`     | `packages/formats`, `packages/mcp`, `apps/cli`, `apps/studio`, `apps/studio-e2e`                                                |
 | `saerskriven/feature-complete.yaml`       | `packages/formats`, `apps/cli`, `apps/studio`, `apps/studio-e2e`                                                                |
+| `saerskriven/feature-complete-v3.yaml`    | `packages/formats`, `packages/mcp`, `apps/cli`, `apps/studio`                                                                   |
 | `saerskriven/v0.2.1.yaml`                 | `packages/formats`, `nix/check.nix`                                                                                             |
 | `saerskriven/saerskriven-v0.3.0.yaml`     | `packages/formats`                                                                                                              |
 | `studio/recovery-v0.4.0.json`             | `apps/studio`                                                                                                                   |
@@ -90,6 +91,19 @@ form, using every field, enum value and union variant
 `@saerskriven/wire-saerskriven-yaml-v2` declares. `packages/formats` reads it
 as the model it states and writes it back to the byte, `apps/cli` validates
 it, `apps/studio` opens and saves it, and `apps/studio-e2e` opens it.
+
+## `saerskriven/feature-complete-v3.yaml`
+
+The model `saerskriven/feature-complete.yaml` states, in version 3 of
+Saerskriven YAML: each element once under `elements`, and each diagram's
+placements, using every field, enum value and union variant
+`@saerskriven/wire-saerskriven-yaml-v3` declares. It was written once through
+the version 3 projection of that model and checked by hand, and it is
+committed data under the same terms as `v0.2.1.yaml`, never regenerated.
+`packages/formats` reads it as the feature-complete model, writes that model
+back as the version 2 file to the byte, and compares its version 3 projection
+with these bytes. `packages/mcp` and `apps/cli` rewrite it as version 2, and
+`apps/studio` restores it from a recovery snapshot.
 
 ## `saerskriven/two-diagrams.yaml`
 

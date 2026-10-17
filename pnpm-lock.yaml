@@ -440,6 +440,9 @@ importers:
       '@saerskriven/wire-saerskriven-yaml-v2':
         specifier: workspace:*
         version: link:../wire-saerskriven-yaml-v2
+      '@saerskriven/wire-saerskriven-yaml-v3':
+        specifier: workspace:*
+        version: link:../wire-saerskriven-yaml-v3
       '@saerskriven/wire-threat-dragon':
         specifier: workspace:*
         version: link:../wire-threat-dragon
@@ -589,6 +592,12 @@ importers:
         version: 4.6.5
 
   packages/wire-saerskriven-yaml-v2:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
+
+  packages/wire-saerskriven-yaml-v3:
     dependencies:
       zod:
         specifier: 'catalog:'

@@ -302,6 +302,26 @@ export const drawnOnto = (
 });
 
 /**
+ * `model` with each of `added` placed last on the diagram at `index`, the
+ * first where none is named, the elements they name already held at the
+ * root. No parse runs, as for {@link redrawn}, so a spec can place an element
+ * on a second diagram, or draw a flow end away from its element, before the
+ * parse accepts either.
+ */
+export const placedOnto = (
+  model: Model,
+  added: readonly Placement[],
+  index = 0,
+): Model => ({
+  ...model,
+  diagrams: model.diagrams.map((diagram, at) =>
+    at === index
+      ? { ...diagram, placements: [...diagram.placements, ...added] }
+      : diagram,
+  ),
+});
+
+/**
  * The placement of the element under the id on the first diagram placing
  * it, the object the model holds, throwing where no diagram places it.
  */

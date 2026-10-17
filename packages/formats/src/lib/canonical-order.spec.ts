@@ -6,6 +6,11 @@ const tagged = z.discriminatedUnion('kind', [
   z.object({ id: z.string(), kind: z.literal('branch'), of: z.string() }),
 ]);
 
+const untagged = z.union([
+  z.object({ id: z.string(), at: z.number(), size: z.number() }),
+  z.object({ id: z.string(), note: z.string().optional(), route: z.string() }),
+]);
+
 const untaggedOption = {
   def: {
     type: 'union',
@@ -70,6 +75,16 @@ describe('canonicalOrder', () => {
     expect(ordered(tagged, { of: 'y', id: 'x', kind: 'branch' })).toBe(
       '{"kind":"branch","id":"x","of":"y"}',
     );
+  });
+
+  it('orders an untagged member by the first variant whose required keys it holds', () => {
+    expect(ordered(untagged, { route: 'r', id: 'x' })).toBe(
+      '{"id":"x","route":"r"}',
+    );
+    expect(ordered(untagged, { size: 2, id: 'x', at: 1 })).toBe(
+      '{"id":"x","at":1,"size":2}',
+    );
+    expect(ordered(untagged, { size: 2, id: 'x' })).toBe('{"size":2,"id":"x"}');
   });
 
   it('returns a value no variant claims as it stands', () => {

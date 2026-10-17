@@ -24,11 +24,18 @@ Two codecs are registered:
   its numbering rules are
   [`threat-dragon-write.ts`](src/lib/threat-dragon-write.ts).
 - `saerskrivenYamlCodec`, the native format, declared by
+  [`@saerskriven/wire-saerskriven-yaml-v3`](../wire-saerskriven-yaml-v3/README.md)
+  for version 3,
   [`@saerskriven/wire-saerskriven-yaml-v2`](../wire-saerskriven-yaml-v2/README.md)
   for version 2 and
   [`@saerskriven/wire-saerskriven-yaml`](../wire-saerskriven-yaml/README.md) for
-  version 1. A write emits version 2, and a read takes both, migrating version 1
-  in [`saerskriven-yaml-migration.ts`](src/lib/saerskriven-yaml-migration.ts).
+  version 1. A read takes all three, migrating each to the next in
+  [`saerskriven-yaml-migration.ts`](src/lib/saerskriven-yaml-migration.ts) up to
+  version 3. A write emits version 2 while version 2 holds the model and
+  version 3 once it does not, the rule `writtenSaerskrivenYamlVersion`
+  ([`saerskriven-yaml-version.ts`](src/lib/saerskriven-yaml-version.ts)) states,
+  and `movesToSaerskrivenYamlVersion3` says whether an edit moves a file from
+  version 2 to version 3.
   [`docs/saerskriven-yaml.md`](../../docs/saerskriven-yaml.md) describes the
   file.
 
@@ -153,6 +160,10 @@ beside it:
 - Saerskriven YAML version 2:
   [`test-data/saerskriven/feature-complete.yaml`](../../test-data/saerskriven/feature-complete.yaml),
   which states its own model.
+- Saerskriven YAML version 3:
+  [`test-data/saerskriven/feature-complete-v3.yaml`](../../test-data/saerskriven/feature-complete-v3.yaml),
+  the same model in version 3. It is frozen: a later change to the writer
+  never rewrites it.
 - OTM and TM-BOM: `otmFeatureComplete`, `tmbomFeatureComplete` and
   `tmbomScopeVariants` in [`import.fixtures.ts`](src/lib/import.fixtures.ts).
   A TM-BOM scope holds one value of each of its enums, so the variants carry

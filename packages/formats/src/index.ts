@@ -69,6 +69,14 @@ export {
   type SaerskrivenYamlVersionedDocument,
 } from './lib/saerskriven-yaml-migration.js';
 export { readSaerskrivenYamlDocument } from './lib/saerskriven-yaml-read.js';
-export { writeSaerskrivenYamlDocument } from './lib/saerskriven-yaml-write.js';
+export {
+  movesToSaerskrivenYamlVersion3,
+  writtenSaerskrivenYamlVersion,
+  type WrittenSaerskrivenYamlVersion,
+} from './lib/saerskriven-yaml-version.js';
+export {
+  writeSaerskrivenYamlDocument,
+  type WrittenSaerskrivenYamlDocument,
+} from './lib/saerskriven-yaml-write.js';
 export { saerskrivenYamlCodec } from './lib/saerskriven-yaml.js';
 export { threatDragonCodec } from './lib/threat-dragon.js';

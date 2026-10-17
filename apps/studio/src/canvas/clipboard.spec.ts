@@ -102,6 +102,37 @@ threats:
 lastIssuedThreatNumber: 1
 `;
 
+const version3Selection = `${marker}formatVersion: 3
+metadata:
+  title: Selection
+  owner: ""
+  description: ""
+  contributors: []
+assumptions: []
+diagrams:
+  - id: diagram-copied
+    title: Copied
+    placements:
+      - element: actor-copied
+        accent: l3
+        position:
+          x: 0
+          y: 0
+        size:
+          width: 120
+          height: 60
+elements:
+  - kind: actor
+    id: actor-copied
+    name: Caller
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
+mitigations: []
+threats: []
+lastIssuedThreatNumber: 0
+`;
+
 const recordedModelWide = parsedFixture({
   ...recordedModel,
   assumptions: recordedModel.assumptions.map((assumption) => ({
@@ -406,6 +437,19 @@ describe('pasteSelected', () => {
     expect(after.assumptions.at(-1)).toMatchObject({
       threats: [pasted?.id],
       appliesToModel: false,
+    });
+  });
+
+  it('pastes a version 3 selection, its accent on the element it places', async () => {
+    const clipboard = recordingClipboard();
+    clipboard.readText.mockResolvedValueOnce(version3Selection);
+    await pasteSelected();
+    const after = drawnAt(modelStore.getState().present);
+    expect(after).toHaveLength(canvasElements + 1);
+    expect(after.at(-1)).toMatchObject({
+      kind: 'actor',
+      name: 'Caller',
+      accent: 'l3',
     });
   });
 

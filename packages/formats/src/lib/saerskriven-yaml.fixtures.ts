@@ -4,6 +4,7 @@ import {
   type Model,
 } from '@saerskriven/model';
 import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
+import type { SaerskrivenYamlV2Document } from '@saerskriven/wire-saerskriven-yaml-v2';
 import {
   committedText,
   repositoryRoot,
@@ -13,6 +14,7 @@ import { Either } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
+import { writeSaerskrivenYamlDocument } from './saerskriven-yaml-write.js';
 
 const featureCompletePath = testDataPath('saerskriven/feature-complete.yaml');
 
@@ -29,6 +31,29 @@ const featureCompletePath = testDataPath('saerskriven/feature-complete.yaml');
 export const featureCompleteYaml: string = committedText(
   'saerskriven/feature-complete.yaml',
 );
+
+/**
+ * `test-data/saerskriven/feature-complete-v3.yaml`, the model
+ * {@link featureCompleteYaml} states, in version 3: each element once at the
+ * root and each diagram's placements. It was written once through the
+ * version 3 projection and checked by hand, and is frozen, so a later writer
+ * never rewrites it.
+ */
+export const featureCompleteV3Yaml: string = committedText(
+  'saerskriven/feature-complete-v3.yaml',
+);
+
+/**
+ * The version 2 document a save of `model` writes, throwing where the save
+ * writes version 3.
+ */
+export const version2DocumentOf = (model: Model): SaerskrivenYamlV2Document => {
+  const document = writeSaerskrivenYamlDocument(model);
+  if (document.formatVersion !== 2) {
+    throw new Error('The model saves as version 3.');
+  }
+  return document;
+};
 
 /**
  * The model {@link featureCompleteYaml} states, written out by hand: two
