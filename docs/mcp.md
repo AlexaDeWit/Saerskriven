@@ -434,11 +434,13 @@ any other kind. `set_element_properties`, `set_element_details`, `set_accent`,
 diagram.
 
 `remove_element` takes the element out of every diagram it is on, out of every
-declared boundary relationship and off every threat. The flows attached to it
-stay, each end that was attached to it freed at its anchor: the centre of an
-actor, process, store, text note or box boundary, the first point of a curve
-boundary, or, for a removed flow, its first bend, else its first free end,
-else the canvas origin.
+declared boundary relationship and off every threat, and culls the threats it
+was the last attachment of, so use `unplace_element` to take an element off one
+diagram and keep it on the others. The flows attached to it stay, each end
+that was attached to it freed at its anchor: the centre of an actor, process,
+store, text note or box boundary, the first point of a curve boundary, or, for
+a removed flow, its first bend, else its first free end, else the canvas
+origin.
 
 #### Shared elements
 
@@ -561,9 +563,7 @@ that is not a flow.
 diagrams the model holds, and `rename_diagram` changes a diagram's title. Both
 refuse a title with nothing in it but white space. `remove_diagram` removes
 only a diagram with no elements left, so empty it first, in the same batch or
-an earlier one. `remove_element` deletes an element from every diagram it is
-on and culls the threats it was the last attachment of, so take an element
-that is also on another diagram off this one with `unplace_element` instead.
+an earlier one.
 
 #### Threats
 
