@@ -47,7 +47,7 @@ fi
 fixture=test-data/saerskriven/two-diagrams.yaml
 goldens=test-data/render
 summary="$("$destination" validate "$fixture" 2>"$scratch/stderr")"
-[ "$summary" = 'saerskriven-yaml: 2 diagrams, 25 elements, 10 threats' ] || {
+[ "$summary" = 'saerskriven-yaml (saves as version 2): 2 diagrams, 25 elements, 10 threats' ] || {
   echo "saer validate printed: $summary" >&2
   exit 1
 }
