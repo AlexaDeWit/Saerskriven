@@ -54,6 +54,10 @@ const readFailures: ByTag<ReadFailure> = {
     observed: 40,
   }),
   MalformedText: ReadFailure.MalformedText({ message: 'unexpected token' }),
+  LaterFormatVersion: ReadFailure.LaterFormatVersion({
+    stated: 4,
+    read: [1, 2, 3],
+  }),
   InvalidWireDocument: ReadFailure.InvalidWireDocument({ issues: [issue] }),
   InvalidModel: ReadFailure.InvalidModel({ issues: [issue] }),
 };
@@ -435,6 +439,30 @@ describe.each(locales)('a failure a %s reader is shown', (locale) => {
   afterEach(() => {
     chooseLanguage('en-CA');
     globalThis.localStorage.clear();
+  });
+
+  it('names the version a later release wrote and the versions this one reads, from the catalogue', () => {
+    const said = activeTranslator().t;
+    const described = describeFailure(
+      said,
+      StudioFailure.Read({
+        name: 'later.yaml',
+        failure: readFailures.LaterFormatVersion,
+      }),
+    );
+
+    expect(described).toEqual({
+      headline: said('notice.later-format-version', { name: 'later.yaml' }),
+      details: [
+        said('notice.later-format-version-detail', {
+          stated: 4,
+          first: 1,
+          last: 3,
+        }),
+      ],
+    });
+    expect(described.headline).toContain('later.yaml');
+    expect(described.details[0]).toMatch(/4.*1.*3/u);
   });
 
   it('keeps the file name and the schema path, and words the issue from the catalogue', () => {

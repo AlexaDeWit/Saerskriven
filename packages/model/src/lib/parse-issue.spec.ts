@@ -275,6 +275,17 @@ describe('the English wording of a parse issue', () => {
       expect(parseIssueText(detail)).toBe(text);
     },
   );
+
+  it('says of a relationship off its diagram that Saerskriven YAML version 3 lifts the limit', () => {
+    expect(
+      parseIssueText({
+        code: 'related-off-diagram',
+        parameters: { id: 'element-elsewhere' },
+      }),
+    ).toBe(
+      'references "element-elsewhere", which is on another diagram, and this file relates only elements of one diagram, a limit Saerskriven YAML version 3 lifts',
+    );
+  });
 });
 
 const callerDetailSchema = z.union([

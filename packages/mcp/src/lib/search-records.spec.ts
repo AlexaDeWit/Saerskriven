@@ -135,6 +135,7 @@ describe('the text of a record search', () => {
     expect(renderRecordSearch(found)).toEqual([
       'file: model.yaml',
       'format: saerskriven-yaml',
+      'saves as: version 2',
       `revision: ${found.revision}`,
       'matches: 6',
       'records:',
@@ -155,7 +156,7 @@ describe('the text of a record search', () => {
 
   it('adds the prose of each mitigation beneath its labels where detail is asked for', () => {
     const found = search({ response_format: 'detailed' });
-    expect(renderRecordSearch(found).slice(3)).toEqual([
+    expect(renderRecordSearch(found).slice(4)).toEqual([
       'matches: 6',
       'records:',
       '  mitigation "mitigation-tls" (proposed): TLS on the order flow',

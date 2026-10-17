@@ -1,5 +1,5 @@
 import { pastBoundYaml, unclaimedYaml } from '@saerskriven/mcp/fixtures';
-import { testDataPath } from '@saerskriven/model/fixtures';
+import { committedText, testDataPath } from '@saerskriven/model/fixtures';
 import {
   brokenDocumentYaml,
   danglingReferenceYaml,
@@ -34,7 +34,17 @@ describe('validate', () => {
       read: () => validate(testDataPath('saerskriven/feature-complete.yaml')),
       expected: {
         code: 0,
-        out: 'saerskriven-yaml: 2 diagrams, 12 elements, 31 threats\n',
+        out: 'saerskriven-yaml (saves as version 2): 2 diagrams, 12 elements, 31 threats\n',
+        err: '',
+      },
+    },
+    {
+      named:
+        'reads a native file sharing elements and names the version it saves as',
+      read: () => validate(testDataPath('saerskriven/shared-elements-v3.yaml')),
+      expected: {
+        code: 0,
+        out: 'saerskriven-yaml (saves as version 3): 2 diagrams, 11 elements, 2 threats\n',
         err: '',
       },
     },
@@ -43,7 +53,7 @@ describe('validate', () => {
       read: () => validated('undeclared.yaml', undeclaredKeyYaml),
       expected: {
         code: 0,
-        out: 'saerskriven-yaml: 0 diagrams, 0 elements, 1 threat\n',
+        out: 'saerskriven-yaml (saves as version 2): 0 diagrams, 0 elements, 1 threat\n',
         err:
           'warning: the file and the model do not correspond exactly.\n' +
           'model: the key nonsense (this version of saer cannot keep it, and rewriting the file refuses to drop it unless told to)\n',
@@ -57,7 +67,7 @@ describe('validate', () => {
     const result = validated('linked.yaml', elementLinkedAssumptionYaml);
     expect(result).toMatchObject({
       code: 0,
-      out: 'saerskriven-yaml: 1 diagram, 1 element, 1 threat\n',
+      out: 'saerskriven-yaml (saves as version 2): 1 diagram, 1 element, 1 threat\n',
     });
     expect(result.err).toContain('\nassumption "assumption-1": ');
   });
@@ -99,6 +109,20 @@ describe('validate', () => {
       err:
         'The file is past a read bound, so nothing read it.\n' +
         'maxNestingDepth: the bound is 64, the file reached 65.\n',
+    });
+  });
+
+  it('refuses a native file a later release wrote, naming its version, the versions read and the upgrade', () => {
+    const later = committedText('saerskriven/shared-elements-v3.yaml').replace(
+      /^formatVersion: 3$/mu,
+      'formatVersion: 4',
+    );
+    expect(validated('later.yaml', later)).toEqual({
+      code: 1,
+      out: '',
+      err:
+        'The file is Saerskriven YAML version 4, and this release of saer reads versions 1 to 3.\n' +
+        'Upgrade saer to a release that reads it.\n',
     });
   });
 

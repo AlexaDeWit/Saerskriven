@@ -72,6 +72,7 @@ export { readSaerskrivenYamlDocument } from './lib/saerskriven-yaml-read.js';
 export {
   movesToSaerskrivenYamlVersion3,
   writtenSaerskrivenYamlVersion,
+  writtenSaerskrivenYamlVersionSchema,
   type WrittenSaerskrivenYamlVersion,
 } from './lib/saerskriven-yaml-version.js';
 export {

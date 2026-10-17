@@ -17,6 +17,7 @@ import { hasDiverged, type Divergence } from './divergence.js';
 import { equivalent } from './equivalence.js';
 import { isRecord } from './records.js';
 import {
+  featureCompleteV3Yaml,
   featureCompleteYaml,
   frozenV030Path,
   minimalYamlV1,
@@ -290,8 +291,41 @@ describe('a file from a release neither codec models', () => {
     );
   });
 
-  it('claims no Saerskriven file stamped other than 1, 2 or 3', () => {
+  it('names the version each native file states', () => {
+    expect(
+      [minimalYamlV1, nativeMinimalVersion2, featureCompleteV3Yaml].map(
+        (text) => {
+          const read = opened(text);
+          return read.format === 'saerskriven-yaml'
+            ? read.statedVersion
+            : read.format;
+        },
+      ),
+    ).toEqual([1, 2, 3]);
+  });
+
+  it('refuses a Saerskriven file stamped above 3 as one a later release wrote', () => {
     expect(outcome(laterFormatVersion)).toEqual(
+      ReadFailure.LaterFormatVersion({ stated: 4, read: [1, 2, 3] }),
+    );
+  });
+
+  it.each([
+    { stamp: 'missing', text: minimalYamlV1.replace('formatVersion: 1\n', '') },
+    {
+      stamp: '0',
+      text: minimalYamlV1.replace('formatVersion: 1', 'formatVersion: 0'),
+    },
+    {
+      stamp: '2.5',
+      text: minimalYamlV1.replace('formatVersion: 1', 'formatVersion: 2.5'),
+    },
+    {
+      stamp: 'the text "4"',
+      text: minimalYamlV1.replace('formatVersion: 1', 'formatVersion: "4"'),
+    },
+  ])('claims no text whose formatVersion is $stamp', ({ text }) => {
+    expect(outcome(text)).toEqual(
       DetectionFailure.NoFormatClaimed({ tried: formatNameSchema.options }),
     );
   });

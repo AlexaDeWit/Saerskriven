@@ -89,7 +89,7 @@ export const issuesFrCA = catalogue(issueMessages)('fr-CA')({
     '« {id} » ne nomme aucune frontière de confiance du modèle',
   'related-flow-unknown': '« {id} » ne nomme aucun flux du modèle',
   'related-off-diagram':
-    '« {id} » se trouve sur un autre diagramme, et ce fichier ne relie que les éléments d’un même diagramme',
+    '« {id} » se trouve sur un autre diagramme, et ce fichier ne relie que les éléments d’un même diagramme, une limite que Saerskriven YAML version 3 lève',
   'issue-flood':
     'le fichier porte plus de problèmes qu’une analyse ne peut en énumérer',
   'schema-threw':

@@ -356,6 +356,7 @@ function readProblem(failure: ReadFailure): RecoveryProblem {
     ExceededReadLimit: ({ limit, bound, observed }) =>
       RecoveryProblem.PastBound({ limit, bound, observed }),
     MalformedText: ({ message }) => RecoveryProblem.Thrown({ reason: message }),
+    LaterFormatVersion: () => RecoveryProblem.Unsupported(),
     InvalidWireDocument: () => RecoveryProblem.Unsupported(),
     InvalidModel: () => RecoveryProblem.Unsupported(),
   });

@@ -27,6 +27,17 @@ describe('why a read produced nothing', () => {
     ]);
   });
 
+  it('names the version a later release wrote, the versions read, and the upgrade', () => {
+    expect(
+      renderReadFailure(
+        ReadFailure.LaterFormatVersion({ stated: 4, read: [1, 2, 3] }),
+      ),
+    ).toEqual([
+      'The file is Saerskriven YAML version 4, and this release of saer reads versions 1 to 3.',
+      'Upgrade saer to a release that reads it.',
+    ]);
+  });
+
   it('points into the document the wire schema refused', () => {
     expect(
       renderReadFailure(

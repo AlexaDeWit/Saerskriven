@@ -88,19 +88,25 @@ describe('writing an element placed on several diagrams to Threat Dragon', () =>
     });
   });
 
-  it('lists in a boundary only the cells of its own diagram, reporting the rest', () => {
+  it('lists in a boundary only the cells of its own diagram, reporting the rest once per diagram, naming it', () => {
     expect(cellNamed(cellsOn(output, 0), 'payments-zone')?.data).toMatchObject({
       containedElements: ['payments-api'],
       crossingFlows: ['card-details'],
     });
-    expect(divergences).toContainEqual({
-      subject: { kind: 'element', id: 'payments-zone' },
-      detail: {
-        code: 'relationships-off-diagram-dropped',
-        parameters: { count: 1 },
-      },
-      reason: 'unrepresentable',
-    });
+    expect(
+      divergences.filter(
+        ({ detail }) => detail.code === 'relationships-off-diagram-dropped',
+      ),
+    ).toEqual(
+      ['High level', 'Payments'].map((diagram) => ({
+        subject: { kind: 'element', id: 'payments-zone' },
+        detail: {
+          code: 'relationships-off-diagram-dropped',
+          parameters: { count: 1, diagram },
+        },
+        reason: 'unrepresentable',
+      })),
+    );
   });
 
   it('reads back as one element per cell, the threats on each', () => {

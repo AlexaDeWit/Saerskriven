@@ -236,6 +236,20 @@ describe('parseModel', () => {
         parameters: { id: 'element-remote' },
       },
     },
+    {
+      named: 'a flow end attached to an element the model does not hold',
+      mutate: (draft) => {
+        const flow = draft.elements[3];
+        if (flow.kind === 'flow') {
+          flow.source = { kind: 'attached', element: 'element-ghost' };
+        }
+      },
+      path: ['elements', 3, 'source', 'element'],
+      detail: {
+        code: 'unknown-element-reference',
+        parameters: { id: 'element-ghost' },
+      },
+    },
   ])('rejects $named, and nothing else', ({ mutate, path, detail }) => {
     expect(issuesOf(seededPlacedModel(mutate))).toEqual([{ path, detail }]);
   });
@@ -605,6 +619,21 @@ describe('parseDrawnModel', () => {
       detail: {
         code: 'flow-endpoint-foreign',
         parameters: { id: 'element-remote' },
+      },
+    },
+    {
+      named: 'a flow anchored to an element the model does not hold',
+      mutate: (draft) => {
+        for (const element of draft.diagrams[0].elements) {
+          if (element.kind === 'flow') {
+            element.source = { kind: 'attached', element: 'element-ghost' };
+          }
+        }
+      },
+      path: ['diagrams', 0, 'elements', 3, 'source', 'element'],
+      detail: {
+        code: 'flow-endpoint-foreign',
+        parameters: { id: 'element-ghost' },
       },
     },
     {

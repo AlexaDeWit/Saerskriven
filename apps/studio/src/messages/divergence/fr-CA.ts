@@ -45,9 +45,9 @@ export const divergenceFrCA = catalogue(divergenceMessages)('fr-CA')({
   'flow-end-drawn-away-freed':
     'son extrémité sur {name}, désormais une extrémité libre',
   'relationships-off-diagram-dropped': {
-    one: 'son lien vers {count} élément d’un autre diagramme',
-    many: 'ses liens vers {count} d’éléments d’autres diagrammes',
-    other: 'ses liens vers {count} éléments d’autres diagrammes',
+    one: 'son lien sur {diagram} vers {count} élément d’un autre diagramme',
+    many: 'ses liens sur {diagram} vers {count} d’éléments d’autres diagrammes',
+    other: 'ses liens sur {diagram} vers {count} éléments d’autres diagrammes',
   },
   'note-name-dropped': 'son nom',
   'scope-marking-dropped': 'son marquage hors périmètre',

@@ -22,6 +22,10 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
   'read-limit': '{name} överskrider en läsgräns, så inget läste den.',
   'read-limit-detail': '{limit}: gränsen är {bound}, filen nådde {observed}.',
   'malformed-text': '{name} är inte giltig text i formatet som kände igen den.',
+  'later-format-version':
+    '{name} kommer från en senare version av Saerskriven.',
+  'later-format-version-detail':
+    'Den är Saerskriven YAML version {stated}, och den här versionen av Saerskriven läser formatets versioner {first} till {last}. Öppna den i en senare version.',
   'invalid-document':
     '{name} är inte ett giltigt dokument i formatet som kände igen den.',
   'invalid-model':
