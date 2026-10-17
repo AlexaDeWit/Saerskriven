@@ -1,7 +1,8 @@
-import { OperationFailure } from '@saerskriven/model';
+import { OperationFailure, type Model } from '@saerskriven/model';
 import {
   assumptionId,
   diagramId,
+  drawnAt,
   elementId,
   mitigationId,
   drawnFixture,
@@ -10,7 +11,13 @@ import {
   validModelFixture,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { applyEdits, modelEditSchema, renderRefusedEdit } from './edits.js';
+import type { EditInput } from './edit.fixtures.js';
+import {
+  applyEdits,
+  modelEditSchema,
+  renderRefusedEdit,
+  type AppliedBatch,
+} from './edits.js';
 
 type ByTag<Union extends { readonly _tag: string }> = {
   readonly [Tag in Union['_tag']]: Extract<Union, { readonly _tag: Tag }>;
@@ -170,7 +177,9 @@ describe('what a refused edit reads as', () => {
   it('words a refused flow end by the whole rule, which every such refusal breaks', () => {
     const refusal = refusalOf(failures.InvalidFlowEndpoint);
 
-    expect(refusal).toContain('an actor, process or store of its own diagram');
+    expect(refusal).toContain(
+      'an actor, process or store of the diagram the edit draws it on',
+    );
     expect(refusal).toContain('never to the element its other end');
   });
 
@@ -191,43 +200,378 @@ describe('what a refused edit reads as', () => {
   });
 });
 
-describe('an edit of an element drawn on more than one diagram', () => {
-  const shared = sharedModel;
+const batchOn = (
+  model: Model,
+  edits: readonly EditInput[],
+): Either.Either<AppliedBatch, OperationFailure> =>
+  Either.mapLeft(
+    applyEdits(
+      model,
+      edits.map((edit) => modelEditSchema.parse(edit)),
+    ),
+    ({ failure }) => failure,
+  );
 
-  it.each([
+const modelAfter = (model: Model, edits: readonly EditInput[]): Model =>
+  Either.getOrThrow(batchOn(model, edits)).model;
+
+const drawnOn = (model: Model, diagram: number, id: string) =>
+  drawnAt(model, diagram).find((element) => element.id === id);
+
+const overview = 0;
+
+const payments = 1;
+
+describe('an edit of an element drawn on more than one diagram', () => {
+  it.each<EditInput>([
     { op: 'move_element', element: 'payments-api', offset: { x: 10, y: 0 } },
+    {
+      op: 'resize_element',
+      element: 'payments-api',
+      size: { width: 200, height: 80 },
+    },
+    {
+      op: 'set_boundary_shape',
+      element: 'payments-zone',
+      shape: {
+        kind: 'curve',
+        waypoints: [
+          { x: 0, y: 0 },
+          { x: 100, y: 0 },
+        ],
+      },
+    },
     { op: 'set_accent', elements: ['payments-api'], accent: 'l2' },
     {
       op: 'set_flow_waypoints',
       element: 'charge',
       waypoints: [{ x: 600, y: 150 }],
     },
-  ] as const)(
-    'is refused where it changes geometry or an accent, naming the diagrams ($op)',
+    {
+      op: 'set_flow_end_position',
+      element: 'charge',
+      side: 'source',
+      position: { x: 300, y: 300 },
+    },
+    {
+      op: 'reconnect_flow',
+      element: 'charge',
+      side: 'source',
+      endpoint: 'payments-api',
+      anchor: 'left',
+    },
+  ])(
+    'is refused without a diagram where it changes geometry or an accent, naming the diagrams ($op)',
     (edit) => {
-      const refused = applyEdits(shared, [modelEditSchema.parse(edit)]);
-      const failure = Either.isLeft(refused) ? refused.left.failure : undefined;
-      expect(failure).toMatchObject({
-        _tag: 'ElementOnSeveralDiagrams',
-        diagramIds: ['overview', 'payments'],
+      expect(batchOn(sharedModel, [edit])).toMatchObject({
+        left: {
+          _tag: 'ElementOnSeveralDiagrams',
+          diagramIds: ['overview', 'payments'],
+        },
       });
     },
   );
 
-  it('applies where it changes the element on every diagram', () => {
-    const applied = applyEdits(shared, [
-      modelEditSchema.parse({
-        op: 'rename_element',
+  it('moves, resizes and accents it on the diagram an edit names alone', () => {
+    const edited = modelAfter(sharedModel, [
+      {
+        op: 'move_element',
         element: 'payments-api',
-        name: 'Gateway',
-      }),
+        diagram: 'payments',
+        offset: { x: 10, y: 20 },
+      },
+      {
+        op: 'resize_element',
+        element: 'payments-api',
+        diagram: 'payments',
+        size: { width: 200, height: 80 },
+      },
+      {
+        op: 'set_accent',
+        elements: ['payments-api', 'card-vault'],
+        diagram: 'payments',
+        accent: 'l2',
+      },
+    ]);
+    expect(drawnOn(edited, payments, 'payments-api')).toMatchObject({
+      position: { x: 250, y: 120 },
+      size: { width: 200, height: 80 },
+      accent: 'l2',
+    });
+    expect(drawnOn(edited, payments, 'card-vault')?.accent).toBe('l2');
+    expect(drawnOn(edited, overview, 'payments-api')).toEqual(
+      drawnOn(sharedModel, overview, 'payments-api'),
+    );
+  });
+
+  it('routes and reshapes it on the diagram an edit names alone', () => {
+    const edited = modelAfter(sharedModel, [
+      {
+        op: 'set_flow_waypoints',
+        element: 'charge',
+        diagram: 'overview',
+        waypoints: [{ x: 600, y: 150 }],
+      },
+      {
+        op: 'set_flow_end_position',
+        element: 'charge',
+        diagram: 'overview',
+        side: 'target',
+        position: { x: 700, y: 220 },
+      },
+      {
+        op: 'set_boundary_shape',
+        element: 'payments-zone',
+        diagram: 'payments',
+        shape: {
+          kind: 'curve',
+          waypoints: [
+            { x: 0, y: 0 },
+            { x: 100, y: 0 },
+          ],
+        },
+      },
+    ]);
+    expect(drawnOn(edited, overview, 'charge')).toMatchObject({
+      waypoints: [{ x: 600, y: 150 }],
+      target: { kind: 'away', position: { x: 700, y: 220 } },
+    });
+    expect(drawnOn(edited, payments, 'charge')).toEqual(
+      drawnOn(sharedModel, payments, 'charge'),
+    );
+    expect(drawnOn(edited, payments, 'payments-zone')).toMatchObject({
+      shape: { kind: 'curve' },
+    });
+    expect(drawnOn(edited, overview, 'payments-zone')).toEqual(
+      drawnOn(sharedModel, overview, 'payments-zone'),
+    );
+  });
+
+  it('pins a reconnected end on the diagram it names and draws it away where its element is not', () => {
+    const edited = modelAfter(sharedModel, [
+      {
+        op: 'reconnect_flow',
+        element: 'charge',
+        diagram: 'payments',
+        side: 'source',
+        endpoint: 'fraud-check',
+        anchor: 'bottom',
+      },
+    ]);
+    expect(drawnOn(edited, payments, 'charge')).toMatchObject({
+      source: { kind: 'attached', element: 'fraud-check', side: 'bottom' },
+    });
+    expect(drawnOn(edited, overview, 'charge')).toMatchObject({
+      source: { kind: 'away', element: 'fraud-check' },
+    });
+  });
+
+  it('is refused where it names a diagram that does not draw the element', () => {
+    expect(
+      batchOn(sharedModel, [
+        {
+          op: 'move_element',
+          element: 'card-vault',
+          diagram: 'overview',
+          offset: { x: 10, y: 0 },
+        },
+      ]),
+    ).toMatchObject({
+      left: { _tag: 'ElementNotOnDiagram', diagramId: 'overview' },
+    });
+  });
+
+  it('applies where it changes the element on every diagram', () => {
+    const edited = modelAfter(sharedModel, [
+      { op: 'rename_element', element: 'payments-api', name: 'Gateway' },
     ]);
     expect(
-      Either.isRight(applied)
-        ? applied.right.model.elements.find(({ id }) => id === 'payments-api')
-            ?.name
-        : undefined,
-    ).toBe('Gateway');
+      [overview, payments].map(
+        (diagram) => drawnOn(edited, diagram, 'payments-api')?.name,
+      ),
+    ).toEqual(['Gateway', 'Gateway']);
+  });
+
+  it('takes the element off every diagram on remove_element, culling the threat it was the last attachment of', () => {
+    const removed = Either.getOrThrow(
+      batchOn(sharedModel, [{ op: 'remove_element', element: 'payments-api' }]),
+    );
+    expect(
+      removed.model.diagrams.flatMap(({ placements }) =>
+        placements.filter(({ element }) => element === 'payments-api'),
+      ),
+    ).toEqual([]);
+    expect(removed.culledThreats.map(({ id }) => id)).toEqual([
+      'threat-card-data',
+    ]);
+  });
+});
+
+const lastBox = (model: Model) => {
+  const last = drawnAt(model, payments).at(-1);
+  return last !== undefined && 'position' in last
+    ? { id: last.id, position: last.position, size: last.size }
+    : undefined;
+};
+
+const boundaryBox = {
+  kind: 'box',
+  position: { x: 0, y: 0 },
+  size: { width: 600, height: 300 },
+} as const;
+
+describe('what place_element does', () => {
+  it('places an element the model holds on one more diagram, last there, with its geometry and accent', () => {
+    const placed = modelAfter(sharedModel, [
+      {
+        op: 'place_element',
+        element: 'customer',
+        diagram: 'payments',
+        placement: {
+          position: { x: 40, y: 400 },
+          size: { width: 120, height: 60 },
+        },
+        accent: 's3',
+      },
+    ]);
+    expect(drawnAt(placed, payments).at(-1)).toMatchObject({
+      id: 'customer',
+      position: { x: 40, y: 400 },
+      accent: 's3',
+    });
+    expect(placed.elements).toEqual(sharedModel.elements);
+  });
+
+  it('puts an "auto" placement where add_element puts one at the same index', () => {
+    const viaPlace = modelAfter(sharedModel, [
+      {
+        op: 'place_element',
+        element: 'customer',
+        diagram: 'payments',
+        placement: 'auto',
+      },
+    ]);
+    const viaAdd = modelAfter(sharedModel, [
+      {
+        op: 'add_element',
+        diagram: 'payments',
+        element: {
+          kind: 'actor',
+          id: 'auditor',
+          name: 'Auditor',
+          placement: 'auto',
+        },
+      },
+    ]);
+    expect(lastBox(viaPlace)).toEqual({
+      ...lastBox(viaAdd),
+      id: 'customer',
+    });
+  });
+
+  it('places a flow with a pinned end and an end drawn away, and a trust boundary by its shape', () => {
+    const placed = modelAfter(sharedModel, [
+      {
+        op: 'place_element',
+        element: 'card-details',
+        diagram: 'payments',
+        placement: {
+          source: { position: { x: 0, y: 130 } },
+          target: { side: 'left' },
+        },
+      },
+      {
+        op: 'unplace_element',
+        element: 'payments-zone',
+        diagram: 'payments',
+      },
+      {
+        op: 'place_element',
+        element: 'payments-zone',
+        diagram: 'payments',
+        placement: { shape: boundaryBox },
+      },
+    ]);
+    expect(drawnOn(placed, payments, 'card-details')).toMatchObject({
+      source: { kind: 'away', element: 'web-app', position: { x: 0, y: 130 } },
+      target: { kind: 'attached', element: 'payments-api', side: 'left' },
+      waypoints: [],
+    });
+    expect(drawnAt(placed, payments).at(-1)).toMatchObject({
+      id: 'payments-zone',
+      shape: boundaryBox,
+    });
+  });
+
+  it.each<{
+    readonly name: string;
+    readonly edit: EditInput;
+    readonly tag: OperationFailure['_tag'];
+  }>([
+    {
+      name: 'an element already on the diagram',
+      edit: {
+        op: 'place_element',
+        element: 'payments-api',
+        diagram: 'payments',
+        placement: 'auto',
+      },
+      tag: 'ElementAlreadyOnDiagram',
+    },
+    {
+      name: 'geometry the element kind does not take',
+      edit: {
+        op: 'place_element',
+        element: 'customer',
+        diagram: 'payments',
+        placement: { source: {}, target: {} },
+      },
+      tag: 'InvalidPlacement',
+    },
+    {
+      name: 'an element the model does not hold',
+      edit: {
+        op: 'place_element',
+        element: 'auditor',
+        diagram: 'payments',
+        placement: 'auto',
+      },
+      tag: 'UnknownElement',
+    },
+  ])('refuses $name', ({ edit, tag }) => {
+    expect(batchOn(sharedModel, [edit])).toMatchObject({ left: { _tag: tag } });
+  });
+});
+
+describe('what unplace_element does', () => {
+  it('takes an element off one diagram, keeps it on the other with its threats, and culls nothing', () => {
+    const unplaced = Either.getOrThrow(
+      batchOn(sharedModel, [
+        { op: 'unplace_element', element: 'payments-api', diagram: 'payments' },
+      ]),
+    );
+    expect(drawnOn(unplaced.model, payments, 'payments-api')).toBeUndefined();
+    expect(drawnOn(unplaced.model, overview, 'payments-api')).toEqual(
+      drawnOn(sharedModel, overview, 'payments-api'),
+    );
+    expect(drawnOn(unplaced.model, payments, 'score')).toMatchObject({
+      target: { kind: 'away', element: 'payments-api' },
+    });
+    expect({
+      threats: unplaced.model.threats,
+      culled: unplaced.culled,
+      culledThreats: unplaced.culledThreats,
+    }).toEqual({ threats: sharedModel.threats, culled: [], culledThreats: [] });
+  });
+
+  it('refuses the last diagram an element is on, pointing to remove_element', () => {
+    const refused = batchOn(sharedModel, [
+      { op: 'unplace_element', element: 'card-vault', diagram: 'payments' },
+    ]);
+    expect(refused).toMatchObject({ left: { _tag: 'LastPlacement' } });
+    expect(
+      Either.isLeft(refused) ? refusalOf(refused.left) : undefined,
+    ).toContain('remove_element');
   });
 });
 
