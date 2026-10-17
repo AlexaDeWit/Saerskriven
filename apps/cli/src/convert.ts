@@ -60,8 +60,8 @@ const projections = {
  * this version cannot read, unless `dropUndeclared` drops it, which is then
  * listed under a heading of its own. What else the read and the write
  * reported goes to standard error as a warning, which fails no write that
- * goes ahead, and so does a Saerskriven YAML document written as version 3,
- * which a release reading only versions 1 and 2 refuses.
+ * goes ahead. A Saerskriven YAML document written as version 3, which a
+ * release reading only versions 1 and 2 refuses, is warned of there too.
  */
 export function convert(file: string, options: ConvertOptions): CommandOutcome {
   return Either.match(
@@ -153,7 +153,7 @@ function converted(
 function describeVersion(model: Model, to: FormatName): string {
   return to === 'saerskriven-yaml' && writtenSaerskrivenYamlVersion(model) === 3
     ? lines(
-        'warning: written as Saerskriven YAML version 3, since the model holds what version 2 cannot, which a release reading only versions 1 and 2 refuses.',
+        'warning: written as Saerskriven YAML version 3, which a release reading only versions 1 and 2 refuses.',
       )
     : '';
 }

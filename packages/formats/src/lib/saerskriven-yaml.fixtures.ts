@@ -1,12 +1,15 @@
 import {
   inNumberOrder,
   type DrawnModelInput,
+  type Element,
   type Model,
 } from '@saerskriven/model';
 import type { SaerskrivenYamlDocument } from '@saerskriven/wire-saerskriven-yaml';
 import type { SaerskrivenYamlV2Document } from '@saerskriven/wire-saerskriven-yaml-v2';
 import {
   committedText,
+  elementId,
+  placedOnto,
   repositoryRoot,
   testDataPath,
 } from '@saerskriven/model/fixtures';
@@ -42,6 +45,38 @@ export const featureCompleteYaml: string = committedText(
 export const featureCompleteV3Yaml: string = committedText(
   'saerskriven/feature-complete-v3.yaml',
 );
+
+/**
+ * The feature-complete model with one more flow, from its booking service to
+ * its records service, placed on the records diagram with its source drawn
+ * at a position away from its element: a model only version 3 holds, built
+ * without the parse that still refuses it.
+ */
+export const withFlowDrawnAway = (model: Model): Model => {
+  const away: Element = {
+    kind: 'flow',
+    id: elementId('flow-away'),
+    name: 'Archived bookings',
+    description: '',
+    outOfScope: false,
+    reasonOutOfScope: '',
+    source: { kind: 'attached', element: elementId('process-booking') },
+    target: { kind: 'attached', element: elementId('process-records') },
+    bidirectional: false,
+  };
+  return placedOnto(
+    { ...model, elements: [...model.elements, away] },
+    [
+      {
+        element: away.id,
+        waypoints: [{ x: 60, y: 40 }],
+        source: { position: { x: 20, y: 40 } },
+        target: { side: 'left' },
+      },
+    ],
+    1,
+  );
+};
 
 /**
  * The version 2 document a save of `model` writes, throwing where the save

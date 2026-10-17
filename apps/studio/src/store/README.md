@@ -129,11 +129,13 @@ nothing itself. Which count an edit names is the canvas's to say
 `recovery-storage.ts` owns loading, replacing, and clearing one snapshot under
 `saerskriven:studio:recovery` in `localStorage`. Version 2 of the snapshot
 stores the model as the Saerskriven YAML wire document a save writes, version
-2 or version 3 by [the write rule](../../../../docs/saerskriven-yaml.md#which-version-a-save-writes), with dirty status, the
-file lifecycle (name, format, retained wire document), the studio version that
-wrote it, and the active diagram as an optional field, so a snapshot written
-before that field existed still loads. A restored active diagram the model no
-longer holds is dropped.
+2 or version 3 by
+[the write rule](../../../../docs/saerskriven-yaml.md#which-version-a-save-writes),
+with dirty status, the file lifecycle (name, format, and the retained wire
+document of a Threat Dragon file, since a Saerskriven YAML save projects the
+model and reads none), the studio version that wrote it, and the active
+diagram as an optional field, so a snapshot written before that field existed
+still loads. A restored active diagram the model no longer holds is dropped.
 
 The snapshot holds a document of [the native
 format](../../../../docs/saerskriven-yaml.md) rather than the model, so it

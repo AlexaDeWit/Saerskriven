@@ -11,6 +11,7 @@ import {
 import {
   featureCompleteYaml,
   readOrThrow,
+  withFlowDrawnAway,
 } from './saerskriven-yaml.fixtures.js';
 
 const featureComplete = readOrThrow(featureCompleteYaml).model;
@@ -21,30 +22,19 @@ const shared = placedOnto(
   1,
 );
 
-const away: Element = {
-  kind: 'flow',
-  id: elementId('flow-away'),
-  name: 'Archived bookings',
-  description: '',
-  outOfScope: false,
-  reasonOutOfScope: '',
-  source: { kind: 'attached', element: elementId('process-booking') },
-  target: { kind: 'attached', element: elementId('process-records') },
-  bidirectional: false,
-};
+const drawnAway = withFlowDrawnAway(featureComplete);
 
-const drawnAway = placedOnto(
-  { ...featureComplete, elements: [...featureComplete.elements, away] },
-  [
-    {
-      element: away.id,
-      waypoints: [],
-      source: { position: { x: 0, y: 0 } },
-      target: {},
-    },
-  ],
-  1,
-);
+const pinnedAway: Model = {
+  ...featureComplete,
+  diagrams: featureComplete.diagrams.map((diagram) => ({
+    ...diagram,
+    placements: diagram.placements.map((placement) =>
+      placement.element === 'flow-request' && 'waypoints' in placement
+        ? { ...placement, source: { position: { x: 0, y: 0 } } }
+        : placement,
+    ),
+  })),
+};
 
 function related(change: (element: Element) => Element): Model {
   return { ...featureComplete, elements: featureComplete.elements.map(change) };
@@ -67,6 +57,10 @@ describe('the version a Saerskriven YAML save writes', () => {
 
   it('is 3 for a flow end drawn away from its element', () => {
     expect(writtenSaerskrivenYamlVersion(drawnAway)).toBe(3);
+  });
+
+  it('is 3 for an attached end whose placement holds a position on the diagram its element is on, which a version 2 element cannot state', () => {
+    expect(writtenSaerskrivenYamlVersion(pinnedAway)).toBe(3);
   });
 
   it.each([

@@ -278,7 +278,8 @@ version 2 holds the model, and as version 3 once it does not
 ([which version a save writes](saerskriven-yaml.md#which-version-a-save-writes)).
 A batch that moves a file from version 2 to version 3 says so in the result
 under `movedToVersion3`, since a release that reads only versions 1 and 2
-refuses the file from then on. The batch is all or nothing: the edits go onto one parsed model in the order
+refuses the file from then on. The
+batch is all or nothing: the edits go onto one parsed model in the order
 given, and the first one the model refuses stops the batch, so nothing is
 written and the result names the index that was refused and what the model
 said. An edit that takes a mitigation's last threat link, or an assumption's

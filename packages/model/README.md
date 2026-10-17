@@ -3,11 +3,11 @@
 Zod schemas and inferred types for the threat model core: ids, geometry,
 elements, their placements on diagrams, threats, mitigations, assumptions, and
 model metadata. `parseModel` is the parse boundary every `Model` value comes
-through. `parseDrawnModel`, the entry point a read of a file with no shared
-elements takes, calls it, and `emptyModel` is the one model the package parses for you, where a model
-that has not been drawn starts. Fallible exports
-return Effect's `Either` with a package-owned tagged failure, and an
-infallible operation returns its result bare, on the terms
+through: the native read calls it, and so does `parseDrawnModel`, the entry
+point of the Threat Dragon, OTM and TM-BOM reads. `emptyModel` is the one
+model the package parses for you, where a model that has not been drawn
+starts. Fallible exports return Effect's `Either` with a package-owned tagged
+failure, and an infallible operation returns its result bare, on the terms
 [`CODING.md`](../../CODING.md#error-handling) sets. Each export's TSDoc states
 its behaviour.
 

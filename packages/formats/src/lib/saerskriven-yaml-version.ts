@@ -1,5 +1,7 @@
 import {
+  drawnElement,
   elementIdsIn,
+  elementsById,
   type Element,
   type ElementId,
   type Model,
@@ -11,9 +13,9 @@ export type WrittenSaerskrivenYamlVersion = 2 | 3;
 /**
  * The version a save of `model` writes: 2 while version 2 holds the model,
  * and 3 once it does not. Version 2 holds a model where every element is on
- * exactly one diagram, no flow end is drawn away from its element, and every
- * relationship list names elements of the one diagram drawing the element
- * that holds it.
+ * exactly one diagram and drawn there as a version 2 element, no flow end is
+ * drawn away from its element, and every relationship list names elements
+ * of the one diagram drawing the element that holds it.
  */
 export function writtenSaerskrivenYamlVersion(
   model: Model,
@@ -37,13 +39,19 @@ export function movesToSaerskrivenYamlVersion3(
 }
 
 function fitsVersion2(model: Model): boolean {
+  const elements = elementsById(model.elements);
   const drawnWith = new Map<ElementId, ReadonlySet<string>>();
   const placedOnce = model.diagrams.every((diagram) => {
     const placed = elementIdsIn(diagram);
-    return diagram.placements.every(({ element }) => {
-      const placedBefore = drawnWith.has(element);
-      drawnWith.set(element, placed);
-      return !placedBefore;
+    return diagram.placements.every((placement) => {
+      const element = elements.get(placement.element);
+      const placedBefore = drawnWith.has(placement.element);
+      drawnWith.set(placement.element, placed);
+      return (
+        !placedBefore &&
+        element !== undefined &&
+        drawnElement(element, placement) !== undefined
+      );
     });
   });
   return (

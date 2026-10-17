@@ -57,9 +57,9 @@ That order is three tiers, so a key added to the format later has an obvious
 home rather than an argued one. The header comes first, `formatVersion` and
 then `metadata`, because it says what the file is and what it covers. The
 content follows in alphabetical order, since no other order among
-`assumptions`, `diagrams`, `elements`, `mitigations` and `threats` is more true
-than the rest. The bookkeeping the editor keeps for itself goes last, where it is out
-of the way of a reader.
+`assumptions`, `diagrams`, `elements`, `mitigations` and `threats` is more
+true than the rest. The bookkeeping the editor keeps for itself goes last,
+where it is out of the way of a reader.
 
 An element and a threat category are tagged unions, written with the tag
 first: `kind` for an element, a flow endpoint and a boundary shape,
@@ -120,19 +120,22 @@ written as version 2. No file changes version unless its content needs it, so
 a file an earlier release opens stays one it opens, and a tracked file's diff
 moves every element only at the edit that needs version 3.
 
-Each tool that writes the file says when the version is 3, worked out from the
-model, since a release that reads only versions 1 and 2 refuses that file:
+A release that reads only versions 1 and 2 refuses a version 3 file, so three
+tools say when they write one:
 
 - The studio shows a report under the card at the edit that moves the model
-  from version 2 to version 3.
+  from version 2 to version 3, worked out from the model before and after the
+  edit.
 - `saer_edit` answers `movedToVersion3` for a batch that moves a file from
-  version 2 to version 3 ([writing](mcp.md#writing)).
+  version 2 to version 3, worked out the same way ([writing](mcp.md#writing)).
 - `saer convert` warns on standard error whenever the document it writes is
   version 3, since a conversion is not an edit and holds no earlier model.
 
-A move back to version 2 says nothing. A share link, the studio's clipboard and
-its recovery snapshot carry the text or the document a save writes, so they
-follow the same rule.
+`saer_create` and `saer_import` write a new file and say nothing of its
+version, and nothing is said at a move back to version 2. A share link, the
+studio's clipboard and its recovery snapshot carry the text or the document a
+save writes, so they follow the same rule, and the snapshot keeps no retained
+document for a Saerskriven YAML file, which its save does not read.
 
 ## `formatVersion`
 

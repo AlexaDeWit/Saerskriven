@@ -87,6 +87,16 @@ describe('canonicalOrder', () => {
     expect(ordered(untagged, { size: 2, id: 'x' })).toBe('{"size":2,"id":"x"}');
   });
 
+  it('orders an optional or nullable value as the schema it wraps', () => {
+    const point = z.object({ x: z.number(), y: z.number() });
+    expect(
+      ordered(z.object({ at: point.optional(), near: point.nullable() }), {
+        near: { y: 2, x: 1 },
+        at: { y: 4, x: 3 },
+      }),
+    ).toBe('{"at":{"x":3,"y":4},"near":{"x":1,"y":2}}');
+  });
+
   it('returns a value no variant claims as it stands', () => {
     expect(ordered(tagged, { id: 'x', kind: 'twig' })).toBe(
       '{"id":"x","kind":"twig"}',
