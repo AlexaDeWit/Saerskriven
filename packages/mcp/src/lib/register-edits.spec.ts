@@ -91,6 +91,7 @@ describe('the details edits', () => {
           },
           culled: [],
           culledThreats: [],
+          merged: [],
         }),
       );
     },
