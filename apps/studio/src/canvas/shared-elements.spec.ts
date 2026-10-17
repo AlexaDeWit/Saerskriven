@@ -11,6 +11,7 @@ import { Either } from 'effect';
 import { inLocale } from '../messages/messages.fixtures.js';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
+import { newProcess } from '../store/store.fixtures.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
 import { recordingClipboard } from './canvas.fixtures.js';
@@ -93,6 +94,22 @@ describe('Delete on a selection gone stale', () => {
     expect(removeSelected()).toBe(false);
     expect(placedOn(present(), api)).toEqual([payments]);
     expect(present().threats.map(({ id }) => id)).toContain('threat-card-data');
+  });
+
+  it('keeps an element an undo took out of the model selected, so the redo brings it back for Delete', () => {
+    const added = newProcess('process-added', 'Added');
+    onOverview([]);
+    dispatch(
+      Action.AddElement({ diagramId: overview, element: added, decimals: 0 }),
+    );
+    dispatch(Action.Select({ elementIds: [added.id] }));
+
+    dispatch(Action.Undo());
+    dispatch(Action.Redo());
+
+    expect(modelStore.getState().selection).toEqual([added.id]);
+    expect(removeSelected()).toBe(true);
+    expect(present().elements.map(({ id }) => id)).not.toContain(added.id);
   });
 
   it('acts on no element the diagram it names does not place', () => {

@@ -409,19 +409,15 @@ function followed(state: State, synced: SyncedState): State {
     saved,
     file,
     recoveryCurrent,
-    ...onScreen(state, present),
+    ...onScreen(state, present, false),
     lastFailure: undefined,
   };
 }
 
-/**
- * The selection and the inline editor of `state` kept to what the diagram on
- * screen places once `present` is the model, so no selection outlives the
- * placement it named.
- */
 function onScreen(
   state: State,
   present: Model,
+  keepUnheld: boolean,
 ): Pick<State, 'selection' | 'inlineEditor'> {
   const diagram = activeDiagram({
     present,
@@ -429,14 +425,16 @@ function onScreen(
   });
   const placed =
     diagram === undefined ? new Set<string>() : elementIdsIn(diagram);
-  const selection = state.selection.filter((selected) => placed.has(selected));
+  const held = new Set<string>(present.elements.map(({ id }) => id));
+  const kept = (elementId: ElementId): boolean =>
+    placed.has(elementId) || (keepUnheld && !held.has(elementId));
+  const selection = state.selection.filter(kept);
   return {
     selection: sameSelection(state.selection, selection)
       ? state.selection
       : selection,
     inlineEditor:
-      state.inlineEditor !== undefined &&
-      placed.has(state.inlineEditor.elementId)
+      state.inlineEditor !== undefined && kept(state.inlineEditor.elementId)
         ? state.inlineEditor
         : undefined,
   };
@@ -451,7 +449,7 @@ function undone(state: State): State {
         present: previous,
         past: state.past.slice(0, -1),
         future: [state.present, ...state.future],
-        ...onScreen(state, previous),
+        ...onScreen(state, previous, true),
         lastFailure: undefined,
       };
 }
@@ -465,7 +463,7 @@ function redone(state: State): State {
         present: next,
         past: [...state.past, state.present],
         future: state.future.slice(1),
-        ...onScreen(state, next),
+        ...onScreen(state, next, true),
         lastFailure: undefined,
       };
 }
