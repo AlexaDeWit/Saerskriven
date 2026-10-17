@@ -24,7 +24,7 @@ allowBuilds:
   unrs-resolver: true
   esbuild: false
 
-# @nx/vitest declares @nx/jest as an optional peer, and pnpm resolves an
+# @nx/eslint declares @nx/jest as an optional peer, and pnpm resolves an
 # optional peer when it can, so the whole Jest 30 runtime arrives behind it
 # whether or not a target runs jest. Every project here tests under Vitest,
 # and the tree carries the js-yaml 3 line that only @istanbuljs/load-nyc-config
@@ -34,12 +34,15 @@ peerDependencyRules:
   ignoreMissing:
     - '@nx/jest'
 
-# nx pins smol-toml to an exact 1.6.1, so no range bump reaches the fixes for
-# its two denials of service (malformed documents up to 1.7.0, quadratic key
-# parsing up to 1.8.0). Scoped to nx: the catalog entry below is what every
-# other consumer resolves.
+# nx pins undici to an exact 7.29.0, so no range bump reaches the ten
+# advisories fixed in 7.29.1, two of them high (a denial of service through an
+# unrequested WebSocket subprotocol, and BalancedPool dropping the connect
+# options that check a TLS certificate). nx loads undici only to send its own
+# requests, such as `nx release` creating a GitHub release, through a proxy
+# named in HTTP_PROXY, HTTPS_PROXY or ALL_PROXY. Scoped to nx: jsdom resolves
+# its own undici 8 line.
 overrides:
-  'nx>smol-toml': '^1.9.0'
+  'nx>undici': '^7.29.1'
 
 # Seven days, in minutes. A freshly published version does not resolve until
 # it has aged, so a poisoned release is likely caught and pulled first.
@@ -78,12 +81,12 @@ catalog:
   # PDF's bytes, so a bump is a reviewed change. 0.7.0 carries Typst 0.14.2,
   # which the PDF's own Creator field records.
   '@myriaddreamin/typst-ts-web-compiler': 0.7.0
-  '@nx/esbuild': 23.2.1
-  '@nx/eslint-plugin': 23.2.1
-  '@nx/js': 23.2.1
-  '@nx/playwright': 23.2.1
-  '@nx/vite': 23.2.1
-  '@nx/vitest': 23.2.1
+  '@nx/esbuild': 23.3.0
+  '@nx/eslint-plugin': 23.3.0
+  '@nx/js': 23.3.0
+  '@nx/playwright': 23.3.0
+  '@nx/vite': 23.3.0
+  '@nx/vitest': 23.3.0
   # Pinned exactly to the nixpkgs playwright-driver version: the browsers come
   # from the flake, and a driver of one version cannot run browsers installed
   # for another. The version-equality test in apps/studio-e2e reds a mismatch,
@@ -144,7 +147,7 @@ catalog:
   fast-check: ^4.0.0
   jiti: 2.7.0
   jsdom: ^30.0.0
-  nx: 23.2.1
+  nx: 23.3.0
   # Pinned exactly: a pre-1.0 oxfmt bump may reformat the tree, so it happens
   # only in a reviewed PR. Renovate proposes the bumps.
   oxfmt: 0.72.0
