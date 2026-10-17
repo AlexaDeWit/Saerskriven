@@ -99,13 +99,13 @@ jobs:
           save-nix-store: 'false'
 
       - name: Take the first shard report
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: playwright-blob-${{ matrix.engine }}-shard-1
           path: ${{ runner.temp }}/nightly-blobs/shard-1
 
       - name: Take the second shard report
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: playwright-blob-${{ matrix.engine }}-shard-2
           path: ${{ runner.temp }}/nightly-blobs/shard-2
@@ -175,7 +175,7 @@ jobs:
       - name: Take the Firefox JSON report
         id: firefox-report
         if: ${{ !cancelled() }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: playwright-json-firefox
           path: ${{ runner.temp }}/nightly-reports
@@ -183,7 +183,7 @@ jobs:
       - name: Take the WebKit JSON report
         id: webkit-report
         if: ${{ !cancelled() }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: playwright-json-webkit
           path: ${{ runner.temp }}/nightly-reports
