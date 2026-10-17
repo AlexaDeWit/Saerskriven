@@ -101,6 +101,11 @@ export type Action = Data.TaggedEnum<{
     readonly elementIds: readonly ElementId[];
     readonly decimals: Decimals | undefined;
   };
+  DeleteFromDiagram: {
+    readonly diagramId: DiagramId;
+    readonly elementIds: readonly ElementId[];
+    readonly decimals: Decimals | undefined;
+  };
   MoveElement: {
     readonly diagramId: DiagramId;
     readonly elementId: ElementId;

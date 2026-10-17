@@ -438,7 +438,7 @@ function preservedEndpoint(
   wanted: DrawnFlowEndpoint,
   ports: PortSides,
 ): ProjectedEndpoint {
-  if (wanted.kind === 'free') {
+  if (wanted.kind !== 'attached') {
     return {
       endpoint: storedPoint(wanted.position, wholeNumbers),
       ports: noPorts,

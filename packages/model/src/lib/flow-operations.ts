@@ -20,6 +20,7 @@ import type { DiagramId, ElementId } from './ids.js';
 import { reversed, sameItems } from './lists.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
+import { withPlacedEnds } from './placed-ends.js';
 
 /** The failures an edit of one flow's direction can produce. */
 export type FlowEditFailure = Extract<
@@ -70,7 +71,9 @@ export function setFlowWaypoints(
  * actor, process or store the diagram `diagramId` names places, that the
  * flow's other end does not already attach to, so a flow never connects an
  * element to itself. The end is pinned to `anchor` on that diagram, and an
- * absent anchor releases its pinned side.
+ * absent anchor releases its pinned side. Which element the end reaches is
+ * the flow's on every diagram drawing it: on one that does not place the new
+ * element the end is drawn away, where it was drawn before.
  */
 export function reconnectFlow(
   model: Model,
@@ -103,7 +106,10 @@ export function reconnectFlow(
           previous.element === endpointId &&
           previous.side === anchor
           ? model
-          : withDrawn(model, diagramIndex, { ...flow, [side]: next }),
+          : withPlacedEnds(
+              model,
+              withDrawn(model, diagramIndex, { ...flow, [side]: next }),
+            ),
       );
     },
   );
@@ -111,9 +117,12 @@ export function reconnectFlow(
 
 /**
  * Frees one end of a flow at a canvas position on the diagram `diagramId`
- * names, or moves an end already free, storing the position at `decimals`
- * and preserving the model for an end already free there, as given or as it
- * would be stored. The other end may be free too, as `addElement` accepts.
+ * names, or moves an end already drawn at a position there, storing the
+ * position at `decimals` and preserving the model for an end already at it,
+ * as given or as it would be stored. An end drawn away from an element the
+ * diagram does not place stays attached to it. A freed end is free on every
+ * diagram drawing the flow, each keeping the point it was drawn at. The other
+ * end may be free too, as `addElement` accepts.
  */
 export function setFlowEndPosition(
   model: Model,
@@ -128,12 +137,22 @@ export function setFlowEndPosition(
     ({ diagramIndex, drawn: flow }) => {
       const held = flow[side];
       const stored = storedPoint(position, decimals);
-      return held.kind === 'free' &&
-        (samePoint(held.position, position) || samePoint(held.position, stored))
+      if (held.kind === 'attached') {
+        return withPlacedEnds(
+          model,
+          withDrawn(model, diagramIndex, {
+            ...flow,
+            [side]: { kind: 'free', position: stored },
+          }),
+          decimals,
+        );
+      }
+      return samePoint(held.position, position) ||
+        samePoint(held.position, stored)
         ? model
         : withDrawn(model, diagramIndex, {
             ...flow,
-            [side]: { kind: 'free', position: stored },
+            [side]: { ...held, position: stored },
           });
     },
   );
@@ -236,7 +255,7 @@ function reversedFlow(flow: DrawnFlow): DrawnFlow {
 export function attachedEndpoint(
   element: ElementId,
   side: Side | undefined,
-): DrawnFlowEndpoint {
+): Extract<DrawnFlowEndpoint, { readonly kind: 'attached' }> {
   return side === undefined
     ? { kind: 'attached', element }
     : { kind: 'attached', element, side };
@@ -246,12 +265,18 @@ function sameEndpoint(
   left: DrawnFlowEndpoint,
   right: DrawnFlowEndpoint,
 ): boolean {
-  if (left.kind === 'free' || right.kind === 'free') {
+  if (left.kind === 'attached' || right.kind === 'attached') {
     return (
-      left.kind === 'free' &&
-      right.kind === 'free' &&
-      samePoint(left.position, right.position)
+      left.kind === 'attached' &&
+      right.kind === 'attached' &&
+      left.element === right.element &&
+      left.side === right.side
     );
   }
-  return left.element === right.element && left.side === right.side;
+  return (
+    left.kind === right.kind &&
+    samePoint(left.position, right.position) &&
+    (left.kind === 'free' ||
+      (right.kind === 'away' && left.element === right.element))
+  );
 }

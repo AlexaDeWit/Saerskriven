@@ -16,6 +16,7 @@ import {
 import {
   accentSelected,
   removeSelected,
+  removeSelectedFromModel,
   renameSelected,
   reverseSelectedFlow,
   selectAll,
@@ -410,6 +411,14 @@ export const commandTable = {
     shortcuts: [bare('Delete'), bare('Backspace')],
     when: 'commands.when-selection-exists-outside-fields',
     run: removeSelected,
+  }),
+  'delete-from-model': command({
+    id: 'delete-from-model',
+    label: 'commands.label-delete-from-model',
+    group: 'commands.group-edit',
+    shortcuts: [shift('Delete'), shift('Backspace')],
+    when: 'commands.when-selection-exists-outside-fields',
+    run: removeSelectedFromModel,
   }),
   rename: command({
     id: 'rename',

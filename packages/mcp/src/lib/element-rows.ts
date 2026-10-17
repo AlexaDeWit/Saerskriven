@@ -8,6 +8,7 @@ import {
   drawnElementSchema,
   elementIdSchema,
   elementKindSchema,
+  elementOf,
   elementsById,
   flowEndName,
   flowEnds,
@@ -203,7 +204,14 @@ function namedFromEnds(
   if (flow === undefined) {
     return {};
   }
-  const { source, target, bidirectional } = flowEnds(flow, elementsById(drawn));
+  const facts = elementOf(flow);
+  if (facts.kind !== 'flow') {
+    return {};
+  }
+  const { source, target, bidirectional } = flowEnds(
+    facts,
+    elementsById(drawn.map(elementOf)),
+  );
   const from = flowEndName(source, 'a free point');
   const to = flowEndName(target, 'a free point');
   return {
@@ -221,8 +229,11 @@ function threatsOn(
 }
 
 function renderEndpoint(endpoint: DrawnFlowEndpoint): string {
-  return endpoint.kind === 'attached'
-    ? `element ${endpoint.element}${endpoint.side === undefined ? '' : ` on its ${endpoint.side}`}`
+  if (endpoint.kind === 'attached') {
+    return `element ${endpoint.element}${endpoint.side === undefined ? '' : ` on its ${endpoint.side}`}`;
+  }
+  return endpoint.kind === 'away'
+    ? `element ${endpoint.element}, which another diagram draws, drawn at ${renderPoint(endpoint.position)}`
     : `free at ${renderPoint(endpoint.position)}`;
 }
 

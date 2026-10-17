@@ -145,20 +145,6 @@ describe('parseModel', () => {
       },
     },
     {
-      named: 'a placement of an element on a second diagram',
-      mutate: (draft) => {
-        onSecondDiagram(
-          draft,
-          structuredClone(draft.diagrams[0].placements[0]),
-        );
-      },
-      path: ['diagrams', 1, 'placements', 1, 'element'],
-      detail: {
-        code: 'duplicate-placement',
-        parameters: { id: 'element-customer' },
-      },
-    },
-    {
       named: 'an element no diagram places',
       mutate: (draft) => {
         draft.diagrams[0].placements.splice(2, 1);
@@ -201,7 +187,8 @@ describe('parseModel', () => {
       },
     },
     {
-      named: 'an attached flow end drawn away from its element, at a position',
+      named:
+        'a flow end drawn at a position away from an element its diagram places',
       mutate: (draft) => {
         draft.diagrams[0].placements[3] = {
           element: 'element-order-flow',
@@ -231,22 +218,6 @@ describe('parseModel', () => {
       path: ['elements', 3, 'source', 'element'],
       detail: {
         code: 'flow-endpoint-foreign',
-        parameters: { id: 'element-remote' },
-      },
-    },
-    {
-      named: 'a boundary listing an element another diagram places',
-      mutate: (draft) => {
-        onSecondDiagram(draft);
-        draft.elements[4] = {
-          ...structuredClone(draft.elements[4]),
-          kind: 'trust-boundary',
-          containedElements: ['element-remote'],
-        };
-      },
-      path: ['elements', 4, 'containedElements', 0],
-      detail: {
-        code: 'related-element-unknown',
         parameters: { id: 'element-remote' },
       },
     },
@@ -290,6 +261,107 @@ describe('parseModel', () => {
       ]);
     },
   );
+
+  it.each<{
+    readonly named: string;
+    readonly mutate: (draft: ModelInput) => void;
+  }>([
+    {
+      named: 'an actor placed on a second diagram',
+      mutate: (draft) => {
+        onSecondDiagram(
+          draft,
+          structuredClone(draft.diagrams[0].placements[0]),
+        );
+      },
+    },
+    {
+      named: 'a note and a trust boundary placed on a second diagram',
+      mutate: (draft) => {
+        draft.elements.push({
+          kind: 'text',
+          id: 'element-legend',
+          name: '',
+          description: '',
+          outOfScope: false,
+          reasonOutOfScope: '',
+          text: 'Legend',
+        });
+        const legend = {
+          element: 'element-legend',
+          position: { x: 400, y: 400 },
+          size: { width: 120, height: 40 },
+        };
+        draft.diagrams[0].placements.push(legend);
+        onSecondDiagram(
+          draft,
+          legend,
+          structuredClone(draft.diagrams[0].placements[4]),
+        );
+      },
+    },
+    {
+      named:
+        'a flow end drawn at a position away from an element another diagram places',
+      mutate: (draft) => {
+        draft.diagrams[0].placements[3] = {
+          element: 'element-order-flow',
+          waypoints: [],
+          source: { position: { x: 0, y: 0 } },
+          target: { position: { x: 280, y: 160 } },
+        };
+        onSecondDiagram(
+          draft,
+          structuredClone(draft.diagrams[0].placements[0]),
+        );
+        draft.diagrams[0].placements.splice(0, 1);
+      },
+    },
+    {
+      named: 'a boundary listing an element another diagram places',
+      mutate: (draft) => {
+        onSecondDiagram(draft);
+        draft.elements[4] = {
+          ...structuredClone(draft.elements[4]),
+          kind: 'trust-boundary',
+          containedElements: ['element-remote'],
+        };
+      },
+    },
+  ])('accepts $named', ({ mutate }) => {
+    expect(issuesOf(seededPlacedModel(mutate))).toEqual([]);
+  });
+
+  it('keeps a relationship list inside one diagram where the scope says so', () => {
+    const draft: ModelInput = structuredClone(validModel);
+    draft.elements.push(remoteProcess);
+    draft.diagrams.push({
+      id: 'diagram-second',
+      title: 'Second',
+      placements: [
+        {
+          element: 'element-remote',
+          position: { x: 0, y: 0 },
+          size: { width: 100, height: 60 },
+        },
+      ],
+    });
+    draft.elements[4] = {
+      ...structuredClone(draft.elements[4]),
+      kind: 'trust-boundary',
+      containedElements: ['element-remote'],
+    };
+    expect(issuesOf(parseModel(draft))).toEqual([]);
+    expect(issuesOf(parseModel(draft, 'diagram'))).toEqual([
+      {
+        path: ['elements', 4, 'containedElements', 0],
+        detail: {
+          code: 'related-off-diagram',
+          parameters: { id: 'element-remote' },
+        },
+      },
+    ]);
+  });
 });
 
 describe('parseDrawnModel', () => {
@@ -509,6 +581,30 @@ describe('parseDrawnModel', () => {
       path: ['diagrams', 0, 'elements', 3, 'source', 'element'],
       detail: {
         code: 'flow-endpoint-foreign',
+        parameters: { id: 'element-remote' },
+      },
+    },
+    {
+      named: 'a boundary listing an element another diagram draws',
+      mutate: (draft) => {
+        draft.diagrams.push({
+          id: 'diagram-second',
+          title: 'Second',
+          elements: [
+            {
+              ...structuredClone(draft.diagrams[0].elements[1]),
+              id: 'element-remote',
+            },
+          ],
+        });
+        const boundary = draft.diagrams[0].elements[4];
+        if (boundary.kind === 'trust-boundary') {
+          boundary.containedElements = ['element-remote'];
+        }
+      },
+      path: ['diagrams', 0, 'elements', 4, 'containedElements', 0],
+      detail: {
+        code: 'related-off-diagram',
         parameters: { id: 'element-remote' },
       },
     },

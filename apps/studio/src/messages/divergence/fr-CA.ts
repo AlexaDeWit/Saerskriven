@@ -40,6 +40,15 @@ export const divergenceFrCA = catalogue(divergenceMessages)('fr-CA')({
     many: 'un seul enregistrement, désormais {count} de copies',
     other: 'un seul enregistrement, désormais {count} copies',
   },
+  'element-split-across-diagrams':
+    'un seul élément, désormais une copie sur chacun de ces diagrammes : {diagrams}',
+  'flow-end-drawn-away-freed':
+    'son extrémité sur {name}, désormais une extrémité libre',
+  'relationships-off-diagram-dropped': {
+    one: 'son lien vers {count} élément d’un autre diagramme',
+    many: 'ses liens vers {count} d’éléments d’autres diagrammes',
+    other: 'ses liens vers {count} éléments d’autres diagrammes',
+  },
   'note-name-dropped': 'son nom',
   'scope-marking-dropped': 'son marquage hors périmètre',
   'accents-dropped': {

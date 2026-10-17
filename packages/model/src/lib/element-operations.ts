@@ -1,8 +1,6 @@
 import { Either } from 'effect';
 import {
   diagramIndexOf,
-  elementsDrawnWith,
-  elementsOnDiagram,
   emptyNameFailure,
   flowEndpointFailure,
   invalidRelationships,
@@ -15,11 +13,10 @@ import {
   type UndrawnElementFailure,
   type UnknownElementFailure,
 } from './diagram-edits.js';
-import { storedPoint, storedSize, type Decimals } from './decimals.js';
-import { drawnElementOn, elementOf, placementOf } from './drawing.js';
+import { storedSize, type Decimals } from './decimals.js';
+import { elementOf, placementOf } from './drawing.js';
 import type { DrawnElement } from './drawn-elements.js';
 import {
-  anchorPoint,
   resized,
   sameGeometry,
   storedElement,
@@ -41,8 +38,10 @@ import { sameItems } from './lists.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 import { toParseIssues } from './parse-issue.js';
-import type { Accent, PlacedFlowEnd, Placement } from './placements.js';
+import type { Accent, Placement } from './placements.js';
+import { withPlacedEnds } from './placed-ends.js';
 import { withoutId } from './records.js';
+import { elementsById } from './references.js';
 import { restrictRelationships } from './relationships.js';
 import { firstRefusedCharacter } from './text.js';
 import { withCulledThreats } from './threat-operations.js';
@@ -107,8 +106,8 @@ export type SetElementPropertiesFailure = Extract<
  * Adds `element` to the model and places it on the diagram `diagramId`
  * names, with the geometry and accent it is drawn with. Requires an existing
  * diagram, a new ID, a name that is more than white space on every kind but
- * a flow, flow ends `reconnectFlow` would accept, and valid local boundary
- * references. A flow named with white space alone is stored unlabelled, as
+ * a flow, flow ends `reconnectFlow` would accept, and boundary references
+ * that resolve in the model. A flow named with white space alone is stored unlabelled, as
  * `''`. The element's whole geometry is stored at `decimals`, and as given
  * where no count is named.
  */
@@ -127,7 +126,7 @@ export function addElement(
         );
       }
       const facts = elementOf(element);
-      const known = elementsOnDiagram(model, diagramIndex).set(facts.id, facts);
+      const known = elementsById([...model.elements, facts]);
       const failure =
         emptyNameFailure(facts) ??
         flowEndpointFailure(model, facts, model.diagrams[diagramIndex]) ??
@@ -164,55 +163,33 @@ export function removeElement(
   decimals?: Decimals,
 ): Either.Either<Model, RemoveElementFailure> {
   return Either.map(locatedElement(model, elementId), () => {
-    const anchors = new Map(
-      model.diagrams.flatMap((diagram) => {
-        const drawn = drawnElementOn(model, diagram, elementId);
-        return drawn === undefined
-          ? []
-          : [[diagram.id, storedPoint(anchorPoint(drawn), decimals)] as const];
-      }),
-    );
-    const freed = new Map(
-      model.elements.flatMap((element) =>
-        element.kind === 'flow'
-          ? [
-              [
-                element.id,
-                freedSides(element.source, element.target, elementId),
-              ] as const,
-            ]
-          : [],
-      ),
-    );
     const retained = new Set<string>(model.elements.map(({ id }) => id));
     retained.delete(elementId);
-    const trimmed: Model = {
-      ...model,
-      elements: model.elements
-        .filter((element) => element.id !== elementId)
-        .map((element) => restrictRelationships(element, retained))
-        .map((element) =>
-          element.kind === 'flow'
-            ? {
-                ...element,
-                source: detached(element.source, elementId),
-                target: detached(element.target, elementId),
-              }
-            : element,
-        ),
-      diagrams: model.diagrams.map((diagram) => ({
-        ...diagram,
-        placements: diagram.placements
-          .filter((placement) => placement.element !== elementId)
-          .map((placement) =>
-            freedPlacement(
-              placement,
-              freed.get(placement.element) ?? [],
-              anchors.get(diagram.id),
-            ),
+    const trimmed = withPlacedEnds(
+      model,
+      {
+        ...model,
+        elements: model.elements
+          .filter((element) => element.id !== elementId)
+          .map((element) => restrictRelationships(element, retained))
+          .map((element) =>
+            element.kind === 'flow'
+              ? {
+                  ...element,
+                  source: detached(element.source, elementId),
+                  target: detached(element.target, elementId),
+                }
+              : element,
           ),
-      })),
-    };
+        diagrams: model.diagrams.map((diagram) => ({
+          ...diagram,
+          placements: diagram.placements.filter(
+            (placement) => placement.element !== elementId,
+          ),
+        })),
+      },
+      decimals,
+    );
     return withCulledThreats(trimmed, (threat) => ({
       ...threat,
       elements: withoutId(threat.elements, elementId),
@@ -441,7 +418,7 @@ export function setElementProperties(
       }
       const failure = invalidRelationships(
         next.data,
-        elementsDrawnWith(model, elementId),
+        elementsById(model.elements),
       );
       return failure === undefined
         ? Either.right(withElement(model, next.data))
@@ -482,42 +459,6 @@ function detached(endpoint: FlowEndpoint, elementId: ElementId): FlowEndpoint {
   return endpoint.kind === 'attached' && endpoint.element === elementId
     ? { kind: 'free' }
     : endpoint;
-}
-
-type FlowSide = 'source' | 'target';
-
-function freedSides(
-  source: FlowEndpoint,
-  target: FlowEndpoint,
-  elementId: ElementId,
-): FlowSide[] {
-  return [
-    ...(detached(source, elementId) === source ? [] : ['source' as const]),
-    ...(detached(target, elementId) === target ? [] : ['target' as const]),
-  ];
-}
-
-function freedPlacement(
-  placement: Placement,
-  sides: readonly FlowSide[],
-  anchor: Point | undefined,
-): Placement {
-  if (sides.length === 0 || !('waypoints' in placement)) {
-    return placement;
-  }
-  const freed = (end: PlacedFlowEnd): PlacedFlowEnd => {
-    const position = anchor ?? end.position;
-    return position === undefined ? end : { position };
-  };
-  return {
-    ...placement,
-    source: sides.includes('source')
-      ? freed(placement.source)
-      : placement.source,
-    target: sides.includes('target')
-      ? freed(placement.target)
-      : placement.target,
-  };
 }
 
 function refusedCharacter(

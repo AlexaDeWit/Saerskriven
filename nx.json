@@ -31,6 +31,7 @@
       "{workspaceRoot}/test-data/threat-dragon/feature-complete.json",
       "{workspaceRoot}/test-data/saerskriven/feature-complete.yaml",
       "{workspaceRoot}/test-data/saerskriven/feature-complete-v3.yaml",
+      "{workspaceRoot}/test-data/saerskriven/shared-elements-v3.yaml",
       "{workspaceRoot}/test-data/saerskriven/two-diagrams.yaml",
       "{workspaceRoot}/test-data/saerskriven/saerskriven-v0.3.0.yaml",
       "{workspaceRoot}/test-data/otm/example.json",

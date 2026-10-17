@@ -52,16 +52,19 @@ export function EndpointEditor({
   >(
     previous?.kind === 'attached'
       ? previous.element
-      : previous?.kind === 'free'
-        ? freePoint
-        : options[0]?.id,
+      : previous === undefined
+        ? options[0]?.id
+        : freePoint,
   );
   const [anchor, setAnchor] = useState<Side | undefined>(
     previous?.kind === 'attached' ? previous.side : undefined,
   );
   const edge = layout.edges.find((candidate) => candidate.id === flow?.id);
   const drawn = side === 'source' ? edge?.source : edge?.target;
-  const drawnAt = previous?.kind === 'free' ? undefined : commandDecimals;
+  const drawnAt =
+    previous === undefined || previous.kind === 'attached'
+      ? commandDecimals
+      : undefined;
   const [position, setPosition] = useState({
     x: String(storedNumber(drawn?.x ?? 0, drawnAt)),
     y: String(storedNumber(drawn?.y ?? 0, drawnAt)),

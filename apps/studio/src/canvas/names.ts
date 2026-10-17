@@ -1,4 +1,5 @@
 import type {
+  AwayEnd,
   BadgeMarks,
   CanvasEdge,
   CanvasLayout,
@@ -40,7 +41,8 @@ const elementKindOf = {
 /**
  * The accessible name of every element the layout drew, keyed by its React
  * Flow id: its name, kind, badge and raised flags, and for a flow the
- * elements its ends attach to. `layout` must be laid out from `model`.
+ * elements its ends attach to, an end drawn away from its element named as
+ * on another diagram. `layout` must be laid out from `model`.
  */
 export function accessibleNames(
   layout: CanvasLayout,
@@ -167,8 +169,8 @@ function edgeName(
     edge.name,
     t(kindMessages.flow),
     endsText(
-      endName(edge.sourceElement, nodes, t),
-      endName(edge.targetElement, nodes, t),
+      endName(edge.sourceElement, edge.sourceAway, nodes, t),
+      endName(edge.targetElement, edge.targetAway, nodes, t),
       edge.bidirectional,
       t,
     ),
@@ -191,9 +193,13 @@ function endsText(
 
 function endName(
   element: ElementId | undefined,
+  away: AwayEnd | undefined,
   nodes: ReadonlyMap<ElementId, CanvasNode>,
   t: StudioTranslator['t'],
 ): string {
+  if (away !== undefined) {
+    return t('tools.away-end', { name: away.name });
+  }
   if (element === undefined) {
     return t('tools.free-point');
   }

@@ -1,6 +1,6 @@
 import { Either } from 'effect';
 import { drawnElement, elementOf, placementOf } from './drawing.js';
-import type { DrawnElement } from './drawn-elements.js';
+import type { DrawnElement, DrawnFlowEndpoint } from './drawn-elements.js';
 import type { Element, FlowEndpoint } from './elements.js';
 import type { DiagramId, ElementId } from './ids.js';
 import type { Diagram } from './model.js';
@@ -175,7 +175,7 @@ export function flowEndFailure(
   diagram: Diagram,
   side: 'source' | 'target',
   end: FlowEndpoint,
-  other: FlowEndpoint,
+  other: FlowEndpoint | DrawnFlowEndpoint,
 ): InvalidFlowEndpointFailure | undefined {
   if (end.kind === 'free') {
     return undefined;
@@ -187,7 +187,7 @@ export function flowEndFailure(
   return placed &&
     anchor !== undefined &&
     flowAnchorKinds.has(anchor.kind) &&
-    !(other.kind === 'attached' && other.element === end.element)
+    !(other.kind !== 'free' && other.element === end.element)
     ? undefined
     : OperationFailure.InvalidFlowEndpoint({ side, reference: end.element });
 }
@@ -238,7 +238,7 @@ export function withStoredName<Held extends Element | DrawnElement>(
     : element;
 }
 
-/** The relationship issues of `element` against the elements of its diagram, or undefined. */
+/** The relationship issues of `element` against the elements `known` holds, or undefined. */
 export function invalidRelationships(
   element: Element,
   known: ReadonlyMap<ElementId, Element>,
@@ -252,35 +252,4 @@ export function invalidRelationships(
         elementId: element.id,
         issues,
       });
-}
-
-/** The elements the diagram at `diagramIndex` places, keyed by id. */
-export function elementsOnDiagram(
-  model: Model,
-  diagramIndex: number,
-): Map<ElementId, Element> {
-  const placed = new Set<string>(
-    model.diagrams[diagramIndex].placements.map(({ element }) => element),
-  );
-  return new Map(
-    model.elements
-      .filter(({ id }) => placed.has(id))
-      .map((element) => [element.id, element]),
-  );
-}
-
-/**
- * The elements of the diagram that places `elementId`, keyed by id, which
- * is where its relationship lists resolve. Empty where no diagram places it.
- */
-export function elementsDrawnWith(
-  model: Model,
-  elementId: ElementId,
-): Map<ElementId, Element> {
-  const diagramIndex = model.diagrams.findIndex((diagram) =>
-    diagram.placements.some(({ element }) => element === elementId),
-  );
-  return diagramIndex === -1
-    ? new Map<ElementId, Element>()
-    : elementsOnDiagram(model, diagramIndex);
 }

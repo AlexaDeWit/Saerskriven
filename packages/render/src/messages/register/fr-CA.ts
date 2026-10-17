@@ -9,6 +9,7 @@ export const registerFrCA = catalogue(registerMessages)('fr-CA')({
   title: 'Titre',
   elements: 'Éléments',
   'whole-model': 'Le modèle entier',
+  'element-on-diagrams': '{name} (sur {diagrams})',
   category: 'Catégorie',
   severity: 'Gravité',
   status: 'État',

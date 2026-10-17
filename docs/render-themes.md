@@ -215,9 +215,11 @@ the register carries the threat details. Unattached flow ends appear as
 separate free endpoints.
 
 Trust boundaries become groups only where their declared containment forms
-an acyclic hierarchy with one parent per element. The export does not infer
-containment from drawn positions. Brief notes name boundaries that cannot be
-shown and connections represented by reference placeholders. Cosmetic
+an acyclic hierarchy with one parent per element. A group holds only the
+members placed on its diagram. The export does not infer containment from
+drawn positions. A flow end attached to an element on another diagram is drawn
+as a reference placeholder naming it. Brief notes name boundaries that cannot
+be shown and connections represented by reference placeholders. Cosmetic
 differences do not generate notes.
 
 Omit `--include-diagrams` to keep the existing register output, including when

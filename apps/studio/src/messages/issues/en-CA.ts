@@ -53,7 +53,7 @@ export const issuesEnCA = catalogue(issueMessages)('en-CA')({
   'placement-element-unknown':
     'the diagram places "{id}", which names no element of the model',
   'duplicate-placement':
-    'the element "{id}" is placed a second time, and an element is drawn once, on one diagram',
+    'the element "{id}" is placed a second time on one diagram, and an element is drawn at most once on each',
   'placement-geometry-mismatch':
     'the placement of "{id}" does not hold the geometry its kind takes',
   'element-unplaced': 'the element "{id}" is placed on no diagram',
@@ -70,14 +70,14 @@ export const issuesEnCA = catalogue(issueMessages)('en-CA')({
   'flow-endpoint-self':
     'the flow names its own id "{id}", and a flow cannot anchor to itself',
   'flow-endpoint-foreign':
-    'the element "{id}" is not in the flow’s own diagram',
+    'the element "{id}" is not on a diagram drawing the flow, where the end holds no position',
   'unknown-element-reference': 'no element of the model has the id "{id}"',
   'unknown-threat-reference': 'no threat of the model has the id "{id}"',
-  'related-element-unknown':
-    '"{id}" names no other element of the element’s own diagram',
-  'related-boundary-unknown':
-    '"{id}" names no trust boundary of the element’s own diagram',
-  'related-flow-unknown': '"{id}" names no flow of the element’s own diagram',
+  'related-element-unknown': '"{id}" names no other element of the model',
+  'related-boundary-unknown': '"{id}" names no trust boundary of the model',
+  'related-flow-unknown': '"{id}" names no flow of the model',
+  'related-off-diagram':
+    '"{id}" is on another diagram, and this file relates elements of one diagram only',
   'issue-flood': 'the file has more problems than a parse can list',
   'schema-threw': 'the parse stopped before it could report what is wrong',
 });

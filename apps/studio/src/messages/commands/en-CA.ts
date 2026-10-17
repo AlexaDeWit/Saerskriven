@@ -34,6 +34,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'label-undo': 'Undo',
   'label-redo': 'Redo',
   'label-delete': 'Delete selection',
+  'label-delete-from-model': 'Delete from model',
   'label-rename': 'Rename selection',
   'label-model-panel': 'Model',
   'label-focus-threats': 'Focus threats',

@@ -1,13 +1,16 @@
 import { placedOnto, placementIn } from '@saerskriven/model/fixtures';
-import type { Model } from '@saerskriven/model';
+import { drawnElementSchema, type Model } from '@saerskriven/model';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { FileLifecycle, initialState, type State } from '../store/state.js';
+import { Action } from '../store/actions.js';
 import {
   actorElement,
   foreignSource,
+  mainDiagram,
+  otherElement,
   twoDiagramModel,
 } from '../store/store.fixtures.js';
-import { modelStore } from '../store/store.js';
+import { dispatch, modelStore } from '../store/store.js';
 import { useFileSession } from './file-commands.js';
 import { FileReports } from './file-reports.js';
 import { specBridge } from './files.fixtures.js';
@@ -23,6 +26,20 @@ const sharedAgain: Model = {
   ...shared,
   metadata: { ...shared.metadata, title: 'Renamed' },
 };
+
+const zone = drawnElementSchema.parse({
+  kind: 'trust-boundary',
+  id: 'zone-reading',
+  name: 'Reading zone',
+  description: '',
+  outOfScope: false,
+  reasonOutOfScope: '',
+  shape: {
+    kind: 'box',
+    position: { x: -20, y: -20 },
+    size: { width: 600, height: 120 },
+  },
+});
 
 const at = (present: Model): State => initialState(present);
 
@@ -130,6 +147,44 @@ describe('the version report under the chrome card', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Dismiss version report' }),
     );
+    expect(screen.queryByTestId('version-report')).toBeNull();
+  });
+
+  it('shows at a relationship edit naming an element of another diagram, and goes at the Delete that brings the model back to version 2', () => {
+    render(<Reports />);
+    act(() => {
+      dispatch(
+        Action.AddElement({
+          diagramId: mainDiagram,
+          element: zone,
+          decimals: 0,
+        }),
+      );
+    });
+    expect(screen.queryByTestId('version-report')).toBeNull();
+
+    act(() => {
+      dispatch(
+        Action.SetElementProperties({
+          elementId: zone.id,
+          properties: {
+            kind: 'trust-boundary',
+            containedElements: [otherElement],
+          },
+        }),
+      );
+    });
+    expect(screen.queryByTestId('version-report')).not.toBeNull();
+
+    act(() => {
+      dispatch(
+        Action.DeleteFromDiagram({
+          diagramId: mainDiagram,
+          elementIds: [zone.id],
+          decimals: 0,
+        }),
+      );
+    });
     expect(screen.queryByTestId('version-report')).toBeNull();
   });
 });

@@ -42,7 +42,9 @@ host provides.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. A model edit
   carries one operation and its arguments, so an unlink that removes a record
   from its last reference is one undo step. `MoveElements` and
-  `RemoveElements` fold the matching operation over one ID array, `SetAccent`
+  `RemoveElements` fold the matching operation over one ID array, and
+  `DeleteFromDiagram` folds over its IDs taking an element on another diagram
+  off the one it names and removing every other from the model, `SetAccent`
   hands its ID array to the one operation that takes several, and
   `InsertFragment` and `ArrangeElements` apply a paste or an arrangement
   atomically, before history records the result. `AddDiagram` appends a
@@ -117,7 +119,8 @@ An edit that writes geometry carries `decimals`, and its arm hands the count
 to the model operation it calls, which rounds what it writes
 ([the model](../../../../packages/model/README.md#operations)). The actions
 are `AddElement`, `MoveElement`, `MoveElements`, `ArrangeElements`,
-`ResizeElement`, `RemoveElement`, `RemoveElements`, `SetFlowWaypoints`,
+`ResizeElement`, `RemoveElement`, `RemoveElements`, `DeleteFromDiagram`,
+`SetFlowWaypoints`,
 `SetFlowEndPosition` and `SetBoundaryShape`. The field is required, so an edit
 that means the operation to store what it computes says `undefined`, and one
 that forgot does not compile. The store holds no count of its own and rounds

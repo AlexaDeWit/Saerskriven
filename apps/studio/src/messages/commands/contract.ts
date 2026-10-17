@@ -38,6 +38,7 @@ export const commandMessages = {
   'label-undo': text(),
   'label-redo': text(),
   'label-delete': text(),
+  'label-delete-from-model': text(),
   'label-rename': text(),
   'label-model-panel': text(),
   'label-focus-threats': text(),

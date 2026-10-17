@@ -45,7 +45,12 @@ import { dispatch, useModelStore } from '../store/store.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import { useBoxSelection } from './box-selection.js';
 import { applyConnection, betweenTwoElements } from './changes.js';
-import { beginEditingText, drawnElement, removeSelected } from './edits.js';
+import {
+  beginEditingText,
+  drawnElement,
+  removeSelected,
+  removeSelectedFromModel,
+} from './edits.js';
 import { CurvePointControls } from './curve-point-controls.js';
 import { useCurvePoints } from './curve-points.js';
 import { useFlowBends } from './flow-bends.js';
@@ -106,6 +111,7 @@ const canvasCommands = [
   'hand-tool',
   'focus-threats',
   'delete',
+  'delete-from-model',
   'select-tool',
 ] as const;
 
@@ -247,13 +253,16 @@ export function DiagramCanvas({
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
     keyboardMove.current?.(event);
+    const command = commandFor(event, hostPlatform)?.id;
     if (
       keyboardOwner(event.target) !== 'page' ||
-      commandFor(event, hostPlatform)?.id !== 'delete'
+      (command !== 'delete' && command !== 'delete-from-model')
     ) {
       return;
     }
-    if (!removeSelected()) {
+    if (
+      !(command === 'delete' ? removeSelected() : removeSelectedFromModel())
+    ) {
       return;
     }
     event.preventDefault();

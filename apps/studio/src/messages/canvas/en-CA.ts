@@ -33,6 +33,12 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
     one: 'Removed {count} element.',
     other: 'Removed {count} elements.',
   },
+  'unplaced-named': '{name} removed from {diagram}.',
+  'unplaced-elements': {
+    one: '{count} element removed from {diagram}.',
+    other: '{count} elements removed from {diagram}.',
+  },
+  'still-on': 'Still on {diagrams}.',
   'flows-detached': {
     one: '{count} flow detached.',
     other: '{count} flows detached.',

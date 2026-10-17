@@ -47,10 +47,20 @@ export const featureCompleteV3Yaml: string = committedText(
 );
 
 /**
+ * `test-data/saerskriven/shared-elements-v3.yaml`, the model fixture
+ * `sharedModel` written once in version 3 and frozen: a process, a trust
+ * boundary and a note placed on two diagrams, and a flow whose target is
+ * drawn at a position away from its store on one of them.
+ */
+export const sharedElementsYaml: string = committedText(
+  'saerskriven/shared-elements-v3.yaml',
+);
+
+/**
  * The feature-complete model with one more flow, from its booking service to
  * its records service, placed on the records diagram with its source drawn
- * at a position away from its element: a model only version 3 holds, built
- * without the parse that still refuses it.
+ * at a position away from its element: a model only version 3 holds, with
+ * no element shared.
  */
 export const withFlowDrawnAway = (model: Model): Model => {
   const away: Element = {

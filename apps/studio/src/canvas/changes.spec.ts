@@ -4,7 +4,7 @@ import {
   layoutDiagram,
   toReactFlowNodes,
 } from '@saerskriven/canvas';
-import type { ElementId, Flow } from '@saerskriven/model';
+import type { DrawnFlow, ElementId } from '@saerskriven/model';
 import { drawnAt, elementIn } from '@saerskriven/model/fixtures';
 import { Action } from '../store/actions.js';
 import {
@@ -61,7 +61,7 @@ const anchor = flowEndNodeId(probeFlow, 'target');
 const selectionHeld = (): readonly ElementId[] =>
   modelStore.getState().selection;
 
-const flowDrawn = (): Flow | undefined => {
+const flowDrawn = (): DrawnFlow | undefined => {
   const drawn = drawnAt(modelStore.getState().present).at(-1);
   return drawn?.kind === 'flow' ? drawn : undefined;
 };

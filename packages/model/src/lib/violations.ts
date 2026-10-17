@@ -1,24 +1,37 @@
 import type { z } from 'zod';
 import { drawnElement } from './drawing.js';
+import type { DrawnElement } from './drawn-elements.js';
 import type { Element } from './elements.js';
 import type { ElementId } from './ids.js';
 import type { modelSchema } from './model.js';
 import type { ParseIssue, ParseIssueCode } from './parse-issue.js';
-import { elementsById, endpointViolationsOf } from './references.js';
+import type { Placement } from './placements.js';
+import { elementsById } from './references.js';
 import { relationshipIssues } from './relationships.js';
 
 type StructuralModel = z.infer<typeof modelSchema>;
 
 /**
- * What the model's own rules refuse in a structurally valid model: unique
- * identities, one placement of every element that fits it, issuance
- * bookkeeping, and references local to the diagram drawing an element.
- * Each element sharing an id pairs with the first of that id's placements
- * left, in diagram order, whose geometry fits it, or with the first left
- * where none fits. Each copy is checked on the diagram that draws it, so
- * copies placed once each report only as a duplicate id.
+ * Where a boundary's and a flow's relationship lists resolve: anywhere in the
+ * model, or among the elements of the diagrams placing the element that
+ * holds the list, the rule a read of a format with no shared elements keeps.
  */
-export function collectViolations(model: StructuralModel): ParseIssue[] {
+export type RelationshipScope = 'model' | 'diagram';
+
+/**
+ * What the model's own rules refuse in a structurally valid model: unique
+ * identities, a placement of every element that fits it, at most one on each
+ * diagram, issuance bookkeeping, flow ends each diagram can draw, and
+ * relationship lists resolving within `scope`. An element whose id no other
+ * element holds draws each of its placements. Each element sharing an id
+ * pairs with the first of that id's placements left, in diagram order, whose
+ * geometry fits it, or with the first left where none fits, so copies placed
+ * once each report only as a duplicate id.
+ */
+export function collectViolations(
+  model: StructuralModel,
+  scope: RelationshipScope = 'model',
+): ParseIssue[] {
   const drawings = drawingsOf(model);
   return [
     ...elementIdViolations(model),
@@ -30,7 +43,7 @@ export function collectViolations(model: StructuralModel): ParseIssue[] {
     ...recordIdViolations(model),
     ...flowEndpointViolations(model, drawings),
     ...referenceViolations(model),
-    ...relationshipViolations(model, drawings),
+    ...relationshipViolations(model, drawings, scope),
   ];
 }
 
@@ -171,60 +184,86 @@ function duplicateRecordIds(
   );
 }
 
+type Drawing = {
+  readonly diagram: number;
+  readonly placement: Placement;
+};
+
 type Drawings = {
-  readonly diagramOf: readonly (number | undefined)[];
+  readonly elementDrawings: readonly (readonly Drawing[])[];
   readonly drawnBy: readonly (readonly (Element | undefined)[])[];
   readonly neighbours: readonly ReadonlyMap<ElementId, Element>[];
-  readonly ids: readonly ReadonlySet<ElementId>[];
 };
 
 function drawingsOf(model: StructuralModel): Drawings {
   const queued = new Map<ElementId, [number, number][]>();
   model.diagrams.forEach((diagram, diagramIndex) => {
     diagram.placements.forEach(({ element }, placementIndex) => {
-      const queue = queued.get(element) ?? [];
-      queue.push([diagramIndex, placementIndex]);
-      queued.set(element, queue);
+      queued.set(element, [
+        ...(queued.get(element) ?? []),
+        [diagramIndex, placementIndex],
+      ]);
     });
   });
+  const copies = new Map<ElementId, number>();
+  for (const { id } of model.elements) {
+    copies.set(id, (copies.get(id) ?? 0) + 1);
+  }
   const drawnBy = model.diagrams.map(({ placements }) =>
     placements.map((): Element | undefined => undefined),
   );
-  const diagramOf = model.elements.map((element) => {
+  const elementDrawings = model.elements.map((element): Drawing[] => {
     const queue = queued.get(element.id) ?? [];
-    const fitting = queue.findIndex(
-      ([diagramIndex, placementIndex]) =>
-        drawnElement(
-          element,
-          model.diagrams[diagramIndex].placements[placementIndex],
-        ) !== undefined,
-    );
-    const [drawing] = queue.splice(Math.max(fitting, 0), 1);
-    if (drawing === undefined) {
-      return undefined;
-    }
-    const [diagramIndex, placementIndex] = drawing;
-    drawnBy[diagramIndex][placementIndex] = element;
-    return diagramIndex;
+    const taken =
+      copies.get(element.id) === 1
+        ? onEachDiagramOnce(queue)
+        : firstFitting(element, queue, model);
+    return taken.map(([diagramIndex, placementIndex]) => {
+      drawnBy[diagramIndex][placementIndex] = element;
+      return {
+        diagram: diagramIndex,
+        placement: model.diagrams[diagramIndex].placements[placementIndex],
+      };
+    });
   });
-  const elements = elementsById(model.elements);
-  const neighbours = model.diagrams.map(
-    ({ placements }, diagramIndex) =>
+  const neighbours = drawnBy.map(
+    (drawn) =>
       new Map(
-        placements.flatMap(({ element: id }, placementIndex) => {
-          const element =
-            drawnBy[diagramIndex][placementIndex] ?? elements.get(id);
-          return element === undefined ? [] : [[id, element] as const];
-        }),
+        drawn.flatMap((element) =>
+          element === undefined ? [] : [[element.id, element] as const],
+        ),
       ),
   );
-  const ids = neighbours.map((drawn) => new Set(drawn.keys()));
-  return { diagramOf, drawnBy, neighbours, ids };
+  return { elementDrawings, drawnBy, neighbours };
+}
+
+function onEachDiagramOnce(
+  queue: readonly (readonly [number, number])[],
+): (readonly [number, number])[] {
+  return queue.filter(
+    ([diagramIndex], index) =>
+      queue.findIndex(([held]) => held === diagramIndex) === index,
+  );
+}
+
+function firstFitting(
+  element: Element,
+  queue: [number, number][],
+  model: StructuralModel,
+): (readonly [number, number])[] {
+  const fitting = queue.findIndex(
+    ([diagramIndex, placementIndex]) =>
+      drawnElement(
+        element,
+        model.diagrams[diagramIndex].placements[placementIndex],
+      ) !== undefined,
+  );
+  return queue.splice(Math.max(fitting, 0), 1);
 }
 
 function placementViolations(
   model: StructuralModel,
-  { drawnBy }: Drawings,
+  { drawnBy, neighbours }: Drawings,
 ): ParseIssue[] {
   const known = new Set<string>(model.elements.map(({ id }) => id));
   return model.diagrams.flatMap((diagram, diagramIndex) =>
@@ -245,7 +284,9 @@ function placementViolations(
           },
         ];
       }
-      return drawnElement(element, placement) === undefined
+      const drawn = drawnElement(element, placement);
+      return drawn === undefined ||
+        drawnAwayFromNeighbour(drawn, neighbours[diagramIndex])
         ? [
             {
               path,
@@ -257,6 +298,18 @@ function placementViolations(
           ]
         : [];
     }),
+  );
+}
+
+function drawnAwayFromNeighbour(
+  drawn: DrawnElement,
+  neighbours: ReadonlyMap<ElementId, Element>,
+): boolean {
+  return (
+    drawn.kind === 'flow' &&
+    [drawn.source, drawn.target].some(
+      (end) => end.kind === 'away' && neighbours.has(end.element),
+    )
   );
 }
 
@@ -283,25 +336,50 @@ function unplacedViolations(model: StructuralModel): ParseIssue[] {
 
 function flowEndpointViolations(
   model: StructuralModel,
-  { diagramOf, ids }: Drawings,
+  { elementDrawings, neighbours }: Drawings,
 ): ParseIssue[] {
+  const known = new Set<string>(model.elements.map(({ id }) => id));
   return model.elements.flatMap((element, elementIndex) => {
-    const diagramIndex = diagramOf[elementIndex];
-    if (element.kind !== 'flow' || diagramIndex === undefined) {
+    if (element.kind !== 'flow') {
       return [];
     }
-    return endpointViolationsOf(element, ids[diagramIndex]).map(
-      ({ side, reference, reason }): ParseIssue => ({
-        path: ['elements', elementIndex, side, 'element'],
-        detail: {
-          code:
-            reason === 'self-anchored'
-              ? 'flow-endpoint-self'
-              : 'flow-endpoint-foreign',
-          parameters: { id: reference },
-        },
-      }),
-    );
+    return (['source', 'target'] as const).flatMap((side): ParseIssue[] => {
+      const end = element[side];
+      if (end.kind !== 'attached') {
+        return [];
+      }
+      const path = ['elements', elementIndex, side, 'element'];
+      if (end.element === element.id) {
+        return [
+          {
+            path,
+            detail: {
+              code: 'flow-endpoint-self',
+              parameters: { id: end.element },
+            },
+          },
+        ];
+      }
+      const undrawable =
+        !known.has(end.element) ||
+        elementDrawings[elementIndex].some(
+          ({ diagram, placement }) =>
+            'waypoints' in placement &&
+            placement[side].position === undefined &&
+            !neighbours[diagram].has(end.element),
+        );
+      return undrawable
+        ? [
+            {
+              path,
+              detail: {
+                code: 'flow-endpoint-foreign',
+                parameters: { id: end.element },
+              },
+            },
+          ]
+        : [];
+    });
   });
 }
 
@@ -349,17 +427,24 @@ function referenceViolations(model: StructuralModel): ParseIssue[] {
 
 function relationshipViolations(
   model: StructuralModel,
-  { diagramOf, neighbours }: Drawings,
+  { elementDrawings, neighbours }: Drawings,
+  scope: RelationshipScope,
 ): ParseIssue[] {
-  return model.elements.flatMap((element, elementIndex) => {
-    const diagramIndex = diagramOf[elementIndex];
-    return diagramIndex === undefined
-      ? []
-      : relationshipIssues(element, neighbours[diagramIndex]).map(
-          (issue): ParseIssue => ({
-            path: ['elements', elementIndex, ...issue.path],
-            detail: issue.detail,
-          }),
-        );
-  });
+  const everywhere = elementsById(model.elements);
+  return model.elements.flatMap((element, elementIndex) =>
+    relationshipIssues(
+      element,
+      everywhere,
+      scope === 'model'
+        ? everywhere
+        : new Map(
+            elementDrawings[elementIndex].flatMap(({ diagram }) => [
+              ...neighbours[diagram],
+            ]),
+          ),
+    ).map((issue): ParseIssue => ({
+      path: ['elements', elementIndex, ...issue.path],
+      detail: issue.detail,
+    })),
+  );
 }

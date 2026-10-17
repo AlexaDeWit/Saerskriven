@@ -67,6 +67,13 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
   },
   'op-unknown-element': 'Modellen innehåller inget objekt {id}.',
   'op-not-on-diagram': 'Diagrammet {diagram} ritar inte objektet {id}.',
+  'op-already-on-diagram': 'Diagrammet {diagram} ritar redan objektet {id}.',
+  'op-last-placement':
+    'Diagrammet {diagram} är det sista som ritar objektet {id}. Ta bort det ur modellen i stället.',
+  'op-invalid-placement':
+    'Objektet {id} kan inte ritas i diagrammet {diagram} med den geometrin.',
+  'op-several-diagrams':
+    'Objektet {id} finns i mer än ett diagram: {diagrams}.',
   'op-unknown-threat': 'Modellen innehåller inget hot {id}.',
   'op-unknown-mitigation': 'Modellen innehåller ingen åtgärd {id}.',
   'op-unknown-assumption': 'Modellen innehåller inget antagande {id}.',

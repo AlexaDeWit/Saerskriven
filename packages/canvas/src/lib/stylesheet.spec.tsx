@@ -10,6 +10,7 @@ import { defaultRenderTheme, type RenderTheme } from './render-theme.js';
 import { DiagramGlyphs } from './scene.js';
 import {
   accentClassNames,
+  awayClassNames,
   canvasClassNames,
   renderCanvasStylesheet,
   severityToneClass,
@@ -56,7 +57,11 @@ const emitted = classesEmittedBy(everyGlyphMarkup);
 
 const accentClasses = new Set<string>(Object.values(accentClassNames));
 
-const accentedSheet = renderCanvasStylesheet(defaultRenderTheme, true);
+const awayClasses = new Set<string>(Object.values(awayClassNames));
+
+const accentedSheet = renderCanvasStylesheet(defaultRenderTheme, {
+  accent: true,
+});
 
 const rulesOf = (styles: string): string[] =>
   styles.split('}').map((rule) => rule.trim());
@@ -185,9 +190,9 @@ describe('renderCanvasStylesheet', () => {
 });
 
 describe('themedCanvasStylesheet', () => {
-  it('styles the classes the resolved sheet does and the accent classes, with every colour left to a custom property', () => {
+  it('styles the classes the resolved sheet does, the accent classes and the frame of an end drawn away, with every colour left to a custom property', () => {
     expect(classesStyledBy(themedCanvasStylesheet)).toEqual(
-      new Set([...selected, ...accentClasses]),
+      new Set([...selected, ...accentClasses, ...awayClasses]),
     );
     expect(themedCanvasStylesheet).not.toMatch(/#[0-9A-Fa-f]{3,8}/u);
   });
@@ -244,6 +249,19 @@ describe('themedCanvasStylesheet', () => {
       expect(ruleFor(`.${tone}`)).toBeUndefined();
     }
     expect(forced).not.toMatch(/stroke-dasharray|opacity|forced-color-adjust/u);
+  });
+});
+
+describe('the frame of a flow end drawn away', () => {
+  it('is styled by the resolved sheet only where a drawing holds one, in the light palette', () => {
+    const away = renderCanvasStylesheet(defaultRenderTheme, { awayEnd: true });
+    expect(classesStyledBy(away)).toEqual(
+      new Set([...selected, ...awayClasses]),
+    );
+    expect(away).toContain(
+      `.${awayClassNames.frame} {\n  fill: ${lightPalette.surfaceCanvas};`,
+    );
+    expect(classesStyledBy(sheet)).not.toContain(awayClassNames.frame);
   });
 });
 
@@ -307,7 +325,12 @@ describe('an out-of-scope element', () => {
         (rule) =>
           dashOf(rule) !== undefined && !rule.includes(accentClassNames.strong),
       ),
-    ).toEqual([boundary, outline, ruleStarting(accentedNoteFrame)]);
+    ).toEqual([
+      boundary,
+      outline,
+      ruleStarting(accentedNoteFrame),
+      ruleStarting(`.${awayClassNames.frame} {`),
+    ]);
     expect(Math.max(...selectorsOf(boundary).map(classesNamedBy))).toBeLessThan(
       classesNamedBy(dotted),
     );
@@ -353,7 +376,9 @@ describe('an accent', () => {
   ] as const;
 
   it('is styled by the resolved sheet only where a drawing holds one, in the light palette and with no property to resolve', () => {
-    expect(renderCanvasStylesheet(defaultRenderTheme, false)).toBe(sheet);
+    expect(renderCanvasStylesheet(defaultRenderTheme, { accent: false })).toBe(
+      sheet,
+    );
     expect(classesStyledBy(accentedSheet)).toEqual(
       new Set([...selected, ...accentClasses]),
     );
@@ -472,7 +497,7 @@ describe('an accent', () => {
         process: darkPalette.surfaceProcess,
       },
     };
-    const themed = rulesOf(renderCanvasStylesheet(darkTheme, true));
+    const themed = rulesOf(renderCanvasStylesheet(darkTheme, { accent: true }));
     const tintOf = (className: string): Colour => {
       const rule = ruleIn(themed, `.${className} .${accentClassNames.tinted}`);
       return `#${/fill: #(?<tint>[0-9A-F]{6});/u.exec(rule ?? '')?.groups?.tint ?? ''}`;

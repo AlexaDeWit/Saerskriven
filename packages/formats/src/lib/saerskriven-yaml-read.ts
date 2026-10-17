@@ -1,6 +1,7 @@
 import {
   accentSchema,
   atDrawnPaths,
+  drawnRelationshipScope,
   elementIdSchema,
   parseModel,
   type Accent,
@@ -62,10 +63,12 @@ import { undeclaredDivergences } from './undeclared.js';
  * onto the model's input types, mirroring `saerskriven-yaml-write.ts`, and
  * ids cross as plain strings for `parseModel` to brand. A refusal of the
  * model is pathed into the file as its own version holds it: a file below
- * version 3 has its diagrams own their elements. A threat that leaves
+ * version 3 has its diagrams own their elements, and keeps each relationship
+ * list inside its element's diagram (`drawnRelationshipScope`). A threat that leaves
  * `appliesToModel` out does not apply to the model. A placement whose
  * `accent` is none of the model's keys is read with no accent and reported
- * as `narrowed`.
+ * as `narrowed`, once for each element and key however many placements of
+ * the element hold it.
  */
 export function readSaerskrivenYaml(
   text: string,
@@ -107,13 +110,18 @@ function modelOf(
   stated: SaerskrivenYamlVersionedDocument,
   current: SaerskrivenYamlV3Document,
 ): Either.Either<Model, ReadFailure> {
-  return Either.mapLeft(parseModel(toModelInput(current)), ({ issues }) =>
-    ReadFailure.InvalidModel({
-      issues:
-        stated.formatVersion === 3
-          ? issues
-          : atDrawnPaths(issues, stated.diagrams),
-    }),
+  return Either.mapLeft(
+    parseModel(
+      toModelInput(current),
+      stated.formatVersion === 3 ? 'model' : drawnRelationshipScope,
+    ),
+    ({ issues }) =>
+      ReadFailure.InvalidModel({
+        issues:
+          stated.formatVersion === 3
+            ? issues
+            : atDrawnPaths(issues, stated.diagrams),
+      }),
   );
 }
 
@@ -214,29 +222,27 @@ function toAccent(placement: SaerskrivenYamlV3Placement): {
 }
 
 function unknownAccents(document: SaerskrivenYamlV3Document): Divergence[] {
-  return document.diagrams
-    .flatMap((diagram) => diagram.placements)
-    .flatMap((placement): Divergence[] => {
-      if (
-        placement.accent === undefined ||
-        accentSchema.safeParse(placement.accent).success
-      ) {
-        return [];
-      }
-      const id = elementIdSchema.safeParse(placement.element);
-      return id.success
-        ? [
-            {
-              subject: { kind: 'element', id: id.data },
-              detail: {
-                code: 'accent-unknown',
-                parameters: { accent: placement.accent },
-              },
-              reason: 'narrowed',
-            },
-          ]
-        : [];
-    });
+  const unknown = new Map<string, Divergence>();
+  for (const placement of document.diagrams.flatMap(
+    (diagram) => diagram.placements,
+  )) {
+    const id = elementIdSchema.safeParse(placement.element);
+    if (
+      placement.accent !== undefined &&
+      id.success &&
+      !accentSchema.safeParse(placement.accent).success
+    ) {
+      unknown.set(JSON.stringify([id.data, placement.accent]), {
+        subject: { kind: 'element', id: id.data },
+        detail: {
+          code: 'accent-unknown',
+          parameters: { accent: placement.accent },
+        },
+        reason: 'narrowed',
+      });
+    }
+  }
+  return [...unknown.values()];
 }
 
 function toEndpoint(endpoint: SaerskrivenYamlV3Endpoint): FlowEndpointInput {

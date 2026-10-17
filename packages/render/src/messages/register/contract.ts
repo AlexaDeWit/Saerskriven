@@ -6,7 +6,9 @@ import { text } from '@saerskriven/i18n';
  * both as nodes, so each language places its own punctuation between them.
  * `flow-from-to` and `flow-between` name a flow left unlabelled by its ends,
  * and `free-point` is an end attached to nothing. `whole-model` stands among
- * a threat's elements where the threat applies to the model.
+ * a threat's elements where the threat applies to the model, and
+ * `element-on-diagrams` follows an element placed on more than one diagram
+ * with the titles of those diagrams.
  */
 export const registerMessages = {
   untitled: text(),
@@ -16,6 +18,7 @@ export const registerMessages = {
   title: text(),
   elements: text(),
   'whole-model': text(),
+  'element-on-diagrams': text({ name: 'text', diagrams: 'text' }),
   category: text(),
   severity: text(),
   status: text(),

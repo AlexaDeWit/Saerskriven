@@ -4,6 +4,7 @@ import { toolMessages } from './contract.js';
 export const toolsFrCA = catalogue(toolMessages)('fr-CA')({
   'diagram-region': 'Diagramme',
   'free-point': 'un point libre',
+  'away-end': '{name} sur un autre diagramme',
   'flow-between': 'entre {source} et {target}',
   'flow-from-to': 'depuis {source} vers {target}',
   'open-threats': {

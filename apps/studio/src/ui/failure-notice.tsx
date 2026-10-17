@@ -142,6 +142,21 @@ export function describeOperation(
     ElementNotOnDiagram: ({ elementId, diagramId }) => [
       t('notice.op-not-on-diagram', { id: elementId, diagram: diagramId }),
     ],
+    ElementAlreadyOnDiagram: ({ elementId, diagramId }) => [
+      t('notice.op-already-on-diagram', { id: elementId, diagram: diagramId }),
+    ],
+    LastPlacement: ({ elementId, diagramId }) => [
+      t('notice.op-last-placement', { id: elementId, diagram: diagramId }),
+    ],
+    InvalidPlacement: ({ elementId, diagramId }) => [
+      t('notice.op-invalid-placement', { id: elementId, diagram: diagramId }),
+    ],
+    ElementOnSeveralDiagrams: ({ elementId, diagramIds }) => [
+      t('notice.op-several-diagrams', {
+        id: elementId,
+        diagrams: diagramIds.join(', '),
+      }),
+    ],
     UnknownThreat: ({ threatId }) => [
       t('notice.op-unknown-threat', { id: threatId }),
     ],

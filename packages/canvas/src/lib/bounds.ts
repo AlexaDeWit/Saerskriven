@@ -1,4 +1,5 @@
 import type { Point } from '@saerskriven/model';
+import { awayEndLabels } from './away-ends.js';
 import { badgeAnchor, badgeBox, type ThreatBadge } from './badges.js';
 import { edgePoints } from './flow-anchors.js';
 import { boxOfPoints, cornersOfBox, shiftedBy } from './geometry.js';
@@ -11,8 +12,8 @@ import { placedTextCorners } from './text-placement.js';
 /**
  * The extent of what a layout paints: node outlines, a boundary curve's
  * control polygon, an out-of-scope note's frame, element text and badges,
- * flow lines and arrowheads, and the backing of each flow's block, which
- * holds its name and badge. Stroke widths straddle the lines they paint and
+ * flow lines and arrowheads, the backing of each flow's block, which holds
+ * its name and badge, and the frame of each end drawn away from its element. Stroke widths straddle the lines they paint and
  * are left for the caller to pad.
  */
 export type CanvasBounds = {
@@ -82,6 +83,7 @@ function drawnEdgePoints(edge: CanvasEdge): Point[] {
     ...(edge.label.backing === undefined
       ? []
       : cornersOfBox(edge.label.backing)),
+    ...awayEndLabels(edge).flatMap(({ frame }) => cornersOfBox(frame)),
   ];
 }
 

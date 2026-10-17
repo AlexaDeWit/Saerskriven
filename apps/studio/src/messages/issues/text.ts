@@ -83,6 +83,8 @@ export function parseIssueDetail(t: Speaker, detail: ParseIssueDetail): string {
       return t('issues.related-boundary-unknown', detail.parameters);
     case 'related-flow-unknown':
       return t('issues.related-flow-unknown', detail.parameters);
+    case 'related-off-diagram':
+      return t('issues.related-off-diagram', detail.parameters);
     case 'issue-flood':
       return t('issues.issue-flood');
     case 'schema-threw':

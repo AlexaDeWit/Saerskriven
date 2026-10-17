@@ -98,6 +98,7 @@ export const parseIssueDetailSchema = z.discriminatedUnion('code', [
   carrying('related-element-unknown', identified),
   carrying('related-boundary-unknown', identified),
   carrying('related-flow-unknown', identified),
+  carrying('related-off-diagram', identified),
   coded('issue-flood'),
   carrying('schema-threw', { reason: z.string() }),
 ]);
@@ -233,7 +234,7 @@ export function parseIssueText(detail: ParseIssueDetail): string {
     case 'placement-element-unknown':
       return `places unknown element id "${detail.parameters.id}"`;
     case 'duplicate-placement':
-      return `places element id "${detail.parameters.id}" a second time: an element is drawn on one diagram, once`;
+      return `places element id "${detail.parameters.id}" a second time: an element is drawn at most once on each diagram`;
     case 'placement-geometry-mismatch':
       return `the placement of element id "${detail.parameters.id}" does not hold the geometry its kind takes`;
     case 'element-unplaced':
@@ -251,17 +252,19 @@ export function parseIssueText(detail: ParseIssueDetail): string {
     case 'flow-endpoint-self':
       return `references the flow's own id "${detail.parameters.id}": a flow cannot anchor to itself`;
     case 'flow-endpoint-foreign':
-      return `references element id "${detail.parameters.id}", which is not in the flow's own diagram`;
+      return `references element id "${detail.parameters.id}", which a diagram drawing the flow does not place, and the end holds no position there`;
     case 'unknown-element-reference':
       return `names unknown element id "${detail.parameters.id}"`;
     case 'unknown-threat-reference':
       return `names unknown threat id "${detail.parameters.id}"`;
     case 'related-element-unknown':
-      return `references "${detail.parameters.id}", which must name another element in the element's own diagram`;
+      return `references "${detail.parameters.id}", which must name another element of the model`;
     case 'related-boundary-unknown':
-      return `references "${detail.parameters.id}", which must name a trust boundary in the element's own diagram`;
+      return `references "${detail.parameters.id}", which must name a trust boundary of the model`;
     case 'related-flow-unknown':
-      return `references "${detail.parameters.id}", which must name a flow in the element's own diagram`;
+      return `references "${detail.parameters.id}", which must name a flow of the model`;
+    case 'related-off-diagram':
+      return `references "${detail.parameters.id}", which is on another diagram, and this file relates only elements of one diagram`;
     case 'issue-flood':
       return 'the input has more problems than a parse can list';
     case 'schema-threw':

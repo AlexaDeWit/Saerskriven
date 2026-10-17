@@ -213,7 +213,7 @@ function routeAnnouncement(flow: DrawnFlow, target: RouteTarget): Said {
 
 /** What freeing one end of `flow`, or moving it where it is already free, says. */
 export function freeEndSaid(flow: DrawnFlow, end: 'source' | 'target'): Said {
-  const moved = flow[end].kind === 'free';
+  const moved = flow[end].kind !== 'attached';
   return (t) => {
     const named = { flow: spokenElement(t, flow) };
     if (end === 'source') {

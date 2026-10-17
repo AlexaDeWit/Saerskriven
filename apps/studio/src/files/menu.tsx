@@ -406,6 +406,7 @@ function EditMenu() {
         ))}
       </Submenu>
       <MenuCommand command="rename" disabled={!renamable} />
+      <MenuCommand command="delete-from-model" disabled={nothing} />
     </DropdownMenu.Group>
   );
 }

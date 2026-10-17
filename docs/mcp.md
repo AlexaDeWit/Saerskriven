@@ -424,8 +424,8 @@ any other kind. `set_element_properties`, `set_element_details`, `set_accent`,
 `rename_element` and `edit_note` leave the element at its place in its
 diagram's element list.
 
-`remove_element` takes the element out of its diagram, out of every declared
-boundary relationship there and off every threat. The flows attached to it
+`remove_element` takes the element out of every diagram it is on, out of every
+declared boundary relationship and off every threat. The flows attached to it
 stay, each end that was attached to it freed at its anchor: the centre of an
 actor, process, store, text note or box boundary, the first point of a curve
 boundary, or, for a removed flow, its first bend, else its first free end,
@@ -437,6 +437,13 @@ Every `x` and `y` an edit passes, an `offset` included, is from -1,000,000 to
 1,000,000, and every `width` and `height` from 1 to 1,000,000
 ([the format's bound](saerskriven-yaml.md#geometry)). An edit passing a number
 outside that is refused.
+
+An element can be [on more than one diagram](saerskriven-yaml.md#shared-elements),
+with its own geometry and accent on each. The geometry edits, `set_accent`,
+`reconnect_flow` and `set_flow_end_position` name no diagram, so they refuse
+such an element, naming the diagrams it is on. Its name, details, properties,
+note text and threats are the element's, and every other edit changes them on
+every diagram.
 
 `move_element` translates an element by `offset`, relative to where it is: the
 position of an actor, process, store, text note or box boundary, every point

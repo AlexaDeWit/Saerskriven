@@ -34,6 +34,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'label-undo': 'Ångra',
   'label-redo': 'Gör om',
   'label-delete': 'Ta bort markeringen',
+  'label-delete-from-model': 'Ta bort ur modellen',
   'label-rename': 'Byt namn på markeringen',
   'label-model-panel': 'Modell',
   'label-focus-threats': 'Gå till hoten',

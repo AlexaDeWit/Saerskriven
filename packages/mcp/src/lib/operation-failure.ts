@@ -31,6 +31,14 @@ export function describeOperationFailure(failure: OperationFailure): string {
       `The model holds no element ${quotedForTerminal(elementId)}.`,
     ElementNotOnDiagram: ({ elementId, diagramId }) =>
       `Diagram ${quotedForTerminal(diagramId)} does not draw element ${quotedForTerminal(elementId)}.`,
+    ElementAlreadyOnDiagram: ({ elementId, diagramId }) =>
+      `Diagram ${quotedForTerminal(diagramId)} already draws element ${quotedForTerminal(elementId)}, and an element is drawn at most once on each diagram.`,
+    LastPlacement: ({ elementId, diagramId }) =>
+      `Diagram ${quotedForTerminal(diagramId)} is the last one drawing element ${quotedForTerminal(elementId)}, and every element is drawn on a diagram: remove the element with remove_element instead.`,
+    InvalidPlacement: ({ elementId, diagramId }) =>
+      `The placement of element ${quotedForTerminal(elementId)} on diagram ${quotedForTerminal(diagramId)} is refused: it holds geometry the element's kind does not take, or a flow end the diagram cannot draw. An end attached to an element the diagram draws holds no position, and every other end holds one.`,
+    ElementOnSeveralDiagrams: ({ elementId, diagramIds }) =>
+      `Element ${quotedForTerminal(elementId)} is drawn on more than one diagram (${diagramIds.map((id) => quotedForTerminal(id)).join(', ')}), and this edit cannot name the one it applies to.`,
     UnknownThreat: ({ threatId }) =>
       `The model holds no threat ${quotedForTerminal(threatId)}.`,
     UnknownMitigation: ({ mitigationId }) =>

@@ -6,42 +6,6 @@ import { isEmptyName } from './text.js';
 import type { Threat } from './threats.js';
 
 /**
- * One attached flow endpoint that cannot anchor where it points: at the
- * flow itself, or at an id the diagram drawing the flow does not place.
- */
-export type EndpointViolation = {
-  readonly side: 'source' | 'target';
-  readonly reference: ElementId;
-  readonly reason: 'self-anchored' | 'outside-diagram';
-};
-
-/**
- * The violations among one flow's attached endpoints, checked against the
- * element ids of the diagram drawing it, which include the flow's own. This
- * is the rule parse applies, and the edit operations hold a new end to a
- * stricter one.
- */
-export function endpointViolationsOf(
-  flow: Flow,
-  diagramElementIds: ReadonlySet<string>,
-): EndpointViolation[] {
-  return (['source', 'target'] as const).flatMap(
-    (side): EndpointViolation[] => {
-      const endpoint = flow[side];
-      if (endpoint.kind !== 'attached') {
-        return [];
-      }
-      if (endpoint.element === flow.id) {
-        return [{ side, reference: endpoint.element, reason: 'self-anchored' }];
-      }
-      return diagramElementIds.has(endpoint.element)
-        ? []
-        : [{ side, reference: endpoint.element, reason: 'outside-diagram' }];
-    },
-  );
-}
-
-/**
  * One end of a flow as a reader names it: the element it attaches to, the id
  * of an attached element the lookup does not hold, or a free point.
  */

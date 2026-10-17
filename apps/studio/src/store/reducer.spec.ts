@@ -153,6 +153,11 @@ const applied: ActionsByTag<ModelActionTag> = {
     elementIds: [actorElement, processElement],
     decimals: 3,
   }),
+  DeleteFromDiagram: Action.DeleteFromDiagram({
+    diagramId: mainDiagram,
+    elementIds: [actorElement, processElement],
+    decimals: 3,
+  }),
   MoveElement: Action.MoveElement({
     diagramId: mainDiagram,
     elementId: processElement,
@@ -334,6 +339,11 @@ const refused: ActionsByTag<ModelActionTag> = {
     decimals: undefined,
   }),
   RemoveElements: Action.RemoveElements({
+    elementIds: [processElement, elementId('element-missing')],
+    decimals: undefined,
+  }),
+  DeleteFromDiagram: Action.DeleteFromDiagram({
+    diagramId: mainDiagram,
     elementIds: [processElement, elementId('element-missing')],
     decimals: undefined,
   }),

@@ -5,7 +5,11 @@ import {
   type Diagram,
   type Model,
 } from '@saerskriven/model';
-import { committedDiagrams, committedModel } from '@saerskriven/model/fixtures';
+import {
+  committedDiagrams,
+  committedModel,
+  sharedModel,
+} from '@saerskriven/model/fixtures';
 import { builtModule, stop, unbuilt } from '@saerskriven/wasm/fixtures';
 import { readFileSync } from 'node:fs';
 import {
@@ -93,12 +97,14 @@ export type GoldenDocument = {
 };
 
 /**
- * Every committed diagram as a golden. A golden takes the stem of its model's
- * file, and the diagram id after it where the model holds more than one
- * diagram, so a diagram joins every suite here by joining `committedDiagrams`.
+ * Every committed diagram as a golden, and the overview of the shared
+ * elements model, the one holding a flow end drawn away. A golden takes the
+ * stem of its model's file, and the diagram id after it where the model holds
+ * more than one diagram, so a diagram joins every suite here by joining
+ * `committedDiagrams`.
  */
-export const goldenDocuments: readonly GoldenDocument[] = committedDiagrams.map(
-  ({ name, file, diagram }) => {
+export const goldenDocuments: readonly GoldenDocument[] = [
+  ...committedDiagrams.map(({ name, file, diagram }) => {
     const model = committedModel(file);
     const fileStem = file.replace(/\.model\.json$/u, '');
     const stem =
@@ -112,8 +118,15 @@ export const goldenDocuments: readonly GoldenDocument[] = committedDiagrams.map(
       svg: `test-data/render/${stem}${svgSuffix}`,
       png: `test-data/render/${stem}${pngSuffix}`,
     };
+  }),
+  {
+    name: 'the shared overview diagram',
+    model: sharedModel,
+    diagram: 0,
+    svg: `test-data/render/shared-elements-overview${svgSuffix}`,
+    png: `test-data/render/shared-elements-overview${pngSuffix}`,
   },
-);
+];
 
 /** The diagram a golden entry names. */
 export function diagramOf(entry: GoldenDocument): Diagram {

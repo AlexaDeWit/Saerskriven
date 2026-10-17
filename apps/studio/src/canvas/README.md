@@ -129,8 +129,9 @@ a scheme or holds a mode. The CLI embeds the resolved sheet instead.
   read in `diagram-canvas.module.css` rather than held as state, so hovering
   costs no render of a canvas that rebuilds every node.
 - **Delete and Backspace are bound twice**, by the command registry for the
-  page and by the canvas for itself. A press the canvas answered is marked
-  handled, so one press is one removal ([the commands](../commands/README.md)).
+  page and by the canvas for itself, and so are Delete from model's chords. A
+  press the canvas answered is marked handled, so one press is one removal
+  ([the commands](../commands/README.md)).
 - **Registered Ctrl or Cmd commands on canvas items run during capture.**
   `item-focus.ts` uses the page binding's command lookup before React Flow or
   resize controls handle the press. Text fields and overlays retain their

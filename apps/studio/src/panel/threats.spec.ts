@@ -1,4 +1,5 @@
 import {
+  elementOf,
   elementsById,
   reconnectFlow,
   renameElement,
@@ -13,7 +14,7 @@ import {
 import { locales, type Locale } from '@saerskriven/i18n';
 import {
   elementId,
-  elementIn,
+  heldElement,
   redrawn,
   threatId,
 } from '@saerskriven/model/fixtures';
@@ -145,18 +146,26 @@ const fromReaderToStudio = (speak: typeof t): string =>
   speak('tools.flow-from-to', { source: 'Reader', target: 'Studio' });
 
 const labelIn = (model: Model, id: ElementId, speak = t): string =>
-  elementLabel(elementIn(model, id), elementsById(model.elements), speak);
+  elementLabel(heldElement(model, id), elementsById(model.elements), speak);
 
 describe('elementLabel', () => {
   it('is what the element is called', () => {
     expect(
-      elementLabel(newProcess('process-named', 'Studio'), sampleElements, t),
+      elementLabel(
+        elementOf(newProcess('process-named', 'Studio')),
+        sampleElements,
+        t,
+      ),
     ).toBe('Studio');
   });
 
   it('is what kind of element it is where it is called nothing', () => {
     expect(
-      elementLabel(newProcess('process-unnamed', ''), sampleElements, t),
+      elementLabel(
+        elementOf(newProcess('process-unnamed', '')),
+        sampleElements,
+        t,
+      ),
     ).toBe('the process');
   });
 
@@ -207,7 +216,7 @@ describe('elementLabel', () => {
 
 const namelessOfEveryKind: readonly Element[] = [
   ...canvasModel.elements,
-  sampleElement(storeElement),
+  elementOf(sampleElement(storeElement)),
 ]
   .filter(({ kind }) => kind !== 'flow')
   .map((element) => ({ ...element, name: '' }));
@@ -218,7 +227,11 @@ const opensWithCapital = (text: string, locale: Locale): boolean =>
 describe('elementHeading', () => {
   it('is what the element is called', () => {
     expect(
-      elementHeading(newProcess('process-named', 'Studio'), sampleElements, t),
+      elementHeading(
+        elementOf(newProcess('process-named', 'Studio')),
+        sampleElements,
+        t,
+      ),
     ).toBe('Studio');
   });
 
@@ -246,14 +259,18 @@ describe('elementHeading', () => {
 
   it('heads an element a file holds under white space alone by its kind, as one called nothing', () => {
     expect(
-      elementHeading(newProcess('process-spaced', '   '), sampleElements, t),
+      elementHeading(
+        elementOf(newProcess('process-spaced', '   ')),
+        sampleElements,
+        t,
+      ),
     ).toBe(t(headingKindMessages.process));
   });
 
   it('heads a flow left unlabelled by its ends', () => {
     expect(
       elementHeading(
-        elementIn(unlabelledCanvas, requestFlow),
+        heldElement(unlabelledCanvas, requestFlow),
         elementsById(unlabelledCanvas.elements),
         t,
       ),
@@ -365,7 +382,7 @@ describe('attachSaid', () => {
   );
 
   it('words a flow left unlabelled in the message of its kind, with its ends', () => {
-    const flow = elementIn(unlabelledCanvas, requestFlow);
+    const flow = heldElement(unlabelledCanvas, requestFlow);
     const elements = elementsById(unlabelledCanvas.elements);
     expect(attachSaid(sampleThreat, flow, elements)(french)).toBe(
       french('canvas.threat-attached-to-flow', {
@@ -380,7 +397,7 @@ describe('attachSaid', () => {
     expect(
       attachSaid(
         sampleThreat,
-        elementIn(spacedCanvas, requestFlow),
+        heldElement(spacedCanvas, requestFlow),
         elements,
       )(t),
     ).toBe(
@@ -405,7 +422,7 @@ describe('attachSaid', () => {
 });
 
 describe('detachSaid', () => {
-  const reader = sampleElement(actorElement);
+  const reader = elementOf(sampleElement(actorElement));
   const onTwo: Threat = {
     ...sampleThreat,
     elements: [actorElement, processElement],
@@ -443,7 +460,7 @@ describe('detachSaid', () => {
     expect(
       detachSaid(
         onFlowAndReader,
-        elementIn(unlabelledCanvas, requestFlow),
+        heldElement(unlabelledCanvas, requestFlow),
         kept,
         elements,
       )?.(french),

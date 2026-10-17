@@ -70,6 +70,11 @@ export const divergenceDetailSchema = z.discriminatedUnion('code', [
   coded('threat-unplaceable'),
   coded('threat-model-link-dropped'),
   carrying('threat-split-across-elements', { count: z.number() }),
+  carrying('element-split-across-diagrams', {
+    diagrams: z.array(z.string()),
+  }),
+  carrying('flow-end-drawn-away-freed', { element: z.string() }),
+  carrying('relationships-off-diagram-dropped', { count: z.number() }),
   carrying('threat-category-unnamed', {
     methodology: z.string(),
     category: z.string(),
@@ -171,6 +176,12 @@ export function divergenceDetailText(detail: DivergenceDetail): string {
       return 'the link to the whole model, which the format has nowhere to hold, so the threat is written under the cells it names alone';
     case 'threat-split-across-elements':
       return `the one record, written once under each of the ${detail.parameters.count} elements it names`;
+    case 'element-split-across-diagrams':
+      return `the one element, written as a cell of its own on each of the diagrams ${detail.parameters.diagrams.map((title) => `"${title}"`).join(', ')}`;
+    case 'flow-end-drawn-away-freed':
+      return `the attachment of an end to "${detail.parameters.element}", which the diagram does not draw, written as a free end`;
+    case 'relationships-off-diagram-dropped':
+      return `${detail.parameters.count === 1 ? 'the relationship to 1 element' : `the relationships to ${detail.parameters.count} elements`} on another diagram, which a cell names on its own diagram alone`;
     case 'threat-category-unnamed':
       return `the ${detail.parameters.methodology} category "${detail.parameters.category}", which Threat Dragon's own labels do not name`;
     case 'mitigation-records-merged':

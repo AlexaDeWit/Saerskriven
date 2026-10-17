@@ -355,10 +355,19 @@ function onItsDiagram(
   elementId: ElementId,
   edit: (diagramId: DiagramId) => Either.Either<Model, OperationFailure>,
 ): Either.Either<Model, OperationFailure> {
-  const [diagram] = diagramsOf(model, elementId);
-  return diagram === undefined
-    ? Either.left(OperationFailure.UnknownElement({ elementId }))
-    : edit(diagram.id);
+  const diagrams = diagramsOf(model, elementId);
+  const [diagram] = diagrams;
+  if (diagram === undefined) {
+    return Either.left(OperationFailure.UnknownElement({ elementId }));
+  }
+  return diagrams.length === 1
+    ? edit(diagram.id)
+    : Either.left(
+        OperationFailure.ElementOnSeveralDiagrams({
+          elementId,
+          diagramIds: diagrams.map(({ id }) => id),
+        }),
+      );
 }
 
 function accented(

@@ -195,7 +195,7 @@ function toDrawnEndpoint(
   if (endpoint.kind === 'free') {
     return { kind: 'free', position: endpoint.position };
   }
-  return endpoint.side === undefined
+  return endpoint.kind === 'away' || endpoint.side === undefined
     ? { kind: 'attached', element: endpoint.element }
     : { kind: 'attached', element: endpoint.element, side: endpoint.side };
 }

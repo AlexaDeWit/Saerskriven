@@ -5,11 +5,12 @@ import {
   elementId,
   mitigationId,
   drawnFixture,
+  sharedModel,
   threatId,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { applyEdits, renderRefusedEdit } from './edits.js';
+import { applyEdits, modelEditSchema, renderRefusedEdit } from './edits.js';
 
 type ByTag<Union extends { readonly _tag: string }> = {
   readonly [Tag in Union['_tag']]: Extract<Union, { readonly _tag: Tag }>;
@@ -66,6 +67,22 @@ const failures: ByTag<OperationFailure> = {
   ElementNotOnDiagram: OperationFailure.ElementNotOnDiagram({
     elementId: elementId('element-api'),
     diagramId: diagramId('diagram-empty'),
+  }),
+  ElementAlreadyOnDiagram: OperationFailure.ElementAlreadyOnDiagram({
+    elementId: elementId('element-api'),
+    diagramId: diagramId('diagram-main'),
+  }),
+  LastPlacement: OperationFailure.LastPlacement({
+    elementId: elementId('element-api'),
+    diagramId: diagramId('diagram-main'),
+  }),
+  InvalidPlacement: OperationFailure.InvalidPlacement({
+    elementId: elementId('element-api'),
+    diagramId: diagramId('diagram-main'),
+  }),
+  ElementOnSeveralDiagrams: OperationFailure.ElementOnSeveralDiagrams({
+    elementId: elementId('element-api'),
+    diagramIds: [diagramId('diagram-main'), diagramId('diagram-second')],
   }),
   UnknownThreat: OperationFailure.UnknownThreat({
     threatId: threatId('threat-tamper-order'),
@@ -166,6 +183,46 @@ describe('what a refused edit reads as', () => {
         OperationFailure.UnknownElement({ elementId: elementId('one\ntwo') }),
       ),
     ).toContain('"one\\u000atwo"');
+  });
+});
+
+describe('an edit of an element drawn on more than one diagram', () => {
+  const shared = sharedModel;
+
+  it.each([
+    { op: 'move_element', element: 'payments-api', offset: { x: 10, y: 0 } },
+    { op: 'set_accent', elements: ['payments-api'], accent: 'l2' },
+    {
+      op: 'set_flow_waypoints',
+      element: 'charge',
+      waypoints: [{ x: 600, y: 150 }],
+    },
+  ] as const)(
+    'is refused where it changes geometry or an accent, naming the diagrams ($op)',
+    (edit) => {
+      const refused = applyEdits(shared, [modelEditSchema.parse(edit)]);
+      const failure = Either.isLeft(refused) ? refused.left.failure : undefined;
+      expect(failure).toMatchObject({
+        _tag: 'ElementOnSeveralDiagrams',
+        diagramIds: ['overview', 'payments'],
+      });
+    },
+  );
+
+  it('applies where it changes the element on every diagram', () => {
+    const applied = applyEdits(shared, [
+      modelEditSchema.parse({
+        op: 'rename_element',
+        element: 'payments-api',
+        name: 'Gateway',
+      }),
+    ]);
+    expect(
+      Either.isRight(applied)
+        ? applied.right.model.elements.find(({ id }) => id === 'payments-api')
+            ?.name
+        : undefined,
+    ).toBe('Gateway');
   });
 });
 

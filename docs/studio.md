@@ -94,7 +94,10 @@ its attachment to the whole model reported as not kept, and a threat on none of
 them is reported whole and not saved. It takes no width or height under 10
 either, so a smaller element is saved at 10 where it stands and the size it has
 is reported as not kept, even on a save back to the Threat Dragon file it was
-read from. Opening a
+read from. An element on several diagrams is saved as a copy on each, the first
+under its own id, each with its name, facts and threats, and reported once. A
+flow end drawn away from its element is saved as a free end, and a link to an
+element on another diagram is not kept. Opening a
 file reports too, under two headings, each shown only when it has a line.
 **Converted on opening** comes first and lists what the model holds in another
 form or place than the file had it, so it can still be found in the studio: an
@@ -457,6 +460,10 @@ readers announce placement instructions.
   move it five units or twenty with Shift, and drop it on an actor, process or
   store to attach it there. Delete or Backspace on it leaves the end where it
   is and says so: select the flow itself to delete it.
+- An end attached to an element on another diagram is drawn away from it, at
+  a point of its own, in a dashed frame naming the element. It moves as a free
+  end does and stays attached. Placing that element on this diagram attaches
+  the end to it.
 
 The local bend, point and Close actions use icons with names in hover and
 keyboard-focus tooltips. Auto keeps the end attached and releases its pinned side. The endpoint editor
@@ -641,6 +648,14 @@ mitigations and assumptions left on no threat, and a threat that applies to
 the whole model stays. The notice counts the flows detached, the links dropped
 from the threats that stay, and the threats removed, so a threat that goes is
 reported once. One Delete stays one undo step, whatever it took.
+
+An element can be on several diagrams. Delete on such an element takes it off
+the diagram on screen only: it keeps its threats and its other diagrams, a
+flow attached to it is drawn away from it there, and the notice names the
+diagrams it is still on. Delete on an element's only diagram removes it from
+the model, as above. **Delete from model**, in the menu or Shift+Delete,
+removes the selection from every diagram it is on. Cut takes a shared element
+off the diagram on screen too, so pasting it makes a copy.
 
 Every edit is one undo step: a placement, a drag, a resize, a committed field,
 a paste. Selecting, panning, zooming and switching diagrams add no undo step
@@ -838,8 +853,9 @@ and expand **Security properties**. **Not recorded** leaves a fact unknown, and
 a flag offers Yes and No. Protocol and privilege level distinguish an empty
 recorded value from Not recorded. Relationship lists (the boundaries a flow
 crosses, a boundary's contained elements and crossing flows) offer valid targets
-in the same diagram, keep their order and any repeated entry until you edit
-them, and Not recorded removes the list itself. The fields' meaning is in
+anywhere in the model, keep their order and any repeated entry until you edit
+them, and Not recorded removes the list itself. Naming an element of another
+diagram moves a Saerskriven YAML file to version 3. The fields' meaning is in
 [the format](saerskriven-yaml.md#security-facts).
 
 ## The threat register
@@ -912,6 +928,7 @@ outside one, and none works while focus is inside an open menu or list.
 | Copy, Cut, Paste, Duplicate            | Mod+C, Mod+X, Mod+V, Mod+D                   | Keyboard only       |
 | Select all                             | Mod+A                                        | Keyboard only       |
 | Delete selection                       | Delete or Backspace                          | Trash control       |
+| Delete from model                      | Shift+Delete or Shift+Backspace              | Menu                |
 | Rename selection                       | F2, or Enter with one selected               | Menu                |
 | Position and size                      | Shift+P                                      | Keyboard only       |
 | Change flow source, Change flow target | Shift+S, Shift+T                             | Reconnect flow card |
@@ -951,7 +968,8 @@ panel until the register closes.
 
 Every element and flow is a tab stop whose accessible name comes from the
 model: its name, its kind, what its badge says, and each flag its threats
-raise. A flow also names the elements it runs between. The inline name field is
+raise. A flow also names the elements it runs between, and an end drawn away
+from its element as on another diagram. The inline name field is
 named "Name of" the element it renames. Selection is a dashed frame and a
 heavier line, and focus is a separate ring, so neither depends on colour and
 both survive forced colours. The diagram follows the system contrast theme,

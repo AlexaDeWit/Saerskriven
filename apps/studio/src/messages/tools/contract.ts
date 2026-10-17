@@ -4,6 +4,7 @@ import { plural, text } from '@saerskriven/i18n';
 export const toolMessages = {
   'diagram-region': text(),
   'free-point': text(),
+  'away-end': text({ name: 'text' }),
   'flow-between': text({ source: 'text', target: 'text' }),
   'flow-from-to': text({ source: 'text', target: 'text' }),
   'open-threats': plural('count'),

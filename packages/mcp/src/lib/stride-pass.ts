@@ -1,6 +1,7 @@
 import {
   strideCategorySchema,
   threatCountByElement,
+  type DrawnElement,
   type Element,
   type StrideCategory,
 } from '@saerskriven/model';
@@ -169,7 +170,7 @@ function namedElement(
 }
 
 function analyzedKind(
-  element: Element,
+  element: DrawnElement,
 ): Either.Either<AnalyzedKind, PromptFailure> {
   return element.kind === 'trust-boundary' || element.kind === 'text'
     ? Either.left(PromptFailure.UncoveredKind())
@@ -208,10 +209,10 @@ function storesReached(
     .map((store) => ({ ...chosen, element: store }));
 }
 
-function endpointsOf(element: Element): readonly string[] {
+function endpointsOf(element: DrawnElement): readonly string[] {
   return element.kind === 'flow'
     ? [element.source, element.target].flatMap((endpoint) =>
-        endpoint.kind === 'attached' ? [endpoint.element] : [],
+        endpoint.kind === 'free' ? [] : [endpoint.element],
       )
     : [];
 }

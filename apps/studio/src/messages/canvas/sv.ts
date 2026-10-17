@@ -33,6 +33,12 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
     one: 'Tog bort {count} objekt.',
     other: 'Tog bort {count} objekt.',
   },
+  'unplaced-named': '{name} togs bort från {diagram}.',
+  'unplaced-elements': {
+    one: '{count} element togs bort från {diagram}.',
+    other: '{count} element togs bort från {diagram}.',
+  },
+  'still-on': 'Finns kvar i {diagrams}.',
   'flows-detached': {
     one: '{count} flöde lossades.',
     other: '{count} flöden lossades.',

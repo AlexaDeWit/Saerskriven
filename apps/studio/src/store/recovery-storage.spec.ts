@@ -4,7 +4,11 @@ import {
   type RetainedSource,
 } from '@saerskriven/formats';
 import type { DiagramId, Model } from '@saerskriven/model';
-import { committedText, floodingEntries } from '@saerskriven/model/fixtures';
+import {
+  committedText,
+  floodingEntries,
+  sharedModel,
+} from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { reasonOf } from '../reason.js';
 import { studioVersion } from '../version.js';
@@ -208,6 +212,18 @@ describe('local recovery storage', () => {
       }),
     );
     expect(JSON.stringify(stored)).not.toContain('"formatVersion":3');
+  });
+
+  it('stores a model holding a shared element as version 3, and restores it', () => {
+    const file = FileLifecycle.Opened({
+      name: 'shared.yaml',
+      source: { format: 'saerskriven-yaml' },
+    });
+    const stored = recoverySnapshot(sharedModel, true, file);
+    expect(stored.document.formatVersion).toBe(3);
+    expect(loadStored(JSON.stringify(stored))).toEqual(
+      Either.right(expectedRestore(sharedModel, true, file)),
+    );
   });
 
   it('keeps the retained document of a Threat Dragon file', () => {

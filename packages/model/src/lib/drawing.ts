@@ -184,12 +184,15 @@ function drawnEndpoint(
   end: FlowEndpoint,
   placed: PlacedFlowEnd,
 ): DrawnFlowEndpoint | undefined {
-  if (end.kind === 'free') {
-    return placed.position !== undefined && placed.side === undefined
-      ? { kind: 'free', position: placed.position }
-      : undefined;
-  }
   if (placed.position !== undefined) {
+    if (placed.side !== undefined) {
+      return undefined;
+    }
+    return end.kind === 'free'
+      ? { kind: 'free', position: placed.position }
+      : { kind: 'away', element: end.element, position: placed.position };
+  }
+  if (end.kind === 'free') {
     return undefined;
   }
   return placed.side === undefined
@@ -204,7 +207,7 @@ function endpointOf(drawn: DrawnFlowEndpoint): FlowEndpoint {
 }
 
 function placedEndOf(drawn: DrawnFlowEndpoint): PlacedFlowEnd {
-  if (drawn.kind === 'free') {
+  if (drawn.kind !== 'attached') {
     return { position: drawn.position };
   }
   return drawn.side === undefined ? {} : { side: drawn.side };

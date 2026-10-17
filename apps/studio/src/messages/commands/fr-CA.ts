@@ -34,6 +34,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'label-undo': 'Annuler',
   'label-redo': 'Rétablir',
   'label-delete': 'Supprimer la sélection',
+  'label-delete-from-model': 'Supprimer du modèle',
   'label-rename': 'Renommer la sélection',
   'label-model-panel': 'Modèle',
   'label-focus-threats': 'Aller aux menaces',

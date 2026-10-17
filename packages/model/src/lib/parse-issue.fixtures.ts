@@ -51,6 +51,7 @@ export const parseIssueSamples: readonly ParseIssueDetail[] = [
   { code: 'related-element-unknown', parameters: { id: 'element-unrelated' } },
   { code: 'related-boundary-unknown', parameters: { id: 'element-unbounded' } },
   { code: 'related-flow-unknown', parameters: { id: 'element-unflowed' } },
+  { code: 'related-off-diagram', parameters: { id: 'element-elsewhere' } },
   { code: 'issue-flood' },
   { code: 'schema-threw', parameters: { reason: 'TypeError: defect' } },
 ];

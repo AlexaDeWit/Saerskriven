@@ -10,7 +10,8 @@ import type { ThreatCategory } from './categories.js';
 import type { Decimals } from './decimals.js';
 import { drawnElements, placementOf } from './drawing.js';
 import { translatedElement } from './element-geometry.js';
-import type { Element } from './elements.js';
+import type { DrawnElement } from './drawn-elements.js';
+import type { Element, FlowEndpoint } from './elements.js';
 import type { Point } from './geometry.js';
 import type { DiagramId, ElementId, ThreatId } from './ids.js';
 import { linkMitigation } from './mitigation-operations.js';
@@ -49,8 +50,10 @@ export type InsertFragmentFailure = Extract<
 
 /**
  * Copies a selection and its flow endpoints, with related records restricted
- * to the copied graph. A copied threat or assumption leaves its model link
- * behind, since that link belongs to the source model.
+ * to the copied graph. A copied flow end drawn away from an element the
+ * diagram does not place is copied free, where it was drawn. A copied threat
+ * or assumption leaves its model link behind, since that link belongs to the
+ * source model.
  */
 export function selectionFragment(
   model: Model,
@@ -66,7 +69,7 @@ export function selectionFragment(
         const held = byId.get(element.id);
         return held === undefined
           ? []
-          : [restrictRelationships(held, included)];
+          : [freedOutside(restrictRelationships(held, included), included)];
       });
       const threats = model.threats
         .filter((threat) => threat.elements.some((id) => included.has(id)))
@@ -295,7 +298,7 @@ function linkedRecords(
 }
 
 function closedSelection(
-  elements: readonly Element[],
+  elements: readonly DrawnElement[],
   selection: readonly ElementId[],
 ): Either.Either<Set<ElementId>, UnknownElementFailure> {
   const known = elementsById(elements);
@@ -325,6 +328,19 @@ function closedSelection(
     }
   }
   return Either.right(included);
+}
+
+function freedOutside(element: Element, kept: ReadonlySet<string>): Element {
+  if (element.kind !== 'flow') {
+    return element;
+  }
+  const freed = (end: FlowEndpoint): FlowEndpoint =>
+    end.kind === 'attached' && !kept.has(end.element) ? { kind: 'free' } : end;
+  return {
+    ...element,
+    source: freed(element.source),
+    target: freed(element.target),
+  };
 }
 
 function restrictedLinks<Linked extends { readonly threats: ThreatId[] }>(

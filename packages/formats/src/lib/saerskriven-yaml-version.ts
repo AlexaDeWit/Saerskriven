@@ -2,6 +2,7 @@ import {
   drawnElement,
   elementIdsIn,
   elementsById,
+  type DrawnElement,
   type Element,
   type ElementId,
   type Model,
@@ -47,11 +48,9 @@ function fitsVersion2(model: Model): boolean {
       const element = elements.get(placement.element);
       const placedBefore = drawnWith.has(placement.element);
       drawnWith.set(placement.element, placed);
-      return (
-        !placedBefore &&
-        element !== undefined &&
-        drawnElement(element, placement) !== undefined
-      );
+      const drawn =
+        element === undefined ? undefined : drawnElement(element, placement);
+      return !placedBefore && drawn !== undefined && !drawnAway(drawn);
     });
   });
   return (
@@ -63,6 +62,13 @@ function fitsVersion2(model: Model): boolean {
         relatedIds(element).every((id) => neighbours.has(id))
       );
     })
+  );
+}
+
+function drawnAway(drawn: DrawnElement): boolean {
+  return (
+    drawn.kind === 'flow' &&
+    (drawn.source.kind === 'away' || drawn.target.kind === 'away')
   );
 }
 

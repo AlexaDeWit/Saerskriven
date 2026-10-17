@@ -36,6 +36,13 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
     many: '{count} d’éléments supprimés.',
     other: '{count} éléments supprimés.',
   },
+  'unplaced-named': 'Retiré du diagramme {diagram} : {name}.',
+  'unplaced-elements': {
+    one: '{count} élément retiré du diagramme {diagram}.',
+    many: '{count} d’éléments retirés du diagramme {diagram}.',
+    other: '{count} éléments retirés du diagramme {diagram}.',
+  },
+  'still-on': 'Toujours sur {diagrams}.',
   'flows-detached': {
     one: '{count} flux détaché.',
     many: '{count} de flux détachés.',

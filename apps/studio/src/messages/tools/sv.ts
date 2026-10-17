@@ -4,6 +4,7 @@ import { toolMessages } from './contract.js';
 export const toolsSv = catalogue(toolMessages)('sv')({
   'diagram-region': 'Diagram',
   'free-point': 'en fri punkt',
+  'away-end': '{name} i ett annat diagram',
   'flow-between': 'mellan {source} och {target}',
   'flow-from-to': 'från {source} till {target}',
   'open-threats': {

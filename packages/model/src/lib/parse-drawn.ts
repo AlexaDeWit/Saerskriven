@@ -10,14 +10,30 @@ import {
   schemaFailureIssues,
   type Model,
 } from './parse.js';
-import { collectViolations, refusingViolations } from './violations.js';
+import {
+  collectViolations,
+  refusingViolations,
+  type RelationshipScope,
+} from './violations.js';
 
 type DrawnModel = z.infer<typeof drawnModelSchema>;
 
 type Origin = readonly [diagram: number, element: number];
 
+/**
+ * Where the relationship lists of a model read from a format whose diagrams
+ * own their elements resolve: inside the diagram drawing the element that
+ * holds the list, as they did before an element could be shared, so every
+ * such file reads as it did. Every read of such a file takes it, through
+ * {@link parseDrawnModel} or `parseModel`.
+ */
+export const drawnRelationshipScope: RelationshipScope = 'diagram';
+
 const refinedDrawnModelSchema = refusingViolations(drawnModelSchema, (drawn) =>
-  atDrawnPaths(collectViolations(placedFrom(drawn)), drawn.diagrams),
+  atDrawnPaths(
+    collectViolations(placedFrom(drawn), drawnRelationshipScope),
+    drawn.diagrams,
+  ),
 );
 
 /**
@@ -37,10 +53,12 @@ export function parseDrawnModel(
       ParseFailure.InvalidModel({ issues: schemaFailureIssues(failure) }),
     ),
     (drawn) =>
-      Either.mapLeft(parseModel(placedFrom(drawn)), ({ issues }) =>
-        ParseFailure.InvalidModel({
-          issues: atDrawnPaths(issues, drawn.diagrams),
-        }),
+      Either.mapLeft(
+        parseModel(placedFrom(drawn), drawnRelationshipScope),
+        ({ issues }) =>
+          ParseFailure.InvalidModel({
+            issues: atDrawnPaths(issues, drawn.diagrams),
+          }),
       ),
   );
 }

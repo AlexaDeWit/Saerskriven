@@ -63,6 +63,7 @@ export const issueMessages = {
   'related-element-unknown': text(identified),
   'related-boundary-unknown': text(identified),
   'related-flow-unknown': text(identified),
+  'related-off-diagram': text(identified),
   'issue-flood': text(),
   'schema-threw': text(),
 } as const;

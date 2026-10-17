@@ -19,6 +19,7 @@ import {
   numberDiagrams,
 } from './threat-dragon-diagrams.js';
 import { allCells, indexById, threatsOf } from './threat-dragon-document.js';
+import { cellIdsOf, splitElements } from './threat-dragon-placements.js';
 import { preservedText } from './threat-dragon-preservation.js';
 import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
 
@@ -50,7 +51,11 @@ import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
  * or a note, the model link of a threat, a note's name, an out-of-scope
  * boundary or note, a diagram's name, and a size this write raises that the
  * source cell does not hold. Accents are reported once for the model, with
- * the count of placements holding one. A diagram, cell or threat the source
+ * the count of placements holding one. An element on several diagrams is
+ * written as a cell on each, under the ids `cellIdsOf` gives, each carrying
+ * the element's name, facts and threats, and is reported once as `split`. A
+ * flow end drawn away from its element is written free, and a relationship
+ * to an element another diagram draws is left out, each `unrepresentable`. A diagram, cell or threat the source
  * held and the model no longer does is reported as `discarded-by-edit`.
  * Mitigation texts follow `mitigationDivergences`.
  */
@@ -61,6 +66,7 @@ export function writeThreatDragon(
   const held = diagramsById(source);
   const numbering = numberDiagrams(model, held, source?.detail.diagramTop);
   const plan = planThreats(model, source);
+  const cellIds = cellIdsOf(model);
   const merged = model.diagrams.map((diagram, index) => ({
     ...mergeDiagram(
       model,
@@ -68,6 +74,7 @@ export function writeThreatDragon(
       held.get(diagram.id),
       numbering.numbers[index],
       plan.byCell,
+      cellIds.get(diagram.id),
     ),
     stamp: restamped(held.get(diagram.id)?.version, {
       kind: 'diagram',
@@ -114,6 +121,7 @@ export function writeThreatDragon(
       ...numbering.divergences,
       ...merged.flatMap((entry) => [...entry.stamp, ...entry.divergences]),
       ...droppedAccents(model),
+      ...splitElements(model),
       ...plan.divergences,
       ...unrecordedAssumptions(model),
       ...discarded(model, source),

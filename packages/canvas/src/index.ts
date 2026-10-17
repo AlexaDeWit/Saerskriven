@@ -80,15 +80,22 @@ export {
 export { DiagramGlyphs } from './lib/scene.js';
 export {
   accentClassNames,
+  awayClassNames,
   canvasClassNames,
   canvasInteractionClassNames,
   renderCanvasStylesheet,
   severityToneClass,
   themedCanvasStylesheet,
   wrappedTextStyles,
+  type DrawingHolds,
   type TextStyleRule,
   type WrappedTextStyle,
 } from './lib/stylesheet.js';
+export {
+  awayEndLabels,
+  type AwayEnd,
+  type AwayEndLabel,
+} from './lib/away-ends.js';
 export {
   nodeTextPlacement,
   textPlacementCorners,

@@ -1,24 +1,31 @@
 import {
   elementsById,
-  type Element,
+  type DrawnElement,
+  type DrawnTrustBoundary,
   type ElementId,
-  type TrustBoundary,
 } from '@saerskriven/model';
 
 /**
  * The declared groups among one diagram's elements that can be drawn as a
- * single-parent, acyclic hierarchy.
+ * single-parent, acyclic hierarchy, each holding the members the diagram
+ * places.
  */
 export function mermaidGroups(
-  drawn: readonly Element[],
+  drawn: readonly DrawnElement[],
 ): ReadonlyMap<ElementId, readonly ElementId[]> {
   const elements = elementsById(drawn);
   const boundaries = drawn.filter(
-    (element): element is TrustBoundary => element.kind === 'trust-boundary',
+    (element): element is DrawnTrustBoundary =>
+      element.kind === 'trust-boundary',
   );
+  const placedMembers = (boundary: DrawnTrustBoundary): ElementId[] => [
+    ...new Set(
+      (boundary.containedElements ?? []).filter((id) => elements.has(id)),
+    ),
+  ];
   const parents = new Map<ElementId, Set<ElementId>>();
   for (const boundary of boundaries) {
-    for (const member of boundary.containedElements ?? []) {
+    for (const member of placedMembers(boundary)) {
       const held = parents.get(member) ?? new Set<ElementId>();
       held.add(boundary.id);
       parents.set(member, held);
@@ -26,16 +33,13 @@ export function mermaidGroups(
   }
   const pending = new Map(
     boundaries.flatMap((boundary): [ElementId, readonly ElementId[]][] => {
-      const members = [...new Set(boundary.containedElements ?? [])];
+      const members = placedMembers(boundary);
       return members.length === 0 ||
-        members.some((id) => {
-          const element = elements.get(id);
-          return (
-            element === undefined ||
-            element.kind === 'flow' ||
-            (parents.get(id)?.size ?? 0) > 1
-          );
-        })
+        members.some(
+          (id) =>
+            elements.get(id)?.kind === 'flow' ||
+            (parents.get(id)?.size ?? 0) > 1,
+        )
         ? []
         : [[boundary.id, members]];
     }),

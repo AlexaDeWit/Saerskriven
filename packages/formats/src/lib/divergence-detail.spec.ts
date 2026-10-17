@@ -151,6 +151,28 @@ const samples: readonly (readonly [DivergenceDetail, string])[] = [
   ],
   [
     {
+      code: 'element-split-across-diagrams',
+      parameters: { diagrams: ['High level', 'Payments'] },
+    },
+    'the one element, written as a cell of its own on each of the diagrams "High level", "Payments"',
+  ],
+  [
+    {
+      code: 'flow-end-drawn-away-freed',
+      parameters: { element: 'card-vault' },
+    },
+    'the attachment of an end to "card-vault", which the diagram does not draw, written as a free end',
+  ],
+  [
+    { code: 'relationships-off-diagram-dropped', parameters: { count: 1 } },
+    'the relationship to 1 element on another diagram, which a cell names on its own diagram alone',
+  ],
+  [
+    { code: 'relationships-off-diagram-dropped', parameters: { count: 2 } },
+    'the relationships to 2 elements on another diagram, which a cell names on its own diagram alone',
+  ],
+  [
+    {
       code: 'threat-category-unnamed',
       parameters: { methodology: 'LINDDUN', category: 'Linking' },
     },

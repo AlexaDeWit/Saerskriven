@@ -6,13 +6,19 @@ type RelatedList = {
   readonly field: string;
   readonly ids: readonly ElementId[] | undefined;
   readonly kind: Element['kind'] | undefined;
-  readonly code: Extract<ParseIssueCode, `related-${string}`>;
+  readonly code: Extract<ParseIssueCode, `related-${string}-unknown`>;
 };
 
-/** Checks declared relationships without inferring geometry or reciprocal assertions. */
+/**
+ * Checks declared relationships without inferring geometry or reciprocal
+ * assertions. Each id names another element of the list's kind in `known`,
+ * and one `reachable` holds, where a read keeps a list inside the element's
+ * own diagram.
+ */
 export function relationshipIssues(
   element: Element,
   known: ReadonlyMap<ElementId, Element>,
+  reachable: ReadonlyMap<ElementId, Element> = known,
 ): ParseIssue[] {
   const lists: readonly RelatedList[] =
     element.kind === 'flow'
@@ -43,16 +49,22 @@ export function relationshipIssues(
   return lists.flatMap(({ field, ids, kind, code }) =>
     (ids ?? []).flatMap((reference, index): ParseIssue[] => {
       const target = known.get(reference);
-      return target !== undefined &&
+      const named =
+        target !== undefined &&
         reference !== element.id &&
-        (kind === undefined || target.kind === kind)
-        ? []
-        : [
-            {
-              path: [field, index],
-              detail: { code, parameters: { id: reference } },
-            },
-          ];
+        (kind === undefined || target.kind === kind);
+      if (named && reachable.has(reference)) {
+        return [];
+      }
+      return [
+        {
+          path: [field, index],
+          detail: {
+            code: named ? 'related-off-diagram' : code,
+            parameters: { id: reference },
+          },
+        },
+      ];
     }),
   );
 }

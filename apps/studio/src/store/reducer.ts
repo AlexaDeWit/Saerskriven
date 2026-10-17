@@ -33,13 +33,14 @@ import {
   replaceThreat,
   resizeElement,
   reverseFlow,
+  diagramsOf,
+  unplaceElement,
   setAccent,
   setBoundaryShape,
   setFlowDirection,
   setFlowEndPosition,
   setFlowWaypoints,
   OperationFailure,
-  type Decimals,
   type Diagram,
   type DiagramId,
   type ElementId,
@@ -116,9 +117,19 @@ export function reduce(state: State, action: Action): State {
     AddElement: ({ diagramId, element, decimals }) =>
       edited(state, addElement(state.present, diagramId, element, decimals)),
     RemoveElement: ({ elementId, decimals }) =>
-      removedElements(state, [elementId], decimals),
+      removedElements(state, [elementId], (model, removed) =>
+        removeElement(model, removed, decimals),
+      ),
     RemoveElements: ({ elementIds, decimals }) =>
-      removedElements(state, elementIds, decimals),
+      removedElements(state, elementIds, (model, removed) =>
+        removeElement(model, removed, decimals),
+      ),
+    DeleteFromDiagram: ({ diagramId, elementIds, decimals }) =>
+      removedElements(state, elementIds, (model, removed) =>
+        diagramsOf(model, removed).length > 1
+          ? unplaceElement(model, diagramId, removed, decimals)
+          : removeElement(model, removed, decimals),
+      ),
     MoveElement: ({ diagramId, elementId, offset, decimals }) =>
       edited(
         state,
@@ -321,17 +332,16 @@ function withSelection(state: State, elementIds: readonly ElementId[]): State {
 function removedElements(
   state: State,
   elementIds: readonly ElementId[],
-  decimals: Decimals | undefined,
+  remove: (
+    model: Model,
+    elementId: ElementId,
+  ) => Either.Either<Model, OperationFailure>,
 ): State {
   const removed = new Set(elementIds);
   if (removed.size === 0) {
     return state;
   }
-  const outcome = editElements(
-    state.present,
-    [...removed],
-    (model, elementId) => removeElement(model, elementId, decimals),
-  );
+  const outcome = editElements(state.present, [...removed], remove);
   const next = edited(state, outcome);
   if (Either.isLeft(outcome)) {
     return next;

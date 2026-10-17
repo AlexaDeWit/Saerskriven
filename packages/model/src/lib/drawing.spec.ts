@@ -49,11 +49,29 @@ describe('drawnElement', () => {
     expect(drawnElement(actor, flowPlacement)).toBeUndefined();
   });
 
+  it('draws an attached end placed at a position as drawn away from its element', () => {
+    const drawn = drawnElement(flow, {
+      ...flowPlacement,
+      source: { position: { x: 0, y: 0 } },
+    });
+    expect(drawn).toMatchObject({
+      source: {
+        kind: 'away',
+        element: 'element-customer',
+        position: { x: 0, y: 0 },
+      },
+    });
+    expect(drawn === undefined ? undefined : elementOf(drawn)).toEqual(flow);
+  });
+
   it('draws nothing where a flow end is placed unlike the element holds it', () => {
+    expect(
+      drawnElement(flow, { ...flowPlacement, target: {} }),
+    ).toBeUndefined();
     expect(
       drawnElement(flow, {
         ...flowPlacement,
-        source: { position: { x: 0, y: 0 } },
+        source: { side: 'left', position: { x: 0, y: 0 } },
       }),
     ).toBeUndefined();
   });

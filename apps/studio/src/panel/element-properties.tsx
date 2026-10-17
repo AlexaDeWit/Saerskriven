@@ -1,6 +1,5 @@
 import {
   diagramsOf,
-  drawnElements,
   type Element,
   type ElementDetailsChange,
   type ElementId,
@@ -136,7 +135,7 @@ export function ElementPropertiesEditor({
             {hasOpened && (
               <PropertyFields
                 element={element}
-                elements={drawnElements(model, diagram)}
+                elements={model.elements}
                 commit={commit}
                 refused={refused}
                 drafts={current}

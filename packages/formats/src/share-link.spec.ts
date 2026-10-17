@@ -1,5 +1,9 @@
 import type { Model } from '@saerskriven/model';
-import { incompressibleModel, drawnFixture } from '@saerskriven/model/fixtures';
+import {
+  incompressibleModel,
+  drawnFixture,
+  sharedModel,
+} from '@saerskriven/model/fixtures';
 import { Either, Option } from 'effect';
 import { readFileSync } from 'node:fs';
 import { brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
@@ -15,6 +19,7 @@ import {
   frozenV021Path,
   nativeFixtures,
   readOrThrow,
+  sharedElementsYaml,
   withThreatsInNumberOrder,
 } from './lib/saerskriven-yaml.fixtures.js';
 import { saerskrivenYamlCodec } from './lib/saerskriven-yaml.js';
@@ -245,6 +250,19 @@ describe.skipIf(brotliUnbuilt)('every fixture as a link', () => {
     expect(
       brotliDecompressSync(Buffer.from(payload, 'base64url')).toString('utf8'),
     ).toBe(savedText(featureComplete));
+  });
+
+  it('carries a model holding a shared element as the version 3 text a save writes, and reads it back', async () => {
+    const link = await linkOf(sharedModel);
+    expect(
+      brotliDecompressSync(Buffer.from(payloadOf(link), 'base64url')).toString(
+        'utf8',
+      ),
+    ).toBe(sharedElementsYaml);
+    const read = Either.getOrThrow(
+      await readShareLink(fragmentOf(link), brotliWasm()),
+    );
+    expect(read.model).toEqual(sharedModel);
   });
 
   it('replaces a fragment the base already carries', async () => {
