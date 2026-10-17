@@ -7,8 +7,9 @@ import {
   CommandSurfaceProvider,
   unmountedSurface,
 } from '../commands/binding.js';
+import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
-import { modelStore } from '../store/store.js';
+import { dispatch, modelStore } from '../store/store.js';
 import { closeAddExisting, openAddExisting } from './add-existing.js';
 import { AddExistingPicker } from './add-existing-picker.js';
 
@@ -87,6 +88,34 @@ describe('the Add existing element picker', () => {
     expect(placedOn(score)).toEqual(['payments']);
     expect(modelStore.getState().past).toHaveLength(1);
     expect(modelStore.getState().selection).toEqual([cardVault, fraudCheck]);
+  });
+
+  it('leaves an element alone when Delete follows the undo that took it off the diagram on screen', async () => {
+    const user = userEvent.setup();
+    mounted();
+    act(openAddExisting);
+    await user.click(screen.getByRole('checkbox', { name: 'Card vault' }));
+    await user.click(screen.getByRole('button', { name: 'Add 1' }));
+    expect(modelStore.getState().selection).toEqual([cardVault]);
+
+    act(() => {
+      dispatch(Action.Undo());
+    });
+    expect(modelStore.getState().selection).toEqual([]);
+    document.body.focus();
+    await user.keyboard('{Delete}');
+    act(() => {
+      dispatch(
+        Action.DeleteFromDiagram({
+          diagramId: overview,
+          elementIds: [cardVault],
+          decimals: 3,
+        }),
+      );
+    });
+
+    expect(modelStore.getState().present).toBe(sharedModel);
+    expect(placedOn(cardVault)).toEqual(['payments']);
   });
 
   it('adds nothing while nothing is picked, and keeps Add on the Tab path saying why', async () => {
