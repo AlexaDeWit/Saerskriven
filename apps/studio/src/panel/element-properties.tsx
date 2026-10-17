@@ -1,6 +1,7 @@
 import {
   diagramsOf,
   elementIdsIn,
+  firstDrawings,
   type Diagram,
   type Element,
   type ElementDetailsChange,
@@ -156,21 +157,20 @@ export function ElementPropertiesEditor({
 }
 
 function elsewhereOf(
-  model: Pick<Model, 'diagrams'>,
+  model: Pick<Model, 'elements' | 'diagrams'>,
   onScreen: Diagram | undefined,
   t: StudioTranslator['t'],
 ): ReadonlyMap<ElementId, string> {
   const here =
     onScreen === undefined ? new Set<string>() : elementIdsIn(onScreen);
-  const elsewhere = new Map<ElementId, string>();
-  for (const diagram of model.diagrams) {
-    for (const { element } of diagram.placements) {
-      if (!here.has(element) && !elsewhere.has(element)) {
-        elsewhere.set(element, diagramTitle(diagram.title, t));
-      }
-    }
-  }
-  return elsewhere;
+  return new Map(
+    firstDrawings(model)
+      .filter(({ element }) => !here.has(element.id))
+      .map(({ element, diagram }) => [
+        element.id,
+        diagramTitle(diagram.title, t),
+      ]),
+  );
 }
 
 function holdsSecurityDraft(

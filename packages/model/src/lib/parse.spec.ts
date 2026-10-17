@@ -1,6 +1,6 @@
 import { Either, Option } from 'effect';
 import { z } from 'zod';
-import { validModel } from '../fixtures.js';
+import { sharedModelInput, validModel } from '../fixtures.js';
 import { drawnElements } from './drawing.js';
 import { floodingEntries } from './issue-flood.fixtures.js';
 import type { ModelInput } from './model.js';
@@ -171,6 +171,21 @@ describe('parseModel', () => {
       },
     },
     {
+      named: "a flow placed with a node's geometry",
+      mutate: (draft) => {
+        draft.diagrams[0].placements[3] = {
+          element: 'element-order-flow',
+          position: { x: 0, y: 0 },
+          size: { width: 100, height: 60 },
+        };
+      },
+      path: ['diagrams', 0, 'placements', 3],
+      detail: {
+        code: 'placement-geometry-mismatch',
+        parameters: { id: 'element-order-flow' },
+      },
+    },
+    {
       named: 'a free flow end placed with no position',
       mutate: (draft) => {
         draft.diagrams[0].placements[3] = {
@@ -217,7 +232,7 @@ describe('parseModel', () => {
       },
       path: ['diagrams', 0, 'placements', 3, 'source'],
       detail: {
-        code: 'flow-endpoint-foreign',
+        code: 'flow-end-position-missing',
         parameters: { id: 'element-remote' },
       },
     },
@@ -330,6 +345,10 @@ describe('parseModel', () => {
     },
   ])('accepts $named', ({ mutate }) => {
     expect(issuesOf(seededPlacedModel(mutate))).toEqual([]);
+  });
+
+  it('resolves a list of an element on several diagrams among all of them where the scope keeps lists to diagrams', () => {
+    expect(issuesOf(parseModel(sharedModelInput, 'diagram'))).toEqual([]);
   });
 
   it('keeps a relationship list inside one diagram where the scope says so', () => {

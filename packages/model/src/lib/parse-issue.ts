@@ -93,6 +93,7 @@ export const parseIssueDetailSchema = z.discriminatedUnion('code', [
   }),
   carrying('flow-endpoint-self', identified),
   carrying('flow-endpoint-foreign', identified),
+  carrying('flow-end-position-missing', identified),
   carrying('flow-end-position-held', identified),
   carrying('unknown-element-reference', identified),
   carrying('unknown-threat-reference', identified),
@@ -253,6 +254,8 @@ export function parseIssueText(detail: ParseIssueDetail): string {
     case 'flow-endpoint-self':
       return `references the flow's own id "${detail.parameters.id}": a flow cannot anchor to itself`;
     case 'flow-endpoint-foreign':
+      return `references element id "${detail.parameters.id}", which is not in the flow's own diagram`;
+    case 'flow-end-position-missing':
       return `references element id "${detail.parameters.id}", which this diagram does not place, and the end holds no position here`;
     case 'flow-end-position-held':
       return `holds a position, though the end attaches to element id "${detail.parameters.id}", which this diagram places`;

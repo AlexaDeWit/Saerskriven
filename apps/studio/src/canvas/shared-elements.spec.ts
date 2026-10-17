@@ -1,6 +1,11 @@
 import { layoutDiagram } from '@saerskriven/canvas';
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
-import { diagramsOf, type ElementId, type Model } from '@saerskriven/model';
+import {
+  diagramsOf,
+  unplaceElement,
+  type ElementId,
+  type Model,
+} from '@saerskriven/model';
 import {
   diagramId,
   drawnAt,
@@ -129,6 +134,18 @@ describe('Delete on a selection gone stale', () => {
 });
 
 describe('Delete from model', () => {
+  it('leaves an element the diagram on screen does not place, and its threat, on a stale selection', () => {
+    const moved = Either.getOrThrow(unplaceElement(sharedModel, overview, api));
+    modelStore.setState(
+      { ...initialState(moved), activeDiagram: overview, selection: [api] },
+      true,
+    );
+
+    expect(removeSelectedFromModel()).toBe(false);
+    expect(placedOn(present(), api)).toEqual([payments]);
+    expect(present().threats.map(({ id }) => id)).toContain('threat-card-data');
+  });
+
   it('removes a shared element from every diagram, and culls the threat it was the last reference of', () => {
     onOverview([api]);
 

@@ -212,12 +212,20 @@ export function removeSelected(): boolean {
 }
 
 /**
- * Removes the selection from the model and every diagram it is on, as one
- * undo step, and announces its combined cascade once.
+ * Removes the selection the diagram on screen places from the model and every
+ * diagram it is on, as one undo step, and announces its combined cascade
+ * once. A selected id the diagram does not place is left alone, as Delete
+ * leaves it.
  */
 export function removeSelectedFromModel(): boolean {
   const state = modelStore.getState();
-  const selection = state.selection;
+  const diagramId = activeDiagramId(state);
+  const selection =
+    diagramId === undefined
+      ? []
+      : deletionsOn(state.present, diagramId, state.selection).map(
+          ({ elementId }) => elementId,
+        );
   if (selection.length === 0) {
     return false;
   }

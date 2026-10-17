@@ -28,7 +28,7 @@ const freePoint = '';
  * or free at a typed position, which is stored as typed up to
  * `mostTypedDecimals`. An end drawn away from an element on another diagram
  * starts on that element, worded as on another diagram, and moves to a typed
- * position keeping it, where Free position frees it. The position starts
+ * position keeping it, where Free point frees it. The position starts
  * where the end is drawn: its own stored position, or an attached end's
  * anchor, which is worked out and so written at `commandDecimals`.
  */

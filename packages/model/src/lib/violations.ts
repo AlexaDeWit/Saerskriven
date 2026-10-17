@@ -21,8 +21,12 @@ export type RelationshipScope = 'model' | 'diagram';
  * What the model's own rules refuse in a structurally valid model: unique
  * identities, a placement of every element that fits it, at most one on each
  * diagram, issuance bookkeeping, flow ends each diagram can draw, and
- * relationship lists resolving within `scope`. An element whose id no other
- * element holds draws each of its placements. Each element sharing an id
+ * relationship lists resolving within `scope`. An attached end with no
+ * position where its diagram does not place its element is
+ * `flow-endpoint-foreign` under the diagram scope, the refusal a file whose
+ * diagrams own their elements has always given, and
+ * `flow-end-position-missing` under the model scope. An element whose id no
+ * other element holds draws each of its placements. Each element sharing an id
  * pairs with the first of that id's placements left, in diagram order, whose
  * geometry fits it, or with the first left where none fits, so copies placed
  * once each report only as a duplicate id.
@@ -40,7 +44,7 @@ export function collectViolations(
     ...threatNumberViolations(model),
     ...lastIssuedThreatNumberViolations(model),
     ...recordIdViolations(model),
-    ...flowEndpointViolations(model, drawings),
+    ...flowEndpointViolations(model, drawings, scope),
     ...referenceViolations(model),
     ...relationshipViolations(model, drawings, scope),
   ];
@@ -324,6 +328,7 @@ function unplacedViolations(model: StructuralModel): ParseIssue[] {
 function flowEndpointViolations(
   model: StructuralModel,
   { elementDrawings, neighbours }: Drawings,
+  scope: RelationshipScope,
 ): ParseIssue[] {
   const known = new Set<string>(model.elements.map(({ id }) => id));
   return model.elements.flatMap((element, elementIndex) => {
@@ -373,7 +378,10 @@ function flowEndpointViolations(
                 {
                   path,
                   detail: {
-                    code: 'flow-endpoint-foreign',
+                    code:
+                      scope === 'diagram'
+                        ? 'flow-endpoint-foreign'
+                        : 'flow-end-position-missing',
                     parameters: { id: end.element },
                   },
                 },
@@ -450,11 +458,8 @@ function reachableFrom(
   drawings: readonly Drawing[],
   neighbours: readonly ReadonlyMap<ElementId, Element>[],
 ): ReadonlyMap<ElementId, Element> {
-  const [only, ...more] = drawings;
-  if (only === undefined) {
-    return new Map();
-  }
-  return more.length === 0
+  const [only] = drawings;
+  return drawings.length === 1 && only !== undefined
     ? neighbours[only.diagram]
     : new Map(drawings.flatMap(({ diagram }) => [...neighbours[diagram]]));
 }

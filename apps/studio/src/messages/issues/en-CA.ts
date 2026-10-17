@@ -70,9 +70,11 @@ export const issuesEnCA = catalogue(issueMessages)('en-CA')({
   'flow-endpoint-self':
     'the flow names its own id "{id}", and a flow cannot anchor to itself',
   'flow-endpoint-foreign':
+    'the element "{id}" is not in the flow’s own diagram',
+  'flow-end-position-missing':
     'the element "{id}" is not on this diagram, and the end holds no position here',
   'flow-end-position-held':
-    'the end attaches to "{id}", which this diagram places, so it holds no position',
+    'the end attaches to "{id}", which this diagram places, so it cannot hold a position here',
   'unknown-element-reference': 'no element of the model has the id "{id}"',
   'unknown-threat-reference': 'no threat of the model has the id "{id}"',
   'related-element-unknown': '"{id}" names no other element of the model',

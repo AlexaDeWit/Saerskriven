@@ -58,6 +58,7 @@ export const issueMessages = {
   'threat-number-above-issued': text({ number: 'number', issued: 'number' }),
   'flow-endpoint-self': text(identified),
   'flow-endpoint-foreign': text(identified),
+  'flow-end-position-missing': text(identified),
   'flow-end-position-held': text(identified),
   'unknown-element-reference': text(identified),
   'unknown-threat-reference': text(identified),

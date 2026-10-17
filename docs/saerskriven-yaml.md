@@ -99,8 +99,9 @@ A flow can be placed on a diagram that does not place one of the elements its
 ends attach to. That end is drawn away from its element: its placement holds
 the `position` it is drawn at, and the drawing labels it with the element's
 name. Placing the element on that diagram attaches the end there, and taking
-it off draws the end away again at the element's anchor. Which element an end
-attaches to is the flow's, on every diagram.
+it off draws the end away again at the element's anchor. An end whose element
+the diagram places holds no `position`, and the read fails on one that does.
+Which element an end attaches to is the flow's, on every diagram.
 
 `containedElements`, `crossingFlows` and `trustBoundaryIds` name elements
 anywhere in the model, and a drawing of one diagram shows the members that

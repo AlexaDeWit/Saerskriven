@@ -777,6 +777,30 @@ describe('DiagramCanvas, the ends of a flow', () => {
     });
   });
 
+  it('drags an end drawn away from its element, keeping it attached', () => {
+    modelStore.setState(
+      {
+        ...initialState(sharedModel),
+        activeDiagram: diagramId('overview'),
+        selection: [elementId('charge')],
+      },
+      true,
+    );
+    render(<DiagramCanvas />);
+    dragHandle(targetEnd(), { x: 700, y: 330 });
+
+    expect(
+      drawnOn(modelStore.getState().present, 'overview', 'charge'),
+    ).toMatchObject({
+      target: {
+        kind: 'away',
+        element: 'card-vault',
+        position: { x: 700, y: 330 },
+      },
+    });
+    expect(modelStore.getState().past).toHaveLength(1);
+  });
+
   it('moves a free end by arrow key and by dragging, one undo step each, and offers it no actions', () => {
     openCanvas([probeFlow]);
     render(<DiagramCanvas />);

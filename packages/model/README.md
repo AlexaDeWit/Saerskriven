@@ -156,8 +156,9 @@ flow's too: `reconnectFlow` moves the end on every diagram, drawing it away
 where a diagram does not place the new element, and `setFlowEndPosition`
 frees an attached end, or one drawn away, on every diagram, each keeping the
 point it was drawn at there. `setAwayEndPosition` moves an end drawn away and
-keeps the attachment, refusing any other end with `FlowEndNotAway`. `reverseFlow` swaps the ends of the flow and reverses
-its bends on every diagram that draws it.
+keeps the attachment, refusing any other end with `FlowEndNotAway`.
+`reverseFlow` swaps the ends of the flow and reverses its bends on every diagram
+that draws it.
 
 `addElement` adds the element and its first placement, on the diagram it
 names. `placeElement` places an element the model holds on one more diagram,
@@ -310,10 +311,10 @@ fast-check generator of `parseDrawnModel` input, `parsedFixture` and
 suite rather than a case under test, `committedModel`, which reads a model
 under `test-data`, and `committedDiagrams`, the diagrams the canvas and render
 suites draw from those files. `sharedModel` is a model of two diagrams sharing
-elements, with a flow end drawn away from its element. `elementIn`, `drawnAt` and `drawnAcross` read
-elements as their diagrams draw them, `placementIn` an element's placement,
-and `redrawn` and `drawnOnto` build a model from drawn elements without a
-parse. The subpath resolves to source and stays out of the
+elements, with a flow end drawn away from its element. `elementIn`, `drawnAt`
+and `drawnAcross` read elements as their diagrams draw them, `placementIn` an
+element's placement, and `redrawn` and `drawnOnto` build a model from drawn
+elements without a parse. The subpath resolves to source and stays out of the
 library build. Who may import it is a workspace rule, stated in
 [`CODING.md`](../../CODING.md#tests).
 
