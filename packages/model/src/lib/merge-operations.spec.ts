@@ -7,8 +7,10 @@ import {
   heldElement,
   threatIn,
 } from '../fixtures.js';
+import { addDiagram } from './diagram-operations.js';
 import { diagramsOf } from './drawing.js';
-import { setElementProperties } from './element-operations.js';
+import type { DrawnElement } from './drawn-elements.js';
+import { addElement, setElementProperties } from './element-operations.js';
 import { reverseFlow } from './flow-operations.js';
 import { mergeElements, mergeOutcome } from './merge-operations.js';
 import type { Model } from './parse.js';
@@ -41,6 +43,23 @@ const copyOnStorefront: Model = modelOf(
     size: { width: 160, height: 60 },
   }),
 );
+
+const audit = (
+  id: string,
+  from: string,
+  bidirectional: boolean,
+): DrawnElement => ({
+  kind: 'flow',
+  id: elementId(id),
+  name: 'Audit',
+  description: '',
+  outOfScope: false,
+  reasonOutOfScope: '',
+  source: { kind: 'attached', element: elementId(from) },
+  target: { kind: 'free', position: { x: 900, y: 150 } },
+  waypoints: [],
+  bidirectional,
+});
 
 describe('mergeElements', () => {
   it('makes two copies one element, drawn on each diagram where its copy was', () => {
@@ -148,33 +167,44 @@ describe('mergeElements', () => {
     expect(merged.threats).toHaveLength(onBoth.threats.length);
   });
 
-  it('names the kept element once in every relationship list, and never in its own', () => {
+  it('names the kept element once in the relationship lists of other elements', () => {
     const related = modelOf(
-      Either.flatMap(
-        setElementProperties(copiesModel, backend, {
-          kind: 'trust-boundary',
-          containedElements: [api, stock, backendCopy],
-        }),
-        (model) =>
-          setElementProperties(model, reserve, {
-            kind: 'flow',
-            trustBoundaryIds: [backend, backendCopy],
-          }),
-      ),
+      setElementProperties(copiesModel, reserve, {
+        kind: 'flow',
+        trustBoundaryIds: [backend, backendCopy],
+      }),
     );
 
     const merged = merge(related, 'backend-copy', 'backend');
 
-    expect(heldElement(merged, 'backend')).toMatchObject({
-      containedElements: [api, stock],
-      crossingFlows: [elementId('order')],
-    });
     expect(heldElement(merged, 'reserve')).toMatchObject({
       trustBoundaryIds: [backend],
     });
     expect(heldElement(merged, 'reserve-copy')).toMatchObject({
       trustBoundaryIds: [backend],
     });
+  });
+
+  it('keeps the security facts of the element kept and drops those of the merged one', () => {
+    const facts = modelOf(
+      Either.flatMap(
+        setElementProperties(copiesModel, stock, {
+          kind: 'store',
+          isEncrypted: true,
+        }),
+        (model) =>
+          setElementProperties(model, stockCopy, {
+            kind: 'store',
+            isEncrypted: false,
+            isSigned: true,
+          }),
+      ),
+    );
+
+    const kept = heldElement(merge(facts, 'stock-copy', 'stock'), 'stock');
+
+    expect(kept).toMatchObject({ isEncrypted: true });
+    expect(kept).not.toHaveProperty('isSigned');
   });
 
   it('keeps the kept element and every element naming neither as they were', () => {
@@ -186,6 +216,167 @@ describe('mergeElements', () => {
     expect(
       merged.elements.filter((element) => untouched.includes(element)),
     ).toHaveLength(untouched.length);
+  });
+
+  describe('the relationship lists of the element kept', () => {
+    it('take the ids of the merged list after their own, and fold once its members are merged too', () => {
+      const merged = merge(copiesModel, 'backend-copy', 'backend');
+      expect(heldElement(merged, 'backend')).toMatchObject({
+        containedElements: [api, stock, apiCopy, stockCopy],
+      });
+
+      const folded = merge(
+        merge(merged, 'orders-api-copy', 'orders-api'),
+        'stock-copy',
+        'stock',
+      );
+      expect(heldElement(folded, 'backend')).toMatchObject({
+        containedElements: [api, stock],
+      });
+    });
+
+    it('unite the crossing flows', () => {
+      const crossing = modelOf(
+        setElementProperties(copiesModel, backendCopy, {
+          kind: 'trust-boundary',
+          crossingFlows: [reserveCopy],
+        }),
+      );
+
+      expect(
+        heldElement(merge(crossing, 'backend-copy', 'backend'), 'backend'),
+      ).toMatchObject({ crossingFlows: [elementId('order'), reserveCopy] });
+    });
+
+    it('take the merged list where the kept element holds none', () => {
+      const ended = merge(
+        merge(copiesModel, 'orders-api-copy', 'orders-api'),
+        'stock-copy',
+        'stock',
+      );
+      expect(heldElement(ended, 'reserve')).not.toHaveProperty(
+        'trustBoundaryIds',
+      );
+
+      expect(
+        heldElement(merge(ended, 'reserve-copy', 'reserve'), 'reserve'),
+      ).toMatchObject({ trustBoundaryIds: [backendCopy] });
+    });
+
+    it('stay absent where neither element holds one', () => {
+      const ended = modelOf(
+        setElementProperties(
+          merge(
+            merge(copiesModel, 'orders-api-copy', 'orders-api'),
+            'stock-copy',
+            'stock',
+          ),
+          reserveCopy,
+          { kind: 'flow', trustBoundaryIds: undefined },
+        ),
+      );
+
+      expect(
+        heldElement(merge(ended, 'reserve-copy', 'reserve'), 'reserve'),
+      ).not.toHaveProperty('trustBoundaryIds');
+    });
+
+    it('never name the kept element, though either list did', () => {
+      const listing = modelOf(
+        Either.flatMap(
+          setElementProperties(copiesModel, backend, {
+            kind: 'trust-boundary',
+            containedElements: [api, stock, backendCopy],
+          }),
+          (model) =>
+            setElementProperties(model, backendCopy, {
+              kind: 'trust-boundary',
+              containedElements: [apiCopy, backend],
+            }),
+        ),
+      );
+
+      expect(
+        heldElement(merge(listing, 'backend-copy', 'backend'), 'backend'),
+      ).toMatchObject({ containedElements: [api, stock, apiCopy] });
+    });
+
+    it('hold an id both lists name once, where the kept list has it', () => {
+      const overlapping = modelOf(
+        setElementProperties(copiesModel, backendCopy, {
+          kind: 'trust-boundary',
+          containedElements: [stock, apiCopy],
+        }),
+      );
+
+      expect(
+        heldElement(merge(overlapping, 'backend-copy', 'backend'), 'backend'),
+      ).toMatchObject({ containedElements: [api, stock, apiCopy] });
+    });
+  });
+
+  describe('two flows', () => {
+    const audited = modelOf(
+      Either.flatMap(
+        addElement(
+          copiesModel,
+          storefront,
+          audit('audit', 'orders-api', false),
+        ),
+        (model) =>
+          Either.flatMap(
+            addElement(
+              model,
+              fulfilment,
+              audit('audit-copy', 'orders-api-copy', true),
+            ),
+            (both) => mergeElements(both, apiCopy, api),
+          ),
+      ),
+    );
+
+    it('merge where an end is free on both', () => {
+      const merged = merge(audited, 'audit-copy', 'audit');
+      expect(drawnOn(merged, 'fulfilment', 'audit')).toMatchObject({
+        source: { kind: 'attached', element: 'orders-api' },
+        target: { kind: 'free', position: { x: 900, y: 150 } },
+      });
+    });
+
+    it('merge whichever way each runs, the kept flow keeping its direction', () => {
+      expect(heldElement(audited, 'audit-copy')).toMatchObject({
+        bidirectional: true,
+      });
+      expect(
+        heldElement(merge(audited, 'audit-copy', 'audit'), 'audit'),
+      ).toMatchObject({ bidirectional: false });
+    });
+  });
+
+  it('keeps a flow end drawn away from the merged element away from the kept one, on a diagram placing neither', () => {
+    const third = diagramId('audit');
+    const away = modelOf(
+      Either.flatMap(
+        addDiagram(copiesModel, { id: third, title: 'Audit' }),
+        (model) =>
+          placeElement(model, third, {
+            element: elementId('order'),
+            waypoints: [],
+            source: { position: { x: 0, y: 120 } },
+            target: { position: { x: 200, y: 120 } },
+          }),
+      ),
+    );
+
+    const merged = merge(away, 'orders-api', 'orders-api-copy');
+
+    expect(drawnOn(merged, 'audit', 'order')).toMatchObject({
+      target: {
+        kind: 'away',
+        element: 'orders-api-copy',
+        position: { x: 200, y: 120 },
+      },
+    });
   });
 
   it.each([
@@ -304,7 +495,7 @@ operationContract({
     input: copyOnStorefront,
     run: (model) => mergeElements(model, api, apiCopy),
   },
-  'mergeElements of two boundaries': {
+  'mergeElements of two boundaries, uniting lists that reach another diagram': {
     input: copiesModel,
     run: (model) => mergeElements(model, backendCopy, backend),
   },

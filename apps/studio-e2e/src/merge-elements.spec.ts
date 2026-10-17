@@ -40,7 +40,7 @@ test('Merge an element into this one picks by keyboard and keeps the selected el
   await expect(nodeNamed(page, /^Orders API, process/u)).toHaveCount(1);
 });
 
-test('a merge of two elements a flow joins is refused, naming the flow, and merges nothing', async ({
+test('a merge of two elements a flow joins is refused, naming the flow, merges nothing and leaves focus on the element kept', async ({
   page,
 }) => {
   await openModelDocument(page, copiesModelInput);
@@ -52,4 +52,5 @@ test('a merge of two elements a flow joins is refused, naming the flow, and merg
 
   await expect(page.getByTestId('failure-notice')).toContainText(/\border\b/u);
   await expect(nodeNamed(page, /^Web shop, process/u)).toHaveCount(1);
+  await expect(nodeNamed(page, /^Orders API, process/u)).toBeFocused();
 });

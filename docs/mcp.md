@@ -493,9 +493,13 @@ diagram, place it there too, and take it off the first with `unplace_element`.
 `merge_elements` merges `element` into `into`: two elements of one kind that
 stand for the same thing, such as the copies a model made of an element for
 each diagram before one element could be on several. `into` keeps its id,
-name, details and properties, and the model no longer holds `element`, whose
-own are dropped. Every threat, flow end and boundary relationship naming
-`element` names `into` instead, once each, and nothing is culled. Each drawing
+name, details and security facts, and the model no longer holds `element`,
+whose own are dropped. Each boundary relationship list of `into` (a flow's
+`trustBoundaryIds`, a boundary's `containedElements` and `crossingFlows`)
+takes the ids of the same list of `element` after its own, once each and never
+naming `into`, so a copied boundary keeps the members of every diagram. Every
+other threat, flow end and boundary relationship naming `element` names `into`
+instead, once each, and nothing is culled. Each drawing
 of `element` becomes a drawing of `into`, with its geometry and accent, except
 on a diagram that already draws `into`: there the drawing of `element` is
 dropped, and its flows there attach to `into`.

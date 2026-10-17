@@ -174,8 +174,11 @@ each diagram drawing that flow.
 
 `mergeElements` makes two elements of one kind one, as two copies a model made
 before sharing existed: the element kept holds its id, name, details and
-properties, and the merged one's are dropped. Every threat, flow end and
-relationship list naming the merged element names the kept one instead, once.
+security facts, and the merged one's are dropped. Each relationship list of the
+element kept takes the merged element's ids after its own, once each, so a
+copied boundary keeps the members of every diagram. Every other threat, flow
+end and relationship list naming the merged element names the kept one
+instead, once.
 Each placement of the merged element becomes the kept element's, except on a
 diagram already placing the kept element, where it is dropped and the flows
 there attach to the kept one. It culls nothing. It refuses one id named twice

@@ -1,16 +1,11 @@
-import {
-  diagramsOf,
-  mergeOutcome,
-  type ElementId,
-  type Model,
-} from '@saerskriven/model';
+import { mergeOutcome, type ElementId, type Model } from '@saerskriven/model';
 import { diagramTitle } from '../messages/diagram-title.js';
 import { sentences } from '../messages/said.js';
 import { Action } from '../store/actions.js';
 import { elementById, selectedElement } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
-import { openPicker, type ExistingEntry } from './add-existing.js';
+import { entriesOf, openPicker, type ExistingEntry } from './add-existing.js';
 import { announce, spokenElement } from './announcements.js';
 import { focusElement } from './edits.js';
 
@@ -43,12 +38,12 @@ export function mergeEntries(
   const into = model.elements.find(({ id }) => id === intoId);
   return into === undefined
     ? []
-    : model.elements
-        .filter(({ id, kind }) => id !== intoId && kind === into.kind)
-        .map((element) => ({
-          element,
-          diagrams: diagramsOf(model, element.id),
-        }));
+    : entriesOf(
+        model,
+        model.elements.filter(
+          ({ id, kind }) => id !== intoId && kind === into.kind,
+        ),
+      );
 }
 
 /** Opens the picker on the element to merge into the one selected, where {@link mergeTarget} finds one. */

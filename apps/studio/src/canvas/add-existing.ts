@@ -175,16 +175,25 @@ export function existingEntries(
   const entries =
     placed === undefined
       ? []
-      : model.elements
-          .filter(({ id }) => !placed.has(id))
-          .map((element) => ({
-            element,
-            diagrams: diagramsOf(model, element.id),
-          }));
+      : entriesOf(
+          model,
+          model.elements.filter(({ id }) => !placed.has(id)),
+        );
   return {
     elements: entries.filter(({ element }) => element.kind !== 'flow'),
     flows: entries.filter(({ element }) => element.kind === 'flow'),
   };
+}
+
+/** Each of `elements` as a picker entry, with the diagrams of `model` that place it. */
+export function entriesOf(
+  model: Model,
+  elements: readonly Element[],
+): ExistingEntry[] {
+  return elements.map((element) => ({
+    element,
+    diagrams: diagramsOf(model, element.id),
+  }));
 }
 
 /**

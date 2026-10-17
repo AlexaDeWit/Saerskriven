@@ -76,29 +76,63 @@ export function restrictRelationships(
   retained: ReadonlySet<string>,
 ): Element {
   return relistedRelationships(element, (ids) =>
-    ids.filter((id) => retained.has(id)),
+    ids?.filter((id) => retained.has(id)),
   );
 }
 
+/** A field holding one of an element's relationship lists. */
+export type RelationshipField =
+  | 'trustBoundaryIds'
+  | 'containedElements'
+  | 'crossingFlows';
+
+/** The list `element` holds in `field`, and undefined where its kind holds none there or it is absent. */
+export function relationshipList(
+  element: Element,
+  field: RelationshipField,
+): readonly ElementId[] | undefined {
+  if (field === 'trustBoundaryIds') {
+    return element.kind === 'flow' ? element.trustBoundaryIds : undefined;
+  }
+  return element.kind === 'trust-boundary' ? element[field] : undefined;
+}
+
 /**
- * `element` with each relationship list it holds replaced by what `relist`
- * returns for it, an absent list left absent. Where every list comes back
- * with the ids it held, in order, `element` itself comes back.
+ * `element` with each relationship list field of its kind replaced by what
+ * `relist` returns given the field and the list held there, absent or not.
+ * Where `relist` returns undefined the field stays as it is held, and where
+ * every list comes back with the ids it held, in order, `element` itself
+ * comes back.
  */
 export function relistedRelationships(
   element: Element,
-  relist: (ids: readonly ElementId[]) => ElementId[],
+  relist: (
+    ids: readonly ElementId[] | undefined,
+    field: RelationshipField,
+  ) => ElementId[] | undefined,
 ): Element {
   if (element.kind === 'flow') {
-    const trustBoundaryIds = relistedOrHeld(element.trustBoundaryIds, relist);
+    const trustBoundaryIds = relistedOrHeld(
+      element.trustBoundaryIds,
+      'trustBoundaryIds',
+      relist,
+    );
     return trustBoundaryIds === element.trustBoundaryIds ||
       trustBoundaryIds === undefined
       ? element
       : { ...element, trustBoundaryIds };
   }
   if (element.kind === 'trust-boundary') {
-    const containedElements = relistedOrHeld(element.containedElements, relist);
-    const crossingFlows = relistedOrHeld(element.crossingFlows, relist);
+    const containedElements = relistedOrHeld(
+      element.containedElements,
+      'containedElements',
+      relist,
+    );
+    const crossingFlows = relistedOrHeld(
+      element.crossingFlows,
+      'crossingFlows',
+      relist,
+    );
     return containedElements === element.containedElements &&
       crossingFlows === element.crossingFlows
       ? element
@@ -113,11 +147,14 @@ export function relistedRelationships(
 
 function relistedOrHeld(
   held: ElementId[] | undefined,
-  relist: (ids: readonly ElementId[]) => ElementId[],
+  field: RelationshipField,
+  relist: (
+    ids: readonly ElementId[] | undefined,
+    field: RelationshipField,
+  ) => ElementId[] | undefined,
 ): ElementId[] | undefined {
-  if (held === undefined) {
-    return undefined;
-  }
-  const next = relist(held);
-  return sameItems(held, next) ? held : next;
+  const next = relist(held, field);
+  return next === undefined || (held !== undefined && sameItems(held, next))
+    ? held
+    : next;
 }

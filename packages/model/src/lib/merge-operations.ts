@@ -7,7 +7,7 @@ import type { Diagram } from './model.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
 import { withPlacedEnds } from './placed-ends.js';
-import { relistedRelationships } from './relationships.js';
+import { relationshipList, relistedRelationships } from './relationships.js';
 
 /** The failures {@link mergeElements} can produce. */
 export type MergeElementsFailure =
@@ -38,10 +38,12 @@ export type MergeOutcome = {
 
 /**
  * Merges the element `elementId` names into the one `intoId` names, which
- * keeps its id, name, details and properties, and drops the merged
- * element's own. Every reference to the merged element names the kept one
- * instead, once each: threat attachments, flow ends and relationship lists,
- * a list of the kept element's own losing it. Each placement of the merged
+ * keeps its id, name, details and security facts, and drops the merged
+ * element's own. Each relationship list of the kept element becomes its own
+ * ids followed by the merged element's, once each and never its own id, and
+ * stays absent where both are. Every other reference to the merged element
+ * names the kept one instead, once each: threat attachments, flow ends and
+ * the relationship lists of other elements. Each placement of the merged
  * element becomes the kept element's, with its geometry and accent, except on
  * a diagram already placing the kept element, where it is dropped and the
  * flow ends there attached to it attach to the kept one. A flow end keeps its
@@ -65,7 +67,7 @@ export function mergeElements(
       ({ element: into }): Either.Either<Model, MergeElementsFailure> => {
         const refusal = mergeRefusal(model, element, into);
         return refusal === undefined
-          ? Either.right(merged(model, elementId, intoId))
+          ? Either.right(merged(model, element, intoId))
           : Either.left(refusal);
       },
     ),
@@ -128,15 +130,18 @@ function mergeRefusal(
     : OperationFailure.MergeJoinedByFlow({ ...pair, flowId: joining.id });
 }
 
-function merged(model: Model, elementId: ElementId, intoId: ElementId): Model {
-  const renamed = (ids: readonly ElementId[]): ElementId[] =>
-    ids.includes(elementId)
-      ? [...new Set(ids.map((id) => (id === elementId ? intoId : id)))]
-      : [...ids];
-  const elements = model.elements.flatMap((element) =>
-    element.id === elementId
+function merged(model: Model, element: Element, intoId: ElementId): Model {
+  const elementId = element.id;
+  const elements = model.elements.flatMap((held) =>
+    held.id === elementId
       ? []
-      : [withMergedReferences(element, elementId, intoId, renamed)],
+      : [
+          withMergedEnds(
+            withMergedLists(held, element, intoId),
+            elementId,
+            intoId,
+          ),
+        ],
   );
   const ended = { ...model, elements };
   return withPlacedEnds(ended, {
@@ -146,33 +151,61 @@ function merged(model: Model, elementId: ElementId, intoId: ElementId): Model {
     ),
     threats: model.threats.map((threat) =>
       threat.elements.includes(elementId)
-        ? { ...threat, elements: renamed(threat.elements) }
+        ? {
+            ...threat,
+            elements: distinctMerged(threat.elements, elementId, intoId),
+          }
         : threat,
     ),
   });
 }
 
-function withMergedReferences(
+function withMergedLists(
+  held: Element,
+  element: Element,
+  intoId: ElementId,
+): Element {
+  return relistedRelationships(held, (ids, field) => {
+    const absorbed =
+      held.id === intoId ? relationshipList(element, field) : undefined;
+    if (absorbed === undefined) {
+      return ids?.includes(element.id) === true
+        ? distinctMerged(ids, element.id, intoId).filter((id) => id !== held.id)
+        : undefined;
+    }
+    return distinctMerged(
+      [...(ids ?? []), ...absorbed],
+      element.id,
+      intoId,
+    ).filter((id) => id !== held.id);
+  });
+}
+
+function distinctMerged(
+  ids: readonly ElementId[],
+  elementId: ElementId,
+  intoId: ElementId,
+): ElementId[] {
+  return [...new Set(ids.map((id) => (id === elementId ? intoId : id)))];
+}
+
+function withMergedEnds(
   element: Element,
   elementId: ElementId,
   intoId: ElementId,
-  renamed: (ids: readonly ElementId[]) => ElementId[],
 ): Element {
-  const relisted = relistedRelationships(element, (ids) =>
-    renamed(ids).filter((id) => id !== element.id),
-  );
-  if (relisted.kind !== 'flow') {
-    return relisted;
+  if (element.kind !== 'flow') {
+    return element;
   }
   const end = (held: FlowEndpoint): FlowEndpoint =>
     held.kind === 'attached' && held.element === elementId
       ? { kind: 'attached', element: intoId }
       : held;
-  const source = end(relisted.source);
-  const target = end(relisted.target);
-  return source === relisted.source && target === relisted.target
-    ? relisted
-    : { ...relisted, source, target };
+  const source = end(element.source);
+  const target = end(element.target);
+  return source === element.source && target === element.target
+    ? element
+    : { ...element, source, target };
 }
 
 function withMergedPlacement(

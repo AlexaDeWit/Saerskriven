@@ -262,6 +262,19 @@ describe('the picker choosing the element to merge into the one selected', () =>
     expect(modelStore.getState().past).toEqual([]);
   });
 
+  it('goes away when another diagram is shown', () => {
+    mounted();
+    act(openMergeInto);
+    expect(mergePicker()).not.toBeNull();
+
+    act(() => {
+      dispatch(Action.SelectDiagram({ diagramId: diagramId('fulfilment') }));
+    });
+
+    expect(mergePicker()).toBeNull();
+    expect(modelStore.getState().present).toBe(copiesModel);
+  });
+
   it('closes on Escape with nothing merged', async () => {
     const user = userEvent.setup();
     mounted();

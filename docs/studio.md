@@ -356,15 +356,19 @@ one** in the Edit menu, beside Add existing element. It has no shortcut, and it
 is unavailable unless one element is selected and the model holds another of
 its kind. The list under the card offers every other element of that kind,
 each with the diagrams it is on, and focus moves to the first. Pick one with a
-click or the arrow keys, then press Merge. Escape or Cancel merges nothing.
+click or the arrow keys, then press Merge. Escape or Cancel merges nothing, and
+showing another diagram puts the list away.
 
-The element kept keeps its id, name, details and properties, and the other
-goes with its own. Its threats and flows move onto the element kept, and a
-threat on both is attached once. Each of its placements becomes the kept
-element's, where it was and with its accent. On a diagram that already draws
-the element kept, its placement is dropped, its flows there attach to the
-kept one, and the notice names that diagram. The element kept stays selected,
-and one undo step restores both.
+The element kept keeps its id, name, details and security properties, and the
+other goes with its own. The kept element's relationship lists (the boundaries
+a flow crosses, a boundary's contained elements and crossing flows) take the
+other's after their own, so a copied boundary keeps the members of every
+diagram. The other's threats and flows move onto the element kept, and a threat
+on both is attached once. Each of its placements becomes the kept element's,
+where it was and with its accent. On a diagram that already draws the element
+kept, its placement is dropped, its flows there attach to the kept one, and the
+notice names that diagram. The element kept stays selected, and one undo step
+restores both.
 
 A merge is refused for two kinds, for a flow joining the two, and for two flows
 that do not join the same two elements in the same direction, since a flow has

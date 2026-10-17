@@ -12,7 +12,7 @@ import { kindMessages } from '../messages/enum-labels.js';
 import { useTranslator } from '../messages/locale.js';
 import { distinctTexts, optionName } from '../panel/distinct-labels.js';
 import { labelledElement } from '../panel/threats.js';
-import { activeDiagram } from '../store/selectors.js';
+import { activeDiagram, activeDiagramId } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import type { OptionText } from '../ui/enum-field.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
@@ -26,6 +26,7 @@ import {
   type ExistingEntry,
 } from './add-existing.js';
 import { spokenElement } from './announcements.js';
+import { focusElement } from './edits.js';
 import { mergeEntries, mergeInto } from './merge-into.js';
 import { flowEndsText } from './names.js';
 import styles from './add-existing-picker.module.css';
@@ -36,8 +37,9 @@ import styles from './add-existing-picker.module.css';
  * diagram on screen does not place, and Add places the ones picked at the
  * centre of the view. For Merge an element into this one it holds a radio
  * button for each other element of the kind of the one kept, and Merge
- * merges the one picked into it. Escape and Cancel put it away and hand focus
- * back.
+ * merges the one picked into it, focus going to the element kept even where
+ * the merge is refused. It goes away when another diagram is shown. Escape
+ * and Cancel put either away and hand focus back.
  */
 export function AddExistingPicker() {
   const mode = usePickerMode();
@@ -134,9 +136,17 @@ function AddPicker() {
 
 function MergePicker({ into }: { readonly into: ElementId }) {
   const model = useModelStore((state) => state.present);
+  const shown = useModelStore(activeDiagramId);
+  const [openedOn] = useState(shown);
   const [chosen, setChosen] = useState<ElementId | undefined>(undefined);
   const group = useId();
   const { t } = useTranslator();
+
+  useEffect(() => {
+    if (shown !== openedOn) {
+      closeAddExisting();
+    }
+  }, [shown, openedOn]);
 
   const kept = model.elements.find(({ id }) => id === into);
   const entries = mergeEntries(model, into);
@@ -149,7 +159,9 @@ function MergePicker({ into }: { readonly into: ElementId }) {
       return;
     }
     closeAddExisting();
-    mergeInto(picked, into);
+    if (!mergeInto(picked, into)) {
+      focusElement(into);
+    }
   };
 
   return (
