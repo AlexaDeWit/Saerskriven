@@ -1,6 +1,10 @@
 import { placedOnto, placementIn } from '@saerskriven/model/fixtures';
 import { drawnElementSchema, type Model } from '@saerskriven/model';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { ReactFlowProvider } from '@xyflow/react';
+import { closeAddExisting, openAddExisting } from '../canvas/add-existing.js';
+import { AddExistingPicker } from '../canvas/add-existing-picker.js';
 import { FileLifecycle, initialState, type State } from '../store/state.js';
 import { Action } from '../store/actions.js';
 import {
@@ -135,6 +139,10 @@ describe('the version report under the chrome card', () => {
     modelStore.setState(at(twoDiagramModel), true);
   });
 
+  afterEach(() => {
+    act(closeAddExisting);
+  });
+
   it('shows at the edit that moves the model to version 3, until Dismiss', () => {
     render(<Reports />);
     expect(screen.queryByTestId('version-report')).toBeNull();
@@ -186,5 +194,32 @@ describe('the version report under the chrome card', () => {
       );
     });
     expect(screen.queryByTestId('version-report')).toBeNull();
+  });
+
+  it('shows at the Add existing element that puts an element of a version 2 file on a second diagram', async () => {
+    const user = userEvent.setup();
+    modelStore.setState(
+      {
+        ...at(twoDiagramModel),
+        file: FileLifecycle.Opened({
+          name: 'two.yaml',
+          source: { format: 'saerskriven-yaml' },
+        }),
+      },
+      true,
+    );
+    render(
+      <ReactFlowProvider>
+        <Reports />
+        <AddExistingPicker />
+      </ReactFlowProvider>,
+    );
+    act(openAddExisting);
+    expect(screen.queryByTestId('version-report')).toBeNull();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Other reader' }));
+    await user.click(screen.getByRole('button', { name: 'Add 1' }));
+
+    expect(screen.queryByTestId('version-report')).not.toBeNull();
   });
 });

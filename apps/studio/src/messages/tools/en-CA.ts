@@ -5,6 +5,12 @@ export const toolsEnCA = catalogue(toolMessages)('en-CA')({
   'diagram-region': 'Diagram',
   'free-point': 'a free point',
   'away-end': '{name} on another diagram',
+  'also-on-diagrams': 'also on {diagrams}',
+  'existing-elements': 'Elements',
+  'existing-flows': 'Flows',
+  'existing-detail': '{what}, on {diagrams}',
+  'add-picked': 'Add {count}',
+  'pick-existing-first': 'Pick an element or a flow first.',
   'flow-between': 'between {source} and {target}',
   'flow-from-to': 'from {source} to {target}',
   'open-threats': {

@@ -1,0 +1,121 @@
+import { diagramsOf, type ElementId } from '@saerskriven/model';
+import { diagramId, elementId, sharedModel } from '@saerskriven/model/fixtures';
+import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { ReactFlowProvider } from '@xyflow/react';
+import {
+  CommandSurfaceProvider,
+  unmountedSurface,
+} from '../commands/binding.js';
+import { initialState } from '../store/state.js';
+import { modelStore } from '../store/store.js';
+import { closeAddExisting, openAddExisting } from './add-existing.js';
+import { AddExistingPicker } from './add-existing-picker.js';
+
+const overview = diagramId('overview');
+const cardVault = elementId('card-vault');
+const fraudCheck = elementId('fraud-check');
+const score = elementId('score');
+
+const placedOn = (id: ElementId): string[] =>
+  diagramsOf(modelStore.getState().present, id).map(({ id: on }) => on);
+
+const describedBy = (control: HTMLElement): string =>
+  document.getElementById(control.getAttribute('aria-describedby') ?? '')
+    ?.textContent ?? '';
+
+const picker = () =>
+  screen.queryByRole('region', { name: 'Add existing element' });
+
+const mounted = () =>
+  render(
+    <ReactFlowProvider>
+      <CommandSurfaceProvider surface={unmountedSurface}>
+        <button type="button">Before</button>
+        <AddExistingPicker />
+      </CommandSurfaceProvider>
+    </ReactFlowProvider>,
+  );
+
+describe('the Add existing element picker', () => {
+  beforeEach(() => {
+    modelStore.setState(
+      { ...initialState(sharedModel), activeDiagram: overview },
+      true,
+    );
+  });
+
+  afterEach(() => {
+    act(closeAddExisting);
+  });
+
+  it('lists what the diagram on screen does not place, each described by the diagrams it is on', () => {
+    mounted();
+    act(openAddExisting);
+
+    const elements = screen.getByRole('group', { name: 'Elements' });
+    const flows = screen.getByRole('group', { name: 'Flows' });
+    expect(
+      [...elements.querySelectorAll('input')].map(
+        (box) => box.labels?.[0]?.textContent,
+      ),
+    ).toEqual(['Card vault', 'Fraud check']);
+    expect(
+      describedBy(screen.getByRole('checkbox', { name: 'Card vault' })),
+    ).toContain('Payments');
+    expect(flows.querySelectorAll('input')).toHaveLength(1);
+    expect(screen.getByRole('checkbox', { name: 'Score' })).toBeDefined();
+    expect(document.activeElement).toBe(
+      screen.getByRole('checkbox', { name: 'Card vault' }),
+    );
+  });
+
+  it('opens on the command key, picks by Space and adds the picks as one undo step', async () => {
+    const user = userEvent.setup();
+    mounted();
+
+    await user.keyboard('e');
+    expect(picker()).not.toBeNull();
+    await user.keyboard(' ');
+    await user.tab();
+    await user.keyboard(' ');
+    await user.click(screen.getByRole('button', { name: 'Add 2' }));
+
+    expect(picker()).toBeNull();
+    expect(placedOn(cardVault)).toEqual(['overview', 'payments']);
+    expect(placedOn(fraudCheck)).toEqual(['overview', 'payments']);
+    expect(placedOn(score)).toEqual(['payments']);
+    expect(modelStore.getState().past).toHaveLength(1);
+    expect(modelStore.getState().selection).toEqual([cardVault, fraudCheck]);
+  });
+
+  it('adds nothing while nothing is picked, and keeps Add on the Tab path saying why', async () => {
+    const user = userEvent.setup();
+    mounted();
+    act(openAddExisting);
+
+    const add = screen.getByRole('button', { name: 'Add' });
+    expect(add.getAttribute('aria-disabled')).toBe('true');
+    expect(describedBy(add)).not.toBe('');
+    await user.click(add);
+
+    expect(picker()).not.toBeNull();
+    expect(modelStore.getState().past).toEqual([]);
+  });
+
+  it('closes on Escape with nothing added and hands focus back to where it was', async () => {
+    const user = userEvent.setup();
+    mounted();
+    screen.getByRole('button', { name: 'Before' }).focus();
+    act(openAddExisting);
+    await user.keyboard(' ');
+
+    await user.keyboard('{Escape}');
+
+    expect(picker()).toBeNull();
+    expect(modelStore.getState().present).toBe(sharedModel);
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Before' }),
+    );
+  });
+});

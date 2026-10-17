@@ -35,6 +35,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'label-redo': 'Redo',
   'label-delete': 'Delete selection',
   'label-delete-from-model': 'Delete from model',
+  'label-add-existing': 'Add existing element',
   'label-rename': 'Rename selection',
   'label-model-panel': 'Model',
   'label-focus-threats': 'Focus threats',
@@ -141,6 +142,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'key-close-threat-panel': 'Close the threat panel',
   'key-close-model-panel': 'Close the model panel',
   'key-close-threat-register': 'Close the threat register',
+  'key-close-add-existing': 'Close the element picker',
   'key-close-shortcut-reference': 'Close the shortcut reference',
   'key-when-choosing-segment': 'Add bend is choosing a segment',
   'key-when-segment-or-position': 'A segment or bend position is being chosen',
@@ -174,6 +176,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'key-when-inside-model-panel':
     'Focus is inside the model panel and no listbox is open',
   'key-when-inside-register': 'Focus is inside the threat register',
+  'key-when-inside-add-existing': 'Focus is inside the element picker',
   'key-when-inside-reference': 'Focus is inside the shortcut reference',
   'reference-close': 'Close keyboard shortcuts',
   'reference-introduction':

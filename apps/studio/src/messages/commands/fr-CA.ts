@@ -35,6 +35,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'label-redo': 'Rétablir',
   'label-delete': 'Supprimer la sélection',
   'label-delete-from-model': 'Supprimer du modèle',
+  'label-add-existing': 'Ajouter un élément existant',
   'label-rename': 'Renommer la sélection',
   'label-model-panel': 'Modèle',
   'label-focus-threats': 'Aller aux menaces',
@@ -145,6 +146,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'key-close-threat-panel': 'Fermer le volet des menaces',
   'key-close-model-panel': 'Fermer le volet du modèle',
   'key-close-threat-register': 'Fermer le registre des menaces',
+  'key-close-add-existing': 'Fermer le sélecteur d’éléments',
   'key-close-shortcut-reference': 'Fermer la liste des raccourcis',
   'key-when-choosing-segment':
     'Ajouter un coude est en train de choisir un segment',
@@ -187,6 +189,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'key-when-inside-model-panel':
     'Le focus est dans le volet du modèle et aucune liste n’est ouverte',
   'key-when-inside-register': 'Le focus est dans le registre des menaces',
+  'key-when-inside-add-existing': 'Le focus est dans le sélecteur d’éléments',
   'key-when-inside-reference': 'Le focus est dans la liste des raccourcis',
   'reference-close': 'Fermer les raccourcis clavier',
   'reference-introduction':

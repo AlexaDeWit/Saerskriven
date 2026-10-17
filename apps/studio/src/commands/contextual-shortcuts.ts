@@ -289,6 +289,13 @@ const table = {
     shortcuts: escapeKey,
     when: 'commands.key-when-inside-register',
   },
+  'close-add-existing': {
+    id: 'close-add-existing',
+    label: 'commands.key-close-add-existing',
+    group: 'commands.group-panels',
+    shortcuts: escapeKey,
+    when: 'commands.key-when-inside-add-existing',
+  },
   'close-shortcut-reference': {
     id: 'close-shortcut-reference',
     label: 'commands.key-close-shortcut-reference',

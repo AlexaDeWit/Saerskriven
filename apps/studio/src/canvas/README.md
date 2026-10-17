@@ -21,6 +21,8 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `edits.ts`                                                                                      | One function per edit a control asks for                                                                                                                   |
 | `pane-shield.ts`                                                                                | Keeping a double-click's second press out of a pane its first press opened                                                                                 |
 | `connecting.ts`, `flow-target-chooser.tsx`                                                      | The flow a start-flow command holds until a target is chosen, and the listbox that chooses it                                                              |
+| `add-existing.ts`, `add-existing-picker.tsx`                                                    | Whether Add existing element is open, what it offers, where it places the picks, and the picker under the card                                             |
+| `other-diagrams.ts`, `shared-mark.tsx`                                                          | The elements on more than one diagram and the other diagrams of one, and the mark a placement of such an element carries                                   |
 | `inline-editing.tsx`                                                                            | The inline name and Note editors, and the node and edge bodies that mount them                                                                             |
 | `resize-layer-position.ts`                                                                      | Live offsets for a node while its resize button holds focus                                                                                                |
 | `selection-controls.tsx`, `selection-control.ts`                                                | The controls over a selection, and the event a command opens one of them through                                                                           |
@@ -44,8 +46,11 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 
 The shell mounts `toolbox.tsx` as row two of its chrome card
 (`../app/chrome.tsx`) and `accent-bar.tsx` as row three, and hangs
-`canvas-announcement.tsx` and `flow-target-chooser.tsx` under that card. None
-of the four reads a React Flow hook, which is what lets the shell host them.
+`canvas-announcement.tsx`, `flow-target-chooser.tsx` and
+`add-existing-picker.tsx` under that card. The first four read no React Flow
+hook, which is what lets the shell host them. The picker reads the viewport
+for the centre of the view, through the provider `../app/app.tsx` mounts
+around the shell, and only while it is open.
 The accent bar draws its swatches from the token properties with its own
 styles, so it does not depend on the canvas sheet being mounted.
 
@@ -192,6 +197,14 @@ them grows with the cue weight and they stay apart under both cues. The canvas
 package's edge body adds React Flow's invisible interaction path, and holds the
 flow's name, so a click on the line, the wider path or the name selects the
 flow.
+
+The mark on a placement of an element on more than one diagram is a square
+holding a link glyph, unlike the round badge and a note's accent bar. It hangs
+on the top left corner of the element's box, opposite the badge, and steps out
+past that corner while the element is selected, as the badge does at the top
+right. A flow's mark stands left of its
+name block, in the layer that holds the blocks. The canvas package does not
+draw it, so no export carries it.
 
 React Flow z-index values are set by hand: a boundary at -1, a regular node at
 0 and a selected regular node at 1, so selection keeps a regular node visible

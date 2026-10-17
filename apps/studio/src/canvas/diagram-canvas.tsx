@@ -40,7 +40,11 @@ import { commandFor, describeCommandShortcuts } from '../commands/registry.js';
 import { hostPlatform } from '../commands/shortcuts.js';
 import { useTranslator } from '../messages/locale.js';
 import { sentences } from '../messages/said.js';
-import { selectedElement, selectedElements } from '../store/selectors.js';
+import {
+  activeDiagramId,
+  selectedElement,
+  selectedElements,
+} from '../store/selectors.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import { useBoxSelection } from './box-selection.js';
@@ -185,12 +189,13 @@ export function DiagramCanvas({
   const model = useModelStore((state) => state.present);
   const selection = useModelStore(selectedElements);
   const selected = useModelStore(selectedElement);
+  const shownOn = useModelStore(activeDiagramId);
   const keyboardDescriptionId = useId();
   const keyboard = useCanvasKeyboardText();
   const { t } = useTranslator();
   const graph = useMemo(
-    () => diagramGraph(layout, model, selection, t),
-    [layout, model, selection, t],
+    () => diagramGraph(layout, model, selection, t, shownOn),
+    [layout, model, selection, t, shownOn],
   );
   const elements = useMemo(() => elementIds(layout), [layout]);
   const positions = useMemo(() => nodesById(layout), [layout]);

@@ -23,6 +23,7 @@ import type {
   MitigationStatus,
   Model,
   ModelMetadataChange,
+  Placement,
   Point,
   Side,
   Size,
@@ -57,6 +58,11 @@ export type Action = Data.TaggedEnum<{
   AddElement: {
     readonly diagramId: DiagramId;
     readonly element: DrawnElement;
+    readonly decimals: Decimals | undefined;
+  };
+  PlaceElements: {
+    readonly diagramId: DiagramId;
+    readonly placements: readonly Placement[];
     readonly decimals: Decimals | undefined;
   };
   InsertFragment: { readonly diagramId: DiagramId; readonly fragment: Model };

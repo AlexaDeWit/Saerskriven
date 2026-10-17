@@ -16,6 +16,7 @@ import styles from './threat-panel.module.css';
 type PanelFrameProps = {
   readonly label: string;
   readonly heading: string;
+  readonly subheading?: ReactNode;
   readonly closeLabel: string;
   readonly closeShortcut: ContextualShortcutId;
   readonly testId?: string;
@@ -34,10 +35,14 @@ const widthLabel = (
 ): 'panel.restore-pane-width' | 'panel.widen-pane' =>
   wide ? 'panel.restore-pane-width' : 'panel.widen-pane';
 
-/** A scrolling pane with a collapsible drawer at phone widths. */
+/**
+ * A scrolling pane with a collapsible drawer at phone widths, its heading
+ * followed by `subheading` where one is given.
+ */
 export function PanelFrame({
   label,
   heading,
+  subheading,
   closeLabel,
   closeShortcut,
   testId,
@@ -158,6 +163,7 @@ export function PanelFrame({
           <Cross1Icon aria-hidden="true" />
         </button>
       </header>
+      {subheading}
       {tabs !== undefined && (
         <PanelTabList
           threatCount={tabs.threatCount}

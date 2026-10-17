@@ -59,6 +59,8 @@ export const canvasMessages = {
   'unplaced-named': text({ name: 'text', diagram: 'text' }),
   'unplaced-elements': plural('count', { diagram: 'text' }),
   'still-on': text({ diagrams: 'text' }),
+  'added-existing': plural('count', { diagram: 'text' }),
+  'nothing-to-add': text({ diagram: 'text' }),
   'flows-detached': plural('count'),
   'threat-links-dropped': plural('count'),
   'threats-removed': plural('count'),

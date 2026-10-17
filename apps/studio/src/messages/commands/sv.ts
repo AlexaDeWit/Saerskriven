@@ -35,6 +35,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'label-redo': 'Gör om',
   'label-delete': 'Ta bort markeringen',
   'label-delete-from-model': 'Ta bort ur modellen',
+  'label-add-existing': 'Lägg till befintligt objekt',
   'label-rename': 'Byt namn på markeringen',
   'label-model-panel': 'Modell',
   'label-focus-threats': 'Gå till hoten',
@@ -145,6 +146,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'key-close-threat-panel': 'Stäng hotpanelen',
   'key-close-model-panel': 'Stäng modellpanelen',
   'key-close-threat-register': 'Stäng hotregistret',
+  'key-close-add-existing': 'Stäng objektväljaren',
   'key-close-shortcut-reference': 'Stäng genvägslistan',
   'key-when-choosing-segment': 'Lägg till knäckpunkt väljer ett segment',
   'key-when-segment-or-position':
@@ -181,6 +183,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'key-when-inside-model-panel':
     'Fokus ligger i modellpanelen och ingen lista är öppen',
   'key-when-inside-register': 'Fokus ligger i hotregistret',
+  'key-when-inside-add-existing': 'Fokus ligger i objektväljaren',
   'key-when-inside-reference': 'Fokus ligger i genvägslistan',
   'reference-close': 'Stäng tangentbordsgenvägarna',
   'reference-introduction':
