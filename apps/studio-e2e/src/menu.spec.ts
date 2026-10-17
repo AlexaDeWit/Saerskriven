@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { testDataPath } from '@saerskriven/model/fixtures';
 import { commandChord, registeredChords } from './chords.fixtures.js';
-import { canvasSettled, elementNodes } from './canvas.fixtures.js';
+import {
+  canvasSettled,
+  clearPositionOn,
+  elementNodes,
+} from './canvas.fixtures.js';
 import {
   expectFileShown,
   featureCompleteFile,
@@ -93,7 +97,7 @@ test('the canvas stays live behind the open menu', async ({ page }) => {
 
   await expect(page.getByRole('main')).not.toHaveAttribute('aria-hidden');
   const store = nodeNamed(page, placeholder.store);
-  await store.click();
+  await store.click({ position: await clearPositionOn(store) });
 
   await expect(store).toHaveClass(/selected/u);
   await expect(page.getByRole('menu')).toHaveCount(0);
