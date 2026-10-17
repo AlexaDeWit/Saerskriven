@@ -1,4 +1,13 @@
 import { z } from 'zod';
+import { elementBaseSchema } from './element-base.js';
+import {
+  actorSchema,
+  flowSchema,
+  processSchema,
+  storeSchema,
+  textSchema,
+  trustBoundarySchema,
+} from './elements.js';
 import { pointSchema, sideSchema, waypointsSchema } from './geometry.js';
 import { elementIdSchema } from './ids.js';
 import {
@@ -6,67 +15,35 @@ import {
   boundaryShapeSchema,
   nodePlacementSchema,
 } from './placements.js';
-import { acceptedTextSchema } from './text.js';
-
-/** The facts every element holds, whatever its kind. */
-export const elementBaseSchema = z.object({
-  id: elementIdSchema,
-  name: acceptedTextSchema,
-  description: acceptedTextSchema,
-  outOfScope: z.boolean(),
-  reasonOutOfScope: acceptedTextSchema,
-});
 
 const accentedBaseSchema = elementBaseSchema.extend({
   accent: accentSchema.optional(),
 });
 
-const nodeGeometrySchema = nodePlacementSchema.pick({
-  position: true,
-  size: true,
-});
-
-const nodeBaseSchema = accentedBaseSchema.extend(nodeGeometrySchema.shape);
+const nodeBaseSchema = accentedBaseSchema.extend(
+  nodePlacementSchema.pick({ position: true, size: true }).shape,
+);
 
 /** An actor as one diagram draws it. Security facts remain unknown when absent. */
-export const drawnActorSchema = nodeBaseSchema.extend({
-  kind: z.literal('actor'),
-  providesAuthentication: z.boolean().optional(),
-});
+export const drawnActorSchema = nodeBaseSchema.extend(actorSchema.shape);
 
 /** An actor as one diagram draws it. */
 export type DrawnActor = z.infer<typeof drawnActorSchema>;
 
 /** A process as one diagram draws it. Security facts remain unknown when absent. */
-export const drawnProcessSchema = nodeBaseSchema.extend({
-  kind: z.literal('process'),
-  handlesCardPayment: z.boolean().optional(),
-  handlesGoodsOrServices: z.boolean().optional(),
-  isWebApplication: z.boolean().optional(),
-  privilegeLevel: acceptedTextSchema.optional(),
-});
+export const drawnProcessSchema = nodeBaseSchema.extend(processSchema.shape);
 
 /** A process as one diagram draws it. */
 export type DrawnProcess = z.infer<typeof drawnProcessSchema>;
 
 /** A store as one diagram draws it. Security facts remain unknown when absent. */
-export const drawnStoreSchema = nodeBaseSchema.extend({
-  kind: z.literal('store'),
-  isALog: z.boolean().optional(),
-  isEncrypted: z.boolean().optional(),
-  isSigned: z.boolean().optional(),
-  storesCredentials: z.boolean().optional(),
-  storesInventory: z.boolean().optional(),
-});
+export const drawnStoreSchema = nodeBaseSchema.extend(storeSchema.shape);
 
 /** A store as one diagram draws it. */
 export type DrawnStore = z.infer<typeof drawnStoreSchema>;
 
 /** A canvas note as one diagram draws it. */
-export const drawnTextSchema = nodeBaseSchema.extend({
-  kind: z.literal('text'),
-  text: acceptedTextSchema,
-});
+export const drawnTextSchema = nodeBaseSchema.extend(textSchema.shape);
 
 /** A canvas note as one diagram draws it. */
 export type DrawnText = z.infer<typeof drawnTextSchema>;
@@ -93,18 +70,19 @@ export type DrawnFlowEndpoint = z.infer<typeof drawnFlowEndpointSchema>;
 /** A flow end as {@link drawnFlowEndpointSchema} accepts it. */
 export type DrawnFlowEndpointInput = z.input<typeof drawnFlowEndpointSchema>;
 
-/** A flow as one diagram draws it. Absent security facts and relationship lists remain unknown. */
-export const drawnFlowSchema = accentedBaseSchema.extend({
-  kind: z.literal('flow'),
-  protocol: acceptedTextSchema.optional(),
-  isEncrypted: z.boolean().optional(),
-  isPublicNetwork: z.boolean().optional(),
-  trustBoundaryIds: z.array(elementIdSchema).optional(),
-  source: drawnFlowEndpointSchema,
-  target: drawnFlowEndpointSchema,
-  waypoints: waypointsSchema,
-  bidirectional: z.boolean(),
-});
+/**
+ * A flow as one diagram draws it. Absent security facts and relationship
+ * lists remain unknown. Its keys run in the order a version 2 file holds a
+ * flow's, its bends after its ends and before its direction.
+ */
+export const drawnFlowSchema = accentedBaseSchema
+  .extend(flowSchema.omit({ bidirectional: true }).shape)
+  .extend({
+    source: drawnFlowEndpointSchema,
+    target: drawnFlowEndpointSchema,
+    waypoints: waypointsSchema,
+  })
+  .extend(flowSchema.pick({ bidirectional: true }).shape);
 
 /** A flow as one diagram draws it. */
 export type DrawnFlow = z.infer<typeof drawnFlowSchema>;
@@ -113,12 +91,9 @@ export type DrawnFlow = z.infer<typeof drawnFlowSchema>;
 export type DrawnFlowInput = z.input<typeof drawnFlowSchema>;
 
 /** A trust boundary as one diagram draws it. Declared relationships are independent of its shape. */
-export const drawnTrustBoundarySchema = accentedBaseSchema.extend({
-  kind: z.literal('trust-boundary'),
-  containedElements: z.array(elementIdSchema).optional(),
-  crossingFlows: z.array(elementIdSchema).optional(),
-  shape: boundaryShapeSchema,
-});
+export const drawnTrustBoundarySchema = accentedBaseSchema
+  .extend(trustBoundarySchema.shape)
+  .extend({ shape: boundaryShapeSchema });
 
 /** A trust boundary as one diagram draws it. */
 export type DrawnTrustBoundary = z.infer<typeof drawnTrustBoundarySchema>;
@@ -130,8 +105,7 @@ export type DrawnTrustBoundaryInput = z.input<typeof drawnTrustBoundarySchema>;
  * An element as one diagram draws it: the element's facts, with that
  * diagram's placement inline, its accent and geometry, and each flow end's
  * pinned side or position folded into the end. It is the shape a reader of a
- * diagram takes, and the shape a diagram held before elements moved to the
- * model's root.
+ * diagram takes, and the shape a version 2 file holds a diagram's elements in.
  */
 export const drawnElementSchema = z.discriminatedUnion('kind', [
   drawnActorSchema,

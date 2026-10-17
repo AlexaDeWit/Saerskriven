@@ -175,7 +175,7 @@ export function attachableThreats(
 
 /** Offers unattached elements with the title of the diagram that draws each one. */
 export function attachableElements(
-  model: Model,
+  model: Pick<Model, 'elements' | 'diagrams'>,
   threat: Threat,
   t: StudioTranslator['t'],
 ): readonly Choice<ElementId>[] {
@@ -250,7 +250,7 @@ export function removedSaid(threat: Pick<Threat, 'number'>): Said {
 }
 
 function attachedElements(
-  model: Model,
+  model: Pick<Model, 'elements' | 'diagrams'>,
   threat: Threat,
   t: StudioTranslator['t'],
 ) {
@@ -274,7 +274,7 @@ function attachedElements(
 
 /** Flow labels stay stand-alone here, while Detach uses the shared flow phrase. */
 export function threatAttachments(
-  model: Model,
+  model: Pick<Model, 'elements' | 'diagrams'>,
   threat: Threat,
   t: StudioTranslator['t'],
 ): readonly {
@@ -298,7 +298,7 @@ export function threatAttachments(
 
 /** Summary names use noun phrases and distinguish collisions across those phrases. */
 export function threatSummaryElements(
-  model: Model,
+  model: Pick<Model, 'elements' | 'diagrams'>,
   threat: Threat,
   t: StudioTranslator['t'],
 ): readonly { readonly id: ElementId; readonly label: string }[] {

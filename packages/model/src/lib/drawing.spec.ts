@@ -8,7 +8,9 @@ import {
   placementOf,
   placementOn,
 } from './drawing.js';
+import { drawnElementSchema } from './drawn-elements.js';
 import { validModelFixture } from './model.fixtures.js';
+import { note } from './operations.fixtures.js';
 
 const [diagram] = validModel.diagrams;
 
@@ -54,6 +56,17 @@ describe('drawnElement', () => {
         source: { position: { x: 0, y: 0 } },
       }),
     ).toBeUndefined();
+  });
+
+  it('draws every kind with its keys in the order the drawn schema lists them', () => {
+    const accented = [...drawnElements(validModel, diagram), note].map(
+      (drawn) => ({ ...drawn, accent: 's1' as const }),
+    );
+    for (const drawn of accented) {
+      expect(
+        Object.keys(drawnElement(elementOf(drawn), placementOf(drawn)) ?? {}),
+      ).toEqual(Object.keys(drawnElementSchema.parse(drawn)));
+    }
   });
 
   it('draws an element with the accent its placement takes', () => {

@@ -8,17 +8,9 @@ import {
   type ParseIssueDetail,
   type SchemaParser,
 } from './parse-issue.js';
-import { collectViolations } from './violations.js';
+import { collectViolations, refusingViolations } from './violations.js';
 
-const refinedModelSchema = modelSchema.superRefine((model, ctx) => {
-  for (const violation of collectViolations(model)) {
-    ctx.addIssue({
-      code: 'custom',
-      path: [...violation.path],
-      params: violation.detail,
-    });
-  }
-});
+const refinedModelSchema = refusingViolations(modelSchema, collectViolations);
 
 /** A parsed model remains structurally typed. Its type alone does not prove reference validity. */
 export type Model = z.infer<typeof refinedModelSchema>;

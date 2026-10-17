@@ -1,37 +1,47 @@
 import { z } from 'zod';
-import {
-  drawnActorSchema,
-  elementBaseSchema,
-  drawnFlowSchema,
-  drawnProcessSchema,
-  drawnStoreSchema,
-  drawnTextSchema,
-  drawnTrustBoundarySchema,
-} from './drawn-elements.js';
+import { elementBaseSchema } from './element-base.js';
 import { elementIdSchema } from './ids.js';
-
-const nodeGeometry = { accent: true, position: true, size: true } as const;
+import { acceptedTextSchema } from './text.js';
 
 /** External actor. Security facts remain unknown when absent. */
-export const actorSchema = drawnActorSchema.omit(nodeGeometry);
+export const actorSchema = elementBaseSchema.extend({
+  kind: z.literal('actor'),
+  providesAuthentication: z.boolean().optional(),
+});
 
 /** Actor element. */
 export type Actor = z.infer<typeof actorSchema>;
 
 /** Process security facts remain unknown when absent. */
-export const processSchema = drawnProcessSchema.omit(nodeGeometry);
+export const processSchema = elementBaseSchema.extend({
+  kind: z.literal('process'),
+  handlesCardPayment: z.boolean().optional(),
+  handlesGoodsOrServices: z.boolean().optional(),
+  isWebApplication: z.boolean().optional(),
+  privilegeLevel: acceptedTextSchema.optional(),
+});
 
 /** Process element. */
 export type Process = z.infer<typeof processSchema>;
 
 /** Data at rest. Security facts remain unknown when absent. */
-export const storeSchema = drawnStoreSchema.omit(nodeGeometry);
+export const storeSchema = elementBaseSchema.extend({
+  kind: z.literal('store'),
+  isALog: z.boolean().optional(),
+  isEncrypted: z.boolean().optional(),
+  isSigned: z.boolean().optional(),
+  storesCredentials: z.boolean().optional(),
+  storesInventory: z.boolean().optional(),
+});
 
 /** Store element. */
 export type Store = z.infer<typeof storeSchema>;
 
 /** Canvas note with separate content and outline name. */
-export const textSchema = drawnTextSchema.omit(nodeGeometry);
+export const textSchema = elementBaseSchema.extend({
+  kind: z.literal('text'),
+  text: acceptedTextSchema,
+});
 
 /** Canvas text element. */
 export type TextElement = z.infer<typeof textSchema>;
@@ -52,9 +62,16 @@ export type FlowEndpoint = z.infer<typeof flowEndpointSchema>;
 export type FlowEndpointInput = z.input<typeof flowEndpointSchema>;
 
 /** Flow direction is required. Absent security facts and relationship lists remain unknown. */
-export const flowSchema = drawnFlowSchema
-  .omit({ accent: true, waypoints: true })
-  .extend({ source: flowEndpointSchema, target: flowEndpointSchema });
+export const flowSchema = elementBaseSchema.extend({
+  kind: z.literal('flow'),
+  protocol: acceptedTextSchema.optional(),
+  isEncrypted: z.boolean().optional(),
+  isPublicNetwork: z.boolean().optional(),
+  trustBoundaryIds: z.array(elementIdSchema).optional(),
+  source: flowEndpointSchema,
+  target: flowEndpointSchema,
+  bidirectional: z.boolean(),
+});
 
 /** Flow element. */
 export type Flow = z.infer<typeof flowSchema>;
@@ -63,9 +80,10 @@ export type Flow = z.infer<typeof flowSchema>;
 export type FlowInput = z.input<typeof flowSchema>;
 
 /** Declared relationships are independent of geometry and remain unknown when absent. */
-export const trustBoundarySchema = drawnTrustBoundarySchema.omit({
-  accent: true,
-  shape: true,
+export const trustBoundarySchema = elementBaseSchema.extend({
+  kind: z.literal('trust-boundary'),
+  containedElements: z.array(elementIdSchema).optional(),
+  crossingFlows: z.array(elementIdSchema).optional(),
 });
 
 /** Trust boundary element. */

@@ -1,12 +1,14 @@
 import { Cross1Icon } from '@radix-ui/react-icons';
 import { isEmptyName, type ElementId, type Threat } from '@saerskriven/model';
 import { Fragment, memo, useEffect, useId, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { announce } from '../canvas/announcements.js';
 import { revealElement } from '../canvas/diagrams.js';
 import { closingOn } from '../commands/binding.js';
 import { describeContextualShortcuts } from '../commands/contextual-shortcuts.js';
 import { hostPlatform } from '../commands/shortcuts.js';
 import { useTranslator } from '../messages/locale.js';
+import { elementsAndDiagrams } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { inReviewOrder } from '../ui/review-order.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
@@ -175,7 +177,7 @@ function RegisterRow({
   readonly onChoose: () => void;
   readonly onFollow: (elementId: ElementId) => void;
 }) {
-  const model = useModelStore((state) => state.present);
+  const model = useModelStore(useShallow(elementsAndDiagrams));
   const { t, locale } = useTranslator();
   const placed: readonly Placement[] = [
     ...(threat.appliesToModel ? [{ label: t('panel.whole-model') }] : []),

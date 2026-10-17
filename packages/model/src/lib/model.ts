@@ -62,8 +62,8 @@ export type DiagramInput = z.input<typeof diagramSchema>;
  * threat-number uniqueness, placements, reference resolution, and no threat
  * number above the last issued) are parseModel's refinements, so this schema
  * alone accepts duplicates, dangling ids, and a mark below a threat it
- * holds. Internal to the package: parseModel is the only exported way a
- * Model value comes into existence.
+ * holds. Internal to the package: every Model value comes through
+ * parseModel, which parseDrawnModel calls for a read.
  */
 export const modelSchema = z.object({
   metadata: modelMetadataSchema,

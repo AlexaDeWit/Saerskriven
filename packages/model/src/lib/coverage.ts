@@ -35,10 +35,10 @@ export function openThreatsBySeverity(
 
 /**
  * How many threats reference each element of the model, keyed by element id
- * and total over every element, so an element no threat references maps
- * to 0. A threat listing the same element twice counts
- * once. Threat status plays no part: the count is of threats recorded, not
- * of threats outstanding.
+ * and total over every element, so an element no threat references maps to
+ * 0. A threat listing the same element twice counts once. Threat status
+ * plays no part: the count is of threats recorded, not of threats
+ * outstanding.
  */
 export function threatCountByElement(model: Model): Map<ElementId, number> {
   const links = new Map<string, number>();

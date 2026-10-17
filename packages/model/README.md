@@ -2,9 +2,10 @@
 
 Zod schemas and inferred types for the threat model core: ids, geometry,
 elements, their placements on diagrams, threats, mitigations, assumptions, and
-model metadata. `parseModel` is the parse boundary and the only exported way a
-`Model` value comes into existence, `emptyModel` being the one the package
-parses for you, where a model that has not been drawn starts. Fallible exports
+model metadata. `parseModel` is the parse boundary every `Model` value comes
+through. `parseDrawnModel`, the entry point a read of a file takes, calls it,
+and `emptyModel` is the one model the package parses for you, where a model
+that has not been drawn starts. Fallible exports
 return Effect's `Either` with a package-owned tagged failure, and an
 infallible operation returns its result bare, on the terms
 [`CODING.md`](../../CODING.md#error-handling) sets. Each export's TSDoc states
@@ -71,13 +72,13 @@ rather than reaching a diagram. `firstRefusedCharacter` gives the index of
 the first character a string carries that the rule refuses, so an editor can
 point at it rather than at the field alone.
 
-`parseModel` is the whole of that gate for a foreign file. `renameElement`,
-`editNote`, `setElementDetails`, `setElementProperties`, `addDiagram`,
-`renameDiagram` and `setModelMetadata` screen the strings that an editor
-commits after parsing, and `selectionFragment`, `remapFragment` and
-`insertFragment` pass what they produce through `parseModel`. The other edit
-operations take a caller's strings as given, a model assembled in memory
-being the caller's to assemble.
+`parseDrawnModel`, which calls `parseModel`, is the whole of that gate for a
+foreign file. `renameElement`, `editNote`, `setElementDetails`,
+`setElementProperties`, `addDiagram`, `renameDiagram` and `setModelMetadata`
+screen the strings that an editor commits after parsing, and
+`selectionFragment`, `remapFragment` and `insertFragment` pass what they
+produce through `parseModel`. The other edit operations take a caller's
+strings as given, a model assembled in memory being the caller's to assemble.
 A boundary that renders a model escapes or replaces what its output format
 forbids instead of resting on this rule.
 
@@ -104,14 +105,12 @@ move, resize, rename, edit Note text, set description and scope, reconnect,
 set flow route and direction, free or move one flow end, reverse a flow, set a
 trust boundary's shape, set an accent, set security properties), diagram
 edits (add, rename, remove), a metadata edit, fragment edits (copy, remap,
-insert), and
-register edits for threats (add, remove, replace, attach, detach, link to the
-model, unlink from it), mitigations and assumptions (add, replace, remove,
-link, unlink, set status). Coverage
-queries read a model without changing it: elements no threat references, open
-threats by severity, and the threat count of every element. `autoPlacement`
-gives a position to a caller that has none to read, as the OTM and TM-BOM
-imports do.
+insert), and register edits for threats (add, remove, replace, attach, detach,
+link to the model, unlink from it), mitigations and assumptions (add, replace,
+remove, link, unlink, set status). Coverage queries read a model without
+changing it: elements no threat references, open threats by severity, and the
+threat count of every element. `autoPlacement` gives a position to a caller
+that has none to read, as the OTM and TM-BOM imports do.
 
 An operation that writes geometry takes, as its last argument, how many
 decimals to store (`Decimals`, a whole count from 0 to 100): `addElement`,

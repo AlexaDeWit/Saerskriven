@@ -8,12 +8,14 @@ import {
 } from '@saerskriven/model';
 import { Collapsible } from 'radix-ui';
 import { useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import {
   announceRefusal,
   resetAnnouncements,
 } from '../canvas/announcements.js';
 import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
+import { elementsAndDiagrams } from '../store/selectors.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import type { RefusedDraft } from '../ui/text-field.js';
 import {
@@ -52,7 +54,7 @@ export function ElementPropertiesEditor({
   readonly drafts?: ElementPropertyDrafts;
 }) {
   const { t } = useTranslator();
-  const model = useModelStore((state) => state.present);
+  const model = useModelStore(useShallow(elementsAndDiagrams));
   const [diagram] = diagramsOf(model, elementId);
   const element = model.elements.find(
     (candidate) => candidate.id === elementId,

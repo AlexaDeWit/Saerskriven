@@ -20,7 +20,8 @@ const drawings = new WeakMap<Placement, Drawing>();
 const lookups = new WeakMap<readonly Element[], Map<ElementId, Element>>();
 
 /**
- * `element` as `placement` draws it, or undefined where the placement does
+ * `element` as `placement` draws it, with its keys in the order
+ * `drawnElementSchema` lists them, or undefined where the placement does
  * not fit the element: geometry of another kind, or a flow end whose
  * placement does not match how the element holds it. Every placement of a
  * parsed model fits its element. The same element and placement draw the
@@ -46,34 +47,45 @@ function drawnFresh(
   element: Element,
   placement: Placement,
 ): DrawnElement | undefined {
-  const accent = accentField(placement);
-  if (element.kind === 'flow') {
+  const { id, name, description, outOfScope, reasonOutOfScope, ...facts } =
+    element;
+  const base = {
+    id,
+    name,
+    description,
+    outOfScope,
+    reasonOutOfScope,
+    ...accentField(placement),
+  };
+  if (facts.kind === 'flow') {
     if (!('waypoints' in placement)) {
       return undefined;
     }
-    const source = drawnEndpoint(element.source, placement.source);
-    const target = drawnEndpoint(element.target, placement.target);
+    const source = drawnEndpoint(facts.source, placement.source);
+    const target = drawnEndpoint(facts.target, placement.target);
+    const { bidirectional, ...flow } = facts;
     return source === undefined || target === undefined
       ? undefined
       : {
-          ...element,
-          ...accent,
+          ...base,
+          ...flow,
           source,
           target,
           waypoints: placement.waypoints,
+          bidirectional,
         };
   }
-  if (element.kind === 'trust-boundary') {
+  if (facts.kind === 'trust-boundary') {
     return 'shape' in placement
-      ? { ...element, ...accent, shape: placement.shape }
+      ? { ...base, ...facts, shape: placement.shape }
       : undefined;
   }
   return 'position' in placement
     ? {
-        ...element,
-        ...accent,
+        ...base,
         position: placement.position,
         size: placement.size,
+        ...facts,
       }
     : undefined;
 }
@@ -114,7 +126,10 @@ export function placementOf(drawn: DrawnElement): Placement {
 }
 
 /** The elements `diagram` draws, each with its geometry there, in the order it draws them. */
-export function drawnElements(model: Model, diagram: Diagram): DrawnElement[] {
+export function drawnElements(
+  model: Pick<Model, 'elements'>,
+  diagram: Diagram,
+): DrawnElement[] {
   const elements = lookupOf(model.elements);
   return diagram.placements.flatMap((placement) => {
     const element = elements.get(placement.element);
@@ -126,7 +141,7 @@ export function drawnElements(model: Model, diagram: Diagram): DrawnElement[] {
 
 /** The element `elementId` names as `diagram` draws it, and undefined where the diagram does not place it. */
 export function drawnElementOn(
-  model: Model,
+  model: Pick<Model, 'elements'>,
   diagram: Diagram,
   elementId: ElementId,
 ): DrawnElement | undefined {
@@ -146,7 +161,10 @@ export function placementOn(
 }
 
 /** The diagrams that place `elementId`, in diagram order. */
-export function diagramsOf(model: Model, elementId: ElementId): Diagram[] {
+export function diagramsOf(
+  model: Pick<Model, 'diagrams'>,
+  elementId: ElementId,
+): Diagram[] {
   return model.diagrams.filter(
     (diagram) => placementOn(diagram, elementId) !== undefined,
   );

@@ -1,7 +1,9 @@
 import { Cross2Icon } from '@radix-ui/react-icons';
 import type { ElementId, Threat } from '@saerskriven/model';
 import { useEffect, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useTranslator } from '../messages/locale.js';
+import { elementsAndDiagrams } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
 import { RequiredBooleanProperty } from './element-property-fields.js';
 import { PickExisting } from './pick-existing.js';
@@ -30,7 +32,7 @@ export function AttachmentGroup({
   onDetach,
   onModelLink,
 }: AttachmentGroupProps) {
-  const model = useModelStore((state) => state.present);
+  const model = useModelStore(useShallow(elementsAndDiagrams));
   const { t } = useTranslator();
   const group = useRef<HTMLFieldSetElement>(null);
   const modelLink = useRef<HTMLButtonElement>(null);

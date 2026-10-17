@@ -85,6 +85,16 @@ export function severalDiagrams(state: State): boolean {
   return state.present.diagrams.length > 1;
 }
 
+/**
+ * The model's elements and diagrams, which is all drawing a diagram reads.
+ * The object is rebuilt on every call, so read it through `useShallow`.
+ */
+export function elementsAndDiagrams(
+  state: State,
+): Pick<Model, 'elements' | 'diagrams'> {
+  return { elements: state.present.elements, diagrams: state.present.diagrams };
+}
+
 /** The element `elementId` names, on whichever diagram it is drawn. */
 export function elementById(
   state: State,

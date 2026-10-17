@@ -20,11 +20,11 @@ export type SetBoundaryShapeFailure =
 
 /**
  * Replaces a trust boundary's shape on the diagram `diagramId` names with a
- * box or a curve, whichever of the two it held, storing its position and size, or its points, at `decimals`,
- * and preserving the model for the shape it already has, as given or as it
- * would be stored. The caller supplies a schema-valid shape. The declared
- * relationships stay as they are, as through every geometry edit, so no
- * element moves in or out.
+ * box or a curve, whichever of the two it held, storing its position and
+ * size, or its points, at `decimals`, and preserving the model for the shape
+ * it already has, as given or as it would be stored. The caller supplies a
+ * schema-valid shape. The declared relationships stay as they are, as
+ * through every geometry edit, so no element moves in or out.
  */
 export function setBoundaryShape(
   model: Model,

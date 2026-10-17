@@ -1,11 +1,10 @@
+import { emptyModel, type DrawnFlow } from '@saerskriven/model';
 import {
-  elementOf,
-  emptyModel,
-  placementOf,
-  type DrawnFlow,
-  type Model,
-} from '@saerskriven/model';
-import { drawnAt, elementId, elementIn } from '@saerskriven/model/fixtures';
+  drawnAt,
+  drawnOnto,
+  elementId,
+  elementIn,
+} from '@saerskriven/model/fixtures';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import {
@@ -734,20 +733,10 @@ describe('selectAll', () => {
       waypoints: [],
       bidirectional: false,
     };
-    const model: Model = {
-      ...canvasModel,
-      elements: [...canvasModel.elements, elementOf(hiddenFlow)],
-      diagrams: [
-        {
-          ...canvasModel.diagrams[0],
-          placements: [
-            ...canvasModel.diagrams[0].placements,
-            placementOf(hiddenFlow),
-          ],
-        },
-      ],
-    };
-    modelStore.setState(initialState(model), true);
+    modelStore.setState(
+      initialState(drawnOnto(canvasModel, [hiddenFlow])),
+      true,
+    );
 
     selectAll();
 

@@ -108,13 +108,13 @@ const threatNumbersArbitrary = fc
 
 /**
  * `parseDrawnModel` input covering every record kind the model has, each
- * diagram owning its elements. Text is drawn
- * through the model's own character rule. Category candidates are built
- * loosely and re-parsed through the union, which pairs each methodology with
- * its own categories. Threat numbers are distinct and never already
- * ascending, so a write has to reorder them. Every element holds an accent
- * or none. Ids are positional, references are drawn from ids already laid
- * out, and a flow's endpoints come from its own diagram, minus the flow.
+ * diagram owning its elements. Text is drawn through the model's own
+ * character rule. Category candidates are built loosely and re-parsed
+ * through the union, which pairs each methodology with its own categories.
+ * Threat numbers are distinct and never already ascending, so a write has
+ * to reorder them. Every element holds an accent or none. Ids are
+ * positional, references are drawn from ids already laid out, and a flow's
+ * endpoints come from its own diagram, minus the flow.
  */
 export const modelInputArbitrary = fc
   .record({

@@ -223,11 +223,8 @@ describe('parseModel', () => {
         parameters: { id: 'element-remote' },
       },
     },
-  ])('rejects $named', ({ mutate, path, detail }) => {
-    expect(issuesOf(seededPlacedModel(mutate))).toContainEqual({
-      path,
-      detail,
-    });
+  ])('rejects $named, and nothing else', ({ mutate, path, detail }) => {
+    expect(issuesOf(seededPlacedModel(mutate))).toEqual([{ path, detail }]);
   });
 });
 
@@ -305,6 +302,48 @@ describe('parseDrawnModel', () => {
           id: 'diagram-second',
           title: 'Second',
           elements: [structuredClone(draft.diagrams[0].elements[0])],
+        });
+      },
+      path: ['diagrams', 1, 'elements', 0, 'id'],
+      detail: {
+        code: 'duplicate-element-id',
+        parameters: { id: 'element-customer' },
+      },
+    },
+    {
+      named: 'a duplicate element id within one diagram',
+      mutate: (draft) => {
+        draft.diagrams[0].elements.push(
+          structuredClone(draft.diagrams[0].elements[0]),
+        );
+      },
+      path: ['diagrams', 0, 'elements', 6, 'id'],
+      detail: {
+        code: 'duplicate-element-id',
+        parameters: { id: 'element-customer' },
+      },
+    },
+    {
+      named: 'a duplicate element id held by elements of different kinds',
+      mutate: (draft) => {
+        draft.diagrams.push({
+          id: 'diagram-second',
+          title: 'Second',
+          elements: [
+            {
+              kind: 'trust-boundary',
+              id: 'element-customer',
+              name: 'Zone',
+              description: '',
+              outOfScope: false,
+              reasonOutOfScope: '',
+              shape: {
+                kind: 'box',
+                position: { x: 0, y: 0 },
+                size: { width: 100, height: 60 },
+              },
+            },
+          ],
         });
       },
       path: ['diagrams', 1, 'elements', 0, 'id'],
@@ -513,8 +552,32 @@ describe('parseDrawnModel', () => {
         parameters: { bound: 1_000_000, kind: 'number', inclusive: true },
       },
     },
-  ])('rejects $named', ({ mutate, path, detail }) => {
-    expect(issuesOf(seededModel(mutate))).toContainEqual({ path, detail });
+  ])('rejects $named, and nothing else', ({ mutate, path, detail }) => {
+    expect(issuesOf(seededModel(mutate))).toEqual([{ path, detail }]);
+  });
+
+  it('reports a refused character and a broken model rule from one parse', () => {
+    const result = seededModel((draft) => {
+      draft.diagrams.push({
+        id: 'diagram-second',
+        title: 'Second',
+        elements: [structuredClone(draft.diagrams[0].elements[0])],
+      });
+      draft.diagrams[0].elements[0].name = 'Shop\u0007per';
+    });
+    expect(issuesOf(result)).toEqual([
+      {
+        path: ['diagrams', 0, 'elements', 0, 'name'],
+        detail: { code: 'text-character-refused' },
+      },
+      {
+        path: ['diagrams', 1, 'elements', 0, 'id'],
+        detail: {
+          code: 'duplicate-element-id',
+          parameters: { id: 'element-customer' },
+        },
+      },
+    ]);
   });
 
   it('surfaces multiple violations in one parse', () => {
