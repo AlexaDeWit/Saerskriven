@@ -1,13 +1,21 @@
-import { readAnyFormat, readLimits } from '@saerskriven/formats';
+import {
+  readAnyFormat,
+  readLimits,
+  unreadByThisVersion,
+} from '@saerskriven/formats';
 import {
   OperationFailure,
   elementsAcross,
   type AssumptionStatus,
   type BoundaryShapeInput,
 } from '@saerskriven/model';
-import { assumptionId, elementId } from '@saerskriven/model/fixtures';
+import {
+  assumptionId,
+  elementId,
+  testDataPath,
+} from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { unclaimedFile } from '../fixtures.js';
 import {
@@ -16,15 +24,24 @@ import {
   modelFile,
   renaming,
   staleRevision,
+  undeclaredDragonJson,
+  undeclaredPath,
+  undeclaredYaml,
+  unknownAccentYaml,
   type EditInput,
 } from './edit.fixtures.js';
-import { editArgumentsSchema, editModel, renderEdit } from './edit.js';
+import {
+  editArgumentsSchema,
+  editModel,
+  renderEdit,
+  type EditResult,
+} from './edit.js';
 import { getThreat } from './get-threat.js';
 import { describeOperationFailure } from './operation-failure.js';
 import { revisionOf } from './revision.js';
 import { searchThreats } from './search-threats.js';
 import { openWorkspace } from './workspace.js';
-import { refusalOf } from './read-tools.fixtures.js';
+import { forgedLine, forgedLinesIn, refusalOf } from './read-tools.fixtures.js';
 
 const addedMitigation = (
   threat: string,
@@ -57,10 +74,19 @@ const attempt = () => {
   return {
     workspace,
     bytes,
-    edit: (file: string, revision: string, edits: readonly EditInput[]) =>
+    place: (file: string, text: string): string => {
+      writeFileSync(join(tree.root, file), text);
+      return file;
+    },
+    edit: (
+      file: string,
+      revision: string,
+      edits: readonly EditInput[],
+      dropUndeclared?: boolean,
+    ) =>
       editModel(
         workspace,
-        editArgumentsSchema.parse({ file, revision, edits }),
+        editArgumentsSchema.parse({ file, revision, edits, dropUndeclared }),
       ),
   };
 };
@@ -69,6 +95,11 @@ const revisionIn = (
   attempted: ReturnType<typeof attempt>,
   file: string,
 ): string => revisionOf(attempted.bytes(file));
+
+const textOf = (
+  outcome: Either.Either<EditResult, readonly string[]>,
+): readonly string[] =>
+  Either.match(outcome, { onLeft: (lines) => lines, onRight: renderEdit });
 
 describe('what a refused edit leaves on disk', () => {
   it.each<{
@@ -222,6 +253,7 @@ describe('what an applied edit writes', () => {
       applied: 1,
       culled: [],
       culledThreats: [],
+      dropped: [],
       divergences: [],
     });
     expect(written).not.toEqual(quoted);
@@ -234,14 +266,14 @@ describe('what an applied edit writes', () => {
       revisionIn(attempted, modelFile),
       [renaming],
     );
-    expect(
-      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
-    ).toEqual([
+    expect(textOf(applied)).toEqual([
       'edits applied: 1',
       'culled:',
       'No record culled.',
       'threats culled:',
       'No threat culled.',
+      'dropped:',
+      'Nothing dropped.',
       `file: ${modelFile}`,
       'format: saerskriven-yaml',
       `revision: ${revisionIn(attempted, modelFile)}`,
@@ -662,9 +694,7 @@ describe('the records and threats a batch culls', () => {
       { kind: 'mitigation', id: 'mitigation-tls' },
       { kind: 'assumption', id: 'assumption-managed-db' },
     ]);
-    expect(
-      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
-    ).toEqual(
+    expect(textOf(applied)).toEqual(
       expect.arrayContaining([
         'mitigation "mitigation-tls"',
         'assumption "assumption-managed-db"',
@@ -691,9 +721,7 @@ describe('the records and threats a batch culls', () => {
       { kind: 'assumption', id: 'assumption-managed-db' },
     ]);
     expect(heldModel(attempted)?.threats).toEqual([]);
-    expect(
-      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
-    ).toEqual(
+    expect(textOf(applied)).toEqual(
       expect.arrayContaining([
         'threats culled:',
         'threat 1 ("threat-tamper-order"): Order tampering in transit',
@@ -731,9 +759,7 @@ describe('the records and threats a batch culls', () => {
       { kind: 'assumption', id: 'assumption-managed-db' },
     ]);
     expect(heldModel(attempted)?.threats).toEqual([]);
-    expect(
-      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
-    ).toEqual(
+    expect(textOf(applied)).toEqual(
       expect.arrayContaining([
         'threats culled:',
         'threat 1 ("threat-tamper-order"): Order tampering in transit',
@@ -1048,5 +1074,121 @@ describe('what set_accent writes', () => {
     expect(
       accentsOf(attempted, dragonFile, ['store-archive', 'process-booking']),
     ).toEqual([undefined, undefined]);
+  });
+});
+
+const droppedOnRereadOf = (
+  attempted: ReturnType<typeof attempt>,
+  file: string,
+) =>
+  Either.getOrUndefined(
+    readAnyFormat(attempted.bytes(file).toString('utf8')),
+  )?.divergences.filter(unreadByThisVersion);
+
+describe('what an edit does with what this version cannot read', () => {
+  it.each([
+    {
+      name: 'undeclared.yaml',
+      text: undeclaredYaml,
+      named: `the key ${undeclaredPath}`,
+    },
+    {
+      name: 'undeclared.json',
+      text: undeclaredDragonJson,
+      named: 'the key glow',
+    },
+    { name: 'accent.yaml', text: unknownAccentYaml, named: 'the accent "q9"' },
+  ])(
+    'refuses $name, naming what the write would drop, and writes nothing',
+    ({ name, text, named }) => {
+      const attempted = attempt();
+      const file = attempted.place(name, text);
+      const before = attempted.bytes(file);
+      const refused = refusalOf(
+        attempted.edit(file, revisionIn(attempted, file), [renaming]),
+      );
+      expect(attempted.bytes(file)).toEqual(before);
+      expect(refused.join('\n')).toContain(named);
+      expect(refused.join('\n')).toContain('dropUndeclared');
+    },
+  );
+
+  it.each([
+    {
+      name: 'undeclared.yaml',
+      text: undeclaredYaml,
+      code: 'key-undeclared',
+      named: `the key ${undeclaredPath}`,
+    },
+    {
+      name: 'accent.yaml',
+      text: unknownAccentYaml,
+      code: 'accent-unknown',
+      named: 'the accent "q9"',
+    },
+  ])(
+    'writes $name without what it drops where the call says to, and names it as dropped',
+    ({ name, text, code, named }) => {
+      const attempted = attempt();
+      const file = attempted.place(name, text);
+      const applied = attempted.edit(
+        file,
+        revisionIn(attempted, file),
+        [renaming],
+        true,
+      );
+      expect(
+        Either.getOrUndefined(applied)?.dropped.map(
+          ({ detail }) => detail.code,
+        ),
+      ).toEqual([code]);
+      expect(textOf(applied).join('\n')).toContain(named);
+      expect(droppedOnRereadOf(attempted, file)).toEqual([]);
+      expect(
+        heldModel(attempted, file)?.diagrams[0]?.elements.find(
+          (element) => element.id === 'element-db',
+        )?.name,
+      ).toBe('Order store');
+    },
+  );
+
+  it('answers a stale revision before what the write would drop', () => {
+    const attempted = attempt();
+    const file = attempted.place('undeclared.yaml', undeclaredYaml);
+    const refused = refusalOf(
+      attempted.edit(file, staleRevision, [renaming]),
+    ).join('\n');
+    expect(refused).toContain('changed since the read this call quoted');
+    expect(refused).not.toContain('dropUndeclared');
+  });
+
+  it('writes a version 1 file back as version 2, whose migration narrows what it holds', () => {
+    const attempted = attempt();
+    const file = attempted.place(
+      'version-1.yaml',
+      readFileSync(testDataPath('saerskriven/saerskriven-v0.3.0.yaml'), 'utf8'),
+    );
+    const applied = attempted.edit(file, revisionIn(attempted, file), [
+      { op: 'set_model_metadata', title: 'Saerskriven, migrated' },
+    ]);
+    expect(Either.getOrUndefined(applied)?.dropped).toEqual([]);
+    expect(
+      attempted.bytes(file).toString('utf8').startsWith('formatVersion: 2\n'),
+    ).toBe(true);
+  });
+
+  it('marks a key spelled as a line of the result as the key it is', () => {
+    const attempted = attempt();
+    const file = attempted.place(
+      'forged.yaml',
+      `${JSON.stringify(forgedLine)}: true\n${undeclaredYaml}`,
+    );
+    const quoted = revisionIn(attempted, file);
+    expect(
+      forgedLinesIn(refusalOf(attempted.edit(file, quoted, [renaming]))),
+    ).toEqual([]);
+    expect(
+      forgedLinesIn(textOf(attempted.edit(file, quoted, [renaming], true))),
+    ).toEqual([]);
   });
 });

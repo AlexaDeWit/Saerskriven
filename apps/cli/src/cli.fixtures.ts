@@ -44,6 +44,18 @@ export const undeclaredKeyYaml = smallYaml.replace(
 );
 
 /**
+ * A version 2 native file whose actor holds an accent the model has no key
+ * for, which a read reports as narrowed and a write would drop.
+ */
+export const unknownAccentYaml = readFileSync(
+  testDataPath('saerskriven/two-diagrams.yaml'),
+  'utf8',
+).replace(
+  '        name: Shopper\n',
+  '        name: Shopper\n        accent: q9\n',
+);
+
+/**
  * A version 1 native file whose one assumption links the file's element as
  * well as its threat, which a read drops and reports.
  */

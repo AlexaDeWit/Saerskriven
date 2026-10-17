@@ -222,6 +222,13 @@ export function takesAccent(element: Element): element is AccentableElement {
   return element.kind !== 'text';
 }
 
+/** `element`'s accent as a field to spread, and no field where it holds none. */
+export function accentField(element: Element): { readonly accent?: Accent } {
+  return takesAccent(element) && element.accent !== undefined
+    ? { accent: element.accent }
+    : {};
+}
+
 /** The `kind` an element carries: {@link elementSchema}'s own discriminators. */
 export const elementKindSchema = z.enum([
   'actor',

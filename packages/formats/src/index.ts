@@ -10,6 +10,7 @@ export {
   keptByWriteBack,
   readAnyFormat,
   retainedSource,
+  unreadByThisVersion,
   writeThrough,
   type DetectedRead,
   type FormatName,
@@ -22,6 +23,7 @@ export {
 } from './lib/divergence-detail.js';
 export {
   collapsedWhitespace,
+  divergenceLines,
   divergenceSchema,
   escapedForTerminal,
   hasDiverged,

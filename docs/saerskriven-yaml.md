@@ -138,11 +138,13 @@ a version carries is a change to its wire schema, deliberately.
 A key this release does not declare is not a refusal. The read drops it and
 reports it as an `undeclared` divergence naming its path, so a file written
 by a later release of version 2 still reads here, minus what this release has
-no home for. Older releases can open extended files of their version but lose
-these new fields when saving. Use a release that understands the fields for
-lossless edits. A value this release does not declare in an enumerated
-vocabulary is a refusal, at the path of that value, as the additive rule above
-sets out.
+no home for. Its `saer_edit`, and `saer convert` rewriting the file in place,
+refuse to write such a file unless the call says to drop the key
+([writing](mcp.md#writing), [usage](../README.md#usage)), while the studio, a
+conversion to another file, and a release from before that refusal drop it.
+Use a release that declares the key for lossless edits. A value this release
+does not declare in an enumerated vocabulary is a refusal, at the path of that
+value, as the additive rule above sets out.
 
 A record with no reference in the file, a mitigation that links no threat or an
 assumption that links no threat and does not apply to the model, is kept on
@@ -259,10 +261,12 @@ a file with none is written as it was before the key existed.
 refusal of an unknown enumerated value does not reach it. A text that is none
 of the eight keys reads as no accent and is reported as a `narrowed`
 divergence naming the element and the text, so a file holding a key a later
-release adds still opens. The next save writes no accent for that element. A
-value that is not text is refused at its path, as any mistyped key is. On a
-Note, and in a version 1 file, `accent` is an undeclared key: dropped, and
-reported as one.
+release adds still opens. A write drops it, so `saer_edit`, and `saer convert`
+rewriting the file in place, refuse on the terms of an undeclared key
+([Reading](#reading)), and the studio's next save writes no accent for that
+element. A value that is not text is refused at its path, as any mistyped key
+is. On a Note, and in a version 1 file, `accent` is an undeclared key:
+dropped, and reported as one.
 
 A release of version 2 from before the key reads the file, drops each
 `accent`, reports it as `undeclared` with its path, and writes the file

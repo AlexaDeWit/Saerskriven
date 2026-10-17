@@ -158,14 +158,16 @@ issue the schema raised.
 `saer_search_elements` and `saer_search_threats` find the elements and the
 threats of a model. The first takes `element`, `diagram`, `kind` and `query` and
 carries the element id, its diagram, its kind, its name, whether it is out of
-scope (`outOfScope`), and how many threats reference it. A flow left
+scope (`outOfScope`), its `accent` where it holds one, and how many threats
+reference it. A flow left
 unlabelled keeps its stored `name` and adds `namedFromEnds`, which names it from
 its ends: `Flow from Shopper to Web shop`, `Flow between Shopper and Web shop`
 for a flow that runs both ways, `a free point` for an end attached to nothing,
 and the element's id for an end whose name is empty or white space alone. Its
 text line shows that name. Every element row carries it the same
 way: the rows of `saer_coverage`, the elements `saer_get_threat` lists, and the
-element the `stride_pass` prompt lays out. The second takes
+element the `stride_pass` prompt lays out. Each of those rows carries the
+`accent` too, and its text line names it. The second takes
 `status`, `severity`, `category`, `diagram`, `element` and `query` and carries
 the threat number and id, its title, status, severity, category, attached
 elements, whether it applies to the model as a whole (`appliesToModel`), and
@@ -300,6 +302,15 @@ so a reader of the path sees the file it had or the file the edit wrote. A
 process killed between the two, or a removal the system refuses, leaves a
 `.<name>.<uuid>.saer` copy in the directory that no listing shows, and deleting
 it is safe.
+
+A file holding what this version of saer cannot read is refused rather than
+edited, since the write would drop it: a key the format does not declare, or
+an accent value the model has no key for. `saer_inspect` and `saer_validate`
+report both as divergences. The refusal writes nothing, names each one, a key
+by its path and an accent by its element, and says to upgrade saer to a
+release that reads them. `dropUndeclared: true` writes the file without them,
+and the result lists each one it dropped under `dropped`. A Threat Dragon
+file is refused on the same terms for a key, and it holds no accent.
 
 What the format cannot hold comes back in the result's divergences rather than
 as a refusal,

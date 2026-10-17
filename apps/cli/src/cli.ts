@@ -213,6 +213,10 @@ function convertCommand(program: Command, state: ParseState): void {
       '--out <path>',
       'the file to write, which may be <file> itself, or - for standard output',
     )
+    .option(
+      '--drop-undeclared',
+      'where --out is <file> itself, drop what this version of saer cannot read rather than refusing to write',
+    )
     .action((file: string, options: unknown) => {
       const parsed = convertOptionsSchema.safeParse(options);
       state.request = parsed.success

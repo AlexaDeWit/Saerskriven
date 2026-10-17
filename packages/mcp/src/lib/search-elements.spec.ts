@@ -1,5 +1,9 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
-import { renameElement, threatCountByElement } from '@saerskriven/model';
+import {
+  renameElement,
+  setAccent,
+  threatCountByElement,
+} from '@saerskriven/model';
 import {
   elementId,
   parsedFixture,
@@ -269,5 +273,27 @@ describe('the row of a flow left unlabelled', () => {
         (row) => 'namedFromEnds' in row,
       ),
     ).toEqual([]);
+  });
+});
+
+describe('the accent of an element row', () => {
+  const accented = treeHolding(
+    saerskrivenYamlCodec.write(
+      Either.getOrThrow(
+        setAccent(validModel, [elementId('element-api')], 's2'),
+      ),
+    ).output,
+  );
+
+  it('carries the accent of the element holding one in a concise row and its line', () => {
+    const found = answerOf(
+      searchElements(accented, { response_format: 'concise' }),
+    );
+    expect(
+      found.elements.flatMap((row) =>
+        'accent' in row ? [{ id: row.id, accent: row.accent }] : [],
+      ),
+    ).toEqual([{ id: 'element-api', accent: 's2' }]);
+    expect(renderElementSearch(found).join('\n')).toContain('accent s2');
   });
 });

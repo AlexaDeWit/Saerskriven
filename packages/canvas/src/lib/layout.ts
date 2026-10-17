@@ -1,8 +1,8 @@
 import {
+  accentField,
   decimalsOf,
   storedNumber,
   type Accent,
-  type AccentableElement,
   type Diagram,
   type Element,
   type ElementId,
@@ -169,7 +169,7 @@ export function canvasNodeOf(
   if (element.kind === 'text') {
     return { ...base, kind: 'text', text: element.text };
   }
-  return { ...base, ...accentOf(element), kind: element.kind };
+  return { ...base, ...accentField(element), kind: element.kind };
 }
 
 type CanvasNodeBase = {
@@ -208,7 +208,7 @@ function boundaryNode(
     id: element.id,
     name: element.name,
     outOfScope: element.outOfScope,
-    ...accentOf(element),
+    ...accentField(element),
     badge,
   };
   if (element.shape.kind === 'curve') {
@@ -239,10 +239,6 @@ function boundaryNode(
     position: element.shape.position,
     size: element.shape.size,
   };
-}
-
-function accentOf(element: AccentableElement): { readonly accent?: Accent } {
-  return element.accent === undefined ? {} : { accent: element.accent };
 }
 
 const noExtent = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
@@ -282,7 +278,7 @@ function placeFlow(
       id: flow.id,
       name: flow.name,
       outOfScope: flow.outOfScope,
-      ...accentOf(flow),
+      ...accentField(flow),
       badge: badges.get(flow.id),
       source: anchors.source.point,
       target: anchors.target.point,

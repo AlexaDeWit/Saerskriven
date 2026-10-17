@@ -271,7 +271,13 @@ read refuses is left as it was. A symbolic link to nothing is refused rather
 than replaced. Converting a file to another format over itself, through any
 link or spelling, is refused with exit code 2 before anything is written. A
 document past the size Saerskriven reads is not written to a file. OTM and
-TM-BOM are read only, so `--to` refuses them. Whatever the read and the write
+TM-BOM are read only, so `--to` refuses them. Rewriting a file in place is
+refused with exit code 1, and nothing written, where the file holds what this
+version of saer cannot read and the write would drop: a key the format does
+not declare, or an accent value the model has no key for, both of which
+`validate` warns of. The error names each one and says to upgrade saer, and
+`--drop-undeclared` rewrites the file without them and lists them on standard
+error under a heading of their own. Otherwise, whatever the read and the write
 did not carry exactly,
 [a rounded coordinate aside](packages/formats/README.md#divergences), goes to
 standard error as a warning, and the command still writes the document and
@@ -293,7 +299,7 @@ needs no network. No flag points a link at another host.
 | Exit code | What it means                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0         | The command did what it was asked.                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| 1         | Saerskriven read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid.                                                                                                                                                                                                                                                                                                                      |
+| 1         | Saerskriven read the file and refused it: no format claimed it, or one did and either the document or the model it maps to is not valid, or `convert`, rewriting a file in place without `--drop-undeclared`, would drop what this version cannot read.                                                                                                                                                                                                       |
 | 2         | The invocation cannot be carried out: the parser or the option schema refused it, a file cannot be read or written, a choice names no diagram, a stream refused the output, a pipe whose reader closed aside, or a projection could not be produced from a model Saerskriven accepted, which is the PDF typesetter or the PNG rasterizer refusing the document, a share link longer than a link may hold, or an install missing the files a projection reads. |
 
 Errors go to standard error, path-precise where a schema refused something,
