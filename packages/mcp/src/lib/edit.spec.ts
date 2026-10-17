@@ -22,6 +22,7 @@ import { unclaimedFile } from '../fixtures.js';
 import {
   dragonFile,
   editableTree,
+  mergingCopy,
   modelFile,
   placingStore,
   renaming,
@@ -256,6 +257,7 @@ describe('what an applied edit writes', () => {
       applied: 1,
       culled: [],
       culledThreats: [],
+      merged: [],
       dropped: [],
       movedToVersion3: false,
       divergences: [],
@@ -286,6 +288,37 @@ describe('what an applied edit writes', () => {
     expect(textOf(applied)[1]).toMatch(
       /^format version: moved from Saerskriven YAML version 2 to version 3/u,
     );
+    expect(
+      attempted
+        .bytes(modelFile)
+        .toString('utf8')
+        .startsWith('formatVersion: 3\n'),
+    ).toBe(true);
+  });
+
+  it('moves a version 2 file to version 3 through a merge_elements edit, and says what the merge moved in a line', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      mergingCopy,
+    );
+    expect(Either.getOrUndefined(applied)).toMatchObject({
+      movedToVersion3: true,
+      merged: [
+        {
+          element: 'element-db-copy',
+          into: 'element-db',
+          movedOn: ['diagram-empty'],
+          droppedOn: [],
+        },
+      ],
+    });
+    expect(textOf(applied).slice(1, 4)).toEqual([
+      expect.stringMatching(/^format version: moved from Saerskriven YAML/u),
+      'merged:',
+      'element "element-db-copy" into "element-db": placement moved on "diagram-empty", placement dropped on none, threats moved none, flows moved none',
+    ]);
     expect(
       attempted
         .bytes(modelFile)

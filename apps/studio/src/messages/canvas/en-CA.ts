@@ -44,6 +44,8 @@ export const canvasEnCA = catalogue(canvasMessages)('en-CA')({
     other: 'Added {count} elements to {diagram}.',
   },
   'nothing-to-add': 'Every element is already on {diagram}.',
+  merged: '{element} merged into {into}.',
+  'merge-dropped': 'Its placement on {diagrams} was dropped.',
   'flows-detached': {
     one: '{count} flow detached.',
     other: '{count} flows detached.',

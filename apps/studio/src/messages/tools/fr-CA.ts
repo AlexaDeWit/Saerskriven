@@ -11,6 +11,11 @@ export const toolsFrCA = catalogue(toolMessages)('fr-CA')({
   'existing-detail': '{what}, sur {diagrams}',
   'add-picked': 'Ajouter {count}',
   'pick-existing-first': 'Choisissez d’abord un élément ou un flux.',
+  'merge-into': 'Fusionner dans {name}',
+  'merge-choice': 'Élément à fusionner',
+  merge: 'Fusionner',
+  'pick-merge-first': 'Choisissez d’abord l’élément à fusionner.',
+  'nothing-to-merge': 'Aucun autre élément du même genre.',
   'flow-between': 'entre {source} et {target}',
   'flow-from-to': 'depuis {source} vers {target}',
   'open-threats': {

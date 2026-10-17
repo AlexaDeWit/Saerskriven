@@ -11,6 +11,11 @@ export const toolsSv = catalogue(toolMessages)('sv')({
   'existing-detail': '{what}, i {diagrams}',
   'add-picked': 'Lägg till {count}',
   'pick-existing-first': 'Välj först ett objekt eller ett flöde.',
+  'merge-into': 'Slå samman med {name}',
+  'merge-choice': 'Objekt att slå samman',
+  merge: 'Slå samman',
+  'pick-merge-first': 'Välj först objektet att slå samman.',
+  'nothing-to-merge': 'Inget annat objekt av samma slag.',
   'flow-between': 'mellan {source} och {target}',
   'flow-from-to': 'från {source} till {target}',
   'open-threats': {

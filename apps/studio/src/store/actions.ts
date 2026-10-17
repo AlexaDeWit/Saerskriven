@@ -65,6 +65,10 @@ export type Action = Data.TaggedEnum<{
     readonly placements: readonly Placement[];
     readonly decimals: Decimals | undefined;
   };
+  MergeElements: {
+    readonly elementId: ElementId;
+    readonly intoId: ElementId;
+  };
   InsertFragment: { readonly diagramId: DiagramId; readonly fragment: Model };
   ArrangeElements: {
     readonly diagramId: DiagramId;

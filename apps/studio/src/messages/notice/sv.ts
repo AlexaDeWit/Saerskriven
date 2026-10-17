@@ -74,6 +74,13 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
     'Objektet {id} kan inte ritas i diagrammet {diagram} med den geometrin.',
   'op-several-diagrams':
     'Objektet {id} finns i mer än ett diagram: {diagrams}.',
+  'op-merge-itself': 'Objektet {id} kan inte slås samman med sig självt.',
+  'op-merge-kinds':
+    'Objekten {id} och {into} är av olika slag: {kind} och {intoKind}. Bara objekt av samma slag kan slås samman.',
+  'op-merge-joined':
+    'Flödet {flow} förbinder objekten {id} och {into}, så de kan inte slås samman.',
+  'op-merge-flow-ends':
+    'Flödena {id} och {into} förbinder inte samma objekt i samma riktning, så de kan inte slås samman.',
   'op-source-not-away':
     'Källan till flödet {id} är inte ritad på avstånd från sitt objekt i diagrammet {diagram}.',
   'op-target-not-away':

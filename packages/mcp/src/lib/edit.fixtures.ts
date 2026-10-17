@@ -177,6 +177,24 @@ export const placingStore: EditInput = {
 };
 
 /**
+ * A copy of the valid model's store added on the empty diagram, then merged
+ * into the store, which leaves the store on both diagrams.
+ */
+export const mergingCopy: readonly EditInput[] = [
+  {
+    op: 'add_element',
+    diagram: 'diagram-empty',
+    element: {
+      kind: 'store',
+      id: 'element-db-copy',
+      name: 'Order database',
+      placement: 'auto',
+    },
+  },
+  { op: 'merge_elements', element: 'element-db-copy', into: 'element-db' },
+];
+
+/**
  * One batch per `op` the edit schema declares, each against {@link
  * editableModel} and each changing the model, so a spec can call every
  * variant and hold the write to having produced a different file. The `op` a
@@ -270,6 +288,16 @@ export const editVariants: readonly {
     edits: [
       placingStore,
       { op: 'unplace_element', element: 'element-db', diagram: 'diagram-main' },
+    ],
+  },
+  {
+    op: 'merge_elements',
+    edits: [
+      {
+        op: 'merge_elements',
+        element: 'element-billing-zone',
+        into: 'element-perimeter',
+      },
     ],
   },
   {

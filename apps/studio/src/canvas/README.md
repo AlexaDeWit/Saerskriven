@@ -21,7 +21,8 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `edits.ts`                                                                                      | One function per edit a control asks for                                                                                                                   |
 | `pane-shield.ts`                                                                                | Keeping a double-click's second press out of a pane its first press opened                                                                                 |
 | `connecting.ts`, `flow-target-chooser.tsx`                                                      | The flow a start-flow command holds until a target is chosen, and the listbox that chooses it                                                              |
-| `add-existing.ts`, `add-existing-picker.tsx`                                                    | Whether Add existing element is open, what it offers, where it places the picks, and the picker under the card                                             |
+| `add-existing.ts`, `add-existing-picker.tsx`                                                    | Whether the picker under the card is open and for which command, what Add existing element offers and where it places the picks, and the picker            |
+| `merge-into.ts`                                                                                 | When Merge an element into this one is available, the elements the picker offers it, and the merge it runs                                                 |
 | `other-diagrams.ts`, `shared-mark.tsx`                                                          | The elements on more than one diagram and the other diagrams of one, and the mark a placement of such an element carries                                   |
 | `inline-editing.tsx`                                                                            | The inline name and Note editors, and the node and edge bodies that mount them                                                                             |
 | `resize-layer-position.ts`                                                                      | Live offsets for a node while its resize button holds focus                                                                                                |
@@ -50,7 +51,7 @@ The shell mounts `toolbox.tsx` as row two of its chrome card
 `add-existing-picker.tsx` under that card. The first four read no React Flow
 hook, which is what lets the shell host them. The picker reads the viewport
 for the centre of the view, through the provider `../app/app.tsx` mounts
-around the shell, and only while it is open.
+around the shell, and only while it is open for Add existing element.
 The accent bar draws its swatches from the token properties with its own
 styles, so it does not depend on the canvas sheet being mounted.
 

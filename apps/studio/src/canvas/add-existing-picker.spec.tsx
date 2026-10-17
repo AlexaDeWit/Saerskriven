@@ -1,5 +1,10 @@
 import { diagramsOf, type ElementId } from '@saerskriven/model';
-import { diagramId, elementId, sharedModel } from '@saerskriven/model/fixtures';
+import {
+  copiesModel,
+  diagramId,
+  elementId,
+  sharedModel,
+} from '@saerskriven/model/fixtures';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ReactFlowProvider } from '@xyflow/react';
@@ -12,6 +17,7 @@ import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import { closeAddExisting, openAddExisting } from './add-existing.js';
 import { AddExistingPicker } from './add-existing-picker.js';
+import { openMergeInto } from './merge-into.js';
 
 const overview = diagramId('overview');
 const cardVault = elementId('card-vault');
@@ -179,5 +185,105 @@ describe('the Add existing element picker', () => {
     expect(document.activeElement).toBe(
       screen.getByRole('button', { name: 'Before' }),
     );
+  });
+});
+
+const mergePicker = () => screen.queryByRole('region', { name: /^Merge/u });
+
+const mergeChoices = (): HTMLInputElement[] => [
+  ...screen
+    .getByRole('group', { name: 'Element to merge' })
+    .querySelectorAll('input'),
+];
+
+describe('the picker choosing the element to merge into the one selected', () => {
+  const storefront = diagramId('storefront');
+  const api = elementId('orders-api');
+
+  beforeEach(() => {
+    modelStore.setState(
+      {
+        ...initialState(copiesModel),
+        activeDiagram: storefront,
+        selection: [api],
+      },
+      true,
+    );
+  });
+
+  afterEach(() => {
+    act(closeAddExisting);
+  });
+
+  it('offers one choice among the other elements of its kind, each described by the diagrams it is on', () => {
+    mounted();
+    act(openMergeInto);
+
+    const choices = mergeChoices();
+    expect(choices.map((choice) => choice.labels?.[0]?.textContent)).toEqual([
+      'Web shop',
+      'Orders API',
+    ]);
+    expect(
+      describedBy(screen.getByRole('radio', { name: 'Orders API' })),
+    ).toContain('Fulfilment');
+    expect(screen.queryAllByRole('checkbox')).toEqual([]);
+    expect(document.activeElement).toBe(choices[0]);
+  });
+
+  it('takes one choice and merges it into the element selected as one undo step', async () => {
+    const user = userEvent.setup();
+    mounted();
+    act(openMergeInto);
+
+    await user.click(screen.getByRole('radio', { name: 'Web shop' }));
+    await user.click(screen.getByRole('radio', { name: 'Orders API' }));
+    expect(mergeChoices().filter((choice) => choice.checked)).toHaveLength(1);
+    await user.click(screen.getByRole('button', { name: 'Merge' }));
+
+    expect(mergePicker()).toBeNull();
+    expect(placedOn(api)).toEqual(['storefront', 'fulfilment']);
+    expect(placedOn(elementId('orders-api-copy'))).toEqual([]);
+    expect(modelStore.getState().past).toHaveLength(1);
+    expect(modelStore.getState().selection).toEqual([api]);
+  });
+
+  it('merges nothing while nothing is picked, and keeps Merge on the Tab path saying why', async () => {
+    const user = userEvent.setup();
+    mounted();
+    act(openMergeInto);
+
+    const merge = screen.getByRole('button', { name: 'Merge' });
+    expect(merge.getAttribute('aria-disabled')).toBe('true');
+    expect(describedBy(merge)).not.toBe('');
+    await user.click(merge);
+
+    expect(mergePicker()).not.toBeNull();
+    expect(modelStore.getState().past).toEqual([]);
+  });
+
+  it('goes away when another diagram is shown', () => {
+    mounted();
+    act(openMergeInto);
+    expect(mergePicker()).not.toBeNull();
+
+    act(() => {
+      dispatch(Action.SelectDiagram({ diagramId: diagramId('fulfilment') }));
+    });
+
+    expect(mergePicker()).toBeNull();
+    expect(modelStore.getState().present).toBe(copiesModel);
+  });
+
+  it('closes on Escape with nothing merged', async () => {
+    const user = userEvent.setup();
+    mounted();
+    act(openMergeInto);
+    await user.keyboard(' ');
+
+    await user.keyboard('{Escape}');
+
+    expect(mergePicker()).toBeNull();
+    expect(modelStore.getState().present).toBe(copiesModel);
   });
 });

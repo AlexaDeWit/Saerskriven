@@ -12,6 +12,8 @@ import {
   editNote,
   elementDetailsChangeSchema,
   elementIdSchema,
+  mergeElements,
+  mergeOutcome,
   modelMetadataChangeSchema,
   moveElement,
   placeElement,
@@ -33,6 +35,7 @@ import {
   setElementProperties,
   sideSchema,
   sizeSchema,
+  threatIdSchema,
   unplaceElement,
   waypointsSchema,
   type DiagramId,
@@ -107,6 +110,15 @@ export const modelEditSchema = z.discriminatedUnion('op', [
   elementEditSchema.extend({
     op: z.literal('unplace_element'),
     diagram: diagramIdSchema.describe('The diagram to take the element off.'),
+  }),
+  elementEditSchema.extend({
+    op: z.literal('merge_elements'),
+    element: elementIdSchema.describe(
+      'The id of the element to merge, which the model no longer holds afterwards.',
+    ),
+    into: elementIdSchema.describe(
+      'The id of the element of the same kind it merges into, which keeps its id, name, details and properties.',
+    ),
   }),
   drawnEditSchema.extend({
     op: z.literal('move_element'),
@@ -211,11 +223,46 @@ export type RefusedEdit = {
   readonly failure: OperationFailure;
 };
 
-/** A batch applied: the model it produced, and the records and threats it culled. */
+/** What one `merge_elements` edit of a batch moved onto the element it kept, and dropped. */
+export const mergeReportSchema = z.object({
+  element: elementIdSchema.describe(
+    'The element merged, which the model no longer holds.',
+  ),
+  into: elementIdSchema.describe(
+    'The element it merged into, which kept its id, name, details and properties.',
+  ),
+  movedOn: z
+    .array(diagramIdSchema)
+    .describe(
+      'The diagrams whose drawing of `element` became the drawing of `into`, with its geometry and accent.',
+    ),
+  droppedOn: z
+    .array(diagramIdSchema)
+    .describe(
+      'The diagrams that already drew `into`, where the drawing of `element` was dropped and its flows there attach to `into`.',
+    ),
+  threats: z
+    .array(threatIdSchema)
+    .describe('The threats attached to `element`, which attach to `into`.'),
+  flows: z
+    .array(elementIdSchema)
+    .describe(
+      'The flows with an end attached to `element`, which attach to `into`.',
+    ),
+});
+
+/** What one `merge_elements` edit moved and dropped. */
+export type MergeReport = z.infer<typeof mergeReportSchema>;
+
+/**
+ * A batch applied: the model it produced, the records and threats it culled,
+ * and what each merge of it moved and dropped.
+ */
 export type AppliedBatch = {
   readonly model: Model;
   readonly culled: readonly RecordReference[];
   readonly culledThreats: readonly Threat[];
+  readonly merged: readonly MergeReport[];
 };
 
 /**
@@ -223,7 +270,9 @@ export type AppliedBatch = {
  * once each, every record an edit other than `remove_mitigation` or
  * `remove_assumption` took out of the model, and `culledThreats` every
  * threat an edit other than `remove_threat` did, in both cases where the
- * model the batch started from held it. The caller owns file writes.
+ * model the batch started from held it. `merged` reports each
+ * `merge_elements` edit in order, read from the model the edit applied to.
+ * The caller owns file writes.
  */
 export function applyEdits(
   model: Model,
@@ -254,10 +303,14 @@ export function applyEdits(
                   ? []
                   : droppedThreats(batch.model, next)),
               ],
+              merged:
+                edit.op === 'merge_elements'
+                  ? [...batch.merged, mergeReport(batch.model, edit)]
+                  : batch.merged,
             }),
           }),
         ),
-      Either.right({ model, culled: [], culledThreats: [] }),
+      Either.right({ model, culled: [], culledThreats: [], merged: [] }),
     ),
     (batch) => ({
       model: batch.model,
@@ -267,6 +320,7 @@ export function applyEdits(
         (threat) => threat.id,
         heldThreats,
       ),
+      merged: batch.merged,
     }),
   );
 }
@@ -305,6 +359,8 @@ function applyEdit(
       );
     case 'unplace_element':
       return unplaceElement(model, edit.diagram, edit.element);
+    case 'merge_elements':
+      return mergeElements(model, edit.element, edit.into);
     case 'move_element':
       return onItsDiagram(model, edit, (diagram) =>
         moveElement(model, diagram, edit.element, edit.offset),
@@ -411,6 +467,21 @@ function accented(
       ),
     Either.right(model),
   );
+}
+
+function mergeReport(
+  model: Model,
+  { element, into }: Extract<ModelEdit, { op: 'merge_elements' }>,
+): MergeReport {
+  const outcome = mergeOutcome(model, element, into);
+  return {
+    element,
+    into,
+    movedOn: outcome.moved.map(({ id }) => id),
+    droppedOn: outcome.dropped.map(({ id }) => id),
+    threats: [...outcome.threats],
+    flows: [...outcome.flows],
+  };
 }
 
 function isRecordRemoval(edit: ModelEdit): boolean {

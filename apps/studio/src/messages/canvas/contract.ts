@@ -61,6 +61,8 @@ export const canvasMessages = {
   'still-on': text({ diagrams: 'text' }),
   'added-existing': plural('count', { diagram: 'text' }),
   'nothing-to-add': text({ diagram: 'text' }),
+  merged: text({ element: 'text', into: 'text' }),
+  'merge-dropped': text({ diagrams: 'list' }),
   'flows-detached': plural('count'),
   'threat-links-dropped': plural('count'),
   'threats-removed': plural('count'),

@@ -7,6 +7,7 @@ import {
   elementId,
   mitigationId,
   drawnFixture,
+  copiesModel,
   sharedModel,
   threatId,
   validModelFixture,
@@ -91,6 +92,24 @@ const failures: ByTag<OperationFailure> = {
   ElementOnSeveralDiagrams: OperationFailure.ElementOnSeveralDiagrams({
     elementId: elementId('element-api'),
     diagramIds: [diagramId('diagram-main'), diagramId('diagram-second')],
+  }),
+  MergeIntoItself: OperationFailure.MergeIntoItself({
+    elementId: elementId('element-api'),
+  }),
+  MergeKindsDiffer: OperationFailure.MergeKindsDiffer({
+    elementId: elementId('element-db'),
+    elementKind: 'store',
+    intoId: elementId('element-api'),
+    intoKind: 'process',
+  }),
+  MergeJoinedByFlow: OperationFailure.MergeJoinedByFlow({
+    elementId: elementId('element-api'),
+    intoId: elementId('element-db'),
+    flowId: elementId('element-order-flow'),
+  }),
+  MergeFlowEndsDiffer: OperationFailure.MergeFlowEndsDiffer({
+    elementId: elementId('element-order-flow'),
+    intoId: elementId('element-read-flow'),
   }),
   UnknownThreat: OperationFailure.UnknownThreat({
     threatId: threatId('threat-tamper-order'),
@@ -586,6 +605,139 @@ describe('what unplace_element does', () => {
     expect(
       Either.isLeft(refused) ? refusalOf(refused.left) : undefined,
     ).toContain('remove_element');
+  });
+});
+
+const mergeRefusal = (edit: EditInput): string =>
+  Either.match(batchOn(copiesModel, [edit]), {
+    onLeft: (failure) => refusalOf(failure),
+    onRight: () => '',
+  });
+
+describe('what merge_elements does', () => {
+  it('merges a copy into the element kept, reporting what moved and what was dropped', () => {
+    const merged = Either.getOrThrow(
+      batchOn(copiesModel, [
+        {
+          op: 'merge_elements',
+          element: 'orders-api-copy',
+          into: 'orders-api',
+        },
+        { op: 'merge_elements', element: 'stock-copy', into: 'stock' },
+        { op: 'merge_elements', element: 'reserve-copy', into: 'reserve' },
+      ]),
+    );
+    expect(drawnOn(merged.model, 'fulfilment', 'reserve')).toMatchObject({
+      source: { kind: 'attached', element: 'orders-api' },
+      target: { kind: 'attached', element: 'stock' },
+    });
+    expect(merged.merged).toEqual([
+      {
+        element: 'orders-api-copy',
+        into: 'orders-api',
+        movedOn: ['fulfilment'],
+        droppedOn: [],
+        threats: [],
+        flows: ['reserve-copy'],
+      },
+      {
+        element: 'stock-copy',
+        into: 'stock',
+        movedOn: ['fulfilment'],
+        droppedOn: [],
+        threats: ['threat-stock-read'],
+        flows: ['reserve-copy'],
+      },
+      {
+        element: 'reserve-copy',
+        into: 'reserve',
+        movedOn: ['fulfilment'],
+        droppedOn: [],
+        threats: ['threat-reservation-replayed'],
+        flows: [],
+      },
+    ]);
+    expect({
+      culled: merged.culled,
+      culledThreats: merged.culledThreats,
+    }).toEqual({ culled: [], culledThreats: [] });
+  });
+
+  it('reports the diagram where it dropped the drawing of an element the kept one shares', () => {
+    const merged = Either.getOrThrow(
+      batchOn(copiesModel, [
+        {
+          op: 'place_element',
+          element: 'orders-api-copy',
+          diagram: 'storefront',
+          placement: 'auto',
+        },
+        {
+          op: 'merge_elements',
+          element: 'orders-api',
+          into: 'orders-api-copy',
+        },
+      ]),
+    );
+    expect(merged.merged).toMatchObject([
+      { movedOn: [], droppedOn: ['storefront'], flows: ['order', 'reserve'] },
+    ]);
+    expect(drawnOn(merged.model, 'storefront', 'order')).toMatchObject({
+      target: { kind: 'attached', element: 'orders-api-copy' },
+    });
+  });
+
+  it.each<{
+    readonly name: string;
+    readonly edit: EditInput;
+    readonly tag: OperationFailure['_tag'];
+  }>([
+    {
+      name: 'one element given as both',
+      edit: { op: 'merge_elements', element: 'stock', into: 'stock' },
+      tag: 'MergeIntoItself',
+    },
+    {
+      name: 'an element the model does not hold',
+      edit: { op: 'merge_elements', element: 'ghost', into: 'stock' },
+      tag: 'UnknownElement',
+    },
+    {
+      name: 'two kinds',
+      edit: { op: 'merge_elements', element: 'stock', into: 'orders-api' },
+      tag: 'MergeKindsDiffer',
+    },
+    {
+      name: 'two elements a flow joins',
+      edit: { op: 'merge_elements', element: 'web-shop', into: 'orders-api' },
+      tag: 'MergeJoinedByFlow',
+    },
+    {
+      name: 'two flows joining different elements',
+      edit: { op: 'merge_elements', element: 'reserve-copy', into: 'reserve' },
+      tag: 'MergeFlowEndsDiffer',
+    },
+  ])('refuses $name', ({ edit, tag }) => {
+    expect(batchOn(copiesModel, [edit])).toMatchObject({
+      left: { _tag: tag },
+    });
+  });
+
+  it('names both kinds, and the flow joining the two, in its refusal', () => {
+    expect(
+      mergeRefusal({
+        op: 'merge_elements',
+        element: 'stock',
+        into: 'orders-api',
+      }),
+    ).toMatch(/kind store .* kind process/u);
+    expect(
+      mergeRefusal({
+        op: 'merge_elements',
+        element: 'web-shop',
+        into: 'orders-api',
+      }),
+    ).toContain('"order"');
   });
 });
 

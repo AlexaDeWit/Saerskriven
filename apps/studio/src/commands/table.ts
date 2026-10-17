@@ -8,6 +8,7 @@ import {
   pasteSelected,
 } from '../canvas/clipboard.js';
 import { openAddExisting } from '../canvas/add-existing.js';
+import { mergeable, openMergeInto } from '../canvas/merge-into.js';
 import { startFlow } from '../canvas/connecting.js';
 import {
   beginRenamingDiagram,
@@ -428,6 +429,15 @@ export const commandTable = {
     shortcuts: [bare('e')],
     when: 'commands.when-outside-fields-and-menus',
     run: openAddExisting,
+  }),
+  'merge-into': command({
+    id: 'merge-into',
+    label: 'commands.label-merge-into',
+    group: 'commands.group-edit',
+    shortcuts: [],
+    when: 'commands.when-merge-into',
+    available: mergeable,
+    run: openMergeInto,
   }),
   rename: command({
     id: 'rename',

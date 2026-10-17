@@ -63,6 +63,7 @@ export const registeredChords = {
   delete: ['Delete', 'Backspace'],
   'delete-from-model': ['Shift+Delete', 'Shift+Backspace'],
   'add-existing': ['e'],
+  'merge-into': [],
   rename: ['F2'],
   'model-panel': ['m'],
   'focus-threats': ['t'],

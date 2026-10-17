@@ -82,6 +82,13 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
     'L’élément {id} ne peut pas être dessiné sur le diagramme {diagram} avec cette géométrie.',
   'op-several-diagrams':
     'L’élément {id} se trouve sur plus d’un diagramme : {diagrams}.',
+  'op-merge-itself': 'L’élément {id} ne peut pas fusionner avec lui-même.',
+  'op-merge-kinds':
+    'Les éléments {id} et {into} sont de genres différents : {kind} et {intoKind}. Seuls des éléments du même genre fusionnent.',
+  'op-merge-joined':
+    'Le flux {flow} relie les éléments {id} et {into}, qui ne peuvent donc pas fusionner.',
+  'op-merge-flow-ends':
+    'Les flux {id} et {into} ne relient pas les mêmes éléments dans le même sens, et ne peuvent donc pas fusionner.',
   'op-source-not-away':
     'La source du flux {id} n’est pas tracée à l’écart de son élément sur le diagramme {diagram}.',
   'op-target-not-away':

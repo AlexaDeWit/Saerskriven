@@ -44,6 +44,14 @@ export type ExistingEntries = {
   readonly flows: readonly ExistingEntry[];
 };
 
+/**
+ * What the picker under the card is open for: adding existing elements to
+ * the diagram on screen, or choosing the element to merge into `into`.
+ */
+export type PickerMode =
+  | { readonly kind: 'add' }
+  | { readonly kind: 'merge'; readonly into: ElementId };
+
 type Draft = {
   readonly from: DiagramId;
   readonly points: readonly Point[];
@@ -56,11 +64,11 @@ const rowGap = 2 * gridSpacing;
 
 const origin: Point = { x: 0, y: 0 };
 
-let open = false;
+let mode: PickerMode | undefined;
 
 let opener: HTMLElement | SVGElement | undefined;
 
-const pickerStore = externalStore(() => open);
+const pickerStore = externalStore(() => mode);
 
 /**
  * Opens the picker over the diagram on screen, or moves focus into it where
@@ -68,7 +76,7 @@ const pickerStore = externalStore(() => open);
  * opens nothing and says so.
  */
 export function openAddExisting(): void {
-  if (open) {
+  if (mode?.kind === 'add') {
     focusAddExisting();
     return;
   }
@@ -83,17 +91,32 @@ export function openAddExisting(): void {
     );
     return;
   }
-  const focused = document.activeElement;
-  opener =
-    focused instanceof HTMLElement || focused instanceof SVGElement
-      ? focused
-      : undefined;
-  open = true;
+  openPicker({ kind: 'add' });
+}
+
+/**
+ * Opens the picker in `next`'s mode, or moves focus into it where it is
+ * already open in that mode. A picker open in another mode switches to
+ * `next` and keeps what held focus when it first opened.
+ */
+export function openPicker(next: PickerMode): void {
+  if (samePickerMode(mode, next)) {
+    focusAddExisting();
+    return;
+  }
+  if (mode === undefined) {
+    const focused = document.activeElement;
+    opener =
+      focused instanceof HTMLElement || focused instanceof SVGElement
+        ? focused
+        : undefined;
+  }
+  mode = next;
   pickerStore.notify();
 }
 
 /**
- * Puts the picker away with nothing added, and hands focus back to what held
+ * Puts the picker away with nothing changed, and hands focus back to what held
  * it when the picker opened, or to the canvas where that is gone.
  */
 export function cancelAddExisting(): void {
@@ -108,16 +131,16 @@ export function cancelAddExisting(): void {
 
 /** Puts the picker away. */
 export function closeAddExisting(): void {
-  if (!open) {
+  if (mode === undefined) {
     return;
   }
-  open = false;
+  mode = undefined;
   opener = undefined;
   pickerStore.notify();
 }
 
-/** Whether the picker is open. */
-export function useAddExistingOpen(): boolean {
+/** What the picker is open for, and undefined while it is closed. */
+export function usePickerMode(): PickerMode | undefined {
   return pickerStore.use();
 }
 
@@ -152,16 +175,25 @@ export function existingEntries(
   const entries =
     placed === undefined
       ? []
-      : model.elements
-          .filter(({ id }) => !placed.has(id))
-          .map((element) => ({
-            element,
-            diagrams: diagramsOf(model, element.id),
-          }));
+      : entriesOf(
+          model,
+          model.elements.filter(({ id }) => !placed.has(id)),
+        );
   return {
     elements: entries.filter(({ element }) => element.kind !== 'flow'),
     flows: entries.filter(({ element }) => element.kind === 'flow'),
   };
+}
+
+/** Each of `elements` as a picker entry, with the diagrams of `model` that place it. */
+export function entriesOf(
+  model: Model,
+  elements: readonly Element[],
+): ExistingEntry[] {
+  return elements.map((element) => ({
+    element,
+    diagrams: diagramsOf(model, element.id),
+  }));
 }
 
 /**
@@ -256,6 +288,16 @@ export function addExisting(
     }),
   );
   return true;
+}
+
+function samePickerMode(
+  held: PickerMode | undefined,
+  next: PickerMode,
+): boolean {
+  return (
+    held?.kind === next.kind &&
+    (held.kind === 'add' || (next.kind === 'merge' && held.into === next.into))
+  );
 }
 
 function draftOf(

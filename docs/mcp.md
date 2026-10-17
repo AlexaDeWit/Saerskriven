@@ -492,6 +492,33 @@ stay attached but do not move: each stays on the diagrams it is on, with its
 end drawn away from the element on the first. To draw a flow on the new
 diagram, place it there too, and take it off the first with `unplace_element`.
 
+`merge_elements` merges `element` into `into`: two elements of one kind that
+stand for the same thing, such as the copies a model made of an element for
+each diagram before one element could be on several. `into` keeps its id,
+name, details and security facts, and the model no longer holds `element`,
+whose own are dropped. Each boundary relationship list of `into` (a flow's
+`trustBoundaryIds`, a boundary's `containedElements` and `crossingFlows`)
+takes the ids of the same list of `element` after its own, once each and never
+naming `into`, so a copied boundary keeps the members of every diagram. Every
+other threat, flow end and boundary relationship naming `element` names `into`
+instead, once each, and nothing is culled. Each drawing
+of `element` becomes a drawing of `into`, with its geometry and accent, except
+on a diagram that already draws `into`: there the drawing of `element` is
+dropped, and its flows there attach to `into`.
+
+```json
+{ "op": "merge_elements", "element": "process-copy-id", "into": "process-id" }
+```
+
+It refuses one id given as both, two kinds, naming both, and a flow joining
+the two, naming the flow. Two flows merge only where they join the same two
+elements in the same direction, since a flow has the same ends on every
+diagram, so merge the elements at the ends of two copied flows first. The
+result names each merge under `merged`: the diagrams its drawing moved on
+(`movedOn`) and was dropped on (`droppedOn`), and the threats and flows that
+moved to `into`. A merge that leaves `into` on more than one diagram moves a
+version 2 file to version 3.
+
 #### Geometry
 
 Every `x` and `y` an edit passes, an `offset` included, is from -1,000,000 to

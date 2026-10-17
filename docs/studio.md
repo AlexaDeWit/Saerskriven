@@ -359,6 +359,35 @@ threat panel shows an **Also on** line under the element's name, naming its
 other diagrams. Each name shows that diagram with the element selected and
 focused.
 
+## Merging two elements
+
+Two elements that stand for the same thing, such as the copies of one element
+a model made for each diagram before an element could be on several, can
+become one. Select the element to keep and choose **Merge an element into this
+one** in the Edit menu, beside Add existing element. It has no shortcut, and it
+is unavailable unless one element is selected and the model holds another of
+its kind. The list under the card offers every other element of that kind,
+each with the diagrams it is on, and focus moves to the first. Pick one with a
+click or the arrow keys, then press Merge. Escape or Cancel merges nothing, and
+showing another diagram puts the list away.
+
+The element kept keeps its id, name, details and security properties, and the
+other goes with its own. The kept element's relationship lists (the boundaries
+a flow crosses, a boundary's contained elements and crossing flows) take the
+other's after their own, so a copied boundary keeps the members of every
+diagram. The other's threats and flows move onto the element kept, and a threat
+on both is attached once. Each of its placements becomes the kept element's,
+where it was and with its accent. On a diagram that already draws the element
+kept, its placement is dropped, its flows there attach to the kept one, and the
+notice names that diagram. The element kept stays selected, and one undo step
+restores both.
+
+A merge is refused for two kinds, for a flow joining the two, and for two flows
+that do not join the same two elements in the same direction, since a flow has
+the same ends on every diagram. To merge two copies of a flow, merge the
+elements at its ends first. A merge that leaves an element on a second diagram
+moves the file to version 3, with the notice [Files](#files) describes.
+
 ## Selecting
 
 A click selects one element or flow. Shift-click, or Shift+Enter on a focused
@@ -1087,9 +1116,9 @@ navigation keys do not.
   threats, and an assumption through its threats or the model panel's Details.
   The model's explicit record removal has no control.
 - In Safari, record rows in view move when another tab adds a record above them.
-- Link existing, Attach existing and Add existing element have no search or
-  filter, and neither the threat list nor the threat register has a filter, a
-  search, or an order but the one above.
+- Link existing, Attach existing, Add existing element and Merge an element
+  into this one have no search or filter, and neither the threat list nor the
+  threat register has a filter, a search, or an order but the one above.
 - A threat's id and number cannot be edited.
 - A custom methodology cannot be created in the studio. A threat that arrived
   with one shows it and can be moved to a listed category.
