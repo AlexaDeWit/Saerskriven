@@ -166,6 +166,17 @@ const secondThreat: EditInput = {
 };
 
 /**
+ * A placement of the valid model's store on the empty diagram, which moves a
+ * version 2 file to version 3.
+ */
+export const placingStore: EditInput = {
+  op: 'place_element',
+  element: 'element-db',
+  diagram: 'diagram-empty',
+  placement: 'auto',
+};
+
+/**
  * One batch per `op` the edit schema declares, each against {@link
  * editableModel} and each changing the model, so a spec can call every
  * variant and hold the write to having produced a different file. The `op` a
@@ -249,6 +260,17 @@ export const editVariants: readonly {
   {
     op: 'remove_element',
     edits: [{ op: 'remove_element', element: 'element-note' }],
+  },
+  {
+    op: 'place_element',
+    edits: [placingStore],
+  },
+  {
+    op: 'unplace_element',
+    edits: [
+      placingStore,
+      { op: 'unplace_element', element: 'element-db', diagram: 'diagram-main' },
+    ],
   },
   {
     op: 'move_element',

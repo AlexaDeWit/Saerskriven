@@ -5,8 +5,10 @@ import {
   threatCountByElement,
 } from '@saerskriven/model';
 import {
+  diagramId,
   elementId,
   drawnFixture,
+  sharedModel,
   validModel,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
@@ -16,9 +18,11 @@ import {
   everyRecordTree,
   keptReasonTree,
   refusalOf,
+  sharedTree,
   treeHolding,
   twoDiagramsWorkspace,
 } from './read-tools.fixtures.js';
+import { renderElement } from './element-rows.js';
 import { readNamed } from './reading.js';
 import { renderElementSearch, searchElements } from './search-elements.js';
 import { searchLimits } from './search.js';
@@ -267,6 +271,22 @@ describe('the row of a flow left unlabelled', () => {
     });
   });
 
+  it('names an end drawn away from its element by that element', () => {
+    const away = treeHolding(
+      saerskrivenYamlCodec.write(
+        Either.getOrThrow(renameElement(sharedModel, elementId('charge'), '')),
+      ).output,
+    );
+    const [row] = answerOf(
+      searchElements(away, {
+        element: elementId('charge'),
+        diagram: 'overview',
+        response_format: 'concise',
+      }),
+    ).elements;
+    expect(row?.namedFromEnds).toBe('Flow from Payments API to Card vault');
+  });
+
   it('names a flow with a name by its name alone', () => {
     expect(
       search({ kind: 'flow', response_format: 'concise' }).elements.filter(
@@ -300,5 +320,69 @@ describe('the accent of an element row', () => {
       ),
     ).toEqual([{ id: 'element-api', accent: 's2' }]);
     expect(renderElementSearch(found).join('\n')).toContain('accent s2');
+  });
+});
+
+describe('the row of an element on more than one diagram', () => {
+  const shared = sharedTree();
+
+  const rows = (args: Parameters<typeof searchElements>[1]) =>
+    answerOf(searchElements(shared, args));
+
+  it('is one match, drawn from the first diagram, listing every diagram it is on', () => {
+    const found = rows({ response_format: 'concise' });
+    expect(found.counts.matched).toBe(sharedModel.elements.length);
+    expect(
+      found.elements.filter(({ id }) => id === 'payments-api'),
+    ).toMatchObject([
+      {
+        diagram: 'overview',
+        diagrams: ['overview', 'payments'],
+        accent: 's1',
+        threats: 1,
+      },
+    ]);
+    expect(
+      found.elements.find(({ id }) => id === 'card-vault')?.diagrams,
+    ).toEqual(['payments']);
+  });
+
+  it('names the other diagrams in its line', () => {
+    const lines = renderElementSearch(rows({ response_format: 'concise' }));
+    expect(lines.find((line) => line.startsWith('  payments-api '))).toContain(
+      'diagram overview, also on payments,',
+    );
+    expect(
+      lines.find((line) => line.startsWith('  card-vault ')),
+    ).not.toContain('also on');
+  });
+
+  it('joins the other diagrams apart from the facts around them', () => {
+    const [line] = renderElement({
+      id: elementId('relay'),
+      diagram: diagramId('first'),
+      diagrams: ['first', 'second', 'third'].map(diagramId),
+      kind: 'process',
+      name: 'Relay',
+      outOfScope: false,
+      threats: 0,
+    });
+    expect(line).toContain(
+      'diagram first, also on second and third, threats 0',
+    );
+  });
+
+  it('is drawn from the diagram a search keeps, with its geometry and accent there', () => {
+    const [row] = rows({
+      element: elementId('payments-api'),
+      diagram: 'payments',
+      response_format: 'detailed',
+    }).elements;
+    expect(row).toMatchObject({
+      diagram: 'payments',
+      diagrams: ['overview', 'payments'],
+      position: { x: 240, y: 100 },
+    });
+    expect(row).not.toHaveProperty('accent');
   });
 });

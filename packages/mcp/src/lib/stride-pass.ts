@@ -97,19 +97,15 @@ export function stridePass(
   const read = Either.mapLeft(readNamed(workspace, args.file), () =>
     PromptFailure.NoModel(),
   );
-  return Either.flatMap(read, (reading) =>
-    Either.flatMap(
-      namedElement(
-        elementsOnDiagrams(reading.model, reading.model.diagrams),
-        args.element,
-      ),
-      (chosen) =>
-        Either.map(analyzedKind(chosen.element), (kind) => ({
-          data: passData(reading, chosen),
-          brief: strideBrief(kind),
-        })),
-    ),
-  );
+  return Either.flatMap(read, (reading) => {
+    const placed = elementsOnDiagrams(reading.model, reading.model.diagrams);
+    return Either.flatMap(namedElement(placed, args.element), (chosen) =>
+      Either.map(analyzedKind(chosen.element), (kind) => ({
+        data: passData(reading, chosen, placed),
+        brief: strideBrief(kind),
+      })),
+    );
+  });
 }
 
 /**
@@ -129,11 +125,12 @@ export function strideBrief(kind: AnalyzedKind): readonly string[] {
 function passData(
   reading: ModelReading,
   chosen: ElementOnDiagram,
+  placed: readonly ElementOnDiagram[],
 ): readonly string[] {
   const counts = threatCountByElement(reading.model);
   const rows = (elements: readonly ElementOnDiagram[]) =>
     elements.flatMap((one) => renderElement(elementDetail(one, counts)));
-  const flows = flowsOf(chosen);
+  const flows = flowsOf(chosen, placed);
   return [
     ...renderReading(reportedReading(reading)),
     'element:',
@@ -141,7 +138,7 @@ function passData(
     'flows:',
     ...rows(flows),
     'stores the flows reach:',
-    ...rows(storesReached(chosen, flows)),
+    ...rows(storesReached(chosen, flows, placed)),
     'threats recorded against it:',
     ...reading.model.threats
       .filter((threat) => threat.elements.includes(chosen.element.id))
@@ -177,36 +174,32 @@ function analyzedKind(
     : Either.right(element.kind);
 }
 
-function flowsOf({
-  element,
-  diagram,
-  drawn,
-}: ElementOnDiagram): ElementOnDiagram[] {
-  return drawn
-    .filter(
-      (candidate) =>
-        candidate.kind === 'flow' &&
-        candidate.id !== element.id &&
-        endpointsOf(candidate).includes(element.id),
-    )
-    .map((flow) => ({ element: flow, diagram, drawn }));
+function flowsOf(
+  chosen: ElementOnDiagram,
+  placed: readonly ElementOnDiagram[],
+): ElementOnDiagram[] {
+  return placed.filter(
+    ({ element }) =>
+      element.kind === 'flow' &&
+      element.id !== chosen.element.id &&
+      endpointsOf(element).includes(chosen.element.id),
+  );
 }
 
 function storesReached(
   chosen: ElementOnDiagram,
   flows: readonly ElementOnDiagram[],
+  placed: readonly ElementOnDiagram[],
 ): ElementOnDiagram[] {
   const reached = new Set(
     [chosen, ...flows].flatMap((one) => endpointsOf(one.element)),
   );
-  return chosen.drawn
-    .filter(
-      (candidate) =>
-        candidate.kind === 'store' &&
-        candidate.id !== chosen.element.id &&
-        reached.has(candidate.id),
-    )
-    .map((store) => ({ ...chosen, element: store }));
+  return placed.filter(
+    ({ element }) =>
+      element.kind === 'store' &&
+      element.id !== chosen.element.id &&
+      reached.has(element.id),
+  );
 }
 
 function endpointsOf(element: DrawnElement): readonly string[] {

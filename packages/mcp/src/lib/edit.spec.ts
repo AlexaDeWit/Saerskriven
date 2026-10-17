@@ -23,6 +23,7 @@ import {
   dragonFile,
   editableTree,
   modelFile,
+  placingStore,
   renaming,
   staleRevision,
   undeclaredDragonJson,
@@ -272,6 +273,48 @@ describe('what an applied edit writes', () => {
     expect(lines[1]).toMatch(
       /^format version: moved from Saerskriven YAML version 2 to version 3/u,
     );
+  });
+
+  it('moves a version 2 file to version 3 through a place_element edit, and says so in a line', () => {
+    const attempted = attempt();
+    const applied = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [placingStore],
+    );
+    expect(Either.getOrUndefined(applied)?.movedToVersion3).toBe(true);
+    expect(textOf(applied)[1]).toMatch(
+      /^format version: moved from Saerskriven YAML version 2 to version 3/u,
+    );
+    expect(
+      attempted
+        .bytes(modelFile)
+        .toString('utf8')
+        .startsWith('formatVersion: 3\n'),
+    ).toBe(true);
+  });
+
+  it('writes the file back as version 2 once unplace_element unshares its last shared element', () => {
+    const attempted = attempt();
+    attempted.edit(modelFile, revisionIn(attempted, modelFile), [placingStore]);
+    const unplaced = attempted.edit(
+      modelFile,
+      revisionIn(attempted, modelFile),
+      [
+        {
+          op: 'unplace_element',
+          element: 'element-db',
+          diagram: 'diagram-empty',
+        },
+      ],
+    );
+    expect(Either.getOrUndefined(unplaced)?.movedToVersion3).toBe(false);
+    expect(
+      attempted
+        .bytes(modelFile)
+        .toString('utf8')
+        .startsWith('formatVersion: 2\n'),
+    ).toBe(true);
   });
 
   it('reads as the lines a text result carries', () => {

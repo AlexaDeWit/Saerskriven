@@ -5,6 +5,7 @@ import { PromptFailure, promptMessages } from './prompt-result.js';
 import {
   featureCompleteWorkspace,
   rootWorkspace,
+  sharedTree,
   treeHolding,
   twoDiagramsWorkspace,
   twoDiagramsYaml,
@@ -75,6 +76,23 @@ describe('what stride_pass renders', () => {
       'el-ledger',
     ]);
     expect(strideByKind.process).toHaveLength(6);
+  });
+});
+
+describe('a stride_pass over an element on more than one diagram', () => {
+  it('names it by its name alone and lays out its flows and stores on every diagram', () => {
+    const pass = Either.getOrThrow(
+      stridePass(sharedTree(), { element: 'Payments API' }),
+    );
+    expect({
+      element: section(pass.data, 'element:'),
+      flows: section(pass.data, 'flows:'),
+      stores: section(pass.data, 'stores the flows reach:'),
+    }).toEqual({
+      element: ['payments-api'],
+      flows: ['card-details', 'charge', 'score'],
+      stores: ['card-vault'],
+    });
   });
 });
 

@@ -157,17 +157,22 @@ issue the schema raised.
 
 `saer_search_elements` and `saer_search_threats` find the elements and the
 threats of a model. The first takes `element`, `diagram`, `kind` and `query` and
-carries the element id, its diagram, its kind, its name, whether it is out of
-scope (`outOfScope`), its `accent` where it holds one, and how many threats
-reference it. A flow left
+carries the element id, the diagram the row draws it from (`diagram`), every
+diagram it is on (`diagrams`), its kind, its name, whether it is out of scope
+(`outOfScope`), its `accent` where it holds one, and how many threats reference
+it. An element on more than one diagram is one match, drawn as the first
+diagram the search covers draws it, and its text line names the others, as in
+`diagram overview, also on payments`. Pass `diagram` for its accent and
+geometry on another. A flow left
 unlabelled keeps its stored `name` and adds `namedFromEnds`, which names it from
 its ends: `Flow from Shopper to Web shop`, `Flow between Shopper and Web shop`
 for a flow that runs both ways, `a free point` for an end attached to nothing,
 and the element's id for an end whose name is empty or white space alone. Its
 text line shows that name. Every element row carries it the same
 way: the rows of `saer_coverage`, the elements `saer_get_threat` lists, and the
-element the `stride_pass` prompt lays out. Each of those rows carries the
-`accent` too, and its text line names it. The second takes
+element the `stride_pass` prompt lays out. Each of those rows names an element
+once and carries `diagrams` and the `accent` too, and its text line names
+them. The second takes
 `status`, `severity`, `category`, `diagram`, `element` and `query` and carries
 the threat number and id, its title, status, severity, category, attached
 elements, whether it applies to the model as a whole (`appliesToModel`), and
@@ -332,7 +337,10 @@ the element stands and reports the size the model holds. It holds a threat
 only under an actor, a process, a store or a flow, so a threat on none of
 those is reported and not written, and a threat that applies to the model
 (`appliesToModel`) is written under those it names, with its model link
-reported as dropped.
+reported as dropped. It draws an element on one diagram, so a write splits an
+element on several, as `place_element` makes one, into a cell on each and
+reports it, and the file reads back as a separate element per cell. Only the
+native YAML format keeps one element on several diagrams.
 
 `saer_create` writes a new model in the native YAML format at version 2, with
 the `title` it is given and any of `owner`, `description` and `contributors`,
@@ -352,15 +360,16 @@ and so is one adding any of them under an id the model already holds.
 
 #### Elements
 
-`add_element` adds an element at the end of a diagram's element list, with the
-optional security facts and declared boundary relationships of its kind. An
-actor, process, store or text note takes a `placement`: a position and size,
-or `"auto"` for the next place on the shared grid. Left out, `description` and
-`reasonOutOfScope` are empty and `outOfScope` is false, and a flow has no bends
-and runs one way. It refuses an empty name, or one of white space alone, on
-every kind but a flow, as `rename_element` does, and a flow end attached to
-anything but an actor, process or store of the diagram, or to the element the
-flow's other end is attached to, as `reconnect_flow` does. A file that
+`add_element` creates an element with its first placement, at the end of a
+diagram's element list, with the optional security facts and declared boundary
+relationships of its kind. An actor, process, store or text note takes a
+`placement`: a position and size, or `"auto"` for the next place on the shared
+grid. Left out, `description` and `reasonOutOfScope` are empty and
+`outOfScope` is false, and a flow has no bends and runs one way. It refuses an
+empty name, or one of white space alone, on every kind but a flow, as
+`rename_element` does, and a flow end attached to anything but an actor,
+process or store of the diagram, or to the element the flow's other end is
+attached to, as `reconnect_flow` does. A file that
 already holds either, as an imported one can, still opens.
 
 `set_element_properties` patches the security facts of an actor, process,
@@ -402,8 +411,8 @@ to the model: a light key draws its outline, or a flow's or a trust
 boundary's line, in one of four palette colours, and a strong key draws it
 heavier and tints the fill. A text note takes a bar in the colour down its
 left edge, and a strong key tints the note too. The list is one edit, so an
-id the model does not hold refuses the batch. `add_element` accepts `accent`
-on every kind, a text note included.
+id the model does not hold refuses the batch. `add_element` and
+`place_element` accept `accent` on every kind, a text note included.
 `saer_render_diagram` draws accents, and only the native YAML format saves
 them.
 
@@ -421,15 +430,65 @@ or white space alone leaves it unlabelled, stored as an empty name, as
 `add_element` does.
 `edit_note` changes a text note's text alone, empty text included, and refuses
 any other kind. `set_element_properties`, `set_element_details`, `set_accent`,
-`rename_element` and `edit_note` leave the element at its place in its
-diagram's element list.
+`rename_element` and `edit_note` leave the element at its place on every
+diagram.
 
 `remove_element` takes the element out of every diagram it is on, out of every
-declared boundary relationship and off every threat. The flows attached to it
-stay, each end that was attached to it freed at its anchor: the centre of an
-actor, process, store, text note or box boundary, the first point of a curve
-boundary, or, for a removed flow, its first bend, else its first free end,
-else the canvas origin.
+declared boundary relationship and off every threat, and culls the threats it
+was the last attachment of, so use `unplace_element` to take an element off one
+diagram and keep it on the others. The flows attached to it stay, each end
+that was attached to it freed at its anchor: the centre of an actor, process,
+store, text note or box boundary, the first point of a curve boundary, or, for
+a removed flow, its first bend, else its first free end, else the canvas
+origin.
+
+#### Shared elements
+
+An element can be [on more than one diagram](saerskriven-yaml.md#shared-elements),
+with its own geometry and accent on each. Its name, details, properties, note
+text and threats are the element's, so an edit of any of them shows on every
+diagram.
+
+`place_element` places an element the model holds on one more `diagram`, at
+the end of its element list, with an optional `accent` there. Its `placement`
+is the geometry of the element's kind:
+
+| Element kind                     | `placement`                                                       |
+| -------------------------------- | ----------------------------------------------------------------- |
+| Actor, process, store, text note | `position` and `size`, or `"auto"` for the next place on the grid |
+| Trust boundary                   | `shape`, a box or a curve                                         |
+| Flow                             | `source` and `target`, and `waypoints`, which default to none     |
+
+Each end of a flow is `{}` or a pinned `side` where the element it attaches to
+is on that diagram, and otherwise the `position` it is
+[drawn at](saerskriven-yaml.md#shared-elements), free or away from its element.
+A flow already on that diagram whose end was drawn away from the element
+attaches to it there. `place_element` refuses an element already on that
+diagram, and geometry its kind does not take.
+
+```json
+{
+  "op": "place_element",
+  "element": "flow-id",
+  "diagram": "diagram-id",
+  "placement": {
+    "source": { "side": "right" },
+    "target": { "position": { "x": 480, "y": 120 } }
+  }
+}
+```
+
+`unplace_element` takes an element off one `diagram`. The element keeps its
+threats and its other placements, so the edit culls nothing, and a flow on
+that diagram attached to it stays attached, its end drawn away at the
+element's anchor there. It refuses the last diagram an element is on, and the
+refusal points to `remove_element`, which takes the element out of the model.
+
+Placing an element on another diagram and taking it off the first, in one
+batch, moves it there with its id and its threats. The flows attached to it
+stay attached but do not move: each stays on the diagrams it is on, with its
+end drawn away from the element on the first. To draw a flow on the new
+diagram, place it there too, and take it off the first with `unplace_element`.
 
 #### Geometry
 
@@ -438,12 +497,12 @@ Every `x` and `y` an edit passes, an `offset` included, is from -1,000,000 to
 ([the format's bound](saerskriven-yaml.md#geometry)). An edit passing a number
 outside that is refused.
 
-An element can be [on more than one diagram](saerskriven-yaml.md#shared-elements),
-with its own geometry and accent on each. The geometry edits, `set_accent`,
-`reconnect_flow` and `set_flow_end_position` name no diagram, so they refuse
-such an element, naming the diagrams it is on. Its name, details, properties,
-note text and threats are the element's, and every other edit changes them on
-every diagram.
+`move_element`, `resize_element`, `set_boundary_shape`, `set_accent`,
+`set_flow_waypoints`, `reconnect_flow` and `set_flow_end_position` take an
+optional `diagram`, the diagram whose drawing the edit changes. It is needed
+only for an element on more than one diagram: without it such an edit is
+refused, naming the diagrams the element is on. An edit leaving it out
+applies to an element on one diagram as it always has.
 
 `move_element` translates an element by `offset`, relative to where it is: the
 position of an actor, process, store, text note or box boundary, every point
@@ -482,11 +541,17 @@ were. It refuses an element that is not a trust boundary.
 and an empty list takes every bend away. `set_flow_direction` makes a flow
 bidirectional or one way, and the flow keeps its id and the threats attached
 to it. `reconnect_flow` attaches the `source` or `target` end to an actor,
-process or store of the flow's own diagram, never to the element the other end
-is attached to. Its optional `anchor` names the side the end fastens to, and
-where it is left out the renderer chooses. `set_flow_end_position` frees the
-`source` or `target` end at a canvas `position`, or moves an end that is free
-already, and the other end may be free as well. `reverse_flow` swaps the two
+process or store of the diagram the edit changes, never to the element the
+other end is attached to. The end reaches that element on every diagram the
+flow is on. Its optional `anchor` names the side the end fastens to on the
+diagram the edit changes, and where it is left out the renderer chooses. On
+another diagram that places the element the renderer chooses the side, and on
+one that does not the end is drawn away from it, where the end was drawn
+before. `set_flow_end_position` frees the `source` or `target` end at a canvas
+`position`, or moves an end that is free already, and the other end may be
+free as well. An end attached to an element, on it or drawn away from it, is
+freed on every diagram the flow is on: at `position` on the diagram the edit
+changes, and where it was drawn on every other. `reverse_flow` swaps the two
 ends, each with its pinned side or its position, and reverses the bends, so
 the flow runs the other way along the same route and keeps its id, whether it
 is bidirectional, and the threats attached to it. All five refuse an element
@@ -497,8 +562,8 @@ that is not a flow.
 `add_diagram` adds an empty diagram with the id and title given, after the
 diagrams the model holds, and `rename_diagram` changes a diagram's title. Both
 refuse a title with nothing in it but white space. `remove_diagram` removes
-only a diagram with no elements left, so remove its elements with
-`remove_element` first, in the same batch or an earlier one.
+only a diagram with no elements left, so empty it first, in the same batch or
+an earlier one.
 
 #### Threats
 
@@ -582,11 +647,8 @@ and `contributors` replaces the whole list.
 studio does them:
 
 - Reordering the elements of a diagram or the diagrams of a model.
-  `add_element` and `add_diagram` append, and every other op keeps the order.
-- Moving an element to another diagram with its flows and threats. A batch
-  can remove it and add it there under the same id, but the removal frees its
-  flows and takes it off its threats, culling any threat it was the last
-  attachment of.
+  `add_element`, `place_element` and `add_diagram` append, and every other op
+  keeps the order.
 - Changing an element's kind. `set_element_properties` refuses a `kind` other
   than the element's own.
 - Changing the id of an element, diagram, threat, mitigation or assumption.
@@ -627,10 +689,10 @@ list gets no prompt for a file outside the root, which the tools still read.
 Whether Claude Code sends a prompt again with its list is not established.
 
 - `stride_pass` takes `element`, an id or an exact name, and lays out that
-  element, its flows, the stores those flows reach and the threats already
-  recorded against it, then asks the STRIDE questions that apply to its kind.
-  An actor, a process, a store and a flow each have a pass. A trust boundary
-  and a canvas note do not.
+  element, its flows on every diagram, the stores those flows reach and the
+  threats already recorded against it, then asks the STRIDE questions that
+  apply to its kind. An actor, a process, a store and a flow each have a pass.
+  A trust boundary and a canvas note do not.
 - `review_model` lays out the coverage summary and the whole register, then
   asks for a review of the gaps, the open threats and the records that do not
   hold together.
