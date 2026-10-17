@@ -436,6 +436,7 @@ function lossDetail(t: Speaker, detail: ReportedDetail, held: Held): string {
     case 'flow-end-drawn-away-freed':
       return t('divergence.flow-end-drawn-away-freed', {
         name: heldNameOrId(detail.parameters.element, held),
+        diagram: detail.parameters.diagram,
       });
     case 'relationships-off-diagram-dropped':
       return t(

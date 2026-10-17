@@ -26,6 +26,7 @@ describe('starting a model', () => {
     expect(Either.getOrUndefined(answer)).toEqual({
       file: 'new-model.yaml',
       format: 'saerskriven-yaml',
+      savesAsVersion: 2,
       revision: revisionOf(readFileSync(join(tree.root, 'new-model.yaml'))),
       divergences: [],
     });

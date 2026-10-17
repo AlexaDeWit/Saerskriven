@@ -8,6 +8,7 @@ import {
   acceptedTextSchema,
   assumptionSchema,
   diagramIdSchema,
+  diagramsOf,
   modelMetadataSchema,
   threatsOnDiagrams,
   type Diagram,
@@ -30,7 +31,7 @@ import type { ModelWorkspace } from './workspace.js';
 
 /** What `saer_inspect` tells a client it is for. */
 export const inspectDescription = [
-  'Read one Saerskriven threat model file and report what it holds: the file format detected from its content, the model metadata (title, owner, description and contributors), the assumptions that apply to the model as a whole (including one that also links threats), one line per diagram with its element and threat counts, the totals over the whole model, and every place the file and the model do not correspond exactly.',
+  'Read one Saerskriven threat model file and report what it holds: the file format detected from its content, the model metadata (title, owner, description and contributors), the assumptions that apply to the model as a whole (including one that also links threats), one line per diagram with its element and threat counts, the totals over the whole model, among them how many elements are on more than one diagram and so counted on each, and every place the file and the model do not correspond exactly.',
   'It lists no mitigation, and no assumption but those: saer_search_records finds every record, a record linked to nothing included.',
   'Call this first on a model you have not read in this session. The `revision` it returns is the handle an edit has to quote back, so a tool that writes will ask you for a fresh one.',
   defaultedFileSentence,
@@ -51,6 +52,12 @@ const diagramSummarySchema = z.object({
 const totalsSchema = z.object({
   diagrams: z.int().nonnegative(),
   elements: z.int().nonnegative(),
+  sharedElements: z
+    .int()
+    .nonnegative()
+    .describe(
+      'The elements on more than one diagram, which the element count of each of those diagrams includes.',
+    ),
   threats: z.int().nonnegative(),
   mitigations: z.int().nonnegative(),
   assumptions: z.int().nonnegative(),
@@ -154,6 +161,9 @@ function totalsOf(model: Model): z.infer<typeof totalsSchema> {
   return {
     diagrams: model.diagrams.length,
     elements: model.elements.length,
+    sharedElements: model.elements.filter(
+      ({ id }) => diagramsOf(model, id).length > 1,
+    ).length,
     threats: model.threats.length,
     mitigations: model.mitigations.length,
     assumptions: model.assumptions.length,
@@ -199,7 +209,15 @@ function renderCandidates(
 }
 
 function countList(totals: z.infer<typeof totalsSchema>): string {
-  return Object.entries(totals)
-    .map(([noun, count]) => `${noun} ${String(count)}`)
-    .join(', ');
+  const shared =
+    totals.sharedElements === 0
+      ? ''
+      : ` (${String(totals.sharedElements)} on more than one diagram)`;
+  return [
+    `diagrams ${String(totals.diagrams)}`,
+    `elements ${String(totals.elements)}${shared}`,
+    `threats ${String(totals.threats)}`,
+    `mitigations ${String(totals.mitigations)}`,
+    `assumptions ${String(totals.assumptions)}`,
+  ].join(', ');
 }

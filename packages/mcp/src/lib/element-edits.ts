@@ -99,6 +99,13 @@ export function consistentPropertyEdit(
 }
 
 /**
+ * How an edit's `diagram` names a diagram the model holds, as its
+ * description closes.
+ */
+export const diagramNaming =
+  'Named by its id, or by its exact title where no diagram has that id. A title more than one diagram has is refused, naming their ids.';
+
+/**
  * What `place_element` takes: an element the model holds, the diagram to
  * place it on, and its geometry and accent there. The geometry is a node's
  * as `add_element` takes it, a trust boundary's shape, or a flow's route,
@@ -109,7 +116,9 @@ export const placementEditSchema = z.object({
   element: elementIdSchema.describe(
     'The id of the element to place, which the model already holds.',
   ),
-  diagram: diagramIdSchema.describe('The diagram to place the element on.'),
+  diagram: diagramIdSchema.describe(
+    `The diagram to place the element on. ${diagramNaming}`,
+  ),
   placement: z
     .union([
       nodeGeometrySchema,

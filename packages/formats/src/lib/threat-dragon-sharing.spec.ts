@@ -1,5 +1,15 @@
-import { placeElement, threatIdSchema, type Model } from '@saerskriven/model';
-import { placementIn, sharedModel } from '@saerskriven/model/fixtures';
+import {
+  addDiagram,
+  placeElement,
+  threatIdSchema,
+  type Model,
+} from '@saerskriven/model';
+import {
+  diagramId,
+  elementId,
+  placementIn,
+  sharedModel,
+} from '@saerskriven/model/fixtures';
 import type { ThreatDragonCell } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
@@ -82,25 +92,56 @@ describe('writing an element placed on several diagrams to Threat Dragon', () =>
       subject: { kind: 'element', id: 'charge' },
       detail: {
         code: 'flow-end-drawn-away-freed',
-        parameters: { element: 'card-vault' },
+        parameters: { element: 'card-vault', diagram: 'High level' },
       },
       reason: 'unrepresentable',
     });
   });
 
-  it('lists in a boundary only the cells of its own diagram, reporting the rest', () => {
+  it('reports each end it frees once per diagram, naming the diagram', () => {
+    const audit = diagramId('audit');
+    const audited = Either.getOrThrow(
+      Either.flatMap(
+        addDiagram(sharedModel, { id: audit, title: 'Audit' }),
+        (model) =>
+          placeElement(model, audit, {
+            element: elementId('charge'),
+            waypoints: [],
+            source: { position: { x: 0, y: 0 } },
+            target: { position: { x: 200, y: 0 } },
+          }),
+      ),
+    );
+    expect(
+      written(audited).divergences.flatMap(({ detail }) =>
+        detail.code === 'flow-end-drawn-away-freed' ? [detail.parameters] : [],
+      ),
+    ).toEqual([
+      { element: 'card-vault', diagram: 'High level' },
+      { element: 'payments-api', diagram: 'Audit' },
+      { element: 'card-vault', diagram: 'Audit' },
+    ]);
+  });
+
+  it('lists in a boundary only the cells of its own diagram, reporting the rest once per diagram, naming it', () => {
     expect(cellNamed(cellsOn(output, 0), 'payments-zone')?.data).toMatchObject({
       containedElements: ['payments-api'],
       crossingFlows: ['card-details'],
     });
-    expect(divergences).toContainEqual({
-      subject: { kind: 'element', id: 'payments-zone' },
-      detail: {
-        code: 'relationships-off-diagram-dropped',
-        parameters: { count: 1 },
-      },
-      reason: 'unrepresentable',
-    });
+    expect(
+      divergences.filter(
+        ({ detail }) => detail.code === 'relationships-off-diagram-dropped',
+      ),
+    ).toEqual(
+      ['High level', 'Payments'].map((diagram) => ({
+        subject: { kind: 'element', id: 'payments-zone' },
+        detail: {
+          code: 'relationships-off-diagram-dropped',
+          parameters: { count: 1, diagram },
+        },
+        reason: 'unrepresentable',
+      })),
+    );
   });
 
   it('reads back as one element per cell, the threats on each', () => {

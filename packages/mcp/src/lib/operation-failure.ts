@@ -3,10 +3,38 @@ import {
   OperationFailure,
   issueLine,
   parseIssueText,
+  type DiagramId,
   type Model,
   type ParseIssue,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Data, Either } from 'effect';
+import { noDiagramNamed } from './search.js';
+
+/**
+ * Why the server refused an edit before the model saw it: a `diagram` that
+ * is no diagram's id and the exact title of more than one, naming their ids.
+ */
+export type EditFailure = Data.TaggedEnum<{
+  AmbiguousDiagram: {
+    readonly name: string;
+    readonly diagramIds: readonly DiagramId[];
+  };
+}>;
+
+/**
+ * Constructors for {@link EditFailure}, plus Effect's `$is` and `$match`
+ * helpers.
+ */
+export const EditFailure = Data.taggedEnum<EditFailure>();
+
+/** What the server or the model said about a refused edit, as one line. */
+export function describeEditRefusal(
+  failure: OperationFailure | EditFailure,
+): string {
+  return EditFailure.$is('AmbiguousDiagram')(failure)
+    ? `More than one diagram has the title ${quotedForTerminal(failure.name)} (${failure.diagramIds.map((id) => quotedForTerminal(id)).join(', ')}), and none has it as its id, so name the one this edit changes by its id.`
+    : describeOperationFailure(failure);
+}
 
 /** What the model said about a refused edit, as one line of a result. */
 export function describeOperationFailure(failure: OperationFailure): string {
@@ -17,8 +45,7 @@ export function describeOperationFailure(failure: OperationFailure): string {
       `The element has invalid boundary relationships: ${issueLines(issues)}`,
     InvalidFragment: ({ issues }) =>
       `The edit does not apply to this model: ${issueLines(issues)}.`,
-    UnknownDiagram: ({ diagramId }) =>
-      `The model holds no diagram ${quotedForTerminal(diagramId)}.`,
+    UnknownDiagram: ({ diagramId }) => noDiagramNamed(diagramId).join(' '),
     DuplicateDiagramId: ({ diagramId }) =>
       `The model already holds a diagram ${quotedForTerminal(diagramId)}.`,
     EmptyTitle: ({ diagramId }) =>
@@ -26,7 +53,7 @@ export function describeOperationFailure(failure: OperationFailure): string {
     RefusedTitleCharacter: ({ diagramId, at }) =>
       `The title for diagram ${quotedForTerminal(diagramId)} carries a character the model does not accept, at index ${String(at)}.`,
     DiagramNotEmpty: ({ diagramId, elements }) =>
-      `Diagram ${quotedForTerminal(diagramId)} still holds ${String(elements)} elements, and only an empty diagram is removed.`,
+      `Diagram ${quotedForTerminal(diagramId)} still holds ${String(elements)} ${elements === 1 ? 'element' : 'elements'}, and only an empty diagram is removed. Take an element also on another diagram off it with unplace_element, and remove the others with remove_element.`,
     UnknownElement: ({ elementId }) =>
       `The model holds no element ${quotedForTerminal(elementId)}.`,
     ElementNotOnDiagram: ({ elementId, diagramId }) =>
@@ -54,7 +81,7 @@ export function describeOperationFailure(failure: OperationFailure): string {
     UnknownAssumption: ({ assumptionId }) =>
       `The model holds no assumption ${quotedForTerminal(assumptionId)}.`,
     DuplicateElementId: ({ elementId }) =>
-      `The model already holds an element ${quotedForTerminal(elementId)}.`,
+      `The model already holds an element ${quotedForTerminal(elementId)}. To draw it on one more diagram, use place_element.`,
     DuplicateThreatId: ({ threatId }) =>
       `The model already holds a threat ${quotedForTerminal(threatId)}.`,
     DuplicateMitigationId: ({ mitigationId }) =>

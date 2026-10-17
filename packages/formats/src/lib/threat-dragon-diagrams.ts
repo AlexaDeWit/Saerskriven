@@ -119,7 +119,7 @@ export function mergeDiagram(
   const ports = portSides(heldCells);
   const drawn = drawnElements(model, diagram).map((element) => ({
     own: element.id,
-    ...inCellTerms(element, cellIds),
+    ...inCellTerms(element, cellIds, diagram),
   }));
   const merged = drawn.map(({ own, element, divergences }, index) => {
     const cell = mergeCell(

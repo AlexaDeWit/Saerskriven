@@ -37,10 +37,11 @@ export const divergenceSv = catalogue(divergenceMessages)('sv')({
   },
   'element-split-across-diagrams':
     'ett enda element, nu en kopia i vart och ett av {diagrams}',
-  'flow-end-drawn-away-freed': 'dess ände vid {name}, nu en fri ände',
+  'flow-end-drawn-away-freed':
+    'dess ände vid {name} i {diagram}, nu en fri ände',
   'relationships-off-diagram-dropped': {
-    one: 'dess koppling till {count} element i ett annat diagram',
-    other: 'dess kopplingar till {count} element i andra diagram',
+    one: 'dess koppling i {diagram} till {count} element i ett annat diagram',
+    other: 'dess kopplingar i {diagram} till {count} element i andra diagram',
   },
   'note-name-dropped': 'dess namn',
   'scope-marking-dropped': 'dess markering utanför omfattningen',

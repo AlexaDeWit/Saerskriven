@@ -6,6 +6,7 @@ import {
   addElement,
   boundaryShapeSchema,
   diagramIdSchema,
+  diagramsNamed,
   diagramsOf,
   droppedRecords,
   droppedThreats,
@@ -49,6 +50,7 @@ import {
   addedElement,
   addedElementSchema,
   consistentPropertyEdit,
+  diagramNaming,
   editedProperties,
   placementEditSchema,
   placementFor,
@@ -56,7 +58,8 @@ import {
 } from './element-edits.js';
 import { flowEndSchema } from './element-rows.js';
 import {
-  describeOperationFailure,
+  EditFailure,
+  describeEditRefusal,
   unappliedEdit,
 } from './operation-failure.js';
 import {
@@ -72,14 +75,14 @@ const elementEditSchema = z.object({
 });
 
 const diagramEditSchema = z.object({
-  diagram: diagramIdSchema.describe('The id of the diagram.'),
+  diagram: diagramIdSchema.describe(`The diagram. ${diagramNaming}`),
 });
 
 const onDiagramSchema = z.object({
   diagram: diagramIdSchema
     .optional()
     .describe(
-      'The diagram whose drawing the edit changes. Needed only for an element on more than one diagram, which the edit refuses without it.',
+      `The diagram whose drawing the edit changes. ${diagramNaming} Needed only for an element on more than one diagram, which the edit refuses without it.`,
     ),
 });
 
@@ -93,7 +96,9 @@ const drawnEditSchema = elementEditSchema.extend(onDiagramSchema.shape);
 export const modelEditSchema = z.discriminatedUnion('op', [
   z.object({
     op: z.literal('add_element'),
-    diagram: diagramIdSchema.describe('The diagram the element joins.'),
+    diagram: diagramIdSchema.describe(
+      `The diagram the element joins. ${diagramNaming}`,
+    ),
     element: addedElementSchema,
   }),
   elementEditSchema
@@ -109,7 +114,9 @@ export const modelEditSchema = z.discriminatedUnion('op', [
   placementEditSchema.extend({ op: z.literal('place_element') }),
   elementEditSchema.extend({
     op: z.literal('unplace_element'),
-    diagram: diagramIdSchema.describe('The diagram to take the element off.'),
+    diagram: diagramIdSchema.describe(
+      `The diagram to take the element off. ${diagramNaming}`,
+    ),
   }),
   elementEditSchema.extend({
     op: z.literal('merge_elements'),
@@ -172,7 +179,7 @@ export const modelEditSchema = z.discriminatedUnion('op', [
   drawnEditSchema.extend({
     op: z.literal('reconnect_flow'),
     diagram: onDiagramSchema.shape.diagram.describe(
-      'The diagram whose drawing `anchor` pins the end on, which has to place `endpoint`. Needed only for a flow on more than one diagram, which the edit refuses without it.',
+      `The diagram whose drawing \`anchor\` pins the end on, which has to place \`endpoint\`. ${diagramNaming} Needed only for a flow on more than one diagram, which the edit refuses without it.`,
     ),
     side: flowEndSchema,
     endpoint: elementIdSchema.describe(
@@ -193,8 +200,9 @@ export const modelEditSchema = z.discriminatedUnion('op', [
   }),
   elementEditSchema.extend({ op: z.literal('reverse_flow') }),
   ...registerEditSchemas,
-  diagramEditSchema.extend({
+  z.object({
     op: z.literal('add_diagram'),
+    diagram: diagramIdSchema.describe('The id of the new diagram.'),
     title: acceptedTextSchema,
   }),
   diagramEditSchema.extend({
@@ -217,10 +225,10 @@ export const editOps: readonly ModelEdit['op'][] = modelEditSchema.options.map(
   (option) => option.shape.op.value,
 );
 
-/** Which edit of a batch the model refused, and why. */
+/** Which edit of a batch the server or the model refused, and why. */
 export type RefusedEdit = {
   readonly index: number;
-  readonly failure: OperationFailure;
+  readonly failure: OperationFailure | EditFailure;
 };
 
 /** What one `merge_elements` edit of a batch moved onto the element it kept, and dropped. */
@@ -325,15 +333,24 @@ export function applyEdits(
   );
 }
 
-/** Which edit was refused and what the model said, as lines for a result. */
+/** Which edit was refused and what was said of it, as lines for a result. */
 export function renderRefusedEdit(refused: RefusedEdit): readonly string[] {
   return [
     `The edit at index ${String(refused.index)} was refused, so none of the batch was applied and the file is as it was.`,
-    describeOperationFailure(refused.failure),
+    describeEditRefusal(refused.failure),
   ];
 }
 
 function applyEdit(
+  model: Model,
+  edit: ModelEdit,
+): Either.Either<Model, OperationFailure | EditFailure> {
+  return Either.flatMap(onDiagramNamed(model, edit), (named) =>
+    edited(model, named),
+  );
+}
+
+function edited(
   model: Model,
   edit: ModelEdit,
 ): Either.Either<Model, OperationFailure> {
@@ -421,6 +438,30 @@ function applyEdit(
     default:
       return unappliedEdit(edit);
   }
+}
+
+function onDiagramNamed<
+  Edit extends {
+    readonly op: string;
+    readonly diagram?: DiagramId | undefined;
+  },
+>(model: Model, edit: Edit): Either.Either<Edit, EditFailure> {
+  if (edit.op === 'add_diagram' || edit.diagram === undefined) {
+    return Either.right(edit);
+  }
+  const named = diagramsNamed(model.diagrams, edit.diagram);
+  const [first] = named;
+  if (first === undefined) {
+    return Either.right(edit);
+  }
+  return first.id === edit.diagram || named.length === 1
+    ? Either.right({ ...edit, diagram: first.id })
+    : Either.left(
+        EditFailure.AmbiguousDiagram({
+          name: edit.diagram,
+          diagramIds: named.map(({ id }) => id),
+        }),
+      );
 }
 
 function placementIndex(model: Model, diagramId: string): number {

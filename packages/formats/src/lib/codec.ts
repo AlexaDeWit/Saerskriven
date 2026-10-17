@@ -43,12 +43,16 @@ import type { ReadLimit } from './read-limits.js';
  * `keepsNarrowed` says whether a `write` onto the document `read` returned
  * leaves what that read reported as `narrowed` as the file stated it, so the
  * same read reports it again. What it reported as `undeclared` is gone from
- * that document either way.
+ * that document either way. `Read` is what a read returns, for a codec whose
+ * read reports more than {@link ReadResult} holds.
  */
-export interface Codec<WireSchema extends z.ZodType<object>> {
+export interface Codec<
+  WireSchema extends z.ZodType<object>,
+  Read extends ReadResult<WireSchema> = ReadResult<WireSchema>,
+> {
   readonly wire: WireSchema;
   readonly keepsNarrowed: boolean;
-  read(text: string): Either.Either<ReadResult<WireSchema>, ReadFailure>;
+  read(text: string): Either.Either<Read, ReadFailure>;
   write(model: Model, source?: z.infer<WireSchema>): WriteResult;
 }
 
@@ -77,11 +81,13 @@ export type WriteResult = {
  * Why a codec refused a text, in the order a read reaches each stop.
  * `ExceededReadLimit` names the bound and what the read measured before it
  * stopped. `MalformedText` carries the parser's message, since no path into
- * a document exists yet. `InvalidWireDocument` has paths into the wire
- * document, with an import's own codes beside the parse issue codes, and
- * `InvalidModel` paths into the model a read mapped the file to, as the file
- * holds it: where the file's diagrams own their elements, an element is
- * pathed under the diagram holding it.
+ * a document exists yet. `LaterFormatVersion` is a format version above every
+ * one this release reads, which a later release wrote: it carries the version
+ * the file states and the versions this release reads, in order.
+ * `InvalidWireDocument` has paths into the wire document, with an import's own
+ * codes beside the parse issue codes, and `InvalidModel` paths into the model
+ * a read mapped the file to, as the file holds it: where the file's diagrams
+ * own their elements, an element is pathed under the diagram holding it.
  */
 export type ReadFailure = Data.TaggedEnum<{
   ExceededReadLimit: {
@@ -90,6 +96,10 @@ export type ReadFailure = Data.TaggedEnum<{
     readonly observed: number;
   };
   MalformedText: { readonly message: string };
+  LaterFormatVersion: {
+    readonly stated: number;
+    readonly read: readonly number[];
+  };
   InvalidWireDocument: { readonly issues: readonly WireIssue[] };
   InvalidModel: { readonly issues: readonly ParseIssue[] };
 }>;

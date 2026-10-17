@@ -3,6 +3,7 @@ import {
   ReadFailure,
   importFormatSchema,
   readLimits,
+  versionsReadSpan,
   type WireIssue,
 } from '@saerskriven/formats';
 import { ShareLinkFailure } from '@saerskriven/formats/share-link';
@@ -337,6 +338,7 @@ function describeRead(
 const readHeadlines = {
   ExceededReadLimit: 'notice.read-limit',
   MalformedText: 'notice.malformed-text',
+  LaterFormatVersion: 'notice.later-format-version',
   InvalidWireDocument: 'notice.invalid-document',
   InvalidModel: 'notice.invalid-model',
 } as const satisfies Record<ReadFailure['_tag'], string>;
@@ -345,6 +347,12 @@ function readDetails(t: Speaker, failure: ReadFailure): readonly string[] {
   return ReadFailure.$match(failure, {
     ExceededReadLimit: (bound) => [t('notice.read-limit-detail', bound)],
     MalformedText: ({ message }) => [message],
+    LaterFormatVersion: ({ stated, read }) => [
+      t('notice.later-format-version-detail', {
+        stated,
+        ...versionsReadSpan(read),
+      }),
+    ],
     InvalidWireDocument: ({ issues }) => issueLines(t, issues),
     InvalidModel: ({ issues }) => issueLines(t, issues),
   });

@@ -227,10 +227,12 @@ saer share threat-model.yaml
 Saerskriven YAML, and the content decides which: the file name is never
 consulted, so a model saved under any extension reads.
 
-`validate` prints one line naming the format and what the model holds, and
-warns on standard error wherever the file and the model do not correspond
-exactly, which is what a read dropped or held less exactly than the file
-stated it.
+`validate` prints one line naming the format, for Saerskriven YAML the version
+a save writes, and what the model holds, and warns on standard error wherever
+the file and the model do not correspond exactly, which is what a read dropped
+or held less exactly than the file stated it. A Saerskriven YAML file from a
+later release is refused, naming its version and the versions this release
+reads.
 
 `render` writes a projection. `--format md` writes the whole threat
 register. Add `--include-diagrams` to place Mermaid diagrams before it

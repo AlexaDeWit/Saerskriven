@@ -21,15 +21,16 @@ export type RelationshipScope = 'model' | 'diagram';
  * What the model's own rules refuse in a structurally valid model: unique
  * identities, a placement of every element that fits it, at most one on each
  * diagram, issuance bookkeeping, flow ends each diagram can draw, and
- * relationship lists resolving within `scope`. An attached end with no
- * position where its diagram does not place its element is
- * `flow-endpoint-foreign` under the diagram scope, the refusal a file whose
- * diagrams own their elements has always given, and
- * `flow-end-position-missing` under the model scope. An element whose id no
- * other element holds draws each of its placements. Each element sharing an id
- * pairs with the first of that id's placements left, in diagram order, whose
- * geometry fits it, or with the first left where none fits, so copies placed
- * once each report only as a duplicate id.
+ * relationship lists resolving within `scope`. Under the diagram scope an
+ * attached end naming an id the model does not hold, or an element its
+ * diagram does not place where the end has no position, is
+ * `flow-endpoint-foreign`, the refusal a file whose diagrams own their
+ * elements has always given. Under the model scope the first is
+ * `unknown-element-reference` and the second `flow-end-position-missing`. An
+ * element whose id no other element holds draws each of its placements. Each
+ * element sharing an id pairs with the first of that id's placements left, in
+ * diagram order, whose geometry fits it, or with the first left where none
+ * fits, so copies placed once each report only as a duplicate id.
  */
 export function collectViolations(
   model: StructuralModel,
@@ -348,7 +349,7 @@ function flowEndpointViolations(
               code:
                 end.element === element.id
                   ? 'flow-endpoint-self'
-                  : 'flow-endpoint-foreign',
+                  : endCodes[scope].unknown,
               parameters: { id: end.element },
             },
           },
@@ -378,10 +379,7 @@ function flowEndpointViolations(
                 {
                   path,
                   detail: {
-                    code:
-                      scope === 'diagram'
-                        ? 'flow-endpoint-foreign'
-                        : 'flow-end-position-missing',
+                    code: endCodes[scope].unplaced,
                     parameters: { id: end.element },
                   },
                 },
@@ -391,6 +389,20 @@ function flowEndpointViolations(
     });
   });
 }
+
+const endCodes = {
+  diagram: {
+    unknown: 'flow-endpoint-foreign',
+    unplaced: 'flow-endpoint-foreign',
+  },
+  model: {
+    unknown: 'unknown-element-reference',
+    unplaced: 'flow-end-position-missing',
+  },
+} as const satisfies Record<
+  RelationshipScope,
+  Record<'unknown' | 'unplaced', ParseIssueCode>
+>;
 
 function referenceViolations(model: StructuralModel): ParseIssue[] {
   const elementIds = new Set<string>(model.elements.map(({ id }) => id));

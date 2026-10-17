@@ -53,7 +53,7 @@ export {
   type ImportResult,
 } from './lib/import.js';
 export { parseYaml } from './lib/parse-yaml.js';
-export { renderReadFailure } from './lib/read-failure.js';
+export { renderReadFailure, versionsReadSpan } from './lib/read-failure.js';
 export {
   exceededReadLimit,
   parseWithinLimits,
@@ -72,6 +72,7 @@ export { readSaerskrivenYamlDocument } from './lib/saerskriven-yaml-read.js';
 export {
   movesToSaerskrivenYamlVersion3,
   writtenSaerskrivenYamlVersion,
+  writtenSaerskrivenYamlVersionSchema,
   type WrittenSaerskrivenYamlVersion,
 } from './lib/saerskriven-yaml-version.js';
 export {

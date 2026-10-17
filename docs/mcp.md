@@ -136,7 +136,11 @@ leaves the root only for a directory the host lists
 Every result that names a model file carries `revision`, a SHA-256
 over the file's bytes that a later write quotes back: for `saer_create` and
 `saer_import`, that is the file written. The candidates listing `saer_inspect`
-answers with, where it has no file to read, carries no `revision`.
+answers with, where it has no file to read, carries no `revision`. A result
+naming a Saerskriven YAML file carries `savesAsVersion` too, the version a save
+of the model writes
+([which version](saerskriven-yaml.md#which-version-a-save-writes)), and its
+text a `saves as` line.
 
 ### Reading
 
@@ -144,7 +148,9 @@ answers with, where it has no file to read, carries no `revision`.
 owner, description and contributors), the assumptions that apply to the model
 (including one that also links threats), one line per diagram with its element
 and threat counts, the totals, and every place the file and the model do not
-correspond exactly. It lists no mitigation, and no assumption but those:
+correspond exactly. The totals count the elements on more than one diagram
+(`sharedElements`), each of which the count of every diagram it is on
+includes. It lists no mitigation, and no assumption but those:
 `saer_search_records` finds every record, a record linked to nothing included.
 Called with neither a `file` argument nor a `--file` default, it lists the
 model files under the root instead.
@@ -153,7 +159,9 @@ model files under the root instead.
 the file and the model do not correspond exactly. A file no format claims comes
 back as an error result naming the formats that were tried, and a file a format
 claims and refuses comes back naming the path inside the document of every
-issue the schema raised.
+issue the schema raised. A Saerskriven YAML file stating a version above those
+this release reads comes back naming that version and the versions read, and
+saying to upgrade saer, as it does from every tool that reads a file.
 
 `saer_search_elements` and `saer_search_threats` find the elements and the
 threats of a model. The first takes `element`, `diagram`, `kind` and `query` and
@@ -281,9 +289,9 @@ named.
 format it is already in. A Saerskriven YAML file is written as version 2 while
 version 2 holds the model, and as version 3 once it does not
 ([which version a save writes](saerskriven-yaml.md#which-version-a-save-writes)).
-A batch that moves a file from version 2 to version 3 says so in the result
-under `movedToVersion3`, since a release that reads only versions 1 and 2
-refuses the file from then on. The
+A batch that moves a file read as version 1 or 2 to version 3 says so in the
+result under `movedToVersion3` and in a line of its text, since a release that
+reads only versions 1 and 2 refuses the file from then on. The
 batch is all or nothing: the edits go onto one parsed model in the order
 given, and the first one the model refuses stops the batch, so nothing is
 written and the result names the index that was refused and what the model
@@ -347,8 +355,9 @@ the `title` it is given and any of `owner`, `description` and `contributors`,
 each left out written empty. `saer_import` converts an OTM or TM-BOM file into
 one ([what each format becomes](studio.md#otm-and-tm-bom)), written as version
 3 where the converted model has an element, a dataflow included, on more than
-one diagram ([which version](saerskriven-yaml.md#which-version-a-save-writes)).
-Both refuse a path that is already taken.
+one diagram ([which version](saerskriven-yaml.md#which-version-a-save-writes)),
+and says so under `movedToVersion3` and in a line, as `saer_edit` does. Both
+refuse a path that is already taken.
 
 A read refuses a file past 8 MiB in UTF-8, and `saer_edit`, `saer_create` and
 `saer_import` all refuse a write whose output would be past that size, leaving
@@ -358,7 +367,9 @@ the file as it was. Make a smaller change instead. The bound was 4 MiB up to
 Each edit of a `saer_edit` batch is an object carrying `op` and that op's own
 fields. The ops fall into the groups below. An edit naming an element,
 diagram, threat, mitigation or assumption the model does not hold is refused,
-and so is one adding any of them under an id the model already holds.
+and so is one adding any of them under an id the model already holds. The
+refusal of `add_element` on an element the model holds points to
+`place_element`, which draws it on one more diagram.
 
 #### Elements
 
@@ -531,7 +542,12 @@ outside that is refused.
 optional `diagram`, the diagram whose drawing the edit changes. It is needed
 only for an element on more than one diagram: without it such an edit is
 refused, naming the diagrams the element is on. An edit leaving it out
-applies to an element on one diagram as it always has.
+applies to an element on one diagram as it always has. Every `diagram` an edit
+takes but that of `add_diagram`, which is the new diagram's id, names a
+diagram by its id, or by its exact title where no diagram has that id. An edit
+changes one diagram, so a title more than one diagram has is refused, naming
+their ids, where the `diagram` of a read tool selects every diagram it
+names.
 
 `move_element` translates an element by `offset`, relative to where it is: the
 position of an actor, process, store, text note or box boundary, every point
@@ -592,7 +608,8 @@ that is not a flow.
 diagrams the model holds, and `rename_diagram` changes a diagram's title. Both
 refuse a title with nothing in it but white space. `remove_diagram` removes
 only a diagram with no elements left, so empty it first, in the same batch or
-an earlier one.
+an earlier one: its refusal points to `unplace_element` for an element also on
+another diagram.
 
 #### Threats
 

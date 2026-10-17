@@ -27,6 +27,12 @@ export const noticeMessages = {
   'read-limit': text(name),
   'read-limit-detail': text(bound),
   'malformed-text': text(name),
+  'later-format-version': text(name),
+  'later-format-version-detail': text({
+    stated: 'number',
+    first: 'number',
+    last: 'number',
+  }),
   'invalid-document': text(name),
   'invalid-model': text(name),
   'link-refused': text(),

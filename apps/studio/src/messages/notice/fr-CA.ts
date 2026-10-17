@@ -24,6 +24,10 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
     '{limit} : la limite est de {bound}, le fichier a atteint {observed}.',
   'malformed-text':
     '{name} n’est pas un texte valide du format qui l’a reconnu.',
+  'later-format-version':
+    '{name} provient d’une version ultérieure de Saerskriven.',
+  'later-format-version-detail':
+    'Il est en Saerskriven YAML version {stated}, et cette version de Saerskriven lit les versions {first} à {last} du format. Ouvrez-le dans une version ultérieure.',
   'invalid-document':
     '{name} n’est pas un document valide du format qui l’a reconnu.',
   'invalid-model':

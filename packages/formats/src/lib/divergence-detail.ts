@@ -73,8 +73,14 @@ export const divergenceDetailSchema = z.discriminatedUnion('code', [
   carrying('element-split-across-diagrams', {
     diagrams: z.array(z.string()),
   }),
-  carrying('flow-end-drawn-away-freed', { element: z.string() }),
-  carrying('relationships-off-diagram-dropped', { count: z.number() }),
+  carrying('flow-end-drawn-away-freed', {
+    element: z.string(),
+    diagram: z.string(),
+  }),
+  carrying('relationships-off-diagram-dropped', {
+    count: z.number(),
+    diagram: z.string(),
+  }),
   carrying('threat-category-unnamed', {
     methodology: z.string(),
     category: z.string(),
@@ -179,9 +185,9 @@ export function divergenceDetailText(detail: DivergenceDetail): string {
     case 'element-split-across-diagrams':
       return `the one element, written as a cell of its own on each of the diagrams ${detail.parameters.diagrams.map((title) => `"${title}"`).join(', ')}`;
     case 'flow-end-drawn-away-freed':
-      return `the attachment of an end to "${detail.parameters.element}", which the diagram does not draw, written as a free end`;
+      return `the attachment of an end to "${detail.parameters.element}", which "${detail.parameters.diagram}" does not draw, written as a free end`;
     case 'relationships-off-diagram-dropped':
-      return `${detail.parameters.count === 1 ? 'the relationship to 1 element' : `the relationships to ${detail.parameters.count} elements`} on another diagram, which a cell names on its own diagram alone`;
+      return `${detail.parameters.count === 1 ? 'the relationship to 1 element' : `the relationships to ${detail.parameters.count} elements`} not on "${detail.parameters.diagram}", which a cell names on its own diagram alone`;
     case 'threat-category-unnamed':
       return `the ${detail.parameters.methodology} category "${detail.parameters.category}", which Threat Dragon's own labels do not name`;
     case 'mitigation-records-merged':

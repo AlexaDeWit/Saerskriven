@@ -31,12 +31,15 @@ import type {
   SaerskrivenYamlV3Threat,
 } from '@saerskriven/wire-saerskriven-yaml-v3';
 import { Either } from 'effect';
+import { z } from 'zod';
 import { parseWire, ReadFailure, type ReadResult } from './codec.js';
 import type { Divergence } from './divergence.js';
 import { parseYaml } from './parse-yaml.js';
 import {
   currentSaerskrivenYaml,
+  saerskrivenYamlVersionsRead,
   saerskrivenYamlVersionsSchema,
+  type SaerskrivenYamlVersion,
   type SaerskrivenYamlVersionedDocument,
 } from './saerskriven-yaml-migration.js';
 import {
@@ -62,24 +65,31 @@ import { undeclaredDivergences } from './undeclared.js';
  */
 export const version2RelationshipScope: RelationshipScope = 'diagram';
 
+/** A native read, and the version the file states. */
+export type SaerskrivenYamlRead = ReadResult<
+  typeof saerskrivenYamlV3WireSchema
+> & { readonly statedVersion: SaerskrivenYamlVersion };
+
 /**
  * A native text of any released version, told apart by `formatVersion`,
  * with its document brought to the current version, 3, for a later save. A
+ * whole-number `formatVersion` above every version this release reads is
+ * refused as `LaterFormatVersion` before any schema reads the document. A
  * key the version's schema does not declare is dropped and reported, so a
- * file from a later release still reads. Records are mapped field by field
- * onto the model's input types, mirroring `saerskriven-yaml-write.ts`, and
- * ids cross as plain strings for `parseModel` to brand. A refusal of the
- * model is pathed into the file as its own version holds it: a file below
- * version 3 has its diagrams own their elements, and keeps each relationship
- * list inside its element's diagram ({@link version2RelationshipScope}). A
- * threat that leaves `appliesToModel` out does not apply to the model. A
- * placement whose `accent` is none of the model's keys is read with no
- * accent and reported as `narrowed`, once for each element and key however
- * many placements of the element hold it.
+ * later release's file at a version this one reads still reads. Records are
+ * mapped field by field onto the model's input types, mirroring
+ * `saerskriven-yaml-write.ts`, and ids cross as plain strings for
+ * `parseModel` to brand. A refusal of the model is pathed into the file as
+ * its own version holds it: a file below version 3 has its diagrams own their
+ * elements, and keeps each relationship list inside its element's diagram
+ * ({@link version2RelationshipScope}). A threat that leaves `appliesToModel`
+ * out does not apply to the model. A placement whose `accent` is none of the
+ * model's keys is read with no accent and reported as `narrowed`, once for
+ * each element and key however many placements of the element hold it.
  */
 export function readSaerskrivenYaml(
   text: string,
-): Either.Either<ReadResult<typeof saerskrivenYamlV3WireSchema>, ReadFailure> {
+): Either.Either<SaerskrivenYamlRead, ReadFailure> {
   return Either.flatMap(parseYaml(text), mapDocument);
 }
 
@@ -95,7 +105,16 @@ export function readSaerskrivenYamlDocument(
 
 function mapDocument(
   given: unknown,
-): Either.Either<ReadResult<typeof saerskrivenYamlV3WireSchema>, ReadFailure> {
+): Either.Either<SaerskrivenYamlRead, ReadFailure> {
+  const later = laterVersionSchema.safeParse(given);
+  if (later.success) {
+    return Either.left(
+      ReadFailure.LaterFormatVersion({
+        stated: later.data.formatVersion,
+        read: saerskrivenYamlVersionsRead,
+      }),
+    );
+  }
   return Either.flatMap(
     parseWire(saerskrivenYamlVersionsSchema, given),
     (wire) => {
@@ -108,10 +127,15 @@ function mapDocument(
           ...current.divergences,
           ...unknownAccents(current.document),
         ],
+        statedVersion: wire.formatVersion,
       }));
     },
   );
 }
+
+const laterVersionSchema = z.object({
+  formatVersion: z.int().gt(Math.max(...saerskrivenYamlVersionsRead)),
+});
 
 function modelOf(
   stated: SaerskrivenYamlVersionedDocument,

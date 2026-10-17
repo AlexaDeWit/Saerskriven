@@ -19,6 +19,7 @@ import {
   modelEditSchema,
   renderRefusedEdit,
   type AppliedBatch,
+  type RefusedEdit,
 } from './edits.js';
 
 type ByTag<Union extends { readonly _tag: string }> = {
@@ -181,7 +182,7 @@ const failures: ByTag<OperationFailure> = {
   }),
 };
 
-const refusalOf = (failure: OperationFailure, index = 0): string =>
+const refusalOf = (failure: RefusedEdit['failure'], index = 0): string =>
   renderRefusedEdit({ index, failure })[1] ?? '';
 
 describe('what a refused edit reads as', () => {
@@ -223,7 +224,7 @@ describe('what a refused edit reads as', () => {
 const batchOn = (
   model: Model,
   edits: readonly EditInput[],
-): Either.Either<AppliedBatch, OperationFailure> =>
+): Either.Either<AppliedBatch, RefusedEdit['failure']> =>
   Either.mapLeft(
     applyEdits(
       model,
@@ -605,6 +606,153 @@ describe('what unplace_element does', () => {
     expect(
       Either.isLeft(refused) ? refusalOf(refused.left) : undefined,
     ).toContain('remove_element');
+  });
+});
+
+describe('a refusal of an edit another op does', () => {
+  it.each<{
+    readonly name: string;
+    readonly edit: EditInput;
+    readonly tag: OperationFailure['_tag'];
+    readonly pointsTo: string;
+  }>([
+    {
+      name: 'add_element on an id the model holds to place_element',
+      edit: {
+        op: 'add_element',
+        diagram: 'payments',
+        element: {
+          kind: 'actor',
+          id: 'customer',
+          name: 'Customer',
+          placement: 'auto',
+        },
+      },
+      tag: 'DuplicateElementId',
+      pointsTo: 'place_element',
+    },
+    {
+      name: 'remove_diagram on a diagram holding elements to unplace_element',
+      edit: { op: 'remove_diagram', diagram: 'payments' },
+      tag: 'DiagramNotEmpty',
+      pointsTo: 'unplace_element',
+    },
+  ])('points $name', ({ edit, tag, pointsTo }) => {
+    const refused = batchOn(sharedModel, [edit]);
+    expect(refused).toMatchObject({ left: { _tag: tag } });
+    expect(
+      Either.isLeft(refused) ? refusalOf(refused.left) : undefined,
+    ).toContain(pointsTo);
+  });
+});
+
+describe('a diagram an edit names by its exact title', () => {
+  it('changes the drawing on the diagram the title names alone', () => {
+    const edited = modelAfter(sharedModel, [
+      {
+        op: 'move_element',
+        element: 'payments-api',
+        diagram: 'Payments',
+        offset: { x: 10, y: 20 },
+      },
+      {
+        op: 'set_accent',
+        elements: ['payments-api'],
+        diagram: 'Payments',
+        accent: 'l2',
+      },
+    ]);
+    expect(drawnOn(edited, payments, 'payments-api')).toMatchObject({
+      position: { x: 250, y: 120 },
+      accent: 'l2',
+    });
+    expect(drawnOn(edited, overview, 'payments-api')).toEqual(
+      drawnOn(sharedModel, overview, 'payments-api'),
+    );
+  });
+
+  it('places on, takes off, renames and removes the diagram the title names', () => {
+    const edited = modelAfter(sharedModel, [
+      {
+        op: 'place_element',
+        element: 'customer',
+        diagram: 'Payments',
+        placement: 'auto',
+      },
+      {
+        op: 'unplace_element',
+        element: 'payments-api',
+        diagram: 'High level',
+      },
+      { op: 'add_diagram', diagram: 'spare', title: 'Spare' },
+      { op: 'rename_diagram', diagram: 'Spare', title: 'Kept spare' },
+      { op: 'add_diagram', diagram: 'unused', title: 'Unused' },
+      { op: 'remove_diagram', diagram: 'Unused' },
+    ]);
+    expect(lastOn(edited, payments)?.id).toBe('customer');
+    expect(drawnOn(edited, overview, 'payments-api')).toBeUndefined();
+    expect(edited.diagrams.map(({ id, title }) => ({ id, title }))).toEqual([
+      { id: 'overview', title: 'High level' },
+      { id: 'payments', title: 'Payments' },
+      { id: 'spare', title: 'Kept spare' },
+    ]);
+  });
+
+  it('refuses a title two diagrams have and no diagram has as its id, naming their ids', () => {
+    const refused = batchOn(sharedModel, [
+      { op: 'rename_diagram', diagram: 'payments', title: 'High level' },
+      {
+        op: 'move_element',
+        element: 'payments-api',
+        diagram: 'High level',
+        offset: { x: 10, y: 0 },
+      },
+    ]);
+    expect(refused).toMatchObject({
+      left: {
+        _tag: 'AmbiguousDiagram',
+        name: 'High level',
+        diagramIds: ['overview', 'payments'],
+      },
+    });
+    const refusal = Either.isLeft(refused) ? refusalOf(refused.left, 1) : '';
+    expect(refusal).toContain('"overview"');
+    expect(refusal).toContain('"payments"');
+  });
+
+  it('adds a diagram under the id given where another diagram has it as its title', () => {
+    const edited = modelAfter(sharedModel, [
+      { op: 'add_diagram', diagram: 'Payments', title: 'Payments again' },
+    ]);
+    expect(edited.diagrams.map(({ id }) => id)).toEqual([
+      'overview',
+      'payments',
+      'Payments',
+    ]);
+  });
+
+  it('takes the id first where one diagram has as its title the id of another', () => {
+    const edited = modelAfter(sharedModel, [
+      { op: 'add_diagram', diagram: 'spare', title: 'payments' },
+      { op: 'rename_diagram', diagram: 'payments', title: 'Renamed' },
+    ]);
+    expect(edited.diagrams.map(({ title }) => title)).toEqual([
+      'High level',
+      'Renamed',
+      'payments',
+    ]);
+  });
+
+  it('refuses a name no diagram has as its id or its title, naming it', () => {
+    const refused = batchOn(sharedModel, [
+      { op: 'remove_diagram', diagram: 'Nothing' },
+    ]);
+    expect(refused).toMatchObject({
+      left: { _tag: 'UnknownDiagram', diagramId: 'Nothing' },
+    });
+    expect(
+      Either.isLeft(refused) ? refusalOf(refused.left) : undefined,
+    ).toContain('saer_inspect');
   });
 });
 

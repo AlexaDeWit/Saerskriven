@@ -159,17 +159,23 @@ const samples: readonly (readonly [DivergenceDetail, string])[] = [
   [
     {
       code: 'flow-end-drawn-away-freed',
-      parameters: { element: 'card-vault' },
+      parameters: { element: 'card-vault', diagram: 'High level' },
     },
-    'the attachment of an end to "card-vault", which the diagram does not draw, written as a free end',
+    'the attachment of an end to "card-vault", which "High level" does not draw, written as a free end',
   ],
   [
-    { code: 'relationships-off-diagram-dropped', parameters: { count: 1 } },
-    'the relationship to 1 element on another diagram, which a cell names on its own diagram alone',
+    {
+      code: 'relationships-off-diagram-dropped',
+      parameters: { count: 1, diagram: 'Payments' },
+    },
+    'the relationship to 1 element not on "Payments", which a cell names on its own diagram alone',
   ],
   [
-    { code: 'relationships-off-diagram-dropped', parameters: { count: 2 } },
-    'the relationships to 2 elements on another diagram, which a cell names on its own diagram alone',
+    {
+      code: 'relationships-off-diagram-dropped',
+      parameters: { count: 2, diagram: 'Payments' },
+    },
+    'the relationships to 2 elements not on "Payments", which a cell names on its own diagram alone',
   ],
   [
     {

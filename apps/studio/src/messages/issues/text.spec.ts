@@ -4,7 +4,7 @@ import {
   type ParseIssueDetail,
 } from '@saerskriven/model';
 import { parseIssueSamples } from '@saerskriven/model/fixtures';
-import { catalogueTemplates, templateParts } from '@saerskriven/i18n';
+import { catalogueTemplates, locales, templateParts } from '@saerskriven/i18n';
 import { studioCatalogues } from '../catalogues.js';
 import { activeTranslator, chooseLanguage } from '../locale.js';
 import { parseIssueDetail, parseIssueLine } from './text.js';
@@ -146,6 +146,19 @@ describe('the parse issue mapping', () => {
 
     expect(described(detail)).toContain(value);
   });
+
+  it.each(locales)(
+    'says in %s that Saerskriven YAML version 3 lifts the one-diagram limit on a relationship',
+    (locale) => {
+      chooseLanguage(locale);
+      expect(
+        described({
+          code: 'related-off-diagram',
+          parameters: { id: 'element-elsewhere' },
+        }),
+      ).toMatch(/element-elsewhere.*Saerskriven YAML.*3/u);
+    },
+  );
 
   it('leaves a throw and a schema kind out of what the reader is shown', () => {
     const threw = sampleOf('schema-threw');
