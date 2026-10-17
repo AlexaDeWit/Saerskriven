@@ -1,12 +1,12 @@
 import {
   elementsById,
+  firstDrawings,
   flowEnds,
   generateThreatId,
   isEmptyName,
   nextThreatNumber,
   threatSchema,
   unlabelledFlow,
-  type Diagram,
   type Element,
   type ElementId,
   type Model,
@@ -273,23 +273,6 @@ function attachedElements(
             : t('panel.unlabelled-flow-phrase', { ends }),
       };
     });
-}
-
-function firstDrawings(
-  model: Pick<Model, 'elements' | 'diagrams'>,
-): readonly { readonly element: Element; readonly diagram: Diagram }[] {
-  const elements = elementsById(model.elements);
-  const seen = new Set<string>();
-  return model.diagrams.flatMap((diagram) =>
-    diagram.placements.flatMap(({ element: id }) => {
-      const element = elements.get(id);
-      if (element === undefined || seen.has(id)) {
-        return [];
-      }
-      seen.add(id);
-      return [{ element, diagram }];
-    }),
-  );
 }
 
 /** Flow labels stay stand-alone here, while Detach uses the shared flow phrase. */

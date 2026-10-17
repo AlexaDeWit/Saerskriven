@@ -16,6 +16,7 @@ import {
   elementId,
   heldElement,
   redrawn,
+  sharedModel,
   threatId,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
@@ -366,6 +367,26 @@ describe('the element lists of a threat', () => {
       `Detach the flow from Reader to Studio (${requestFlow})`,
       `Detach the flow from Reader to Studio (${probeFlow})`,
     ]);
+  });
+});
+
+describe('the element lists of a threat in a model sharing elements', () => {
+  const onApi = sharedModel.threats[0];
+
+  it('lists an element on several diagrams once, under the first diagram drawing it', () => {
+    const offered = attachableElements(
+      sharedModel,
+      { ...onApi, elements: [] },
+      t,
+    );
+    const ids = offered.map(({ id }) => id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(offered.find(({ id }) => id === 'payments-api')?.text).toMatchObject(
+      { label: 'Payments API', detail: 'High level' },
+    );
+    expect(
+      threatAttachments(sharedModel, onApi, t).map(({ id }) => id),
+    ).toEqual(['payments-api']);
   });
 });
 

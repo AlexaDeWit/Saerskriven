@@ -72,6 +72,10 @@ export const noticeEnCA = catalogue(noticeMessages)('en-CA')({
     'Element {id} cannot be drawn on diagram {diagram} with that geometry.',
   'op-several-diagrams':
     'Element {id} is on more than one diagram: {diagrams}.',
+  'op-source-not-away':
+    'The source of flow {id} is not drawn away from its element on diagram {diagram}.',
+  'op-target-not-away':
+    'The target of flow {id} is not drawn away from its element on diagram {diagram}.',
   'op-unknown-threat': 'The model holds no threat {id}.',
   'op-unknown-mitigation': 'The model holds no mitigation {id}.',
   'op-unknown-assumption': 'The model holds no assumption {id}.',

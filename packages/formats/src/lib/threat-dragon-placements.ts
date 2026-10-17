@@ -6,7 +6,9 @@ import {
   type ElementId,
   type Model,
 } from '@saerskriven/model';
+import type { ThreatDragonDiagram } from '@saerskriven/wire-threat-dragon';
 import type { Divergence } from './divergence.js';
+import { cellsOf } from './threat-dragon-document.js';
 
 /** The cell id each element a diagram places is written under there. */
 export type CellIds = ReadonlyMap<ElementId, ElementId>;
@@ -20,13 +22,18 @@ export type CelledElement = {
 /**
  * The cell id every placement is written under, by diagram. Threat Dragon
  * draws an element as a cell on one diagram, so an element on several takes
- * a cell on each: the first diagram placing it keeps the element's id, and
- * every other one takes the element's id joined to the diagram's with a
- * hyphen. A derived id that an element, a diagram, a threat, a mitigation, an
- * assumption or an earlier derived id already holds takes a numbered suffix,
- * so the same model writes the same ids.
+ * a cell on each. The element's own id stays on the diagram whose cell of
+ * that id `held`, the diagrams of the document written over, holds, or else
+ * on the first diagram placing it, and every other diagram takes the
+ * element's id joined to the diagram's with a hyphen. A derived id that an
+ * element, a diagram, a threat, a mitigation, an assumption or an earlier
+ * derived id already holds takes a numbered suffix, so the same model and
+ * document write the same ids.
  */
-export function cellIdsOf(model: Model): ReadonlyMap<DiagramId, CellIds> {
+export function cellIdsOf(
+  model: Model,
+  held: ReadonlyMap<string, ThreatDragonDiagram> = new Map(),
+): ReadonlyMap<DiagramId, CellIds> {
   const taken = new Set<string>([
     ...model.elements.map(({ id }) => id),
     ...model.diagrams.map(({ id }) => id),
@@ -34,19 +41,18 @@ export function cellIdsOf(model: Model): ReadonlyMap<DiagramId, CellIds> {
     ...model.mitigations.map(({ id }) => id),
     ...model.assumptions.map(({ id }) => id),
   ]);
-  const placed = new Set<ElementId>();
+  const homes = homesOf(model, held);
   return new Map(
     model.diagrams.map((diagram) => [
       diagram.id,
       new Map(
         diagram.placements.map(({ element }): [ElementId, ElementId] => {
-          if (!placed.has(element)) {
-            placed.add(element);
+          if (homes.get(element) === diagram.id) {
             return [element, element];
           }
-          const derived = freeId(`${element}-${diagram.id}`, taken);
+          const derived = freeId(element, diagram.id, taken);
           taken.add(derived);
-          return [element, elementIdSchema.safeParse(derived).data ?? element];
+          return [element, derived];
         }),
       ),
     ]),
@@ -136,14 +142,45 @@ export function inCellTerms(
   return { element: { ...element, id }, divergences: [] };
 }
 
-function freeId(wanted: string, taken: ReadonlySet<string>): string {
+function homesOf(
+  model: Model,
+  held: ReadonlyMap<string, ThreatDragonDiagram>,
+): ReadonlyMap<ElementId, DiagramId> {
+  const homes = new Map<ElementId, DiagramId>();
+  for (const diagram of model.diagrams) {
+    const source = held.get(diagram.id);
+    const cells = new Set<string>(
+      source === undefined ? [] : cellsOf(source).map(({ id }) => id),
+    );
+    for (const { element } of diagram.placements) {
+      if (cells.has(element) && !homes.has(element)) {
+        homes.set(element, diagram.id);
+      }
+    }
+  }
+  for (const diagram of model.diagrams) {
+    for (const { element } of diagram.placements) {
+      if (!homes.has(element)) {
+        homes.set(element, diagram.id);
+      }
+    }
+  }
+  return homes;
+}
+
+function freeId(
+  element: ElementId,
+  diagram: DiagramId,
+  taken: ReadonlySet<string>,
+): ElementId {
+  const wanted = `${element}-${diagram}`;
   let suffix = 2;
   let candidate = wanted;
   while (taken.has(candidate)) {
     candidate = `${wanted}-${String(suffix)}`;
     suffix += 1;
   }
-  return candidate;
+  return elementIdSchema.parse(candidate);
 }
 
 function freedEnd(

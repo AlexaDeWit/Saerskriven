@@ -86,15 +86,18 @@ export type Action = Data.TaggedEnum<{
     readonly position: Point;
     readonly decimals: Decimals | undefined;
   };
+  SetAwayEndPosition: {
+    readonly diagramId: DiagramId;
+    readonly elementId: ElementId;
+    readonly side: 'source' | 'target';
+    readonly position: Point;
+    readonly decimals: Decimals | undefined;
+  };
   ReverseFlow: { readonly elementId: ElementId };
   SetBoundaryShape: {
     readonly diagramId: DiagramId;
     readonly elementId: ElementId;
     readonly shape: BoundaryShape;
-    readonly decimals: Decimals | undefined;
-  };
-  RemoveElement: {
-    readonly elementId: ElementId;
     readonly decimals: Decimals | undefined;
   };
   RemoveElements: {

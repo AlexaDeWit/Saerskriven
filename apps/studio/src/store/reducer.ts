@@ -25,7 +25,7 @@ import {
   attachThreat,
   detachThreat,
   editNote,
-  elementIdsAcross,
+  elementIdsIn,
   moveElement,
   removeElement,
   removeThreat,
@@ -33,11 +33,11 @@ import {
   replaceThreat,
   resizeElement,
   reverseFlow,
-  diagramsOf,
   unplaceElement,
   setAccent,
   setBoundaryShape,
   setFlowDirection,
+  setAwayEndPosition,
   setFlowEndPosition,
   setFlowWaypoints,
   OperationFailure,
@@ -48,7 +48,8 @@ import {
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import { Action } from './actions.js';
-import { activeDiagramId, holdsDiagram } from './selectors.js';
+import { deletionsOn } from './deletion.js';
+import { activeDiagram, activeDiagramId, holdsDiagram } from './selectors.js';
 import { sameSelection } from './selection.js';
 import {
   FileLifecycle,
@@ -96,6 +97,18 @@ export function reduce(state: State, action: Action): State {
           decimals,
         ),
       ),
+    SetAwayEndPosition: ({ diagramId, elementId, side, position, decimals }) =>
+      edited(
+        state,
+        setAwayEndPosition(
+          state.present,
+          diagramId,
+          elementId,
+          side,
+          position,
+          decimals,
+        ),
+      ),
     ReverseFlow: ({ elementId }) =>
       edited(state, reverseFlow(state.present, elementId)),
     SetBoundaryShape: ({ diagramId, elementId, shape, decimals }) =>
@@ -116,20 +129,32 @@ export function reduce(state: State, action: Action): State {
       ),
     AddElement: ({ diagramId, element, decimals }) =>
       edited(state, addElement(state.present, diagramId, element, decimals)),
-    RemoveElement: ({ elementId, decimals }) =>
-      removedElements(state, [elementId], (model, removed) =>
-        removeElement(model, removed, decimals),
-      ),
     RemoveElements: ({ elementIds, decimals }) =>
       removedElements(state, elementIds, (model, removed) =>
         removeElement(model, removed, decimals),
       ),
-    DeleteFromDiagram: ({ diagramId, elementIds, decimals }) =>
-      removedElements(state, elementIds, (model, removed) =>
-        diagramsOf(model, removed).length > 1
-          ? unplaceElement(model, diagramId, removed, decimals)
-          : removeElement(model, removed, decimals),
-      ),
+    DeleteFromDiagram: ({ diagramId, elementIds, decimals }) => {
+      if (!holdsDiagram(state.present, diagramId)) {
+        return edited(
+          state,
+          Either.left(OperationFailure.UnknownDiagram({ diagramId })),
+        );
+      }
+      const deletions = deletionsOn(state.present, diagramId, elementIds);
+      const leaving = new Set<string>(
+        deletions.flatMap(({ elementId, fromModel }) =>
+          fromModel ? [elementId] : [],
+        ),
+      );
+      return removedElements(
+        state,
+        deletions.map(({ elementId }) => elementId),
+        (model, removed) =>
+          leaving.has(removed)
+            ? removeElement(model, removed, decimals)
+            : unplaceElement(model, diagramId, removed, decimals),
+      );
+    },
     MoveElement: ({ diagramId, elementId, offset, decimals }) =>
       edited(
         state,
@@ -376,8 +401,6 @@ function editElements(
 
 function followed(state: State, synced: SyncedState): State {
   const { present, past, future, saved, file, recoveryCurrent } = synced;
-  const drawn = elementIdsAcross(present.diagrams);
-  const selection = state.selection.filter((selected) => drawn.has(selected));
   return {
     ...state,
     present,
@@ -386,15 +409,36 @@ function followed(state: State, synced: SyncedState): State {
     saved,
     file,
     recoveryCurrent,
+    ...onScreen(state, present),
+    lastFailure: undefined,
+  };
+}
+
+/**
+ * The selection and the inline editor of `state` kept to what the diagram on
+ * screen places once `present` is the model, so no selection outlives the
+ * placement it named.
+ */
+function onScreen(
+  state: State,
+  present: Model,
+): Pick<State, 'selection' | 'inlineEditor'> {
+  const diagram = activeDiagram({
+    present,
+    activeDiagram: state.activeDiagram,
+  });
+  const placed =
+    diagram === undefined ? new Set<string>() : elementIdsIn(diagram);
+  const selection = state.selection.filter((selected) => placed.has(selected));
+  return {
     selection: sameSelection(state.selection, selection)
       ? state.selection
       : selection,
     inlineEditor:
       state.inlineEditor !== undefined &&
-      drawn.has(state.inlineEditor.elementId)
+      placed.has(state.inlineEditor.elementId)
         ? state.inlineEditor
         : undefined,
-    lastFailure: undefined,
   };
 }
 
@@ -407,6 +451,7 @@ function undone(state: State): State {
         present: previous,
         past: state.past.slice(0, -1),
         future: [state.present, ...state.future],
+        ...onScreen(state, previous),
         lastFailure: undefined,
       };
 }
@@ -420,6 +465,7 @@ function redone(state: State): State {
         present: next,
         past: [...state.past, state.present],
         future: state.future.slice(1),
+        ...onScreen(state, next),
         lastFailure: undefined,
       };
 }

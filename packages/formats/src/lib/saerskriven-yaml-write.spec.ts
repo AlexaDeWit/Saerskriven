@@ -471,6 +471,7 @@ describe('a Saerskriven YAML write of a model holding a minted id', () => {
           minted,
         ),
       ),
+      'diagram',
     ),
   );
   const result = writeSaerskrivenYaml(model);

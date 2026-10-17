@@ -162,6 +162,11 @@ const operationFailures: ByTag<OperationFailure> = {
     side: 'source',
     reference: elementId('element-missing'),
   }),
+  FlowEndNotAway: OperationFailure.FlowEndNotAway({
+    elementId: elementId('element-order-flow'),
+    diagramId: diagramId('diagram-main'),
+    side: 'source',
+  }),
   NotResizable: OperationFailure.NotResizable({
     elementId: elementId('element-curve'),
   }),

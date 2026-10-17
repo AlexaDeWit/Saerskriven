@@ -13,6 +13,7 @@ import {
   diagramId,
   elementId,
   mitigationId,
+  sharedModel,
   softHyphen,
   threatId,
 } from '@saerskriven/model/fixtures';
@@ -145,10 +146,6 @@ const applied: ActionsByTag<ModelActionTag> = {
     endpointId: elementId('extra-actor'),
   }),
   AddElement: addedProcess,
-  RemoveElement: Action.RemoveElement({
-    elementId: processElement,
-    decimals: 3,
-  }),
   RemoveElements: Action.RemoveElements({
     elementIds: [actorElement, processElement],
     decimals: 3,
@@ -201,6 +198,13 @@ const applied: ActionsByTag<ModelActionTag> = {
     side: 'target',
     position: { x: 400, y: 200 },
     decimals: 3,
+  }),
+  SetAwayEndPosition: Action.SetAwayEndPosition({
+    diagramId: diagramId('overview'),
+    elementId: elementId('charge'),
+    side: 'target',
+    position: { x: 700, y: 260 },
+    decimals: 1,
   }),
   ReverseFlow: Action.ReverseFlow({ elementId: elementId('placeholder-flow') }),
   SetBoundaryShape: Action.SetBoundaryShape({
@@ -334,17 +338,13 @@ const refused: ActionsByTag<ModelActionTag> = {
     element: newProcess('process-refused', 'Refused'),
     decimals: undefined,
   }),
-  RemoveElement: Action.RemoveElement({
-    elementId: elementId('element-missing'),
-    decimals: undefined,
-  }),
   RemoveElements: Action.RemoveElements({
     elementIds: [processElement, elementId('element-missing')],
     decimals: undefined,
   }),
   DeleteFromDiagram: Action.DeleteFromDiagram({
-    diagramId: mainDiagram,
-    elementIds: [processElement, elementId('element-missing')],
+    diagramId: diagramId('diagram-missing'),
+    elementIds: [processElement],
     decimals: undefined,
   }),
   MoveElement: Action.MoveElement({
@@ -385,6 +385,13 @@ const refused: ActionsByTag<ModelActionTag> = {
     bidirectional: true,
   }),
   SetFlowEndPosition: Action.SetFlowEndPosition({
+    diagramId: mainDiagram,
+    elementId: processElement,
+    side: 'source',
+    position: { x: 0, y: 0 },
+    decimals: undefined,
+  }),
+  SetAwayEndPosition: Action.SetAwayEndPosition({
     diagramId: mainDiagram,
     elementId: processElement,
     side: 'source',
@@ -577,6 +584,9 @@ function stateFor(action: Action): State {
   if (Action.$is('SetBoundaryShape')(action)) {
     return boundaryStart;
   }
+  if (Action.$is('SetAwayEndPosition')(action)) {
+    return { ...initialState(sharedModel), activeDiagram: action.diagramId };
+  }
   if (Action.$is('UnlinkAssumptionFromModel')(action)) {
     return modelScopedStart;
   }
@@ -588,6 +598,11 @@ function stateFor(action: Action): State {
   }
   return Action.$is('EditNote')(action) ? noteStart : start;
 }
+
+const removedProcess = Action.RemoveElements({
+  elementIds: [processElement],
+  decimals: 3,
+});
 
 describe('purity', () => {
   for (const [state, action] of purityCases) {
@@ -773,8 +788,12 @@ describe('an edit that names its decimals', () => {
   ].reduce(reduce, placed);
 
   it.each([
-    Action.RemoveElement({ elementId: actor, decimals: 1 }),
     Action.RemoveElements({ elementIds: [beside, actor], decimals: 1 }),
+    Action.DeleteFromDiagram({
+      diagramId: placeholderDiagram,
+      elementIds: [actor],
+      decimals: 1,
+    }),
   ])(
     '$_tag frees the flow end it detaches at the count it names',
     (removal) => {
@@ -1179,7 +1198,7 @@ describe('selection', () => {
       start,
       Action.Select({ elementIds: [processElement] }),
     );
-    expect(reduce(selected, applied.RemoveElement).selection).toEqual([]);
+    expect(reduce(selected, removedProcess).selection).toEqual([]);
   });
 
   it('stays on an element another removal does not touch', () => {
@@ -1187,9 +1206,7 @@ describe('selection', () => {
       start,
       Action.Select({ elementIds: [actorElement] }),
     );
-    expect(reduce(selected, applied.RemoveElement).selection).toEqual([
-      actorElement,
-    ]);
+    expect(reduce(selected, removedProcess).selection).toEqual([actorElement]);
   });
 
   it('clears every removed member of a multi-selection', () => {
@@ -1319,7 +1336,7 @@ describe('the inline editor', () => {
   });
 
   it('closes when the element it names is removed', () => {
-    expect(reduce(opened, applied.RemoveElement).inlineEditor).toBeUndefined();
+    expect(reduce(opened, removedProcess).inlineEditor).toBeUndefined();
   });
 });
 
@@ -1435,7 +1452,7 @@ describe('following another tab', () => {
         editor: { kind: 'name', elementId: actorElement },
       }),
     ),
-    refused.RemoveElement,
+    refused.RemoveElements,
   );
   const elsewhere = reduce(
     reduce(withHistory, applied.AddElement),

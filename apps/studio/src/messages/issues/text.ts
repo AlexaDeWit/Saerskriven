@@ -73,6 +73,8 @@ export function parseIssueDetail(t: Speaker, detail: ParseIssueDetail): string {
       return t('issues.flow-endpoint-self', detail.parameters);
     case 'flow-endpoint-foreign':
       return t('issues.flow-endpoint-foreign', detail.parameters);
+    case 'flow-end-position-held':
+      return t('issues.flow-end-position-held', detail.parameters);
     case 'unknown-element-reference':
       return t('issues.unknown-element-reference', detail.parameters);
     case 'unknown-threat-reference':

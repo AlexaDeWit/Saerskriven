@@ -1,11 +1,14 @@
-import { threatIdSchema, type Model } from '@saerskriven/model';
-import { sharedModel } from '@saerskriven/model/fixtures';
+import { placeElement, threatIdSchema, type Model } from '@saerskriven/model';
+import { placementIn, sharedModel } from '@saerskriven/model/fixtures';
 import type { ThreatDragonCell } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
 import { threatDragonJsonSchema } from './corpus.fixtures.js';
 import { cellsOf, threatsOf } from './threat-dragon-document.js';
-import { threatDragonReading } from './threat-dragon.fixtures.js';
+import {
+  featureCompleteText,
+  threatDragonReading,
+} from './threat-dragon.fixtures.js';
 import { threatDragonCodec } from './threat-dragon.js';
 
 const written = (model: Model) => threatDragonCodec.write(model);
@@ -109,6 +112,25 @@ describe('writing an element placed on several diagrams to Threat Dragon', () =>
     expect(
       model?.threats.find(({ id }) => id === 'threat-card-data')?.elements,
     ).toEqual(['payments-api', 'payments-api-payments']);
+  });
+
+  it('keeps the id on the diagram whose cell of it the document written over holds', () => {
+    const read = threatDragonReading(featureCompleteText);
+    const [booking] = read.model.diagrams;
+    const clerk = placementIn(read.model, 'actor-clerk');
+    const placed = Either.getOrThrow(
+      placeElement(read.model, booking.id, clerk),
+    );
+    const merged = threatDragonCodec.write(placed, read.source);
+    expect(cellNamed(cellsOn(merged.output, 1), 'actor-clerk')).toBeDefined();
+    expect(
+      cellNamed(cellsOn(merged.output, 0), `actor-clerk-${booking.id}`),
+    ).toBeDefined();
+    expect(
+      merged.divergences.filter(
+        ({ detail }) => detail.code === 'cell-discarded',
+      ),
+    ).toEqual([]);
   });
 
   it('derives an id no record of the model holds', () => {

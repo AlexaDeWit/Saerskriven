@@ -74,6 +74,10 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
     'Objektet {id} kan inte ritas i diagrammet {diagram} med den geometrin.',
   'op-several-diagrams':
     'Objektet {id} finns i mer än ett diagram: {diagrams}.',
+  'op-source-not-away':
+    'Källan till flödet {id} är inte ritad på avstånd från sitt objekt i diagrammet {diagram}.',
+  'op-target-not-away':
+    'Målet för flödet {id} är inte ritat på avstånd från sitt objekt i diagrammet {diagram}.',
   'op-unknown-threat': 'Modellen innehåller inget hot {id}.',
   'op-unknown-mitigation': 'Modellen innehåller ingen åtgärd {id}.',
   'op-unknown-assumption': 'Modellen innehåller inget antagande {id}.',

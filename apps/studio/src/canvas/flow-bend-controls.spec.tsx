@@ -1,8 +1,16 @@
 import type { ElementId } from '@saerskriven/model';
-import { drawnAt, elementIn } from '@saerskriven/model/fixtures';
+import {
+  diagramId,
+  drawnAt,
+  drawnOn,
+  elementId,
+  elementIn,
+  sharedModel,
+} from '@saerskriven/model/fixtures';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Action } from '../store/actions.js';
+import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   dragHandle,
@@ -748,6 +756,25 @@ describe('DiagramCanvas, the ends of a flow', () => {
     });
     expect(modelStore.getState().past).toEqual([]);
     expect(currentAnnouncement().message).not.toBe('');
+  });
+
+  it('moves an end drawn away from its element by arrow key, keeping it attached', () => {
+    modelStore.setState(
+      {
+        ...initialState(sharedModel),
+        activeDiagram: diagramId('overview'),
+        selection: [elementId('charge')],
+      },
+      true,
+    );
+    render(<DiagramCanvas />);
+    targetEnd().focus();
+    press('ArrowRight');
+    expect(
+      drawnOn(modelStore.getState().present, 'overview', 'charge'),
+    ).toMatchObject({
+      target: { kind: 'away', element: 'card-vault', position: { x: 685 } },
+    });
   });
 
   it('moves a free end by arrow key and by dragging, one undo step each, and offers it no actions', () => {

@@ -14,7 +14,7 @@ export function seededModel(
 ): Either.Either<Model, ParseFailure> {
   const draft = structuredClone(validModelFixture);
   mutate(draft);
-  return parseDrawnModel(draft);
+  return parseDrawnModel(draft, 'diagram');
 }
 
 /**
@@ -26,7 +26,7 @@ export function seededPlacedModel(
   mutate: (draft: ModelInput) => void,
 ): Either.Either<Model, ParseFailure> {
   const draft: ModelInput = structuredClone(
-    Either.getOrThrow(parseDrawnModel(validModelFixture)),
+    Either.getOrThrow(parseDrawnModel(validModelFixture, 'diagram')),
   );
   mutate(draft);
   return parseModel(draft);

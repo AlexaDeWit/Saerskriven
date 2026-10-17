@@ -69,7 +69,7 @@ export async function copySelected(cut = false): Promise<void> {
   ) {
     const removed = removalCascade(
       state.present,
-      deletedFromModel(state.present, state.selection),
+      deletedFromModel(state),
     ).threats;
     removeSelected();
     announce((t) =>

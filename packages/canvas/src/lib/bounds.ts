@@ -10,11 +10,11 @@ import { arrowheadPoints, controlPolygon } from './paths.js';
 import { placedTextCorners } from './text-placement.js';
 
 /**
- * The extent of what a layout paints: node outlines, a boundary curve's
- * control polygon, an out-of-scope note's frame, element text and badges,
- * flow lines and arrowheads, the backing of each flow's block, which holds
- * its name and badge, and the frame of each end drawn away from its element. Stroke widths straddle the lines they paint and
- * are left for the caller to pad.
+ * The extent of what a layout paints: node outlines, a boundary curve's control
+ * polygon, an out-of-scope note's frame, element text and badges, flow lines
+ * and arrowheads, the backing of each flow's block, which holds its name and
+ * badge, and the frame of each end drawn away from its element. Stroke widths
+ * straddle the lines they paint and are left for the caller to pad.
  */
 export type CanvasBounds = {
   readonly x: number;

@@ -30,6 +30,7 @@ import {
   selectedElementRecord,
   selectedElementRecords,
 } from '../store/selectors.js';
+import { deletionsOn } from '../store/deletion.js';
 import type { State } from '../store/state.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { announce, spokenElement } from './announcements.js';
@@ -180,8 +181,13 @@ export function removeSelected(): boolean {
   if (selection.length === 0 || diagram === undefined) {
     return false;
   }
-  const deleted = deletedFromModel(state.present, selection);
-  const shared = selection.filter((elementId) => !deleted.includes(elementId));
+  const deletions = deletionsOn(state.present, diagram.id, selection);
+  const deleted = deletions.flatMap(({ elementId, fromModel }) =>
+    fromModel ? [elementId] : [],
+  );
+  const shared = deletions.flatMap(({ elementId, fromModel }) =>
+    fromModel ? [] : [elementId],
+  );
   const removed = removedSubject(state, deleted);
   const cascade = removalCascade(state.present, deleted);
   const unplaced = unplacedSubject(state, diagram, shared);
@@ -232,16 +238,16 @@ export function removeSelectedFromModel(): boolean {
 }
 
 /**
- * The ids of `selection` a Delete on the diagram on screen removes from the
- * model: those on no other diagram.
+ * The ids of the selection a Delete on the diagram on screen removes from
+ * the model, the rule {@link deletionsOn} states.
  */
-export function deletedFromModel(
-  model: Model,
-  selection: readonly ElementId[],
-): readonly ElementId[] {
-  return selection.filter(
-    (elementId) => diagramsOf(model, elementId).length <= 1,
-  );
+export function deletedFromModel(state: State): readonly ElementId[] {
+  const diagramId = activeDiagramId(state);
+  return diagramId === undefined
+    ? []
+    : deletionsOn(state.present, diagramId, state.selection).flatMap(
+        ({ elementId, fromModel }) => (fromModel ? [elementId] : []),
+      );
 }
 
 /**

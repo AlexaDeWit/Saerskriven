@@ -70,6 +70,11 @@ export type OperationFailure = Data.TaggedEnum<{
     readonly side: 'source' | 'target';
     readonly reference: ElementId;
   };
+  FlowEndNotAway: {
+    readonly elementId: ElementId;
+    readonly diagramId: DiagramId;
+    readonly side: 'source' | 'target';
+  };
   NotResizable: { readonly elementId: ElementId };
   NotTextElement: { readonly elementId: ElementId };
   NotFlowElement: { readonly elementId: ElementId };

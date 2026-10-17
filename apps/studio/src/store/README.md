@@ -119,7 +119,7 @@ An edit that writes geometry carries `decimals`, and its arm hands the count
 to the model operation it calls, which rounds what it writes
 ([the model](../../../../packages/model/README.md#operations)). The actions
 are `AddElement`, `MoveElement`, `MoveElements`, `ArrangeElements`,
-`ResizeElement`, `RemoveElement`, `RemoveElements`, `DeleteFromDiagram`,
+`ResizeElement`, `RemoveElements`, `DeleteFromDiagram`,
 `SetFlowWaypoints`,
 `SetFlowEndPosition` and `SetBoundaryShape`. The field is required, so an edit
 that means the operation to store what it computes says `undefined`, and one

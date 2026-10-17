@@ -31,10 +31,10 @@ holds no `position`. One attached to an element the diagram does not place is
 drawn away from it, at the `position` its placement holds, and a free end
 holds a `position` too. A boundary's and a flow's relationship lists name
 elements anywhere in the model, and a reader of one diagram shows the members
-that diagram places. A read of a file whose diagrams own their elements keeps
-each list inside the diagram drawing its element, as such a file always has:
-`parseModel` takes that rule as its `scope`, and `drawnRelationshipScope` is
-the scope such a read uses.
+that diagram places. `parseModel` and `parseDrawnModel` take a
+`RelationshipScope`: `model`, or `diagram`, which keeps each list inside the
+diagram drawing its element. Each format's read names the scope it keeps, so a
+version 1 or 2 file and an import read as they did.
 
 A reader of a diagram takes its elements as it draws them: `drawnElements`
 gives a diagram's elements in draw order, each a `DrawnElement`, the
@@ -154,9 +154,9 @@ facts, a note's text and threats belong to the element, so an edit of them
 shows on every diagram it is on. Which element a flow end reaches is the
 flow's too: `reconnectFlow` moves the end on every diagram, drawing it away
 where a diagram does not place the new element, and `setFlowEndPosition`
-frees an attached end on every diagram, each keeping the point it was drawn
-at there. On an end drawn away, `setFlowEndPosition` moves the point and
-keeps the attachment. `reverseFlow` swaps the ends of the flow and reverses
+frees an attached end, or one drawn away, on every diagram, each keeping the
+point it was drawn at there. `setAwayEndPosition` moves an end drawn away and
+keeps the attachment, refusing any other end with `FlowEndNotAway`. `reverseFlow` swaps the ends of the flow and reverses
 its bends on every diagram that draws it.
 
 `addElement` adds the element and its first placement, on the diagram it

@@ -12,8 +12,13 @@ import {
 } from '@saerskriven/canvas/fixtures';
 import { locales } from '@saerskriven/i18n';
 import { renderTerms } from '@saerskriven/render';
-import { decimalsOf } from '@saerskriven/model';
-import { elementIn } from '@saerskriven/model/fixtures';
+import { decimalsOf, diagramsOf } from '@saerskriven/model';
+import {
+  diagramId,
+  elementId,
+  elementIn,
+  sharedModel,
+} from '@saerskriven/model/fixtures';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import {
   contextualShortcuts,
@@ -31,6 +36,7 @@ import {
 import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import { currentAnnouncement } from './announcements.js';
 import { Action } from '../store/actions.js';
+import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   boundaryCurve,
@@ -287,6 +293,39 @@ describe('DiagramCanvas', () => {
     fireEvent.keyDown(screen.getByTestId('rf__wrapper'), { key: 'Backspace' });
 
     expect(heldElements()).toBe(5);
+  });
+
+  it.each([
+    [
+      'takes a shared element off this diagram alone on the delete key',
+      {},
+      ['payments'],
+    ],
+    [
+      'removes a shared element from every diagram on Shift+Delete',
+      { shiftKey: true },
+      [],
+    ],
+  ] as const)('%s', (_, modifiers, left) => {
+    const api = elementId('payments-api');
+    modelStore.setState(
+      {
+        ...initialState(sharedModel),
+        activeDiagram: diagramId('overview'),
+        selection: [api],
+      },
+      true,
+    );
+    render(<DiagramCanvas />);
+
+    fireEvent.keyDown(screen.getByTestId('rf__wrapper'), {
+      key: 'Delete',
+      ...modifiers,
+    });
+
+    expect(
+      diagramsOf(modelStore.getState().present, api).map(({ id }) => id),
+    ).toEqual(left);
   });
 
   it('leaves the model alone on the delete key while nothing is selected', () => {

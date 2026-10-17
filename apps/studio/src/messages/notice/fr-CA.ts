@@ -82,6 +82,10 @@ export const noticeFrCA = catalogue(noticeMessages)('fr-CA')({
     'L’élément {id} ne peut pas être dessiné sur le diagramme {diagram} avec cette géométrie.',
   'op-several-diagrams':
     'L’élément {id} se trouve sur plus d’un diagramme : {diagrams}.',
+  'op-source-not-away':
+    'La source du flux {id} n’est pas tracée à l’écart de son élément sur le diagramme {diagram}.',
+  'op-target-not-away':
+    'La cible du flux {id} n’est pas tracée à l’écart de son élément sur le diagramme {diagram}.',
   'op-unknown-threat': 'Le modèle ne contient aucune menace {id}.',
   'op-unknown-mitigation': 'Le modèle ne contient aucune mesure {id}.',
   'op-unknown-assumption': 'Le modèle ne contient aucune hypothèse {id}.',

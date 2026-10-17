@@ -51,9 +51,10 @@ describe('Delete on an element also on another diagram', () => {
     onOverview([api]);
 
     removeSelected();
-    expect(currentAnnouncement().message).toContain('Payments API');
-    expect(currentAnnouncement().message).toContain('Payments.');
-    expect(currentAnnouncement().message).toContain('High level');
+    const said = currentAnnouncement().message;
+    expect(said).toContain('Payments API');
+    expect(said).toContain('High level');
+    expect(said.replace('Payments API', '')).toContain('Payments');
   });
 
   it('draws a flow end attached to it away, as one undo step', () => {
@@ -76,6 +77,37 @@ describe('Delete on an element also on another diagram', () => {
     expect(present().elements.map(({ id }) => id)).not.toContain(customer);
     expect(placedOn(present(), api)).toEqual([payments]);
     expect(modelStore.getState().past).toHaveLength(1);
+  });
+});
+
+describe('Delete on a selection gone stale', () => {
+  it('keeps an element an undo and a redo took off the diagram on screen, with its threats', () => {
+    onOverview([api]);
+
+    removeSelected();
+    dispatch(Action.Undo());
+    dispatch(Action.Select({ elementIds: [api] }));
+    dispatch(Action.Redo());
+
+    expect(modelStore.getState().selection).toEqual([]);
+    expect(removeSelected()).toBe(false);
+    expect(placedOn(present(), api)).toEqual([payments]);
+    expect(present().threats.map(({ id }) => id)).toContain('threat-card-data');
+  });
+
+  it('acts on no element the diagram it names does not place', () => {
+    onOverview([]);
+
+    dispatch(
+      Action.DeleteFromDiagram({
+        diagramId: overview,
+        elementIds: [elementId('fraud-check'), api],
+        decimals: undefined,
+      }),
+    );
+
+    expect(placedOn(present(), elementId('fraud-check'))).toEqual([payments]);
+    expect(placedOn(present(), api)).toEqual([payments]);
   });
 });
 

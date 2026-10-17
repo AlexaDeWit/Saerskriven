@@ -92,7 +92,7 @@ export function parsedFixture(input: ModelInput): Model {
  * `parseDrawnModel`. A broken one throws with its path-bearing issues.
  */
 export function drawnFixture(input: DrawnModelInput): Model {
-  return fixtureOf(parseDrawnModel(input));
+  return fixtureOf(parseDrawnModel(input, 'diagram'));
 }
 
 /** The model a parse produced, throwing with its path-bearing issues where it refused. */
@@ -240,6 +240,22 @@ export const drawnAt = (
   return model === undefined || diagram === undefined
     ? []
     : drawnElements(model, diagram);
+};
+
+/**
+ * The element under the id as the diagram of id `diagram` draws it, and
+ * undefined where the model holds no such diagram or it does not place the
+ * element.
+ */
+export const drawnOn = (
+  model: Model,
+  diagram: string,
+  id: string,
+): DrawnElement | undefined => {
+  const held = model.diagrams.find(({ id: own }) => own === diagram);
+  return held === undefined
+    ? undefined
+    : drawnElementOn(model, held, elementId(id));
 };
 
 /**

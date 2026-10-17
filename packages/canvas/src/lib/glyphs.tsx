@@ -71,10 +71,10 @@ export function BoxElementGlyph({
 }
 
 /**
- * Uses node coordinates, with the text and badge optionally drawn in separate layers.
- * An out-of-scope note adds a frame outside its box. An accented note draws a
- * bar down the inside of its left edge, and a strong one tints its whole box
- * behind the bar.
+ * Uses node coordinates, with the text and badge optionally drawn in separate
+ * layers. An out-of-scope note adds a frame outside its box. An accented note
+ * draws a bar down the inside of its left edge, and a strong one tints its
+ * whole box behind the bar.
  */
 export function ElementGlyph({
   badgeVisible = true,

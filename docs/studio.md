@@ -461,9 +461,10 @@ readers announce placement instructions.
   store to attach it there. Delete or Backspace on it leaves the end where it
   is and says so: select the flow itself to delete it.
 - An end attached to an element on another diagram is drawn away from it, at
-  a point of its own, in a dashed frame naming the element. It moves as a free
-  end does and stays attached. Placing that element on this diagram attaches
-  the end to it.
+  a point of its own, in a dashed frame naming the element. Drag it or press
+  an arrow key to move it, and it stays attached. The endpoint editor names
+  that element as on another diagram, and Free point frees the end. Placing
+  that element on this diagram attaches the end to it.
 
 The local bend, point and Close actions use icons with names in hover and
 keyboard-focus tooltips. Auto keeps the end attached and releases its pinned side. The endpoint editor
@@ -853,8 +854,9 @@ and expand **Security properties**. **Not recorded** leaves a fact unknown, and
 a flag offers Yes and No. Protocol and privilege level distinguish an empty
 recorded value from Not recorded. Relationship lists (the boundaries a flow
 crosses, a boundary's contained elements and crossing flows) offer valid targets
-anywhere in the model, keep their order and any repeated entry until you edit
-them, and Not recorded removes the list itself. Naming an element of another
+anywhere in the model, a target on another diagram with that diagram's title
+beside it, keep their order and any repeated entry until you edit them, and
+Not recorded removes the list itself. Naming an element of another
 diagram moves a Saerskriven YAML file to version 3. The fields' meaning is in
 [the format](saerskriven-yaml.md#security-facts).
 

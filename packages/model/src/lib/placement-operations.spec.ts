@@ -1,5 +1,11 @@
-import { diagramId, elementId, placementIn, sharedModel } from '../fixtures.js';
-import { drawnElementOn, placementOn } from './drawing.js';
+import {
+  diagramId,
+  drawnOn,
+  elementId,
+  placementIn,
+  sharedModel,
+} from '../fixtures.js';
+import { firstDrawings, placementOn } from './drawing.js';
 import {
   removeElement,
   renameElement,
@@ -7,7 +13,11 @@ import {
   setElementProperties,
 } from './element-operations.js';
 import { selectionFragment } from './fragment.js';
-import { reconnectFlow, setFlowEndPosition } from './flow-operations.js';
+import {
+  reconnectFlow,
+  setAwayEndPosition,
+  setFlowEndPosition,
+} from './flow-operations.js';
 import type { Model } from './parse.js';
 import { errorOf, modelOf, operationContract } from './operations.fixtures.js';
 import { placeElement, unplaceElement } from './placement-operations.js';
@@ -28,13 +38,6 @@ const vaultBox = {
 const flowFacts = (model: Model, id: string) => {
   const held = model.elements.find((element) => element.id === id);
   return held?.kind === 'flow' ? held : undefined;
-};
-
-const drawnOn = (model: Model, diagram: string, id: string) => {
-  const held = model.diagrams.find(({ id: own }) => own === diagram);
-  return held === undefined
-    ? undefined
-    : drawnElementOn(model, held, elementId(id));
 };
 
 describe('placeElement', () => {
@@ -214,12 +217,34 @@ describe('an element placed on several diagrams', () => {
     });
   });
 
-  it('moves an end drawn away and keeps it attached', () => {
-    const moved = modelOf(
+  it('frees an end drawn away at a position, on every diagram', () => {
+    const freed = modelOf(
       setFlowEndPosition(sharedModel, overview, charge, 'target', {
         x: 700,
         y: 260,
       }),
+    );
+    expect(drawnOn(freed, 'overview', 'charge')).toMatchObject({
+      target: { kind: 'free', position: { x: 700, y: 260 } },
+    });
+    expect(drawnOn(freed, 'payments', 'charge')).toMatchObject({
+      target: { kind: 'free', position: { x: 520, y: 130 } },
+    });
+  });
+
+  it('moves an end drawn away and keeps it attached', () => {
+    const moved = modelOf(
+      setAwayEndPosition(
+        sharedModel,
+        overview,
+        charge,
+        'target',
+        {
+          x: 700.04,
+          y: 260,
+        },
+        1,
+      ),
     );
     expect(drawnOn(moved, 'overview', 'charge')).toMatchObject({
       target: {
@@ -228,9 +253,18 @@ describe('an element placed on several diagrams', () => {
         position: { x: 700, y: 260 },
       },
     });
-    expect(flowFacts(moved, 'charge')?.target).toEqual(
-      flowFacts(sharedModel, 'charge')?.target,
-    );
+    expect(moved.elements).toBe(sharedModel.elements);
+  });
+
+  it('moves no end that is not drawn away', () => {
+    expect(
+      errorOf(
+        setAwayEndPosition(sharedModel, payments, charge, 'target', {
+          x: 0,
+          y: 0,
+        }),
+      ),
+    ).toMatchObject({ _tag: 'FlowEndNotAway', side: 'target' });
   });
 
   it('goes from every diagram when removed, each flow freed at its anchor there', () => {
@@ -281,6 +315,36 @@ describe('an element placed on several diagrams', () => {
   });
 });
 
+describe('firstDrawings', () => {
+  it('pairs every element once with the first diagram drawing it, in diagram and draw order', () => {
+    const drawings = firstDrawings(sharedModel);
+    expect(drawings.map(({ element }) => element.id)).toEqual([
+      'payments-zone',
+      'customer',
+      'web-app',
+      'payments-api',
+      'legend',
+      'sign-in',
+      'card-details',
+      'charge',
+      'fraud-check',
+      'card-vault',
+      'score',
+    ]);
+    expect(
+      drawings.find(({ element }) => element.id === 'payments-api'),
+    ).toMatchObject({ diagram: { id: 'overview' }, drawn: { accent: 's1' } });
+  });
+
+  it('covers only the diagrams it is given', () => {
+    expect(
+      firstDrawings(sharedModel, [sharedModel.diagrams[1]]).map(
+        ({ element, diagram }) => [element.id, diagram.id],
+      ),
+    ).toContainEqual(['payments-api', 'payments']);
+  });
+});
+
 operationContract({
   placeElement: {
     input: sharedModel,
@@ -297,5 +361,15 @@ operationContract({
   'removeElement of a shared element': {
     input: sharedModel,
     run: (model) => removeElement(model, api),
+  },
+  'setFlowEndPosition freeing an end drawn away': {
+    input: sharedModel,
+    run: (model) =>
+      setFlowEndPosition(model, overview, charge, 'target', { x: 0, y: 0 }),
+  },
+  setAwayEndPosition: {
+    input: sharedModel,
+    run: (model) =>
+      setAwayEndPosition(model, overview, charge, 'target', { x: 0, y: 0 }),
   },
 });

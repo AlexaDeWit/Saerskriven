@@ -1,7 +1,7 @@
 import { elementsById, type Element, type ElementId } from '@saerskriven/model';
 import { useRef, useState, type RefObject } from 'react';
 import { useTranslator } from '../messages/locale.js';
-import { EnumField } from '../ui/enum-field.js';
+import { EnumField, type OptionText } from '../ui/enum-field.js';
 import { TextField, type RefusedDraft } from '../ui/text-field.js';
 import { distinctLabels } from './distinct-labels.js';
 import styles from './element-properties.module.css';
@@ -123,19 +123,23 @@ export function TextProperty({
 
 /**
  * Edits ordered relationship assertions using only valid targets, retaining
- * duplicates until explicitly removed. `elements` is the diagram's, which name
- * a flow left unlabelled by its ends.
+ * duplicates until explicitly removed. `elements` is the model's, which name
+ * a flow left unlabelled by its ends, and `elsewhere` gives the title of a
+ * diagram drawing each target the diagram on screen does not, which its
+ * option shows beside it, as the attach list does.
  */
 export function RelationshipProperty({
   relationship,
   value,
   choices,
   elements,
+  elsewhere,
   onCommit,
 }: Omit<Field<ElementId[] | undefined>, 'label'> & {
   readonly relationship: Relationship;
   readonly choices: readonly Element[];
   readonly elements: readonly Element[];
+  readonly elsewhere: ReadonlyMap<ElementId, string>;
 }) {
   const group = useRef<HTMLFieldSetElement>(null);
   const [chosen, setChosen] = useState<ElementId | undefined>();
@@ -147,7 +151,11 @@ export function RelationshipProperty({
   const labelled = distinctLabels(
     choices.map((element) => labelledElement(element, known, t)),
   );
-  const labelOf = (id: ElementId) => labelled.get(id) ?? id;
+  const labelOf = (id: ElementId): OptionText => {
+    const text = labelled.get(id) ?? { label: id };
+    const diagram = elsewhere.get(id);
+    return diagram === undefined ? text : { ...text, detail: diagram };
+  };
 
   return (
     <fieldset className={styles.relationship} ref={group}>

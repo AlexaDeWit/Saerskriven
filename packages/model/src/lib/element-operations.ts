@@ -103,13 +103,13 @@ export type SetElementPropertiesFailure = Extract<
 >;
 
 /**
- * Adds `element` to the model and places it on the diagram `diagramId`
- * names, with the geometry and accent it is drawn with. Requires an existing
- * diagram, a new ID, a name that is more than white space on every kind but
- * a flow, flow ends `reconnectFlow` would accept, and boundary references
- * that resolve in the model. A flow named with white space alone is stored unlabelled, as
- * `''`. The element's whole geometry is stored at `decimals`, and as given
- * where no count is named.
+ * Adds `element` to the model and places it on the diagram `diagramId` names,
+ * with the geometry and accent it is drawn with. Requires an existing diagram,
+ * a new ID, a name that is more than white space on every kind but a flow, flow
+ * ends `reconnectFlow` would accept, and boundary references that resolve in
+ * the model. A flow named with white space alone is stored unlabelled, as `''`.
+ * The element's whole geometry is stored at `decimals`, and as given where no
+ * count is named.
  */
 export function addElement(
   model: Model,

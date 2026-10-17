@@ -188,4 +188,6 @@ export const modelWith = ({
   readonly elements?: readonly unknown[];
   readonly diagrams?: readonly unknown[];
 }): Model =>
-  fixtureOf(parseDrawnModel({ ...envelope(parts), diagrams: [...diagrams] }));
+  fixtureOf(
+    parseDrawnModel({ ...envelope(parts), diagrams: [...diagrams] }, 'diagram'),
+  );

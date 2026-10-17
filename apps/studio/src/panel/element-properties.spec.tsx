@@ -1,4 +1,5 @@
 import {
+  diagramId,
   drawnAt,
   drawnFixture,
   drawnOnto,
@@ -6,6 +7,7 @@ import {
   redrawn,
   softHyphen,
   validModelFixture,
+  sharedModel,
 } from '@saerskriven/model/fixtures';
 import { locales } from '@saerskriven/i18n';
 import { act, render, screen, within, waitFor } from '@testing-library/react';
@@ -296,6 +298,29 @@ describe(
         }),
       ).toBeDefined();
     });
+    it('offers an element of another diagram among the contained elements, naming that diagram beside it', async () => {
+      modelStore.setState(
+        { ...initialState(sharedModel), activeDiagram: diagramId('overview') },
+        true,
+      );
+      const user = userEvent.setup();
+      await open('payments-zone');
+      await user.click(
+        screen.getByRole('combobox', { name: 'Add to contained elements' }),
+      );
+      expect(
+        screen.getByRole('option', {
+          name: 'Fraud check',
+          description: 'Payments',
+        }),
+      ).toBeDefined();
+      expect(
+        screen
+          .getByRole('option', { name: 'Web app' })
+          .getAttribute('aria-describedby'),
+      ).toBeNull();
+    });
+
     it('distinguishes same-named relationship targets by ID', async () => {
       const duplicate = {
         ...drawnAt(base)[1],

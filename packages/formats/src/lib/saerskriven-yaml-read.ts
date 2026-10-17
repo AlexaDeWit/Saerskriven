@@ -1,7 +1,6 @@
 import {
   accentSchema,
   atDrawnPaths,
-  drawnRelationshipScope,
   elementIdSchema,
   parseModel,
   type Accent,
@@ -15,6 +14,7 @@ import {
   type ModelInput,
   type ModelMetadataInput,
   type PlacementInput,
+  type RelationshipScope,
   type ThreatInput,
 } from '@saerskriven/model';
 import type {
@@ -56,6 +56,13 @@ import {
 import { undeclaredDivergences } from './undeclared.js';
 
 /**
+ * Where a version 1 or 2 file's relationship lists resolve: inside the
+ * diagram drawing the element that holds the list, as they always have, so
+ * every such file reads as it did. A ruling to widen it changes this line.
+ */
+export const version2RelationshipScope: RelationshipScope = 'diagram';
+
+/**
  * A native text of any released version, told apart by `formatVersion`,
  * with its document brought to the current version, 3, for a later save. A
  * key the version's schema does not declare is dropped and reported, so a
@@ -64,11 +71,11 @@ import { undeclaredDivergences } from './undeclared.js';
  * ids cross as plain strings for `parseModel` to brand. A refusal of the
  * model is pathed into the file as its own version holds it: a file below
  * version 3 has its diagrams own their elements, and keeps each relationship
- * list inside its element's diagram (`drawnRelationshipScope`). A threat that leaves
- * `appliesToModel` out does not apply to the model. A placement whose
- * `accent` is none of the model's keys is read with no accent and reported
- * as `narrowed`, once for each element and key however many placements of
- * the element hold it.
+ * list inside its element's diagram ({@link version2RelationshipScope}). A
+ * threat that leaves `appliesToModel` out does not apply to the model. A
+ * placement whose `accent` is none of the model's keys is read with no
+ * accent and reported as `narrowed`, once for each element and key however
+ * many placements of the element hold it.
  */
 export function readSaerskrivenYaml(
   text: string,
@@ -113,7 +120,7 @@ function modelOf(
   return Either.mapLeft(
     parseModel(
       toModelInput(current),
-      stated.formatVersion === 3 ? 'model' : drawnRelationshipScope,
+      stated.formatVersion === 3 ? 'model' : version2RelationshipScope,
     ),
     ({ issues }) =>
       ReadFailure.InvalidModel({

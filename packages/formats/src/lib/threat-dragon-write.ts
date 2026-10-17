@@ -44,19 +44,19 @@ import { planThreats, type HighWaterMark } from './threat-dragon-threats.js';
  * The codec stamps release 2.6.2 and reports a different source stamp as
  * `overridden`. Threat and diagram numbers, and the `threatTop` and
  * `diagramTop` marks, follow `planThreats` and `numberDiagrams`, and a mark
- * this write moves is reported as `overridden`, as is a size it raises
- * where the source cell holds the size the model does. Neither issuing a
- * number nor rounding an end is a divergence. What the format cannot hold is
- * reported as `unrepresentable`: an assumption, a threat on a trust boundary
- * or a note, the model link of a threat, a note's name, an out-of-scope
- * boundary or note, a diagram's name, and a size this write raises that the
- * source cell does not hold. Accents are reported once for the model, with
- * the count of placements holding one. An element on several diagrams is
- * written as a cell on each, under the ids `cellIdsOf` gives, each carrying
- * the element's name, facts and threats, and is reported once as `split`. A
- * flow end drawn away from its element is written free, and a relationship
- * to an element another diagram draws is left out, each `unrepresentable`. A diagram, cell or threat the source
- * held and the model no longer does is reported as `discarded-by-edit`.
+ * this write moves is reported as `overridden`, as is a size it raises where
+ * the source cell holds the size the model does. Neither issuing a number nor
+ * rounding an end is a divergence. What the format cannot hold is reported as
+ * `unrepresentable`: an assumption, a threat on a trust boundary or a note, the
+ * model link of a threat, a note's name, an out-of-scope boundary or note, a
+ * diagram's name, and a size this write raises that the source cell does not
+ * hold. Accents are reported once for the model, with the count of placements
+ * holding one. An element on several diagrams is written as a cell on each,
+ * under the ids `cellIdsOf` gives, each carrying the element's name, facts and
+ * threats, and is reported once as `split`. A flow end drawn away from its
+ * element is written free, and a relationship to an element another diagram
+ * draws is left out, each `unrepresentable`. A diagram, cell or threat the
+ * source held and the model no longer does is reported as `discarded-by-edit`.
  * Mitigation texts follow `mitigationDivergences`.
  */
 export function writeThreatDragon(
@@ -66,7 +66,7 @@ export function writeThreatDragon(
   const held = diagramsById(source);
   const numbering = numberDiagrams(model, held, source?.detail.diagramTop);
   const plan = planThreats(model, source);
-  const cellIds = cellIdsOf(model);
+  const cellIds = cellIdsOf(model, held);
   const merged = model.diagrams.map((diagram, index) => ({
     ...mergeDiagram(
       model,

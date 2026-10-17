@@ -197,10 +197,10 @@ describe('parseModel', () => {
           target: { position: { x: 280, y: 160 } },
         };
       },
-      path: ['diagrams', 0, 'placements', 3],
+      path: ['diagrams', 0, 'placements', 3, 'source', 'position'],
       detail: {
-        code: 'placement-geometry-mismatch',
-        parameters: { id: 'element-order-flow' },
+        code: 'flow-end-position-held',
+        parameters: { id: 'element-customer' },
       },
     },
     {
@@ -215,7 +215,7 @@ describe('parseModel', () => {
           bidirectional: false,
         };
       },
-      path: ['elements', 3, 'source', 'element'],
+      path: ['diagrams', 0, 'placements', 3, 'source'],
       detail: {
         code: 'flow-endpoint-foreign',
         parameters: { id: 'element-remote' },
@@ -366,7 +366,9 @@ describe('parseModel', () => {
 
 describe('parseDrawnModel', () => {
   it('moves each element to the root and leaves its placement on its diagram, in order', () => {
-    const parsed = Either.getOrThrow(parseDrawnModel(validModelFixture));
+    const parsed = Either.getOrThrow(
+      parseDrawnModel(validModelFixture, 'diagram'),
+    );
     expect(drawnElements(parsed, parsed.diagrams[0])).toEqual(
       validModelFixture.diagrams[0].elements,
     );
@@ -403,17 +405,19 @@ describe('parseDrawnModel', () => {
 
   it('strips a key no schema declares rather than refusing the model', () => {
     expect(
-      Either.getOrNull(parseDrawnModel(plantEverywhere(validModelFixture))),
-    ).toEqual(Either.getOrNull(parseDrawnModel(validModelFixture)));
+      Either.getOrNull(
+        parseDrawnModel(plantEverywhere(validModelFixture), 'diagram'),
+      ),
+    ).toEqual(Either.getOrNull(parseDrawnModel(validModelFixture, 'diagram')));
   });
 
   it('reports violations as plain tagged data that survives a JSON round trip', () => {
     const failure = Option.getOrUndefined(
       Either.getLeft(
-        parseDrawnModel({
-          ...validModelFixture,
-          metadata: 'Saerskriven',
-        }),
+        parseDrawnModel(
+          { ...validModelFixture, metadata: 'Saerskriven' },
+          'diagram',
+        ),
       ),
     );
     expect(failure?._tag).toBe('InvalidModel');

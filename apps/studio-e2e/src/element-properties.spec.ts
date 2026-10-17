@@ -267,9 +267,9 @@ test('shows recorded and absent states at wide and narrow widths with accessible
   await expect(
     page.getByRole('option', { name: 'Shop network', exact: true }),
   ).toHaveCount(0);
-  await expect(
-    page.getByRole('option', { name: 'Dispatch', exact: true }),
-  ).toHaveCount(0);
+  const dispatch = page.getByRole('option', { name: 'Dispatch', exact: true });
+  await expect(dispatch).toHaveCount(1);
+  await expect(dispatch).toHaveAccessibleDescription('Shipping an order');
   await audit(
     page,
     'showing a relationship listbox at phone width',

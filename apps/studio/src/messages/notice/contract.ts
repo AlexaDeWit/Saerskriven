@@ -60,6 +60,8 @@ export const noticeMessages = {
   'op-last-placement': text({ id: 'text', diagram: 'text' }),
   'op-invalid-placement': text({ id: 'text', diagram: 'text' }),
   'op-several-diagrams': text({ id: 'text', diagrams: 'text' }),
+  'op-source-not-away': text({ id: 'text', diagram: 'text' }),
+  'op-target-not-away': text({ id: 'text', diagram: 'text' }),
   'op-unknown-threat': text(id),
   'op-unknown-mitigation': text(id),
   'op-unknown-assumption': text(id),

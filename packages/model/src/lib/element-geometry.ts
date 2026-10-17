@@ -101,12 +101,12 @@ export function resized(
 }
 
 /**
- * Whether an element holds the same geometry after a move or a resize as
- * before it, number for number: positions, sizes, ends drawn at a position,
- * bends and curve points. Sound only for an element and that same element after such an
- * edit, which changes no kind, attachment or shape: the numbers are compared
- * in order with nothing saying which is which, so two elements of different
- * shapes can hold the same list.
+ * Whether an element holds the same geometry after a move or a resize as before
+ * it, number for number: positions, sizes, ends drawn at a position, bends and
+ * curve points. Sound only for an element and that same element after such an
+ * edit, which changes no kind, attachment or shape: the numbers are compared in
+ * order with nothing saying which is which, so two elements of different shapes
+ * can hold the same list.
  */
 export function sameGeometry(left: DrawnElement, right: DrawnElement): boolean {
   return sameItems(numbersOf(left), numbersOf(right));

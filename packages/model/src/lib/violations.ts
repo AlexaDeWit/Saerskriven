@@ -1,6 +1,5 @@
 import type { z } from 'zod';
 import { drawnElement } from './drawing.js';
-import type { DrawnElement } from './drawn-elements.js';
 import type { Element } from './elements.js';
 import type { ElementId } from './ids.js';
 import type { modelSchema } from './model.js';
@@ -186,6 +185,7 @@ function duplicateRecordIds(
 
 type Drawing = {
   readonly diagram: number;
+  readonly index: number;
   readonly placement: Placement;
 };
 
@@ -222,6 +222,7 @@ function drawingsOf(model: StructuralModel): Drawings {
       drawnBy[diagramIndex][placementIndex] = element;
       return {
         diagram: diagramIndex,
+        index: placementIndex,
         placement: model.diagrams[diagramIndex].placements[placementIndex],
       };
     });
@@ -263,7 +264,7 @@ function firstFitting(
 
 function placementViolations(
   model: StructuralModel,
-  { drawnBy, neighbours }: Drawings,
+  { drawnBy }: Drawings,
 ): ParseIssue[] {
   const known = new Set<string>(model.elements.map(({ id }) => id));
   return model.diagrams.flatMap((diagram, diagramIndex) =>
@@ -284,9 +285,7 @@ function placementViolations(
           },
         ];
       }
-      const drawn = drawnElement(element, placement);
-      return drawn === undefined ||
-        drawnAwayFromNeighbour(drawn, neighbours[diagramIndex])
+      return drawnElement(element, placement) === undefined
         ? [
             {
               path,
@@ -298,18 +297,6 @@ function placementViolations(
           ]
         : [];
     }),
-  );
-}
-
-function drawnAwayFromNeighbour(
-  drawn: DrawnElement,
-  neighbours: ReadonlyMap<ElementId, Element>,
-): boolean {
-  return (
-    drawn.kind === 'flow' &&
-    [drawn.source, drawn.target].some(
-      (end) => end.kind === 'away' && neighbours.has(end.element),
-    )
   );
 }
 
@@ -348,37 +335,51 @@ function flowEndpointViolations(
       if (end.kind !== 'attached') {
         return [];
       }
-      const path = ['elements', elementIndex, side, 'element'];
-      if (end.element === element.id) {
+      if (end.element === element.id || !known.has(end.element)) {
         return [
           {
-            path,
+            path: ['elements', elementIndex, side, 'element'],
             detail: {
-              code: 'flow-endpoint-self',
+              code:
+                end.element === element.id
+                  ? 'flow-endpoint-self'
+                  : 'flow-endpoint-foreign',
               parameters: { id: end.element },
             },
           },
         ];
       }
-      const undrawable =
-        !known.has(end.element) ||
-        elementDrawings[elementIndex].some(
-          ({ diagram, placement }) =>
-            'waypoints' in placement &&
-            placement[side].position === undefined &&
-            !neighbours[diagram].has(end.element),
-        );
-      return undrawable
-        ? [
-            {
-              path,
-              detail: {
-                code: 'flow-endpoint-foreign',
-                parameters: { id: end.element },
+      return elementDrawings[elementIndex].flatMap(
+        ({ diagram, index, placement }): ParseIssue[] => {
+          if (!('waypoints' in placement)) {
+            return [];
+          }
+          const path = ['diagrams', diagram, 'placements', index, side];
+          const placed = neighbours[diagram].has(end.element);
+          if (placed && placement[side].position !== undefined) {
+            return [
+              {
+                path: [...path, 'position'],
+                detail: {
+                  code: 'flow-end-position-held',
+                  parameters: { id: end.element },
+                },
               },
-            },
-          ]
-        : [];
+            ];
+          }
+          return placed || placement[side].position !== undefined
+            ? []
+            : [
+                {
+                  path,
+                  detail: {
+                    code: 'flow-endpoint-foreign',
+                    parameters: { id: end.element },
+                  },
+                },
+              ];
+        },
+      );
     });
   });
 }
@@ -437,14 +438,23 @@ function relationshipViolations(
       everywhere,
       scope === 'model'
         ? everywhere
-        : new Map(
-            elementDrawings[elementIndex].flatMap(({ diagram }) => [
-              ...neighbours[diagram],
-            ]),
-          ),
+        : reachableFrom(elementDrawings[elementIndex], neighbours),
     ).map((issue): ParseIssue => ({
       path: ['elements', elementIndex, ...issue.path],
       detail: issue.detail,
     })),
   );
+}
+
+function reachableFrom(
+  drawings: readonly Drawing[],
+  neighbours: readonly ReadonlyMap<ElementId, Element>[],
+): ReadonlyMap<ElementId, Element> {
+  const [only, ...more] = drawings;
+  if (only === undefined) {
+    return new Map();
+  }
+  return more.length === 0
+    ? neighbours[only.diagram]
+    : new Map(drawings.flatMap(({ diagram }) => [...neighbours[diagram]]));
 }

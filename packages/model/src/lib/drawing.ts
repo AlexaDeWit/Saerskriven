@@ -160,6 +160,40 @@ export function placementOn(
   return diagram.placements.find(({ element }) => element === elementId);
 }
 
+/** One element the model holds, as the first of some diagrams placing it draws it. */
+export type FirstDrawing = {
+  readonly element: Element;
+  readonly drawn: DrawnElement;
+  readonly diagram: Diagram;
+};
+
+/**
+ * Every element `diagrams` place, once each, as the first of them placing
+ * it draws it, in the order they draw them: by diagram, then by draw order.
+ * `diagrams` defaults to every diagram of the model.
+ */
+export function firstDrawings(
+  model: Pick<Model, 'elements' | 'diagrams'>,
+  diagrams: readonly Diagram[] = model.diagrams,
+): readonly FirstDrawing[] {
+  const elements = lookupOf(model.elements);
+  const seen = new Set<ElementId>();
+  return diagrams.flatMap((diagram) =>
+    diagram.placements.flatMap((placement): FirstDrawing[] => {
+      const element = elements.get(placement.element);
+      const drawn =
+        element === undefined || seen.has(placement.element)
+          ? undefined
+          : drawnElement(element, placement);
+      if (element === undefined || drawn === undefined) {
+        return [];
+      }
+      seen.add(element.id);
+      return [{ element, drawn, diagram }];
+    }),
+  );
+}
+
 /** The diagrams that place `elementId`, in diagram order. */
 export function diagramsOf(
   model: Pick<Model, 'diagrams'>,

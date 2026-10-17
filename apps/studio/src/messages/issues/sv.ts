@@ -70,7 +70,9 @@ export const issuesSv = catalogue(issueMessages)('sv')({
   'flow-endpoint-self':
     'flödet namnger sitt eget id ”{id}”, och ett flöde kan inte fästa vid sig självt',
   'flow-endpoint-foreign':
-    'elementet ”{id}” finns inte i ett diagram som ritar flödet, där änden saknar position',
+    'elementet ”{id}” finns inte i det här diagrammet, och änden saknar position här',
+  'flow-end-position-held':
+    'änden är fäst vid ”{id}”, som det här diagrammet placerar, och tar därför ingen position',
   'unknown-element-reference': 'inget element i modellen bär id:t ”{id}”',
   'unknown-threat-reference': 'inget hot i modellen bär id:t ”{id}”',
   'related-element-unknown': '”{id}” namnger inget annat element i modellen',

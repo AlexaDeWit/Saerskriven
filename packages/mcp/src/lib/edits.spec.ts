@@ -120,6 +120,11 @@ const failures: ByTag<OperationFailure> = {
     side: 'target',
     reference: elementId('element-perimeter'),
   }),
+  FlowEndNotAway: OperationFailure.FlowEndNotAway({
+    elementId: elementId('element-order-flow'),
+    diagramId: diagramId('diagram-main'),
+    side: 'source',
+  }),
   NotResizable: OperationFailure.NotResizable({
     elementId: elementId('element-order-flow'),
   }),

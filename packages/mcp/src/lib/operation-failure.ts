@@ -63,6 +63,8 @@ export function describeOperationFailure(failure: OperationFailure): string {
       `Threat ${quotedForTerminal(threatId)} cannot take number ${String(number)}, and no edit renumbers a threat.`,
     InvalidFlowEndpoint: ({ side, reference }) =>
       `The flow's ${side} names ${quotedForTerminal(reference)}, and a flow end attaches only to an actor, process or store of its own diagram, never to the element its other end is attached to.`,
+    FlowEndNotAway: ({ elementId, diagramId, side }) =>
+      `The ${side} of flow ${quotedForTerminal(elementId)} is not drawn away from its element on diagram ${quotedForTerminal(diagramId)}, so it has no point of its own there to move.`,
     NotResizable: ({ elementId }) =>
       `Element ${quotedForTerminal(elementId)} has no size to set.`,
     NotTextElement: ({ elementId }) =>

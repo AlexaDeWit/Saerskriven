@@ -437,10 +437,10 @@ export type DrawingHolds = {
 
 /**
  * Resolves headless drawing colours, font family, and badge appearance. The
- * accent rules are written only where `holds` says the drawing holds an
- * accent, and the frame of a flow end drawn away from its element only where
- * it holds one, so a drawing holding neither gets the sheet it got before
- * either existed. They draw the light palette's slot colours, which the theme has no
+ * accent rules are written only where `holds` says the drawing holds an accent,
+ * and the frame of a flow end drawn away from its element only where it holds
+ * one, so a drawing holding neither gets the sheet it got before either
+ * existed. They draw the light palette's slot colours, which the theme has no
  * key for, and each tint is its slot mixed into the theme's element colour, so
  * a theme of light text on dark elements keeps a name readable on a tint.
  */

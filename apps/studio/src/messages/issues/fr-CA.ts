@@ -75,7 +75,9 @@ export const issuesFrCA = catalogue(issueMessages)('fr-CA')({
   'flow-endpoint-self':
     'le flux nomme son propre identifiant « {id} », et un flux ne peut pas s’ancrer à lui-même',
   'flow-endpoint-foreign':
-    'l’élément « {id} » ne se trouve pas sur un diagramme qui dessine le flux, où l’extrémité n’a pas de position',
+    'l’élément « {id} » ne se trouve pas sur ce diagramme, et l’extrémité n’y a pas de position',
+  'flow-end-position-held':
+    'l’extrémité est rattachée à « {id} », que ce diagramme place, et ne prend donc pas de position',
   'unknown-element-reference':
     'aucun élément du modèle ne porte l’identifiant « {id} »',
   'unknown-threat-reference':

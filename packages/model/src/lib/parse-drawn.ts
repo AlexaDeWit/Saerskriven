@@ -20,45 +20,39 @@ type DrawnModel = z.infer<typeof drawnModelSchema>;
 
 type Origin = readonly [diagram: number, element: number];
 
-/**
- * Where the relationship lists of a model read from a format whose diagrams
- * own their elements resolve: inside the diagram drawing the element that
- * holds the list, as they did before an element could be shared, so every
- * such file reads as it did. Every read of such a file takes it, through
- * {@link parseDrawnModel} or `parseModel`.
- */
-export const drawnRelationshipScope: RelationshipScope = 'diagram';
+const refinedDrawnSchema = (scope: RelationshipScope) =>
+  refusingViolations(drawnModelSchema, (drawn) =>
+    atDrawnPaths(collectViolations(placedFrom(drawn), scope), drawn.diagrams),
+  );
 
-const refinedDrawnModelSchema = refusingViolations(drawnModelSchema, (drawn) =>
-  atDrawnPaths(
-    collectViolations(placedFrom(drawn), drawnRelationshipScope),
-    drawn.diagrams,
-  ),
-);
+const refinedDrawnSchemas = {
+  model: refinedDrawnSchema('model'),
+  diagram: refinedDrawnSchema('diagram'),
+} as const;
 
 /**
  * Parses a model whose diagrams own their elements, the shape a file format
  * with no shared elements reads into, and the entry point a read takes
  * before `parseModel`. Each element moves to the model's root, in diagram
  * order, and leaves its placement on the diagram that held it, in the same
- * order. The model's own rules run in the same pass as the schema's, and
- * every issue's path points into `input`, whichever check found it, so a
- * refusal names the field as the input holds it.
+ * order. Relationship lists resolve within `scope`, which each format's read
+ * names for itself. The model's own rules run in the same pass as the
+ * schema's, and every issue's path points into `input`, whichever check found
+ * it, so a refusal names the field as the input holds it.
  */
 export function parseDrawnModel(
   input: unknown,
+  scope: RelationshipScope,
 ): Either.Either<Model, ParseFailure> {
   return Either.flatMap(
-    Either.mapLeft(boundedParse(refinedDrawnModelSchema, input), (failure) =>
+    Either.mapLeft(boundedParse(refinedDrawnSchemas[scope], input), (failure) =>
       ParseFailure.InvalidModel({ issues: schemaFailureIssues(failure) }),
     ),
     (drawn) =>
-      Either.mapLeft(
-        parseModel(placedFrom(drawn), drawnRelationshipScope),
-        ({ issues }) =>
-          ParseFailure.InvalidModel({
-            issues: atDrawnPaths(issues, drawn.diagrams),
-          }),
+      Either.mapLeft(parseModel(placedFrom(drawn), scope), ({ issues }) =>
+        ParseFailure.InvalidModel({
+          issues: atDrawnPaths(issues, drawn.diagrams),
+        }),
       ),
   );
 }
@@ -80,7 +74,8 @@ function placedFrom(drawn: DrawnModel) {
  * `issues`, found in a model split from `diagrams` as {@link parseDrawnModel}
  * splits one, at the paths `diagrams` holds them: an element of the model's
  * root at its place in the diagram that held it, and a placement at the
- * element it was split from.
+ * element it was split from. A flow end that holds no position where its
+ * element is not placed points at the `element` a drawn end names.
  */
 export function atDrawnPaths(
   issues: readonly ParseIssue[],
@@ -110,7 +105,15 @@ function drawnIssue(issue: ParseIssue, origins: readonly Origin[]): ParseIssue {
           path: ['diagrams', origin[0], 'elements', origin[1], ...within],
         };
   }
-  return collection === 'diagrams' && field === 'placements'
-    ? { ...issue, path: ['diagrams', index, 'elements', ...within.slice(1)] }
-    : issue;
+  if (collection !== 'diagrams' || field !== 'placements') {
+    return issue;
+  }
+  const drawnAt = ['diagrams', index, 'elements', ...within.slice(1)];
+  return {
+    ...issue,
+    path:
+      issue.detail.code === 'flow-endpoint-foreign'
+        ? [...drawnAt, 'element']
+        : drawnAt,
+  };
 }

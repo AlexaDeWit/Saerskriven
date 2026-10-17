@@ -203,6 +203,14 @@ export function describeOperation(
         { id: reference },
       ),
     ],
+    FlowEndNotAway: ({ elementId, diagramId, side }) => [
+      t(
+        side === 'source'
+          ? 'notice.op-source-not-away'
+          : 'notice.op-target-not-away',
+        { id: elementId, diagram: diagramId },
+      ),
+    ],
     NotResizable: ({ elementId }) => [
       t('notice.op-not-resizable', { id: elementId }),
     ],
