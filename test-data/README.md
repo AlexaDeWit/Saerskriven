@@ -116,7 +116,7 @@ than the upstream example's: two diagram representations and a code one, a
 component and a trust zone on both diagrams at different geometry, a
 component on each diagram alone, a component with no entry, a second entry
 for one diagram, and dataflows within one diagram and between the two.
-`packages/formats` imports it and checks each placement, each end drawn away,
+`packages/formats` imports it and checks the placements, the ends drawn away,
 and that the model saves as version 3.
 
 ## `saerskriven/two-diagrams.yaml`

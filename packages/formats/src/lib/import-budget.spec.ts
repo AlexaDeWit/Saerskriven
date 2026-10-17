@@ -1,15 +1,13 @@
-import type { Model } from '@saerskriven/model';
-import { Either } from 'effect';
 import { importedFrom, importedId } from './import-budget.js';
-import { otmFeatureComplete, tmbomFeatureComplete } from './import.fixtures.js';
-import { importModel } from './import.js';
+import {
+  imported,
+  otmFeatureComplete,
+  tmbomFeatureComplete,
+} from './import.fixtures.js';
 
-const importedModel = (document: object): Model =>
-  Either.getOrThrow(importModel(JSON.stringify(document))).model;
+const otm = imported(otmFeatureComplete).model;
 
-const otm = importedModel(otmFeatureComplete);
-
-const tmbom = importedModel(tmbomFeatureComplete);
+const tmbom = imported(tmbomFeatureComplete).model;
 
 const madeFrom = (
   ids: readonly string[],

@@ -23,8 +23,9 @@ import {
  * by its first entry there, and on the first diagram where it has none. A
  * dataflow is placed on each diagram that places either of its ends. An end
  * whose component that diagram does not place is drawn away from it, level
- * with the centre of the end the diagram does place and the generated grid's
- * gutter beside it: left for a source, right for a target, held within the
+ * with the centre of the end the diagram does place and half the generated
+ * grid's gutter beside it, so on that grid it sits mid-gutter rather than on
+ * a neighbour's edge: left for a source, right for a target, held within the
  * geometry bound. It reports `otm-assets-as-descriptions` once, and only
  * where an asset a component or a dataflow references put text in that
  * element's description.
@@ -92,9 +93,7 @@ type Entry = NonNullable<Component['representations']>[number];
 
 type AssetDescriptions = ReturnType<typeof assetDescriptions>;
 
-type OtmDiagram = {
-  readonly id: string;
-  readonly title: string;
+type OtmDiagram = Pick<DiagramInput, 'id' | 'title'> & {
   readonly representation: string | undefined;
 };
 
@@ -105,7 +104,8 @@ type Placed = {
   readonly placements: ReadonlyMap<number, PlacementInput>;
 };
 
-const gridGutter = autoPlacement(1).x - autoPlacement(0).x - autoExtent.width;
+const halfGutter =
+  (autoPlacement(1).x - autoPlacement(0).x - autoExtent.width) / 2;
 
 function otmDiagrams(
   document: OtmDocument,
@@ -347,8 +347,8 @@ function flowPlacement(
 function awayBeside(node: Geometry, side: 'left' | 'right'): Point {
   const x =
     side === 'left'
-      ? node.position.x - gridGutter
-      : node.position.x + node.size.width + gridGutter;
+      ? node.position.x - halfGutter
+      : node.position.x + node.size.width + halfGutter;
   return {
     x: withinBound(x),
     y: withinBound(node.position.y + node.size.height / 2),

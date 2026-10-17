@@ -6,7 +6,8 @@ import { tmbomRegister } from './tmbom-register.js';
 
 /**
  * Converts a TM-BOM graph and register into one native model. `model`
- * parses the conversion once `context` holds no failure and no issue.
+ * parses the conversion without checking `context`: the caller calls it
+ * only once `context` holds no failure and no issue.
  */
 export function mapTmbom(document: TmbomDocument) {
   const context = importContext();

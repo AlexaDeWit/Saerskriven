@@ -92,7 +92,7 @@ it('keeps differing OTM occurrence states, bidirectional flows, and asset names'
   expect(oneWay).toBeDefined();
   if (oneWay === undefined) return;
   delete oneWay.bidirectional;
-  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  const read = imported(document);
   expect(read.model.threats.map((threat) => threat.status)).toEqual([
     'mitigated',
     'open',
@@ -120,11 +120,7 @@ it('keeps differing OTM occurrence states, bidirectional flows, and asset names'
 
 it('reports undeclared fields and does not turn OTM numeric impact into a severity score', () => {
   const document = otmFixture();
-  const read = Either.getOrThrow(
-    importModel(
-      JSON.stringify({ ...document, futureField: 'retained nowhere' }),
-    ),
-  );
+  const read = imported({ ...document, futureField: 'retained nowhere' });
   expect(
     read.model.threats.every((threat) => threat.severity === 'undecided'),
   ).toBe(true);
@@ -466,7 +462,7 @@ it('generates distinct canvas-compatible identifiers for punctuation and Unicode
   document.dataflows = [];
   document.threats = [];
   document.mitigations = [];
-  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  const read = imported(document);
   const ids = drawnElements(read.model, read.model.diagrams[0]).map(
     (element) => element.id,
   );
@@ -491,7 +487,7 @@ it.each([
     if (occurrence === undefined)
       throw new Error('The fixture lacks a threat occurrence');
     occurrence.state = state;
-    const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+    const read = imported(document);
     expect(read.model.threats[0].status).toBe(expected);
     expect(read.model.threats[0].description).toContain(state);
   },
@@ -510,7 +506,7 @@ it.each([
   if (mitigation == null)
     throw new Error('The fixture lacks a mitigation occurrence');
   mitigation.state = state;
-  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  const read = imported(document);
   expect(read.model.mitigations[0].status).toBe(expected);
   expect(read.model.mitigations[0].prose).toContain(state);
 });
@@ -539,14 +535,14 @@ it('retains an OTM threat definition no occurrence names on no element, without 
   const document = otmFixture();
   for (const component of document.components ?? []) component.threats = [];
   for (const flow of document.dataflows ?? []) flow.threats = [];
-  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  const read = imported(document);
   expect(read.model.threats).toHaveLength(1);
   expect(read.model.threats[0].elements).toEqual([]);
   expect(read.model.threats[0].appliesToModel).toBe(false);
   expect(read.model.threats[0].status).toBe('open');
 });
 
-it('builds no mitigation linked to no threat and no assumption with no reference from any vendored document', () => {
+it('builds no mitigation linked to no threat and no assumption with no reference from any committed document', () => {
   const readings = importCorpus.map((file) => ({
     name: file.name,
     result: importModel(file.text),

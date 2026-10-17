@@ -35,9 +35,9 @@ export type ModelMetadataChange = z.infer<typeof modelMetadataChangeSchema>;
 /**
  * One diagram: a titled canvas holding placements of the model's elements,
  * in the order they are drawn. Diagram ids must be unique across the model,
- * a placement must name an element the model holds, and an element is
- * placed at most once in the whole model. parseModel enforces all three, so
- * this schema alone accepts duplicates and dangling ids.
+ * a placement must name an element the model holds, and a diagram places an
+ * element at most once. parseModel enforces all three, so this schema alone
+ * accepts duplicates and dangling ids.
  */
 export const diagramSchema = z.object({
   id: diagramIdSchema,

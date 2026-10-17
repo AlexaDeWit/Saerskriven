@@ -1,6 +1,4 @@
-import { Either } from 'effect';
-import { importModel } from './import.js';
-import { otmFeatureComplete, otmFixture } from './import.fixtures.js';
+import { imported, otmFeatureComplete, otmFixture } from './import.fixtures.js';
 
 it('turns a mitigation definition no occurrence names into one description line and one report line', () => {
   const baseline = otmFixture();
@@ -15,8 +13,8 @@ it('turns a mitigation definition no occurrence names into one description line 
       riskReduction: 0,
     },
   ];
-  const before = Either.getOrThrow(importModel(JSON.stringify(baseline)));
-  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  const before = imported(baseline);
+  const read = imported(document);
   expect(read.model.mitigations).toEqual(before.model.mitigations);
   const paragraphs = read.model.metadata.description.split('\n\n');
   expect(paragraphs).toHaveLength(
@@ -49,7 +47,7 @@ it.each([
         ...(description === undefined ? {} : { description }),
       },
     ];
-    const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+    const read = imported(document);
     expect(
       read.model.mitigations.some(({ title }) => title === 'Unattached work'),
     ).toBe(false);
@@ -81,7 +79,7 @@ it.each([
         ...(description === undefined ? {} : { description }),
       },
     ];
-    const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+    const read = imported(document);
     const line = read.model.metadata.description.split('\n\n').at(-1);
     expect(line).toBe(expected);
     expect(
@@ -100,8 +98,8 @@ it('reports a mitigation reference with no mitigation only by the fields that ho
     { mitigation: null, state: null },
     { mitigation: null, state: 'implemented' },
   );
-  const before = Either.getOrThrow(importModel(JSON.stringify(otmFixture())));
-  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  const before = imported(otmFixture());
+  const read = imported(document);
   expect(read.model.mitigations).toEqual(before.model.mitigations);
   expect(read.divergences).toHaveLength(before.divergences.length + 1);
   expect(read.divergences).toEqual(
@@ -139,7 +137,7 @@ it('drops the Source status line from a threat description when the occurrence s
     (flow) => flow.id !== 'cc-store-in-db',
   );
   occurrence.state = '';
-  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  const read = imported(document);
   const threat = read.model.threats.find((entry) => entry.title === 'Threat 1');
   if (threat === undefined) throw new Error('The occurrence was not imported');
   expect(threat.description).toBe('Description fo the threat number 1');
@@ -162,7 +160,7 @@ it('drops the Source status line from a mitigation prose when the occurrence sta
     (flow) => flow.id !== 'cc-store-in-db',
   );
   given.state = '';
-  const read = Either.getOrThrow(importModel(JSON.stringify(document)));
+  const read = imported(document);
   const mitigation = read.model.mitigations.find(
     (entry) => entry.title === 'This is the name of mitigation 1',
   );
@@ -178,9 +176,7 @@ it('drops the Source status line from a mitigation prose when the occurrence sta
 });
 
 describe('the record a lost OTM status was read for', () => {
-  const read = Either.getOrThrow(
-    importModel(JSON.stringify(otmFeatureComplete)),
-  );
+  const read = imported(otmFeatureComplete);
   const threatOf = (id: string | undefined) =>
     read.model.threats.find((threat) => threat.id === id);
 

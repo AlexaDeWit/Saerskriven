@@ -219,18 +219,18 @@ describe('an OTM file with two diagram representations', () => {
     ]);
     expect(flowEnds(model, payments, 'Checkout')).toEqual([
       attached('Web shop'),
-      away('Order service', 340, 250),
+      away('Order service', 300, 250),
     ]);
     expect(flowEnds(model, overview, 'Payment confirmed')).toEqual([
-      away('Payment gateway', 0, 120),
+      away('Payment gateway', 40, 120),
       attached('Web shop'),
     ]);
     expect(flowEnds(model, overview, 'Settle order')).toEqual([
       attached('Order service'),
-      away('Payment gateway', 720, 120),
+      away('Payment gateway', 680, 120),
     ]);
     expect(flowEnds(model, payments, 'Settle order')).toEqual([
-      away('Order service', 400, 250),
+      away('Order service', 440, 250),
       attached('Payment gateway'),
     ]);
     expect(titlesOf(model, 'Audit order')).toEqual(['Overview']);

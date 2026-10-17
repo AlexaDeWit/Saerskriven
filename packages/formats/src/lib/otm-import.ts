@@ -7,7 +7,8 @@ import { otmRegister } from './otm-register.js';
 /**
  * Converts OTM into a native model, a diagram for each diagram
  * representation and a threat for each occurrence. `model` parses the
- * conversion once `context` holds no failure and no issue.
+ * conversion without checking `context`: the caller calls it only once
+ * `context` holds no failure and no issue.
  */
 export function mapOtm(document: OtmDocument) {
   const context = importContext();
