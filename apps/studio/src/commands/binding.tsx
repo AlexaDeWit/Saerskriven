@@ -42,7 +42,7 @@ const overlaySelector =
   '[role="combobox"][aria-expanded="true"], [role="listbox"], [role="menu"], [role="dialog"]';
 
 const typingSelector =
-  'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="combobox"]';
+  'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="combobox"], [data-add-existing]';
 
 const nativeActivationSelector = 'button, a[href]';
 
@@ -57,7 +57,8 @@ export function nativeActivationTarget(target: EventTarget | null): boolean {
 /**
  * Who holds the keyboard while `target` has focus. A listbox trigger counts
  * as an overlay only while `aria-expanded` says it is open, and as typing
- * while closed.
+ * while closed. The picker under the card counts as typing, so a page key
+ * such as Delete does not act on the selection behind it.
  */
 export function keyboardOwner(target: EventTarget | null): KeyboardOwner {
   if (!(target instanceof Element)) {

@@ -30,9 +30,6 @@ export const reportsSv = catalogue(reportMessages)('sv')({
   'share-clipboard-refused':
     'Webbläsaren lät inte Saerskriven lägga länken i urklipp.',
   'dismiss-share': 'Dölj länkrapporten',
-  'newer-version':
-    'Tidigare versioner av Saerskriven kan inte längre öppna den här modellen.',
-  'dismiss-version': 'Dölj versionsrapporten',
   unplaced:
     'En flödesände anger ett objekt som arbetsytan inte ritar som en ruta, så flödet finns inte med i ritningen.',
   'unplaced-source': 'Källan för flöde {flow} anger {element}.',

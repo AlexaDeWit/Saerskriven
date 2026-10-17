@@ -1,8 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 import { canvasInteractionClassNames } from '@saerskriven/canvas';
+import type { ModelInput } from '@saerskriven/model';
 import { sharedModelInput } from '@saerskriven/model/fixtures';
-import { boxesOverlap, screenBoxOf, zoomOutTo } from './canvas.fixtures.js';
+import { screenBoxOf } from './canvas.fixtures.js';
 import {
+  clickInsideCorner,
   diagramSwitcher,
   nodeNamed,
   openModelDocument,
@@ -17,6 +19,23 @@ const picker = (page: Page) =>
 
 const paymentsApi = /^Payments API, process/u;
 
+const flowBlocks = (page: Page): Promise<string> =>
+  page.locator(`.${canvasInteractionClassNames.flowBlockSurface}`).innerHTML();
+
+const chargeOnOneDiagram: ModelInput = {
+  ...sharedModelInput,
+  diagrams: sharedModelInput.diagrams.map((diagram) =>
+    diagram.id === 'payments'
+      ? {
+          ...diagram,
+          placements: diagram.placements.filter(
+            ({ element }) => element !== 'charge',
+          ),
+        }
+      : diagram,
+  ),
+};
+
 test('Add existing element picks by keyboard and adds the picks to the diagram on screen as one undo step', async ({
   page,
 }) => {
@@ -24,13 +43,18 @@ test('Add existing element picks by keyboard and adds the picks to the diagram o
   await expect(nodeNamed(page, /^Card vault, store/u)).toHaveCount(0);
 
   await page.keyboard.press('e');
-  const vault = picker(page).getByRole('checkbox', { name: 'Card vault' });
+  const vault = picker(page).getByRole('button', { name: 'Card vault' });
   await expect(vault).toBeFocused();
   await expect(vault).toHaveAccessibleDescription(/Payments/u);
-  await expect(
-    picker(page).getByRole('checkbox', { name: 'Score' }),
-  ).toBeVisible();
+  await expect(picker(page).getByRole('button', { name: 'Score' })).toHaveCount(
+    0,
+  );
   await page.keyboard.press('Space');
+  await expect(vault).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('Enter');
+  await expect(vault).toHaveAttribute('aria-pressed', 'false');
+  await page.keyboard.press('Enter');
+  await expect(vault).toHaveAttribute('aria-pressed', 'true');
   const add = picker(page).getByRole('button', { name: 'Add 1' });
   await tabTo(page, add, vault);
   await page.keyboard.press('Enter');
@@ -52,11 +76,29 @@ test('Add existing element picks by keyboard and adds the picks to the diagram o
   ).toHaveCount(1);
 });
 
+test('a click anywhere on a box of Add existing element picks it, and a second puts it back', async ({
+  page,
+}) => {
+  await openModelDocument(page, sharedModelInput);
+  await runFromMenu(page, 'Add existing element');
+  const vault = picker(page).getByRole('button', { name: 'Card vault' });
+  expect((await screenBoxOf(vault)).height).toBeGreaterThanOrEqual(44);
+
+  await clickInsideCorner(vault);
+  await expect(vault).toHaveAttribute('aria-pressed', 'true');
+  await expect(
+    picker(page).getByRole('button', { name: 'Add 1' }),
+  ).toBeVisible();
+  await clickInsideCorner(vault);
+
+  await expect(vault).toHaveAttribute('aria-pressed', 'false');
+});
+
 test('Escape puts the picker away with nothing added', async ({ page }) => {
   await openModelDocument(page, sharedModelInput);
   await runFromMenu(page, 'Add existing element');
   await expect(
-    picker(page).getByRole('checkbox', { name: 'Card vault' }),
+    picker(page).getByRole('button', { name: 'Card vault' }),
   ).toBeFocused();
 
   await page.keyboard.press('Space');
@@ -66,40 +108,30 @@ test('Escape puts the picker away with nothing added', async ({ page }) => {
   await expect(nodeNamed(page, /^Card vault, store/u)).toHaveCount(0);
 });
 
-test('every placement of a shared element carries the mark, and its name says where else it is', async ({
+test('a flow on two diagrams draws the name blocks it draws on one, its name alone saying where else it is', async ({
+  baseURL,
+  browser,
   page,
 }) => {
   await openModelDocument(page, sharedModelInput);
-
-  const shared = nodeNamed(page, paymentsApi);
-  await expect(shared).toHaveAccessibleName(/, also on Payments$/u);
-  await expect(shared.locator('[data-shared-mark]')).toBeVisible();
   await expect(
-    nodeNamed(page, /^Customer, actor/u).locator('[data-shared-mark]'),
-  ).toHaveCount(0);
-  await expect(
-    page.locator(
-      `.${canvasInteractionClassNames.flowBlockSurface} [data-shared-mark]`,
-    ),
+    nodeNamed(page, /^Charge, flow, .*also on Payments$/u),
   ).toHaveCount(1);
-});
+  const shared = await flowBlocks(page);
 
-test('a selected shared element keeps its mark clear of the top left resize handle, at low zoom as well', async ({
-  page,
-}) => {
-  await openModelDocument(page, sharedModelInput);
-  const node = await selectNode(page, paymentsApi);
-  const markClear = async (): Promise<void> => {
-    const handle = await screenBoxOf(
-      node.locator('.react-flow__resize-control.handle.top.left'),
-    );
-    const mark = await screenBoxOf(node.locator('[data-shared-mark] rect'));
-    expect(boxesOverlap(handle, mark)).toBe(false);
-  };
+  const alone = await browser.newPage({
+    baseURL,
+    locale: 'en-CA',
+    viewport: page.viewportSize(),
+  });
+  await openModelDocument(alone, chargeOnOneDiagram);
+  await expect(nodeNamed(alone, /^Charge, flow/u)).toHaveCount(1);
+  await expect(nodeNamed(alone, /^Charge, flow, .*also on/u)).toHaveCount(0);
+  const single = await flowBlocks(alone);
+  await alone.close();
 
-  await markClear();
-  await zoomOutTo(page, 0.45);
-  await markClear();
+  expect(shared).toContain('Charge');
+  expect(single).toBe(shared);
 });
 
 test('a name on the Also on line shows that diagram with the element selected, by keyboard', async ({

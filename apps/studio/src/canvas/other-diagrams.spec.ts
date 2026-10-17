@@ -1,26 +1,21 @@
 import { diagramId, elementId, sharedModel } from '@saerskriven/model/fixtures';
-import { otherDiagrams, sharedElementIds } from './other-diagrams.js';
+import { otherDiagrams } from './other-diagrams.js';
 
-describe('elements on more than one diagram', () => {
-  it('are the ones two diagrams place, worked out once for the same diagrams', () => {
-    const shared = sharedElementIds(sharedModel.diagrams);
+const overview = diagramId('overview');
 
-    expect(shared).toEqual(
-      new Set(['payments-zone', 'payments-api', 'legend', 'charge']),
-    );
-    expect(sharedElementIds(sharedModel.diagrams)).toBe(shared);
-  });
+const elsewhere = (id: string): string[] =>
+  otherDiagrams(sharedModel, elementId(id), overview).map(({ id: on }) => on);
 
-  it('name the diagrams other than the one on screen, and an element on one names none', () => {
-    expect(
-      otherDiagrams(
-        sharedModel,
-        elementId('payments-api'),
-        diagramId('overview'),
-      ).map(({ id }) => id),
-    ).toEqual(['payments']);
-    expect(
-      otherDiagrams(sharedModel, elementId('customer'), diagramId('overview')),
-    ).toEqual([]);
+describe('the other diagrams of an element', () => {
+  it('name the diagrams other than the one on screen for each element two diagrams place, and none for an element on one', () => {
+    for (const shared of [
+      'payments-zone',
+      'payments-api',
+      'legend',
+      'charge',
+    ]) {
+      expect(elsewhere(shared)).toEqual(['payments']);
+    }
+    expect(elsewhere('customer')).toEqual([]);
   });
 });

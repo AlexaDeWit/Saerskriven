@@ -328,6 +328,35 @@ describe('DiagramCanvas', () => {
     ).toEqual(left);
   });
 
+  it('draws a shared element as it draws one on a single diagram, its name alone saying where else it is', () => {
+    const api = elementId('payments-api');
+    modelStore.setState(
+      { ...initialState(sharedModel), activeDiagram: diagramId('overview') },
+      true,
+    );
+    render(<DiagramCanvas />);
+    const placed = (): Element | null =>
+      document.querySelector(`.react-flow__node[data-id="${api}"]`);
+    const shared = placed()?.innerHTML;
+    expect(placed()?.getAttribute('aria-label')).toMatch(
+      /, also on Payments$/u,
+    );
+
+    act(() => {
+      dispatch(
+        Action.DeleteFromDiagram({
+          diagramId: diagramId('payments'),
+          elementIds: [api],
+          decimals: 0,
+        }),
+      );
+    });
+
+    expect(placed()?.getAttribute('aria-label')).not.toMatch(/also on/u);
+    expect(shared).toContain('<svg');
+    expect(placed()?.innerHTML).toBe(shared);
+  });
+
   it('leaves the model alone on the delete key while nothing is selected', () => {
     render(<DiagramCanvas />);
 

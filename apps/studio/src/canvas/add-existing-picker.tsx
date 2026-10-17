@@ -4,9 +4,11 @@ import {
   type Element,
   type ElementId,
 } from '@saerskriven/model';
+import { CheckIcon } from '@radix-ui/react-icons';
 import { useReactFlow, useStoreApi } from '@xyflow/react';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { closingOn } from '../commands/binding.js';
+import type { StudioTranslator } from '../messages/catalogues.js';
 import { diagramTitle } from '../messages/diagram-title.js';
 import { kindMessages } from '../messages/enum-labels.js';
 import { useTranslator } from '../messages/locale.js';
@@ -32,14 +34,19 @@ import { flowEndsText } from './names.js';
 import styles from './add-existing-picker.module.css';
 
 /**
- * The picker under the chrome card, mounted only while it is open. For Add
- * existing element it holds a checkbox for each element and each flow the
- * diagram on screen does not place, and Add places the ones picked at the
- * centre of the view. For Merge an element into this one it holds a radio
- * button for each other element of the kind of the one kept, and Merge
+ * The picker under the chrome card, mounted only while it is open. Each entry
+ * is one box naming an element and the diagrams it is on, and the box is the
+ * control: a click anywhere on it, or Space or Enter, picks it, and a picked
+ * box carries a check beside the element's name. For Add
+ * existing element each box is a toggle button for an element the diagram on
+ * screen does not place, which the same again puts back, and Add places the
+ * ones picked at the centre of the view. For Merge an element into this one
+ * each box is filled by a native radio button, for every other element of the
+ * kind of the one kept, so the arrow keys choose as they move, and Merge
  * merges the one picked into it, focus going to the element kept even where
- * the merge is refused. It goes away when another diagram is shown. Escape
- * and Cancel put either away and hand focus back.
+ * the merge is refused. Each list is a group the picker's heading names. It
+ * goes away when another diagram is shown. Escape and Cancel put either away
+ * and hand focus back.
  */
 export function AddExistingPicker() {
   const mode = usePickerMode();
@@ -61,13 +68,13 @@ function AddPicker() {
   const flow = useReactFlow();
   const view = useStoreApi();
   const [picked, setPicked] = useState<ReadonlySet<ElementId>>(() => new Set());
+  const headingId = useId();
   const { t } = useTranslator();
 
   const entries =
-    diagram === undefined
-      ? { elements: [], flows: [] }
-      : existingEntries(model, diagram.id);
-  const chosen = [...entries.elements, ...entries.flows]
+    diagram === undefined ? [] : existingEntries(model, diagram.id);
+  const elements = elementsById(model.elements);
+  const chosen = entries
     .map(({ element }) => element.id)
     .filter((id) => picked.has(id));
 
@@ -102,33 +109,32 @@ function AddPicker() {
           : t('tools.add-picked', { count: chosen.length })
       }
       heading={t('commands.label-add-existing')}
+      headingId={headingId}
       onAction={add}
       ready={chosen.length > 0}
       unready={t('tools.pick-existing-first')}
     >
-      {entries.elements.length === 0 && entries.flows.length === 0 ? (
+      {entries.length === 0 ? (
         <p className={styles.none}>
           {t('canvas.nothing-to-add', {
             diagram: diagramTitle(diagram?.title ?? '', t),
           })}
         </p>
       ) : (
-        <div className={styles.choices}>
-          <EntryGroup
-            entries={entries.elements}
-            legend={t('tools.existing-elements')}
-            model={model.elements}
-            onToggle={toggle}
-            picked={picked}
-          />
-          <EntryGroup
-            entries={entries.flows}
-            legend={t('tools.existing-flows')}
-            model={model.elements}
-            onToggle={toggle}
-            picked={picked}
-          />
-        </div>
+        <fieldset aria-labelledby={headingId} className={styles.group}>
+          <div className={styles.choices}>
+            {labelledEntries(entries, elements, t).map(([entry, text]) => (
+              <ToggleEntry
+                elements={elements}
+                entry={entry}
+                key={entry.element.id}
+                onToggle={toggle}
+                pressed={picked.has(entry.element.id)}
+                text={text}
+              />
+            ))}
+          </div>
+        </fieldset>
       )}
     </PickerFrame>
   );
@@ -139,6 +145,7 @@ function MergePicker({ into }: { readonly into: ElementId }) {
   const shown = useModelStore(activeDiagramId);
   const [openedOn] = useState(shown);
   const [chosen, setChosen] = useState<ElementId | undefined>(undefined);
+  const headingId = useId();
   const group = useId();
   const { t } = useTranslator();
 
@@ -150,6 +157,7 @@ function MergePicker({ into }: { readonly into: ElementId }) {
 
   const kept = model.elements.find(({ id }) => id === into);
   const entries = mergeEntries(model, into);
+  const elements = elementsById(model.elements);
   const picked = entries.some(({ element }) => element.id === chosen)
     ? chosen
     : undefined;
@@ -170,6 +178,7 @@ function MergePicker({ into }: { readonly into: ElementId }) {
       heading={t('tools.merge-into', {
         name: kept === undefined ? '' : spokenElement(t, kept),
       })}
+      headingId={headingId}
       onAction={merge}
       ready={picked !== undefined}
       unready={t('tools.pick-merge-first')}
@@ -177,16 +186,21 @@ function MergePicker({ into }: { readonly into: ElementId }) {
       {entries.length === 0 ? (
         <p className={styles.none}>{t('tools.nothing-to-merge')}</p>
       ) : (
-        <div className={styles.choices}>
-          <EntryGroup
-            entries={entries}
-            group={group}
-            legend={t('tools.merge-choice')}
-            model={model.elements}
-            onToggle={setChosen}
-            picked={new Set(picked === undefined ? [] : [picked])}
-          />
-        </div>
+        <fieldset aria-labelledby={headingId} className={styles.group}>
+          <div className={styles.choices}>
+            {labelledEntries(entries, elements, t).map(([entry, text]) => (
+              <RadioEntry
+                checked={entry.element.id === picked}
+                elements={elements}
+                entry={entry}
+                group={group}
+                key={entry.element.id}
+                onChoose={setChosen}
+                text={text}
+              />
+            ))}
+          </div>
+        </fieldset>
       )}
     </PickerFrame>
   );
@@ -196,6 +210,7 @@ function PickerFrame({
   action,
   children,
   heading,
+  headingId,
   onAction,
   ready,
   unready,
@@ -203,11 +218,11 @@ function PickerFrame({
   readonly action: string;
   readonly children: ReactNode;
   readonly heading: string;
+  readonly headingId: string;
   readonly onAction: () => void;
   readonly ready: boolean;
   readonly unready: string;
 }) {
-  const headingId = useId();
   const reasonId = useId();
   const { t } = useTranslator();
 
@@ -249,96 +264,127 @@ function PickerFrame({
   );
 }
 
-function EntryGroup({
-  entries,
-  group,
-  legend,
-  model,
-  onToggle,
-  picked,
-}: {
-  readonly entries: readonly ExistingEntry[];
-  readonly group?: string;
-  readonly legend: string;
-  readonly model: readonly Element[];
-  readonly onToggle: (id: ElementId) => void;
-  readonly picked: ReadonlySet<ElementId>;
-}) {
-  const { t } = useTranslator();
-  if (entries.length === 0) {
-    return null;
-  }
-  const elements = elementsById(model);
-  const labelled = distinctTexts(
+function labelledEntries(
+  entries: readonly ExistingEntry[],
+  elements: ReadonlyMap<ElementId, Element>,
+  t: StudioTranslator['t'],
+): readonly (readonly [ExistingEntry, OptionText])[] {
+  return distinctTexts(
     entries.map((entry) => ({
       ...labelledElement(entry.element, elements, t),
       entry,
     })),
-  );
+  ).map(([{ entry }, text]) => [entry, text]);
+}
+
+type EntryProps = {
+  readonly elements: ReadonlyMap<ElementId, Element>;
+  readonly entry: ExistingEntry;
+  readonly text: OptionText;
+};
+
+function ToggleEntry({
+  onToggle,
+  pressed,
+  ...lines
+}: EntryProps & {
+  readonly onToggle: (id: ElementId) => void;
+  readonly pressed: boolean;
+}) {
+  const nameId = useId();
+  const detailId = useId();
   return (
-    <fieldset className={styles.group}>
-      <legend className={styles.legend}>{legend}</legend>
-      <ul className={styles.entries}>
-        {labelled.map(([{ entry }, text]) => (
-          <Entry
-            checked={picked.has(entry.element.id)}
-            elements={elements}
-            entry={entry}
-            group={group}
-            key={entry.element.id}
-            onToggle={onToggle}
-            text={text}
-          />
-        ))}
-      </ul>
-    </fieldset>
+    <button
+      aria-describedby={detailId}
+      aria-labelledby={nameId}
+      aria-pressed={pressed}
+      className={styles.entry}
+      onClick={() => {
+        onToggle(lines.entry.element.id);
+      }}
+      type="button"
+    >
+      <EntryLines
+        {...lines}
+        detailId={detailId}
+        nameId={nameId}
+        picked={pressed}
+      />
+    </button>
   );
 }
 
-function Entry({
+function RadioEntry({
   checked,
+  group,
+  onChoose,
+  ...lines
+}: EntryProps & {
+  readonly checked: boolean;
+  readonly group: string;
+  readonly onChoose: (id: ElementId) => void;
+}) {
+  const nameId = useId();
+  const detailId = useId();
+  const choose = (): void => {
+    onChoose(lines.entry.element.id);
+  };
+  return (
+    <label className={styles.entry}>
+      <input
+        aria-describedby={detailId}
+        aria-labelledby={nameId}
+        checked={checked}
+        className={styles.fill}
+        name={group}
+        onChange={choose}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            choose();
+          }
+        }}
+        type="radio"
+      />
+      <EntryLines
+        {...lines}
+        detailId={detailId}
+        nameId={nameId}
+        picked={checked}
+      />
+    </label>
+  );
+}
+
+function EntryLines({
+  detailId,
   elements,
   entry,
-  group,
-  onToggle,
+  nameId,
+  picked,
   text,
-}: {
-  readonly checked: boolean;
-  readonly elements: ReadonlyMap<ElementId, Element>;
-  readonly entry: ExistingEntry;
-  readonly group: string | undefined;
-  readonly onToggle: (id: ElementId) => void;
-  readonly text: OptionText;
+}: EntryProps & {
+  readonly detailId: string;
+  readonly nameId: string;
+  readonly picked: boolean;
 }) {
-  const detailId = useId();
   const { t } = useTranslator();
   const { element, diagrams } = entry;
   const what =
     element.kind === 'flow'
       ? flowEndsText(flowEnds(element, elements), t)
       : t(kindMessages[element.kind]);
-
   return (
-    <li className={styles.entry}>
-      <label className={styles.choice}>
-        <input
-          aria-describedby={detailId}
-          checked={checked}
-          className={styles.box}
-          name={group}
-          onChange={() => {
-            onToggle(element.id);
-          }}
-          type={group === undefined ? 'checkbox' : 'radio'}
-        />
-        <span>{optionName(text)}</span>
-      </label>
+    <>
+      <span className={styles.title}>
+        <span id={nameId}>{optionName(text)}</span>
+        {picked && <CheckIcon aria-hidden="true" className={styles.check} />}
+      </span>
       <span className={styles.detail} id={detailId}>
         {t('tools.existing-detail', {
           what,
           diagrams: diagrams.map(({ title }) => diagramTitle(title, t)),
         })}
       </span>
-    </li>
+    </>
   );
 }

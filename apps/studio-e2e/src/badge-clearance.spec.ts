@@ -37,6 +37,12 @@ const corners = [
   ['bottom', 'left'],
 ] as const;
 
+const inwardCorners = [
+  ['top', 'left'],
+  ['top', 'right'],
+  ['bottom', 'right'],
+] as const;
+
 const openWithFlagOnlyStore = async (page: Page): Promise<void> => {
   const text = committedText('every-glyph.model.json')
     .replace('"elements": ["el-db"]', '"elements": ["el-api"]')
@@ -79,6 +85,23 @@ const badgeInk = (node: Locator) => inkBoxOf(node.locator(badgeShapes));
 
 const badgeFace = (node: Locator): Locator => node.locator(badgeShapes).first();
 
+const cornerHandle = (
+  node: Locator,
+  [vertical, horizontal]: (typeof corners)[number],
+): Locator =>
+  node.locator(`.react-flow__resize-control.handle.${vertical}.${horizontal}`);
+
+const expectInwardHandlesWithinSides = async (node: Locator): Promise<void> => {
+  const frame = await screenBoxOf(node);
+  for (const corner of inwardCorners) {
+    const square = await screenBoxOf(cornerHandle(node, corner));
+    expect(square.x).toBeGreaterThanOrEqual(frame.x - cornerTolerance);
+    expect(square.x + square.width).toBeLessThanOrEqual(
+      frame.x + frame.width + cornerTolerance,
+    );
+  }
+};
+
 const expectHandlesOnCornersClearOfBadge = async (
   node: Locator,
 ): Promise<void> => {
@@ -86,9 +109,7 @@ const expectHandlesOnCornersClearOfBadge = async (
   const ink = await badgeInk(node);
   for (const [vertical, horizontal] of corners) {
     const square = await screenBoxOf(
-      node.locator(
-        `.react-flow__resize-control.handle.${vertical}.${horizontal}`,
-      ),
+      cornerHandle(node, [vertical, horizontal]),
     );
     const corner = {
       x: horizontal === 'left' ? frame.x : frame.x + frame.width,
@@ -161,9 +182,10 @@ for (const [badge, element, name, counts] of cases) {
         ).toBe(true);
       });
 
-      await test.step('at low zoom every corner handle still sits on its corner, clear of the badge', async () => {
+      await test.step('at low zoom every corner handle still sits on its corner, clear of the badge, and the top left and right-hand ones grow inward', async () => {
         await zoomOutTo(page, lowZoom);
         await expectHandlesOnCornersClearOfBadge(node);
+        await expectInwardHandlesWithinSides(node);
       });
     },
   );

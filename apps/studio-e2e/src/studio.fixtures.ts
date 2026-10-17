@@ -16,6 +16,7 @@ import {
   centreOf,
   emptyCanvasPoint,
   reachesAt,
+  screenBoxOf,
 } from './canvas.fixtures.js';
 
 const developmentModelKey = 'saerskrivenDevelopmentModel';
@@ -562,6 +563,12 @@ export const selectNode = async (
   await node.click();
   await expect(node).toHaveClass(/selected/u);
   return node;
+};
+
+/** Clicks `box` just inside its bottom right corner, clear of the text it holds. */
+export const clickInsideCorner = async (box: Locator): Promise<void> => {
+  const { width, height } = await screenBoxOf(box);
+  await box.click({ position: { x: width - 6, y: height - 6 } });
 };
 
 /** Presses Tab from `from`, the control before the canvas unless named, until `target` holds focus, in at most 40 presses. */

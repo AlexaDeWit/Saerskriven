@@ -20,16 +20,6 @@
   margin: 0;
 }
 
-/* A long list scrolls inside the picker, so the panes under the card keep
-   their room. */
-.choices {
-  display: flex;
-  flex-direction: column;
-  gap: var(--saer-space-2);
-  max-block-size: min(20rem, 40vh);
-  overflow-y: auto;
-}
-
 .group {
   min-inline-size: 0;
   margin: 0;
@@ -37,42 +27,77 @@
   border: 0;
 }
 
-.legend {
-  padding: 0;
-  color: var(--saer-colour-text-muted);
-}
-
-.entries {
+/* A long list scrolls inside the picker, so the panes under the card keep
+   their room. The padding is the focus ring's reach, so the scroll does not
+   clip a box's ring, and the margin keeps the boxes in line with the heading. */
+.choices {
   display: flex;
   flex-direction: column;
-  gap: var(--saer-space-1);
-  margin: var(--saer-space-1) 0 0;
-  padding: 0;
-  list-style: none;
+  gap: var(--saer-space-2);
+  max-block-size: min(20rem, 40vh);
+  margin-inline: calc(
+    -1 * (var(--saer-focus-ring-width) + var(--saer-focus-ring-offset))
+  );
+  padding: calc(var(--saer-focus-ring-width) + var(--saer-focus-ring-offset));
+  overflow-y: auto;
 }
 
+/* The box is the control, at least 44 pixels tall. A picked box takes a
+   heavier border, the accent's tint and a check at the end of the name's
+   line, so its state does not rest on colour, and gives back in padding what
+   its border gains. */
 .entry {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  column-gap: var(--saer-space-2);
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--saer-space-1);
+  min-block-size: 2.75rem;
+  padding: var(--saer-space-2) var(--saer-space-3);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface);
+  color: var(--saer-colour-text);
+  font: inherit;
+  text-align: start;
 }
 
-.choice {
-  display: inline-flex;
+.entry[aria-pressed='true'],
+.entry:has(> :checked) {
+  padding: calc(var(--saer-space-2) + 1px - var(--saer-focus-ring-width))
+    calc(var(--saer-space-3) + 1px - var(--saer-focus-ring-width));
+  border: var(--saer-focus-ring-width) solid var(--saer-colour-accent);
+  background: var(--saer-colour-accent-tint);
+}
+
+.title {
+  display: flex;
   align-items: center;
+  align-self: stretch;
+  justify-content: space-between;
   gap: var(--saer-space-2);
 }
 
-.box {
-  inline-size: 1rem;
-  block-size: 1rem;
-  margin: 0;
-  accent-color: var(--saer-colour-accent);
+.check {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
 }
 
 .detail {
   color: var(--saer-colour-text-muted);
+}
+
+/* A radio fills its box, so a click anywhere on the box lands on it, and the
+   box draws its state and its focus ring in place of the browser's. */
+.fill {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border-radius: inherit;
+  outline: none;
+  appearance: none;
 }
 
 .actions {
@@ -94,8 +119,32 @@
   color: var(--saer-colour-text-muted);
 }
 
-.box:focus-visible,
+.entry:focus-visible,
+.entry:has(> :focus-visible),
 .action:focus-visible {
   outline: var(--saer-focus-ring);
   outline-offset: var(--saer-focus-ring-offset);
+}
+
+/* Forced colours fill a picked box with the system highlight. */
+@media (forced-colors: active) {
+  .entry[aria-pressed='true'],
+  .entry:has(> :checked) {
+    forced-color-adjust: none;
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .entry[aria-pressed='true'] .detail,
+  .entry[aria-pressed='true'] .check,
+  .entry:has(> :checked) .detail,
+  .entry:has(> :checked) .check {
+    color: HighlightText;
+  }
+
+  .entry[aria-pressed='true']:focus-visible,
+  .entry:has(> :checked:focus-visible) {
+    outline-color: Highlight;
+  }
 }

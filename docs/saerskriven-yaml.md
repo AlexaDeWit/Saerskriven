@@ -141,23 +141,21 @@ written as version 2. No file changes version unless its content needs it, so
 a file an earlier release opens stays one it opens, and a tracked file's diff
 moves every element only at the edit that needs version 3.
 
-A release that reads only versions 1 and 2 refuses a version 3 file, so three
+A release that reads only versions 1 and 2 refuses a version 3 file, so two
 tools say when they write one:
 
-- The studio shows a report under the card at the edit that moves the model
-  from version 2 to version 3, worked out from the model before and after the
-  edit, and at the open of an OTM or TM-BOM file whose model saves as
-  version 3.
 - `saer_edit` answers `movedToVersion3` for a batch that moves a file from
-  version 2 to version 3, worked out the same way ([writing](mcp.md#writing)).
+  version 2 to version 3, worked out from the model before and after the batch
+  ([writing](mcp.md#writing)).
 - `saer convert` warns on standard error whenever the document it writes is
   version 3, since a conversion is not an edit and holds no earlier model.
 
-`saer_create` and `saer_import` write a new file and say nothing of its
-version, and nothing is said at a move back to version 2. A share link, the
-studio's clipboard and its recovery snapshot carry the text or the document a
-save writes, so they follow the same rule, and the snapshot keeps no retained
-document for a Saerskriven YAML file, which its save does not read.
+The studio says nothing of the version it saves, and `saer_create` and
+`saer_import` write a new file and say nothing of its version. Nothing is said
+at a move back to version 2. A share link, the studio's clipboard and its
+recovery snapshot carry the text or the document a save writes, so they follow
+the same rule, and the snapshot keeps no retained document for a Saerskriven
+YAML file, which its save does not read.
 
 ## `formatVersion`
 
