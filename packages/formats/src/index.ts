@@ -53,7 +53,7 @@ export {
   type ImportResult,
 } from './lib/import.js';
 export { parseYaml } from './lib/parse-yaml.js';
-export { renderReadFailure } from './lib/read-failure.js';
+export { renderReadFailure, versionsReadSpan } from './lib/read-failure.js';
 export {
   exceededReadLimit,
   parseWithinLimits,

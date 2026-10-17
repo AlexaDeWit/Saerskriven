@@ -3,6 +3,7 @@ import {
   ReadFailure,
   importFormatSchema,
   readLimits,
+  versionsReadSpan,
   type WireIssue,
 } from '@saerskriven/formats';
 import { ShareLinkFailure } from '@saerskriven/formats/share-link';
@@ -349,8 +350,7 @@ function readDetails(t: Speaker, failure: ReadFailure): readonly string[] {
     LaterFormatVersion: ({ stated, read }) => [
       t('notice.later-format-version-detail', {
         stated,
-        first: Math.min(...read),
-        last: Math.max(...read),
+        ...versionsReadSpan(read),
       }),
     ],
     InvalidWireDocument: ({ issues }) => issueLines(t, issues),

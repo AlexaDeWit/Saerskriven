@@ -58,7 +58,8 @@ import {
 } from './element-edits.js';
 import { flowEndSchema } from './element-rows.js';
 import {
-  describeOperationFailure,
+  EditFailure,
+  describeEditRefusal,
   unappliedEdit,
 } from './operation-failure.js';
 import {
@@ -224,10 +225,10 @@ export const editOps: readonly ModelEdit['op'][] = modelEditSchema.options.map(
   (option) => option.shape.op.value,
 );
 
-/** Which edit of a batch the model refused, and why. */
+/** Which edit of a batch the server or the model refused, and why. */
 export type RefusedEdit = {
   readonly index: number;
-  readonly failure: OperationFailure;
+  readonly failure: OperationFailure | EditFailure;
 };
 
 /** What one `merge_elements` edit of a batch moved onto the element it kept, and dropped. */
@@ -332,22 +333,30 @@ export function applyEdits(
   );
 }
 
-/** Which edit was refused and what the model said, as lines for a result. */
+/** Which edit was refused and what was said of it, as lines for a result. */
 export function renderRefusedEdit(refused: RefusedEdit): readonly string[] {
   return [
     `The edit at index ${String(refused.index)} was refused, so none of the batch was applied and the file is as it was.`,
-    describeOperationFailure(refused.failure),
+    describeEditRefusal(refused.failure),
   ];
 }
 
 function applyEdit(
   model: Model,
-  given: ModelEdit,
+  edit: ModelEdit,
+): Either.Either<Model, OperationFailure | EditFailure> {
+  return Either.flatMap(onDiagramNamed(model, edit), (named) =>
+    edited(model, named),
+  );
+}
+
+function edited(
+  model: Model,
+  edit: ModelEdit,
 ): Either.Either<Model, OperationFailure> {
-  if (isRegisterEdit(given)) {
-    return applyRegisterEdit(model, given);
+  if (isRegisterEdit(edit)) {
+    return applyRegisterEdit(model, edit);
   }
-  const edit = onDiagramNamed(model, given);
   switch (edit.op) {
     case 'add_element':
       return addElement(
@@ -436,12 +445,23 @@ function onDiagramNamed<
     readonly op: string;
     readonly diagram?: DiagramId | undefined;
   },
->(model: Model, edit: Edit): Edit {
+>(model: Model, edit: Edit): Either.Either<Edit, EditFailure> {
   if (edit.op === 'add_diagram' || edit.diagram === undefined) {
-    return edit;
+    return Either.right(edit);
   }
-  const [named] = diagramsNamed(model.diagrams, edit.diagram);
-  return named === undefined ? edit : { ...edit, diagram: named.id };
+  const named = diagramsNamed(model.diagrams, edit.diagram);
+  const [first] = named;
+  if (first === undefined) {
+    return Either.right(edit);
+  }
+  return first.id === edit.diagram || named.length === 1
+    ? Either.right({ ...edit, diagram: first.id })
+    : Either.left(
+        EditFailure.AmbiguousDiagram({
+          name: edit.diagram,
+          diagramIds: named.map(({ id }) => id),
+        }),
+      );
 }
 
 function placementIndex(model: Model, diagramId: string): number {

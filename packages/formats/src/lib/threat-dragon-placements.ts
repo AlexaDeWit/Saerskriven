@@ -91,8 +91,8 @@ export function splitElements(model: Model): readonly Divergence[] {
  * fastened to the cells of that diagram, and its relationship lists naming
  * the cells that diagram places. An end drawn away from an element the
  * diagram does not place is written as a free end at its point, and a list
- * leaves out an element the diagram does not place, each reported, the list
- * naming the diagram.
+ * leaves out an element the diagram does not place, each reported naming the
+ * diagram.
  */
 export function inCellTerms(
   element: DrawnElement,
@@ -116,7 +116,9 @@ export function inCellTerms(
       },
       divergences: [
         ...[source.away, target.away].flatMap((away) =>
-          away === undefined ? [] : [freedDivergence(element.id, away)],
+          away === undefined
+            ? []
+            : [freedDivergence(element.id, away, diagram)],
         ),
         ...droppedDivergence(element.id, boundaries.dropped, diagram),
       ],
@@ -212,10 +214,17 @@ function keptIds(
   return { ids: kept, dropped: ids.length - kept.length };
 }
 
-function freedDivergence(flow: ElementId, element: ElementId): Divergence {
+function freedDivergence(
+  flow: ElementId,
+  element: ElementId,
+  diagram: Diagram,
+): Divergence {
   return {
     subject: { kind: 'element', id: flow },
-    detail: { code: 'flow-end-drawn-away-freed', parameters: { element } },
+    detail: {
+      code: 'flow-end-drawn-away-freed',
+      parameters: { element, diagram: diagramName(diagram) },
+    },
     reason: 'unrepresentable',
   };
 }

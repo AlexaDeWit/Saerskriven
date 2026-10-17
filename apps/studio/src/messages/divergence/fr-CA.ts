@@ -43,7 +43,7 @@ export const divergenceFrCA = catalogue(divergenceMessages)('fr-CA')({
   'element-split-across-diagrams':
     'un seul élément, désormais une copie sur chacun de ces diagrammes : {diagrams}',
   'flow-end-drawn-away-freed':
-    'son extrémité sur {name}, désormais une extrémité libre',
+    'son extrémité sur {name} dans {diagram}, désormais une extrémité libre',
   'relationships-off-diagram-dropped': {
     one: 'son lien sur {diagram} vers {count} élément d’un autre diagramme',
     many: 'ses liens sur {diagram} vers {count} d’éléments d’autres diagrammes',

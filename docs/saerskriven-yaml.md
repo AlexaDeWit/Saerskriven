@@ -117,9 +117,8 @@ an optional key of version 2, a release of version 2 would open the file and
 drop what it does not declare, and the studio's save, which does not refuse
 that ([Reading](#reading)), would write the file without it. A release that
 does not know version 3 refuses the whole file instead, so it cannot damage
-one ([what a read of a later version shows](#formatversion)). The accent also
-moves from the element to its placement, a rename, which the rule under
-`formatVersion` makes breaking.
+one. The accent also moves from the element to its placement, a rename, which
+the rule under `formatVersion` makes breaking.
 [The proposal on #847](https://github.com/AlexaDeWit/Saerskriven/issues/847#issuecomment-6226181435)
 sets out the design and its reasons.
 

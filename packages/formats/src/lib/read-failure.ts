@@ -24,10 +24,13 @@ export function renderReadFailure(
           'The file is not valid text of the format that claimed it.',
           message,
         ],
-        LaterFormatVersion: ({ stated, read }) => [
-          `The file is Saerskriven YAML version ${String(stated)}, and this release of saer reads versions ${versionRange(read)}.`,
-          'Upgrade saer to a release that reads it.',
-        ],
+        LaterFormatVersion: ({ stated, read }) => {
+          const { first, last } = versionsReadSpan(read);
+          return [
+            `The file is Saerskriven YAML version ${String(stated)}, and this release of saer reads versions ${String(first)} to ${String(last)}.`,
+            'Upgrade saer to a release that reads it.',
+          ];
+        },
         InvalidWireDocument: ({ issues }) => [
           'The file is not a valid document of the format that claimed it:',
           ...issueLines(issues),
@@ -39,8 +42,15 @@ export function renderReadFailure(
       });
 }
 
-function versionRange(read: readonly number[]): string {
-  return `${String(Math.min(...read))} to ${String(Math.max(...read))}`;
+/**
+ * The oldest and the newest of the versions a `LaterFormatVersion` says this
+ * release reads.
+ */
+export function versionsReadSpan(read: readonly number[]): {
+  readonly first: number;
+  readonly last: number;
+} {
+  return { first: Math.min(...read), last: Math.max(...read) };
 }
 
 function issueLines(issues: readonly WireIssue[]): readonly string[] {

@@ -1,5 +1,15 @@
-import { placeElement, threatIdSchema, type Model } from '@saerskriven/model';
-import { placementIn, sharedModel } from '@saerskriven/model/fixtures';
+import {
+  addDiagram,
+  placeElement,
+  threatIdSchema,
+  type Model,
+} from '@saerskriven/model';
+import {
+  diagramId,
+  elementId,
+  placementIn,
+  sharedModel,
+} from '@saerskriven/model/fixtures';
 import type { ThreatDragonCell } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
 import { Either } from 'effect';
@@ -82,10 +92,35 @@ describe('writing an element placed on several diagrams to Threat Dragon', () =>
       subject: { kind: 'element', id: 'charge' },
       detail: {
         code: 'flow-end-drawn-away-freed',
-        parameters: { element: 'card-vault' },
+        parameters: { element: 'card-vault', diagram: 'High level' },
       },
       reason: 'unrepresentable',
     });
+  });
+
+  it('reports each end it frees once per diagram, naming the diagram', () => {
+    const audit = diagramId('audit');
+    const audited = Either.getOrThrow(
+      Either.flatMap(
+        addDiagram(sharedModel, { id: audit, title: 'Audit' }),
+        (model) =>
+          placeElement(model, audit, {
+            element: elementId('charge'),
+            waypoints: [],
+            source: { position: { x: 0, y: 0 } },
+            target: { position: { x: 200, y: 0 } },
+          }),
+      ),
+    );
+    expect(
+      written(audited).divergences.flatMap(({ detail }) =>
+        detail.code === 'flow-end-drawn-away-freed' ? [detail.parameters] : [],
+      ),
+    ).toEqual([
+      { element: 'card-vault', diagram: 'High level' },
+      { element: 'payments-api', diagram: 'Audit' },
+      { element: 'card-vault', diagram: 'Audit' },
+    ]);
   });
 
   it('lists in a boundary only the cells of its own diagram, reporting the rest once per diagram, naming it', () => {

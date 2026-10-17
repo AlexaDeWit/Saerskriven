@@ -159,9 +159,9 @@ const samples: readonly (readonly [DivergenceDetail, string])[] = [
   [
     {
       code: 'flow-end-drawn-away-freed',
-      parameters: { element: 'card-vault' },
+      parameters: { element: 'card-vault', diagram: 'High level' },
     },
-    'the attachment of an end to "card-vault", which the diagram does not draw, written as a free end',
+    'the attachment of an end to "card-vault", which "High level" does not draw, written as a free end',
   ],
   [
     {

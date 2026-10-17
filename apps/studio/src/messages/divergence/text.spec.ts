@@ -126,7 +126,7 @@ const reported: readonly DivergenceDetail[] = [
   },
   {
     code: 'flow-end-drawn-away-freed',
-    parameters: { element: 'away-element' },
+    parameters: { element: 'away-element', diagram: 'away-diagram' },
   },
   {
     code: 'relationships-off-diagram-dropped',

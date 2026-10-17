@@ -51,7 +51,7 @@ export const divergenceMessages = {
   'whole-assumption': text(),
   'split-into-copies': plural('count'),
   'element-split-across-diagrams': text({ diagrams: 'text' }),
-  'flow-end-drawn-away-freed': text(name),
+  'flow-end-drawn-away-freed': text({ name: 'text', diagram: 'text' }),
   'relationships-off-diagram-dropped': plural('count', { diagram: 'text' }),
   'note-name-dropped': text(),
   'scope-marking-dropped': text(),

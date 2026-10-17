@@ -544,8 +544,10 @@ only for an element on more than one diagram: without it such an edit is
 refused, naming the diagrams the element is on. An edit leaving it out
 applies to an element on one diagram as it always has. Every `diagram` an edit
 takes but that of `add_diagram`, which is the new diagram's id, names a
-diagram by its id or its exact title, an id tried first, as the `diagram` of
-the read tools does.
+diagram by its id, or by its exact title where no diagram has that id. An edit
+changes one diagram, so a title more than one diagram has is refused, naming
+their ids, where the `diagram` of a read tool selects every diagram it
+names.
 
 `move_element` translates an element by `offset`, relative to where it is: the
 position of an actor, process, store, text note or box boundary, every point

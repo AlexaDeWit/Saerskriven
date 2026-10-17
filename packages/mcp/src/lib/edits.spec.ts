@@ -19,6 +19,7 @@ import {
   modelEditSchema,
   renderRefusedEdit,
   type AppliedBatch,
+  type RefusedEdit,
 } from './edits.js';
 
 type ByTag<Union extends { readonly _tag: string }> = {
@@ -181,7 +182,7 @@ const failures: ByTag<OperationFailure> = {
   }),
 };
 
-const refusalOf = (failure: OperationFailure, index = 0): string =>
+const refusalOf = (failure: RefusedEdit['failure'], index = 0): string =>
   renderRefusedEdit({ index, failure })[1] ?? '';
 
 describe('what a refused edit reads as', () => {
@@ -223,7 +224,7 @@ describe('what a refused edit reads as', () => {
 const batchOn = (
   model: Model,
   edits: readonly EditInput[],
-): Either.Either<AppliedBatch, OperationFailure> =>
+): Either.Either<AppliedBatch, RefusedEdit['failure']> =>
   Either.mapLeft(
     applyEdits(
       model,
@@ -694,6 +695,39 @@ describe('a diagram an edit names by its exact title', () => {
       { id: 'overview', title: 'High level' },
       { id: 'payments', title: 'Payments' },
       { id: 'spare', title: 'Kept spare' },
+    ]);
+  });
+
+  it('refuses a title two diagrams have and no diagram has as its id, naming their ids', () => {
+    const refused = batchOn(sharedModel, [
+      { op: 'rename_diagram', diagram: 'payments', title: 'High level' },
+      {
+        op: 'move_element',
+        element: 'payments-api',
+        diagram: 'High level',
+        offset: { x: 10, y: 0 },
+      },
+    ]);
+    expect(refused).toMatchObject({
+      left: {
+        _tag: 'AmbiguousDiagram',
+        name: 'High level',
+        diagramIds: ['overview', 'payments'],
+      },
+    });
+    const refusal = Either.isLeft(refused) ? refusalOf(refused.left, 1) : '';
+    expect(refusal).toContain('"overview"');
+    expect(refusal).toContain('"payments"');
+  });
+
+  it('adds a diagram under the id given where another diagram has it as its title', () => {
+    const edited = modelAfter(sharedModel, [
+      { op: 'add_diagram', diagram: 'Payments', title: 'Payments again' },
+    ]);
+    expect(edited.diagrams.map(({ id }) => id)).toEqual([
+      'overview',
+      'payments',
+      'Payments',
     ]);
   });
 

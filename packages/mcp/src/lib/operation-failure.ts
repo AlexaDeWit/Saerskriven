@@ -3,10 +3,38 @@ import {
   OperationFailure,
   issueLine,
   parseIssueText,
+  type DiagramId,
   type Model,
   type ParseIssue,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Data, Either } from 'effect';
+import { noDiagramNamed } from './search.js';
+
+/**
+ * Why the server refused an edit before the model saw it: a `diagram` that
+ * is no diagram's id and the exact title of more than one, naming their ids.
+ */
+export type EditFailure = Data.TaggedEnum<{
+  AmbiguousDiagram: {
+    readonly name: string;
+    readonly diagramIds: readonly DiagramId[];
+  };
+}>;
+
+/**
+ * Constructors for {@link EditFailure}, plus Effect's `$is` and `$match`
+ * helpers.
+ */
+export const EditFailure = Data.taggedEnum<EditFailure>();
+
+/** What the server or the model said about a refused edit, as one line. */
+export function describeEditRefusal(
+  failure: OperationFailure | EditFailure,
+): string {
+  return EditFailure.$is('AmbiguousDiagram')(failure)
+    ? `More than one diagram has the title ${quotedForTerminal(failure.name)} (${failure.diagramIds.map((id) => quotedForTerminal(id)).join(', ')}), and none has it as its id, so name the one this edit changes by its id.`
+    : describeOperationFailure(failure);
+}
 
 /** What the model said about a refused edit, as one line of a result. */
 export function describeOperationFailure(failure: OperationFailure): string {
@@ -17,8 +45,7 @@ export function describeOperationFailure(failure: OperationFailure): string {
       `The element has invalid boundary relationships: ${issueLines(issues)}`,
     InvalidFragment: ({ issues }) =>
       `The edit does not apply to this model: ${issueLines(issues)}.`,
-    UnknownDiagram: ({ diagramId }) =>
-      `The model holds no diagram named ${quotedForTerminal(diagramId)}. Call saer_inspect for the id and the title of every diagram it holds.`,
+    UnknownDiagram: ({ diagramId }) => noDiagramNamed(diagramId).join(' '),
     DuplicateDiagramId: ({ diagramId }) =>
       `The model already holds a diagram ${quotedForTerminal(diagramId)}.`,
     EmptyTitle: ({ diagramId }) =>

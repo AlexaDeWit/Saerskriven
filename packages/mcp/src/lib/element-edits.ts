@@ -103,7 +103,7 @@ export function consistentPropertyEdit(
  * description closes.
  */
 export const diagramNaming =
-  'Named by its id or its exact title, an id tried first.';
+  'Named by its id, or by its exact title where no diagram has that id. A title more than one diagram has is refused, naming their ids.';
 
 /**
  * What `place_element` takes: an element the model holds, the diagram to

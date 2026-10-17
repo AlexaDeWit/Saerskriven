@@ -115,6 +115,17 @@ export function renderCounts(
 }
 
 /**
+ * The lines refusing a diagram name that is no diagram's id or title, and
+ * pointing to the tool that lists them.
+ */
+export function noDiagramNamed(name: string): readonly string[] {
+  return [
+    `The model holds no diagram named ${quotedForTerminal(name)}.`,
+    'Call saer_inspect for the id and the title of every diagram it holds.',
+  ];
+}
+
+/**
  * The diagrams a `diagram` argument names by id or exact title, every
  * diagram where it names none, or the lines refusing a name no diagram
  * carries.
@@ -129,10 +140,7 @@ export function diagramsOf(
   const selected = diagramsNamed(model.diagrams, named);
   return selected.length > 0
     ? Either.right(selected)
-    : Either.left([
-        `The model holds no diagram named ${quotedForTerminal(named)}.`,
-        'Call saer_inspect for the id and the title of every diagram it holds.',
-      ]);
+    : Either.left(noDiagramNamed(named));
 }
 
 /**
