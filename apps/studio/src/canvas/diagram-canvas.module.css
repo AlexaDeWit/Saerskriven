@@ -246,7 +246,7 @@
 }
 
 /* Grow low-zoom corner handles inward: the right-hand ones leave the badge
-   clear, and the top left one the mark of an element on several diagrams. */
+   clear, and the top left one keeps its left edge on the element's. */
 .canvas :global(.react-flow__resize-control.handle.top.left) {
   translate: 0 0;
   transform-origin: 0 50%;

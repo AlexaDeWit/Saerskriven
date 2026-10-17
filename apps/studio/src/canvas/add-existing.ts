@@ -1,10 +1,4 @@
-import {
-  boxOfPoints,
-  gridSpacing,
-  layoutDiagram,
-  shiftedBy,
-  type CanvasLayout,
-} from '@saerskriven/canvas';
+import { boxOfPoints, gridSpacing, shiftedBy } from '@saerskriven/canvas';
 import {
   diagramsOf,
   elementIdsIn,
@@ -13,11 +7,9 @@ import {
   type DiagramId,
   type DrawnElement,
   type DrawnFlow,
-  type DrawnFlowEndpoint,
   type Element,
   type ElementId,
   type Model,
-  type PlacedFlowEnd,
   type Placement,
   type Point,
   type Size,
@@ -32,16 +24,10 @@ import { announce } from './announcements.js';
 import { focusCanvas, focusElement } from './edits.js';
 import { commandDecimals } from './stored-decimals.js';
 
-/** An element the diagram on screen does not place, and every diagram that does. */
+/** An element a picker offers, and every diagram that places it. */
 export type ExistingEntry = {
   readonly element: Element;
   readonly diagrams: readonly Diagram[];
-};
-
-/** What Add existing element offers: the elements, and apart from them the flows. */
-export type ExistingEntries = {
-  readonly elements: readonly ExistingEntry[];
-  readonly flows: readonly ExistingEntry[];
 };
 
 /**
@@ -58,8 +44,6 @@ type Draft = {
   readonly at: (offset: Point) => Placement;
 };
 
-type DraftedEnd = Point | 'follows' | undefined;
-
 const rowGap = 2 * gridSpacing;
 
 const origin: Point = { x: 0, y: 0 };
@@ -72,8 +56,8 @@ const pickerStore = externalStore(() => mode);
 
 /**
  * Opens the picker over the diagram on screen, or moves focus into it where
- * it is already open. Where that diagram already places every element, it
- * opens nothing and says so.
+ * it is already open. Where {@link offersExisting} says it would list nothing,
+ * it opens nothing and says so.
  */
 export function openAddExisting(): void {
   if (mode?.kind === 'add') {
@@ -153,36 +137,23 @@ export function focusAddExisting(): boolean {
   return control !== null;
 }
 
-/** Whether the diagram on screen leaves an element of the model off. */
+/** Whether {@link existingEntries} lists anything for the diagram on screen. */
 export function offersExisting(
   state: Pick<State, 'present' | 'activeDiagram'>,
 ): boolean {
   const diagram = activeDiagram(state);
-  if (diagram === undefined) {
-    return false;
-  }
-  const placed = elementIdsIn(diagram);
-  return state.present.elements.some(({ id }) => !placed.has(id));
+  return diagram !== undefined && state.present.elements.some(leftOff(diagram));
 }
 
-/** The elements and the flows `diagramId` does not place, in the model's order, each with the diagrams that do. */
+/** The elements, flows aside, that `diagramId` does not place, in the model's order, each with the diagrams that do. */
 export function existingEntries(
   model: Model,
   diagramId: DiagramId,
-): ExistingEntries {
+): readonly ExistingEntry[] {
   const diagram = model.diagrams.find(({ id }) => id === diagramId);
-  const placed = diagram === undefined ? undefined : elementIdsIn(diagram);
-  const entries =
-    placed === undefined
-      ? []
-      : entriesOf(
-          model,
-          model.elements.filter(({ id }) => !placed.has(id)),
-        );
-  return {
-    elements: entries.filter(({ element }) => element.kind !== 'flow'),
-    flows: entries.filter(({ element }) => element.kind === 'flow'),
-  };
+  return diagram === undefined
+    ? []
+    : entriesOf(model, model.elements.filter(leftOff(diagram)));
 }
 
 /** Each of `elements` as a picker entry, with the diagrams of `model` that place it. */
@@ -197,13 +168,11 @@ export function entriesOf(
 }
 
 /**
- * The placements that add `picked` to `diagramId` around `centre`, the
- * elements before the flows, leaving out what the diagram already places.
+ * The placements that add `picked` to `diagramId` around `centre`, in the
+ * model's order, leaving out a flow and what the diagram already places.
  * Each takes the geometry of its first placement, without its accent. The
  * picks one diagram holds keep their layout there, the picks of each diagram
- * stand side by side, and the row is centred on `centre`. A flow takes no
- * bends: an end whose element the diagram will place follows the route, and
- * any other end is drawn where its first placement draws it.
+ * stand side by side, and the row is centred on `centre`.
  */
 export function existingPlacements(
   model: Model,
@@ -215,31 +184,19 @@ export function existingPlacements(
   if (diagram === undefined) {
     return [];
   }
-  const onDiagram = elementIdsIn(diagram);
-  const chosen = new Set<string>(picked.filter((id) => !onDiagram.has(id)));
-  const placed = new Set<string>([...onDiagram, ...chosen]);
-  const layouts = new Map<DiagramId, CanvasLayout>();
-  const layoutOf = (from: Diagram): CanvasLayout => {
-    const held = layouts.get(from.id) ?? layoutDiagram(from, model);
-    layouts.set(from.id, held);
-    return held;
-  };
-  const ordered = [
-    ...model.elements.filter(
-      ({ id, kind }) => chosen.has(id) && kind !== 'flow',
-    ),
-    ...model.elements.filter(
-      ({ id, kind }) => chosen.has(id) && kind === 'flow',
-    ),
-  ];
+  const offered = leftOff(diagram);
+  const chosen = new Set<string>(picked);
   const drawings = new Map(
     firstDrawings(model).map((drawing) => [drawing.element.id, drawing]),
   );
-  const drafts = ordered.flatMap(({ id }) => {
-    const drawing = drawings.get(id);
-    return drawing === undefined
+  const drafts = model.elements.flatMap((element) => {
+    const drawing =
+      chosen.has(element.id) && offered(element)
+        ? drawings.get(element.id)
+        : undefined;
+    return drawing === undefined || drawing.drawn.kind === 'flow'
       ? []
-      : [draftOf(drawing.diagram, drawing.drawn, placed, centre, layoutOf)];
+      : [draftOf(drawing.diagram, drawing.drawn)];
   });
   const offsets = rowOffsets(drafts, centre);
   return drafts.map((draft) => draft.at(offsets.get(draft.from) ?? origin));
@@ -300,17 +257,16 @@ function samePickerMode(
   );
 }
 
+function leftOff(diagram: Diagram): (element: Element) => boolean {
+  const placed = elementIdsIn(diagram);
+  return ({ id, kind }) => kind !== 'flow' && !placed.has(id);
+}
+
 function draftOf(
   from: Diagram,
-  drawn: DrawnElement,
-  placed: ReadonlySet<string>,
-  centre: Point,
-  layoutOf: (diagram: Diagram) => CanvasLayout,
+  drawn: Exclude<DrawnElement, DrawnFlow>,
 ): Draft {
   const element = drawn.id;
-  if (drawn.kind === 'flow') {
-    return flowDraft(from, drawn, placed, centre, layoutOf(from));
-  }
   if (drawn.kind !== 'trust-boundary') {
     return {
       from: from.id,
@@ -343,52 +299,6 @@ function draftOf(
           shape: { ...shape, position: shiftedBy(shape.position, offset) },
         }),
       };
-}
-
-function flowDraft(
-  from: Diagram,
-  flow: DrawnFlow,
-  placed: ReadonlySet<string>,
-  centre: Point,
-  layout: CanvasLayout,
-): Draft {
-  const edge = layout.edges.find(({ id }) => id === flow.id);
-  const source = draftedEnd(flow.source, edge?.source, placed);
-  const target = draftedEnd(flow.target, edge?.target, placed);
-  return {
-    from: from.id,
-    points: [source, target].filter(
-      (end): end is Point => end !== undefined && end !== 'follows',
-    ),
-    at: (offset) => ({
-      element: flow.id,
-      waypoints: [],
-      source: placedEnd(source, offset, centre),
-      target: placedEnd(target, offset, centre),
-    }),
-  };
-}
-
-function draftedEnd(
-  end: DrawnFlowEndpoint,
-  drawnAt: Point | undefined,
-  placed: ReadonlySet<string>,
-): DraftedEnd {
-  if (end.kind !== 'free' && placed.has(end.element)) {
-    return 'follows';
-  }
-  return end.kind === 'attached' ? drawnAt : end.position;
-}
-
-function placedEnd(
-  end: DraftedEnd,
-  offset: Point,
-  centre: Point,
-): PlacedFlowEnd {
-  if (end === 'follows') {
-    return {};
-  }
-  return { position: end === undefined ? centre : shiftedBy(end, offset) };
 }
 
 function rowOffsets(

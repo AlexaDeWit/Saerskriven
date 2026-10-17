@@ -426,18 +426,22 @@ for (const state of states) {
   });
 }
 
-test('forced colours draw the mark of an element on several diagrams in system colours', async ({
+test('forced colours fill a picked box of Add existing element with the system highlight', async ({
   page,
 }) => {
   await page.emulateMedia({ forcedColors: 'active' });
   await openModelDocument(page, sharedModelInput);
   const colours = await systemColours(page);
-  const mark = nodeNamed(page, /^Payments API, process/u).locator(
-    '[data-shared-mark] rect',
-  );
+  await page.keyboard.press('e');
+  const vault = page
+    .getByRole('region', { name: 'Add existing element' })
+    .getByRole('button', { name: 'Card vault' });
+  await expect(vault).toBeFocused();
 
-  await expect(mark).toHaveCSS('fill', colours.Canvas);
-  await expect(mark).toHaveCSS('stroke', colours.CanvasText);
+  await page.keyboard.press('Space');
+
+  await expect(vault).toHaveAttribute('aria-pressed', 'true');
+  await expect(vault).toHaveCSS('background-color', colours.Highlight);
 });
 
 test('the hidden grid still snaps a moved element', async ({ page }) => {
