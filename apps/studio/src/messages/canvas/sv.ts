@@ -44,6 +44,8 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
     other: '{count} objekt lades till i {diagram}.',
   },
   'nothing-to-add': 'Alla objekt finns redan i {diagram}.',
+  merged: '{element} slogs samman med {into}.',
+  'merge-dropped': 'Dess placering i {diagrams} togs bort.',
   'flows-detached': {
     one: '{count} flöde lossades.',
     other: '{count} flöden lossades.',

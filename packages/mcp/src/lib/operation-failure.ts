@@ -39,6 +39,14 @@ export function describeOperationFailure(failure: OperationFailure): string {
       `The placement of element ${quotedForTerminal(elementId)} on diagram ${quotedForTerminal(diagramId)} is refused: it holds geometry the element's kind does not take, or a flow end the diagram cannot draw. An end attached to an element the diagram draws holds no position, and every other end holds one.`,
     ElementOnSeveralDiagrams: ({ elementId, diagramIds }) =>
       `Element ${quotedForTerminal(elementId)} is drawn on more than one diagram (${diagramIds.map((id) => quotedForTerminal(id)).join(', ')}), so name the one this edit applies to in \`diagram\`.`,
+    MergeIntoItself: ({ elementId }) =>
+      `Element ${quotedForTerminal(elementId)} is named as both \`element\` and \`into\`, and an element merges only into another one.`,
+    MergeKindsDiffer: ({ elementId, elementKind, intoId, intoKind }) =>
+      `Element ${quotedForTerminal(elementId)} is of kind ${elementKind} and element ${quotedForTerminal(intoId)} of kind ${intoKind}, and only two elements of one kind merge.`,
+    MergeJoinedByFlow: ({ elementId, intoId, flowId }) =>
+      `Flow ${quotedForTerminal(flowId)} joins element ${quotedForTerminal(elementId)} to element ${quotedForTerminal(intoId)}, and merging them would leave it joining one element to itself: remove or reconnect the flow first.`,
+    MergeFlowEndsDiffer: ({ elementId, intoId }) =>
+      `Flows ${quotedForTerminal(elementId)} and ${quotedForTerminal(intoId)} do not join the same two elements in the same direction, and two flows merge only where they do, since a flow's ends are the same on every diagram: merge the elements at their ends first, or reverse one with reverse_flow.`,
     UnknownThreat: ({ threatId }) =>
       `The model holds no threat ${quotedForTerminal(threatId)}.`,
     UnknownMitigation: ({ mitigationId }) =>

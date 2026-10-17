@@ -33,6 +33,7 @@ import {
   replaceThreat,
   resizeElement,
   reverseFlow,
+  mergeElements,
   placeElement,
   unplaceElement,
   setAccent,
@@ -76,6 +77,10 @@ export function reduce(state: State, action: Action): State {
         foldedEdits(state.present, placements, (model, placement) =>
           placeElement(model, diagramId, placement, decimals),
         ),
+      ),
+    MergeElements: ({ elementId, intoId }) =>
+      removedElements(state, [elementId], (model, merged) =>
+        mergeElements(model, merged, intoId),
       ),
     InsertFragment: ({ diagramId, fragment }) =>
       edited(state, insertFragment(state.present, diagramId, fragment)),

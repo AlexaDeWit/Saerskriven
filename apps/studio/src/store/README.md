@@ -49,7 +49,9 @@ host provides.
   hands its ID array to the one operation that takes several, and
   `PlaceElements`, `InsertFragment` and `ArrangeElements` apply an Add
   existing element, a paste or an arrangement atomically, before history
-  records the result. `AddDiagram` appends a
+  records the result. `MergeElements` merges one element into another, and
+  takes the merged id out of the selection and the inline editor as a
+  removal does. `AddDiagram` appends a
   diagram and shows it, the one edit that moves the view as well as the model.
   The other tags cover history, the diagram on screen, selection, inline
   editing, files and failures. An edit that writes geometry carries

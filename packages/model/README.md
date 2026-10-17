@@ -172,6 +172,19 @@ threats name elements, not placements. `removeElement` removes the element
 and its placements, and frees each flow end attached to it at its anchor on
 each diagram drawing that flow.
 
+`mergeElements` makes two elements of one kind one, as two copies a model made
+before sharing existed: the element kept holds its id, name, details and
+properties, and the merged one's are dropped. Every threat, flow end and
+relationship list naming the merged element names the kept one instead, once.
+Each placement of the merged element becomes the kept element's, except on a
+diagram already placing the kept element, where it is dropped and the flows
+there attach to the kept one. It culls nothing. It refuses one id named twice
+(`MergeIntoItself`), two kinds (`MergeKindsDiffer`), a flow joining the two
+(`MergeJoinedByFlow`), and two flows whose ends do not attach to the same
+elements in the same direction (`MergeFlowEndsDiffer`), since a flow's ends are
+the same on every diagram. `mergeOutcome` reads what a merge would move and
+drop, before it runs.
+
 A diagram's threats are the ones referencing an element drawn on it, which
 `threatsOnDiagrams` reads for one diagram or several. A threat attached to no
 element is on no diagram, whether or not it applies to the model.

@@ -75,7 +75,7 @@ const press = (
 });
 
 describe('the command registry', () => {
-  it('leaves the export, share, diagram-switcher and accent commands without shortcuts', () => {
+  it('leaves the export, share, merge, diagram-switcher and accent commands without shortcuts', () => {
     expect(
       commands
         .filter((command) => command.shortcuts.length === 0)
@@ -88,6 +88,7 @@ describe('the command registry', () => {
       'export-pdf',
       'export-png',
       'share',
+      'merge-into',
       'new-diagram',
       'rename-diagram',
       'accent-none',

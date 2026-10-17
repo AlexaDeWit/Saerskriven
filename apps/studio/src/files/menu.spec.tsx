@@ -416,6 +416,33 @@ describe('what the studio says about the file', () => {
     );
   });
 
+  it('offers Merge an element into this one only while the one element selected has another of its kind, and gives it no shortcut', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+    act(() => {
+      dispatch(Action.Select({ elementIds: [actorElement] }));
+    });
+
+    await openMenu(user);
+    expect(
+      item('Merge an element into this one').getAttribute('data-disabled'),
+    ).not.toBeNull();
+
+    act(() => {
+      modelStore.setState(
+        { ...initialState(twoDiagramModel), selection: [actorElement] },
+        true,
+      );
+    });
+
+    expect(
+      item('Merge an element into this one').getAttribute('data-disabled'),
+    ).toBeNull();
+    expect(
+      item('Merge an element into this one').getAttribute('aria-keyshortcuts'),
+    ).toBeNull();
+  });
+
   it('offers no rename over a text note, which draws prose rather than a name', async () => {
     const user = userEvent.setup();
     const note = newNote('text-note', 'The studio opens on this model.');

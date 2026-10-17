@@ -9,6 +9,7 @@ import { ShareLinkFailure } from '@saerskriven/formats/share-link';
 import { OperationFailure } from '@saerskriven/model';
 import { assetFailureLine } from '../asset-failure.js';
 import { formatNames } from '../format-names.js';
+import { kindMessages } from '../messages/enum-labels.js';
 import { parseIssueLine } from '../messages/issues/text.js';
 import { useTranslator } from '../messages/locale.js';
 import { Message } from '../messages/message.js';
@@ -156,6 +157,27 @@ export function describeOperation(
         id: elementId,
         diagrams: diagramIds.join(', '),
       }),
+    ],
+    MergeIntoItself: ({ elementId }) => [
+      t('notice.op-merge-itself', { id: elementId }),
+    ],
+    MergeKindsDiffer: ({ elementId, elementKind, intoId, intoKind }) => [
+      t('notice.op-merge-kinds', {
+        id: elementId,
+        into: intoId,
+        kind: t(kindMessages[elementKind]),
+        intoKind: t(kindMessages[intoKind]),
+      }),
+    ],
+    MergeJoinedByFlow: ({ elementId, intoId, flowId }) => [
+      t('notice.op-merge-joined', {
+        id: elementId,
+        into: intoId,
+        flow: flowId,
+      }),
+    ],
+    MergeFlowEndsDiffer: ({ elementId, intoId }) => [
+      t('notice.op-merge-flow-ends', { id: elementId, into: intoId }),
     ],
     UnknownThreat: ({ threatId }) => [
       t('notice.op-unknown-threat', { id: threatId }),

@@ -1,4 +1,5 @@
 import { Data } from 'effect';
+import type { ElementKind } from './elements.js';
 import type {
   AssumptionId,
   DiagramId,
@@ -51,6 +52,22 @@ export type OperationFailure = Data.TaggedEnum<{
   ElementOnSeveralDiagrams: {
     readonly elementId: ElementId;
     readonly diagramIds: readonly DiagramId[];
+  };
+  MergeIntoItself: { readonly elementId: ElementId };
+  MergeKindsDiffer: {
+    readonly elementId: ElementId;
+    readonly elementKind: ElementKind;
+    readonly intoId: ElementId;
+    readonly intoKind: ElementKind;
+  };
+  MergeJoinedByFlow: {
+    readonly elementId: ElementId;
+    readonly intoId: ElementId;
+    readonly flowId: ElementId;
+  };
+  MergeFlowEndsDiffer: {
+    readonly elementId: ElementId;
+    readonly intoId: ElementId;
   };
   UnknownThreat: { readonly threatId: ThreatId };
   UnknownMitigation: { readonly mitigationId: MitigationId };

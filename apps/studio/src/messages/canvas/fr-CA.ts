@@ -49,6 +49,8 @@ export const canvasFrCA = catalogue(canvasMessages)('fr-CA')({
     other: '{count} éléments ajoutés au diagramme {diagram}.',
   },
   'nothing-to-add': 'Tous les éléments sont déjà sur {diagram}.',
+  merged: 'Élément fusionné dans {into} : {element}.',
+  'merge-dropped': 'Son placement sur {diagrams} a été retiré.',
   'flows-detached': {
     one: '{count} flux détaché.',
     many: '{count} de flux détachés.',

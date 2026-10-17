@@ -36,6 +36,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'label-delete': 'Ta bort markeringen',
   'label-delete-from-model': 'Ta bort ur modellen',
   'label-add-existing': 'Lägg till befintligt objekt',
+  'label-merge-into': 'Slå samman ett objekt med det här',
   'label-rename': 'Byt namn på markeringen',
   'label-model-panel': 'Modell',
   'label-focus-threats': 'Gå till hoten',
@@ -73,6 +74,8 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'when-anywhere': 'Var som helst i studion',
   'when-file-menu': 'Från menyn Arkiv',
   'when-view-menu': 'Från menyn Visa',
+  'when-merge-into':
+    'Från menyn Redigera, när ett enda objekt är markerat och modellen har ett annat av samma slag',
   'when-selection-outside-fields':
     'Med en markering på arbetsytan, utanför textfält',
   'when-selection-exists-outside-fields':

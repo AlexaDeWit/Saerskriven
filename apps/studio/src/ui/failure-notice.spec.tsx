@@ -126,6 +126,24 @@ const operationFailures: ByTag<OperationFailure> = {
     elementId: elementId('element-api'),
     diagramIds: [diagramId('diagram-main'), diagramId('diagram-second')],
   }),
+  MergeIntoItself: OperationFailure.MergeIntoItself({
+    elementId: elementId('element-api'),
+  }),
+  MergeKindsDiffer: OperationFailure.MergeKindsDiffer({
+    elementId: elementId('element-db'),
+    elementKind: 'store',
+    intoId: elementId('element-api'),
+    intoKind: 'process',
+  }),
+  MergeJoinedByFlow: OperationFailure.MergeJoinedByFlow({
+    elementId: elementId('element-api'),
+    intoId: elementId('element-db'),
+    flowId: elementId('element-flow'),
+  }),
+  MergeFlowEndsDiffer: OperationFailure.MergeFlowEndsDiffer({
+    elementId: elementId('element-flow'),
+    intoId: elementId('element-flow-copy'),
+  }),
   UnknownThreat: OperationFailure.UnknownThreat({
     threatId: threatId('threat-missing'),
   }),

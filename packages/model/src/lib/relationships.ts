@@ -1,5 +1,6 @@
 import type { ElementId } from './ids.js';
 import type { Element } from './elements.js';
+import { sameItems } from './lists.js';
 import type { ParseIssue, ParseIssueCode } from './parse-issue.js';
 
 type RelatedList = {
@@ -74,32 +75,49 @@ export function restrictRelationships(
   element: Element,
   retained: ReadonlySet<string>,
 ): Element {
-  if (element.kind === 'flow' && element.trustBoundaryIds !== undefined) {
-    return {
-      ...element,
-      trustBoundaryIds: element.trustBoundaryIds.filter((id) =>
-        retained.has(id),
-      ),
-    };
+  return relistedRelationships(element, (ids) =>
+    ids.filter((id) => retained.has(id)),
+  );
+}
+
+/**
+ * `element` with each relationship list it holds replaced by what `relist`
+ * returns for it, an absent list left absent. Where every list comes back
+ * with the ids it held, in order, `element` itself comes back.
+ */
+export function relistedRelationships(
+  element: Element,
+  relist: (ids: readonly ElementId[]) => ElementId[],
+): Element {
+  if (element.kind === 'flow') {
+    const trustBoundaryIds = relistedOrHeld(element.trustBoundaryIds, relist);
+    return trustBoundaryIds === element.trustBoundaryIds ||
+      trustBoundaryIds === undefined
+      ? element
+      : { ...element, trustBoundaryIds };
   }
   if (element.kind === 'trust-boundary') {
-    return {
-      ...element,
-      ...(element.containedElements === undefined
-        ? {}
-        : {
-            containedElements: element.containedElements.filter((id) =>
-              retained.has(id),
-            ),
-          }),
-      ...(element.crossingFlows === undefined
-        ? {}
-        : {
-            crossingFlows: element.crossingFlows.filter((id) =>
-              retained.has(id),
-            ),
-          }),
-    };
+    const containedElements = relistedOrHeld(element.containedElements, relist);
+    const crossingFlows = relistedOrHeld(element.crossingFlows, relist);
+    return containedElements === element.containedElements &&
+      crossingFlows === element.crossingFlows
+      ? element
+      : {
+          ...element,
+          ...(containedElements === undefined ? {} : { containedElements }),
+          ...(crossingFlows === undefined ? {} : { crossingFlows }),
+        };
   }
   return element;
+}
+
+function relistedOrHeld(
+  held: ElementId[] | undefined,
+  relist: (ids: readonly ElementId[]) => ElementId[],
+): ElementId[] | undefined {
+  if (held === undefined) {
+    return undefined;
+  }
+  const next = relist(held);
+  return sameItems(held, next) ? held : next;
 }

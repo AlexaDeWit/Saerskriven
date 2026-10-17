@@ -196,6 +196,32 @@ describe('the version report under the chrome card', () => {
     expect(screen.queryByTestId('version-report')).toBeNull();
   });
 
+  it('shows at the merge that leaves the element kept of a version 2 file on a second diagram', () => {
+    modelStore.setState(
+      {
+        ...at(twoDiagramModel),
+        file: FileLifecycle.Opened({
+          name: 'two.yaml',
+          source: { format: 'saerskriven-yaml' },
+        }),
+      },
+      true,
+    );
+    render(<Reports />);
+    expect(screen.queryByTestId('version-report')).toBeNull();
+
+    act(() => {
+      dispatch(
+        Action.MergeElements({
+          elementId: otherElement,
+          intoId: actorElement,
+        }),
+      );
+    });
+
+    expect(screen.queryByTestId('version-report')).not.toBeNull();
+  });
+
   it('shows at the Add existing element that puts an element of a version 2 file on a second diagram', async () => {
     const user = userEvent.setup();
     modelStore.setState(

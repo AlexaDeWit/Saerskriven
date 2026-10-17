@@ -142,6 +142,10 @@ const applied: ActionsByTag<ModelActionTag> = {
     ],
     decimals: 3,
   }),
+  MergeElements: Action.MergeElements({
+    elementId: otherElement,
+    intoId: actorElement,
+  }),
   InsertFragment: Action.InsertFragment({
     diagramId: mainDiagram,
     fragment: placeholderModel,
@@ -337,6 +341,10 @@ const refused: ActionsByTag<ModelActionTag> = {
       },
     ],
     decimals: undefined,
+  }),
+  MergeElements: Action.MergeElements({
+    elementId: processElement,
+    intoId: actorElement,
   }),
   InsertFragment: Action.InsertFragment({
     diagramId: mainDiagram,
@@ -610,7 +618,10 @@ function stateFor(action: Action): State {
   if (Action.$is('SetAwayEndPosition')(action)) {
     return { ...initialState(sharedModel), activeDiagram: action.diagramId };
   }
-  if (Action.$is('PlaceElements')(action)) {
+  if (
+    Action.$is('PlaceElements')(action) ||
+    Action.$is('MergeElements')(action)
+  ) {
     return initialState(twoDiagramModel);
   }
   if (Action.$is('UnlinkAssumptionFromModel')(action)) {
@@ -704,6 +715,58 @@ describe('placing elements the model already holds', () => {
     expect(next.past).toEqual([]);
     expect(next.lastFailure).toMatchObject({
       failure: { _tag: 'ElementAlreadyOnDiagram', elementId: actorElement },
+    });
+  });
+});
+
+describe('merging two elements', () => {
+  const merging = applied.MergeElements;
+
+  it('keeps one element on both diagrams, in one undo step that restores the other', () => {
+    const before: State = {
+      ...initialState(twoDiagramModel),
+      activeDiagram: secondDiagram,
+      selection: [otherElement],
+      inlineEditor: { kind: 'name', elementId: otherElement },
+    };
+    const merged = reduce(before, merging);
+    expect(
+      diagramsOf(merged.present, actorElement).map(({ id }) => id),
+    ).toEqual([mainDiagram, secondDiagram]);
+    expect(merged.present.elements.map(({ id }) => id)).not.toContain(
+      otherElement,
+    );
+    expect(merged.selection).toEqual([]);
+    expect(merged.inlineEditor).toBeUndefined();
+    expect(merged.past).toEqual([before.present]);
+
+    expect(reduce(merged, Action.Undo()).present).toBe(before.present);
+  });
+
+  it('drops the placement on a diagram that places both, and an undo brings it back', () => {
+    const both = reduce(initialState(twoDiagramModel), applied.PlaceElements);
+    const merged = reduce(both, merging);
+    expect(
+      merged.present.diagrams[0].placements.map(({ element }) => element),
+    ).not.toContain(otherElement);
+    expect(merged.past).toHaveLength(2);
+
+    const undone = reduce(merged, Action.Undo());
+    expect(undone.present).toBe(both.present);
+    expect(
+      undone.present.diagrams[0].placements.map(({ element }) => element),
+    ).toContain(otherElement);
+  });
+
+  it('records the refusal of two kinds and leaves the model as it was', () => {
+    const next = reduce(start, refused.MergeElements);
+    expect(next.present).toBe(start.present);
+    expect(next.lastFailure).toMatchObject({
+      failure: {
+        _tag: 'MergeKindsDiffer',
+        elementKind: 'process',
+        intoKind: 'actor',
+      },
     });
   });
 });

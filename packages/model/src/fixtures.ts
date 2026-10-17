@@ -34,6 +34,7 @@ import { parseDrawnModel } from './lib/parse-drawn.js';
 import type { Placement } from './lib/placements.js';
 import { issueLine, parseIssueText } from './lib/parse-issue.js';
 import { parseModel, type Model, type ParseFailure } from './lib/parse.js';
+import { copiesModelInput } from './lib/copies.fixtures.js';
 import { sharedModelInput } from './lib/shared.fixtures.js';
 import type { Threat } from './lib/threats.js';
 
@@ -61,6 +62,7 @@ export {
   securityPropertyFixtures,
 } from './lib/security.fixtures.js';
 export { sharedModelInput } from './lib/shared.fixtures.js';
+export { copiesModelInput } from './lib/copies.fixtures.js';
 
 /** Parses a spec's literal string into a branded element id. */
 export const elementId = (value: string): ElementId =>
@@ -117,6 +119,9 @@ export const emptyRegisterModel: Model = drawnFixture(emptyRegisterFixture);
 
 /** {@link sharedModelInput}, parsed: two diagrams sharing elements. */
 export const sharedModel: Model = parsedFixture(sharedModelInput);
+
+/** {@link copiesModelInput}, parsed: two diagrams each holding its own copy of an element. */
+export const copiesModel: Model = parsedFixture(copiesModelInput);
 
 /**
  * Each methodology with a closed category list, beside that list, read from

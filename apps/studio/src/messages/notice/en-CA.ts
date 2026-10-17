@@ -72,6 +72,13 @@ export const noticeEnCA = catalogue(noticeMessages)('en-CA')({
     'Element {id} cannot be drawn on diagram {diagram} with that geometry.',
   'op-several-diagrams':
     'Element {id} is on more than one diagram: {diagrams}.',
+  'op-merge-itself': 'Element {id} cannot merge into itself.',
+  'op-merge-kinds':
+    'Elements {id} and {into} are of different kinds: {kind} and {intoKind}. Only elements of one kind merge.',
+  'op-merge-joined':
+    'Flow {flow} joins elements {id} and {into}, so they cannot merge.',
+  'op-merge-flow-ends':
+    'Flows {id} and {into} do not join the same elements in the same direction, so they cannot merge.',
   'op-source-not-away':
     'The source of flow {id} is not drawn away from its element on diagram {diagram}.',
   'op-target-not-away':

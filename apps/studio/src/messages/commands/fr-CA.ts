@@ -36,6 +36,7 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'label-delete': 'Supprimer la sélection',
   'label-delete-from-model': 'Supprimer du modèle',
   'label-add-existing': 'Ajouter un élément existant',
+  'label-merge-into': 'Fusionner un élément dans celui-ci',
   'label-rename': 'Renommer la sélection',
   'label-model-panel': 'Modèle',
   'label-focus-threats': 'Aller aux menaces',
@@ -73,6 +74,8 @@ export const commandsFrCA = catalogue(commandMessages)('fr-CA')({
   'when-anywhere': 'Partout dans le studio',
   'when-file-menu': 'Depuis le menu Fichier',
   'when-view-menu': 'Depuis le menu Affichage',
+  'when-merge-into':
+    'Depuis le menu Édition, quand un seul élément est sélectionné et que le modèle en contient un autre du même genre',
   'when-selection-outside-fields':
     'Avec une sélection sur le canevas, hors des champs de texte',
   'when-selection-exists-outside-fields':

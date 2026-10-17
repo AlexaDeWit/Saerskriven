@@ -11,6 +11,11 @@ export const toolsEnCA = catalogue(toolMessages)('en-CA')({
   'existing-detail': '{what}, on {diagrams}',
   'add-picked': 'Add {count}',
   'pick-existing-first': 'Pick an element or a flow first.',
+  'merge-into': 'Merge into {name}',
+  'merge-choice': 'Element to merge',
+  merge: 'Merge',
+  'pick-merge-first': 'Pick the element to merge first.',
+  'nothing-to-merge': 'No other element of its kind.',
   'flow-between': 'between {source} and {target}',
   'flow-from-to': 'from {source} to {target}',
   'open-threats': {

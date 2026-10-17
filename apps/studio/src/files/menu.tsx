@@ -1,4 +1,5 @@
 import { focusAddExisting, offersExisting } from '../canvas/add-existing.js';
+import { mergeable } from '../canvas/merge-into.js';
 import { focusSelectionControl } from '../canvas/selection-control.js';
 import { useSnap } from '../canvas/snap.js';
 import { ExternalLinkIcon } from '@radix-ui/react-icons';
@@ -383,6 +384,7 @@ function EditMenu() {
   const nothing = useModelStore((state) => state.selection.length === 0);
   const renamable = useModelStore(renameable);
   const addable = useModelStore(offersExisting);
+  const merging = useModelStore(mergeable);
 
   return (
     <DropdownMenu.Group>
@@ -409,6 +411,7 @@ function EditMenu() {
       </Submenu>
       <MenuCommand command="rename" disabled={!renamable} />
       <MenuCommand command="add-existing" disabled={!addable} />
+      <MenuCommand command="merge-into" disabled={!merging} />
       <MenuCommand command="delete-from-model" disabled={nothing} />
     </DropdownMenu.Group>
   );

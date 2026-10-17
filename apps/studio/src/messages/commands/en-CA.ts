@@ -36,6 +36,7 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'label-delete': 'Delete selection',
   'label-delete-from-model': 'Delete from model',
   'label-add-existing': 'Add existing element',
+  'label-merge-into': 'Merge an element into this one',
   'label-rename': 'Rename selection',
   'label-model-panel': 'Model',
   'label-focus-threats': 'Focus threats',
@@ -73,6 +74,8 @@ export const commandsEnCA = catalogue(commandMessages)('en-CA')({
   'when-anywhere': 'Anywhere in the studio',
   'when-file-menu': 'From the File menu',
   'when-view-menu': 'From the View menu',
+  'when-merge-into':
+    'From the Edit menu, while one element is selected and the model holds another of its kind',
   'when-selection-outside-fields':
     'With a canvas selection, outside text fields',
   'when-selection-exists-outside-fields':
