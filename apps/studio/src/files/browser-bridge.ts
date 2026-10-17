@@ -139,7 +139,10 @@ function mediaTypeOf(type: SaveFileType): string {
  * operations. Each handle a settlement adopts goes to the top of the list,
  * and the list's reads and writes run one at a time, in the order asked. A
  * reopen that does not open its file has the next open picker start in that
- * file's folder, and an export's picker starts beside the file held.
+ * file's folder, and an export's picker starts beside the file held. A
+ * reopen asks for the `readwrite` permission Save needs before its first
+ * await, since the browser asks only in answer to a press, so a caller runs
+ * it from the press that chose the file.
  */
 export function browserBridge(store: RecentStore): FileBridge {
   let pending: Promise<unknown> = Promise.resolve();

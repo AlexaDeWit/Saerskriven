@@ -532,6 +532,23 @@ describe('the recent list', () => {
     );
   });
 
+  it('keeps both files where two tabs each take one up at once', async () => {
+    picking(
+      handleFor('first.yaml', 'a: 1', []),
+      handleFor('second.yaml', 'a: 1', []),
+    );
+    const store = memoryRecentStore();
+    const tabs = [browserBridge(store), browserBridge(store)];
+
+    await Promise.all(tabs.map((tab) => settled(tab.open(1024))));
+
+    const listed = await names(tabs[0]);
+    expect(listed).toHaveLength(2);
+    expect(listed).toEqual(
+      expect.arrayContaining(['first.yaml', 'second.yaml']),
+    );
+  });
+
   it('reopens a listed file once the browser grants the permission Save needs', async () => {
     const requestPermission = vi.fn<() => Promise<PermissionState>>(() =>
       Promise.resolve<PermissionState>('granted'),
