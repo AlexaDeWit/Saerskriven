@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import type { Divergence } from './divergence.js';
-import { droppedByWriteBack, undeclaredDivergences } from './undeclared.js';
+import { undeclaredDivergences } from './undeclared.js';
 
 const schema = z.object({ kept: z.object({ inner: z.string() }) });
 
@@ -40,29 +39,5 @@ describe('undeclaredDivergences', () => {
     expect(reportOn({ kept: { inner: 'yes' }, 'a\\.b': 1 })).toEqual([
       'a\\\\\\.b',
     ]);
-  });
-});
-
-describe('droppedByWriteBack', () => {
-  const unknownAccent: Divergence = {
-    subject: { kind: 'model' },
-    detail: { code: 'accent-unknown', parameters: { accent: 'x9' } },
-    reason: 'narrowed',
-  };
-
-  const merged: Divergence = {
-    subject: { kind: 'model' },
-    detail: { code: 'mitigation-title-merged' },
-    reason: 'narrowed',
-  };
-
-  it('holds for an undeclared key and an unknown accent, and no other narrowed value', () => {
-    const undeclared = undeclaredDivergences(
-      { kept: { inner: 'yes' }, c: 2 },
-      { kept: { inner: 'yes' } },
-    );
-    expect(
-      [...undeclared, unknownAccent, merged].map(droppedByWriteBack),
-    ).toEqual([true, true, false]);
   });
 });

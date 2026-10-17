@@ -142,6 +142,19 @@ const narrowedKept = {
   'saerskriven-yaml': saerskrivenYamlCodec.keepsNarrowed,
 } as const satisfies Record<FormatName, boolean>;
 
+/**
+ * Whether `divergence` names what this version cannot read, which a later
+ * release may have written: a key the wire schema does not declare, or an
+ * accent value the model has no key for. A write back keeps neither, as it
+ * keeps no value a version 1 read narrows, which this leaves out.
+ */
+export function unreadByThisVersion(divergence: Divergence): boolean {
+  return (
+    divergence.detail.code === 'key-undeclared' ||
+    divergence.detail.code === 'accent-unknown'
+  );
+}
+
 type DiscriminatorPath = readonly string[];
 
 type Verdict = 'bounded' | 'claimed' | 'declined';

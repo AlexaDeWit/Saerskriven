@@ -38,10 +38,11 @@ goes back through the same one. `keptByWriteBack` says whether that write
 keeps a divergence the read reported, from the codec's `keepsNarrowed`: the
 Threat Dragon merge keeps a value the read narrowed, the native codec
 projects and keeps none, and no codec keeps an `undeclared` key.
-`droppedByWriteBack` ([`undeclared.ts`](src/lib/undeclared.ts)) says whether
-that write loses what a divergence names: an `undeclared` key, or an accent
-the native read narrowed, which `saer_edit`, and `saer convert` rewriting a
-file in place, refuse to drop unless the call says to.
+`unreadByThisVersion` says whether a divergence names what this version cannot
+read, which a later release may have written: an `undeclared` key, or an
+accent value the model has no key for. That write keeps neither, and
+`saer_edit`, and `saer convert` rewriting a file in place, refuse to drop them
+unless the call says to.
 
 ## Divergences
 

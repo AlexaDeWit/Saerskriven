@@ -1,8 +1,8 @@
 import {
-  droppedByWriteBack,
   readAnyFormat,
   readLimits,
   saerskrivenYamlCodec,
+  unreadByThisVersion,
   type DetectedRead,
 } from '@saerskriven/formats';
 import { referencingYaml, unclaimedYaml } from '@saerskriven/mcp/fixtures';
@@ -247,7 +247,7 @@ const holdings = [
 ];
 
 const droppedOnReread = (path: string) =>
-  readBack(readFileSync(path, 'utf8')).divergences.filter(droppedByWriteBack);
+  readBack(readFileSync(path, 'utf8')).divergences.filter(unreadByThisVersion);
 
 describe('convert, given a file holding what this version cannot read', () => {
   it.each(holdings)(
@@ -290,8 +290,15 @@ describe('convert, given a file holding what this version cannot read', () => {
         out: file,
         dropUndeclared: true,
       });
+      const errLines = outcome.err.split('\n');
+      const heading = errLines.findIndex((line) =>
+        line.startsWith('warning: dropped'),
+      );
       expect(outcome).toMatchObject({ code: 0, out: '' });
-      expect(outcome.err).toContain(named);
+      expect(heading).toBeGreaterThanOrEqual(0);
+      expect(errLines.filter((line) => line.includes(named))).toEqual([
+        errLines[heading + 1],
+      ]);
       expect(droppedOnReread(file)).toEqual([]);
     },
   );

@@ -1,14 +1,15 @@
 import {
   divergenceLines,
-  droppedByWriteBack,
   escapedForTerminal,
   formatNameSchema,
   readLimits,
   retainedSource,
   saerskrivenYamlCodec,
   threatDragonCodec,
+  unreadByThisVersion,
   writeThrough,
   type DetectedRead,
+  type Divergence,
   type FormatName,
   type ImportResult,
   type WriteResult,
@@ -55,9 +56,10 @@ const projections = {
  * a temporary file renamed onto the file a link there names, so the input
  * itself can be the output where the format stays the same. Rewriting a
  * file in place is refused, writing nothing, where the read reported what
- * the write would drop, unless `dropUndeclared` drops it. What the read and
- * the write reported goes to standard error, and none of it fails the
- * command.
+ * this version cannot read, unless `dropUndeclared` drops it, which is then
+ * listed under a heading of its own. What else the read and the write
+ * reported goes to standard error as a warning, which fails no write that
+ * goes ahead.
  */
 export function convert(file: string, options: ConvertOptions): CommandOutcome {
   return Either.match(
@@ -67,17 +69,25 @@ export function convert(file: string, options: ConvertOptions): CommandOutcome {
         Either.map(rewritable(file, read, options), () => read),
       ),
       Either.flatMap((read) =>
-        Either.map(droppable(file, read, options), () => read),
+        Either.map(droppable(file, read, options), (dropped) => ({
+          read,
+          dropped,
+        })),
       ),
     ),
     {
       onLeft: (outcome) => outcome,
-      onRight: (read) => converted(read, options),
+      onRight: (dropping) => converted(dropping, options),
     },
   );
 }
 
 type ConvertedRead = DetectedRead | ImportResult;
+
+type Dropping = {
+  readonly read: ConvertedRead;
+  readonly dropped: readonly Divergence[];
+};
 
 function rewritable(
   file: string,
@@ -99,12 +109,12 @@ function droppable(
   file: string,
   read: ConvertedRead,
   options: ConvertOptions,
-): Either.Either<void, CommandOutcome> {
-  const dropped = read.divergences.filter(droppedByWriteBack);
-  return dropped.length === 0 ||
-    options.dropUndeclared === true ||
-    !inPlace(file, options)
-    ? Either.right(undefined)
+): Either.Either<readonly Divergence[], CommandOutcome> {
+  const dropped = inPlace(file, options)
+    ? read.divergences.filter(unreadByThisVersion)
+    : [];
+  return dropped.length === 0 || options.dropUndeclared === true
+    ? Either.right(dropped)
     : Either.left(
         invalidInput(
           lines(
@@ -121,16 +131,29 @@ function inPlace(file: string, options: ConvertOptions): boolean {
 }
 
 function converted(
-  read: ConvertedRead,
+  { read, dropped }: Dropping,
   options: ConvertOptions,
 ): CommandOutcome {
   const written = writtenAs(read, options.to);
+  const kept = read.divergences.filter(
+    (divergence) => !dropped.includes(divergence),
+  );
   return delivered(
     options.out,
     written.output,
-    describeDivergences([...read.divergences, ...written.divergences]),
+    describeDropped(dropped) +
+      describeDivergences([...kept, ...written.divergences]),
     replaced,
   );
+}
+
+function describeDropped(dropped: readonly Divergence[]): string {
+  return dropped.length === 0
+    ? ''
+    : lines(
+        'warning: dropped what this version of saer cannot read, as --drop-undeclared asks:',
+        ...divergenceLines(dropped),
+      );
 }
 
 function writtenAs(read: ConvertedRead, to: FormatName): WriteResult {

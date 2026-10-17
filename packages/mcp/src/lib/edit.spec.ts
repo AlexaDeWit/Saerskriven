@@ -1,7 +1,7 @@
 import {
-  droppedByWriteBack,
   readAnyFormat,
   readLimits,
+  unreadByThisVersion,
 } from '@saerskriven/formats';
 import {
   OperationFailure,
@@ -30,7 +30,12 @@ import {
   unknownAccentYaml,
   type EditInput,
 } from './edit.fixtures.js';
-import { editArgumentsSchema, editModel, renderEdit } from './edit.js';
+import {
+  editArgumentsSchema,
+  editModel,
+  renderEdit,
+  type EditResult,
+} from './edit.js';
 import { getThreat } from './get-threat.js';
 import { describeOperationFailure } from './operation-failure.js';
 import { revisionOf } from './revision.js';
@@ -90,6 +95,11 @@ const revisionIn = (
   attempted: ReturnType<typeof attempt>,
   file: string,
 ): string => revisionOf(attempted.bytes(file));
+
+const textOf = (
+  outcome: Either.Either<EditResult, readonly string[]>,
+): readonly string[] =>
+  Either.match(outcome, { onLeft: (lines) => lines, onRight: renderEdit });
 
 describe('what a refused edit leaves on disk', () => {
   it.each<{
@@ -256,9 +266,7 @@ describe('what an applied edit writes', () => {
       revisionIn(attempted, modelFile),
       [renaming],
     );
-    expect(
-      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
-    ).toEqual([
+    expect(textOf(applied)).toEqual([
       'edits applied: 1',
       'culled:',
       'No record culled.',
@@ -686,9 +694,7 @@ describe('the records and threats a batch culls', () => {
       { kind: 'mitigation', id: 'mitigation-tls' },
       { kind: 'assumption', id: 'assumption-managed-db' },
     ]);
-    expect(
-      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
-    ).toEqual(
+    expect(textOf(applied)).toEqual(
       expect.arrayContaining([
         'mitigation "mitigation-tls"',
         'assumption "assumption-managed-db"',
@@ -715,9 +721,7 @@ describe('the records and threats a batch culls', () => {
       { kind: 'assumption', id: 'assumption-managed-db' },
     ]);
     expect(heldModel(attempted)?.threats).toEqual([]);
-    expect(
-      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
-    ).toEqual(
+    expect(textOf(applied)).toEqual(
       expect.arrayContaining([
         'threats culled:',
         'threat 1 ("threat-tamper-order"): Order tampering in transit',
@@ -755,9 +759,7 @@ describe('the records and threats a batch culls', () => {
       { kind: 'assumption', id: 'assumption-managed-db' },
     ]);
     expect(heldModel(attempted)?.threats).toEqual([]);
-    expect(
-      Either.match(applied, { onLeft: (lines) => lines, onRight: renderEdit }),
-    ).toEqual(
+    expect(textOf(applied)).toEqual(
       expect.arrayContaining([
         'threats culled:',
         'threat 1 ("threat-tamper-order"): Order tampering in transit',
@@ -1081,12 +1083,7 @@ const droppedOnRereadOf = (
 ) =>
   Either.getOrUndefined(
     readAnyFormat(attempted.bytes(file).toString('utf8')),
-  )?.divergences.filter(droppedByWriteBack);
-
-const textOf = (
-  outcome: Either.Either<Parameters<typeof renderEdit>[0], readonly string[]>,
-): readonly string[] =>
-  Either.match(outcome, { onLeft: (lines) => lines, onRight: renderEdit });
+  )?.divergences.filter(unreadByThisVersion);
 
 describe('what an edit does with what this version cannot read', () => {
   it.each([

@@ -1,9 +1,9 @@
 import {
   divergenceLines,
   divergenceSchema,
-  droppedByWriteBack,
   quotedForTerminal,
   retainedSource,
+  unreadByThisVersion,
   writeThrough,
   type Divergence,
 } from '@saerskriven/formats';
@@ -192,7 +192,7 @@ function droppable(
   read: ReadModelFile,
   drop: boolean,
 ): Either.Either<readonly Divergence[], WriteFailure> {
-  const dropped = read.read.divergences.filter(droppedByWriteBack);
+  const dropped = read.read.divergences.filter(unreadByThisVersion);
   return dropped.length === 0 || drop
     ? Either.right(dropped)
     : Either.left(

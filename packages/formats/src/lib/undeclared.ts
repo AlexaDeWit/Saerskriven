@@ -20,19 +20,6 @@ export function undeclaredDivergences(
   );
 }
 
-/**
- * Whether writing a model back onto the document of the read that reported
- * `divergence` loses what it names: a key the wire schema does not declare,
- * or an accent value the model has no key for, which only the native read
- * reports and its write never repeats.
- */
-export function droppedByWriteBack(divergence: Divergence): boolean {
-  return (
-    divergence.detail.code === 'key-undeclared' ||
-    divergence.detail.code === 'accent-unknown'
-  );
-}
-
 function undeclaredKeys(
   given: unknown,
   kept: unknown,

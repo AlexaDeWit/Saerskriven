@@ -265,8 +265,8 @@ release adds still opens. A write drops it, so `saer_edit`, and `saer convert`
 rewriting the file in place, refuse on the terms of an undeclared key
 ([Reading](#reading)), and the studio's next save writes no accent for that
 element. A value that is not text is refused at its path, as any mistyped key
-is. On a Note, and in a version 1 file, `accent` is an undeclared key: dropped, and
-reported as one.
+is. On a Note, and in a version 1 file, `accent` is an undeclared key:
+dropped, and reported as one.
 
 A release of version 2 from before the key reads the file, drops each
 `accent`, reports it as `undeclared` with its path, and writes the file

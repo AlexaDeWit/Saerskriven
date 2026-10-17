@@ -9,6 +9,7 @@ import {
   keptByWriteBack,
   readAnyFormat,
   retainedSource,
+  unreadByThisVersion,
   writeThrough,
   type DetectedRead,
 } from './detect.js';
@@ -445,5 +446,31 @@ describe('keptByWriteBack', () => {
         keptByWriteBack(format, undeclared),
       ),
     ).toBe(false);
+  });
+});
+
+describe('unreadByThisVersion', () => {
+  it('holds for an undeclared key and an unknown accent', () => {
+    const named: readonly Divergence[] = [
+      {
+        subject: { kind: 'model' },
+        detail: { code: 'key-undeclared', parameters: { path: 'notes' } },
+        reason: 'undeclared',
+      },
+      {
+        subject: { kind: 'model' },
+        detail: { code: 'accent-unknown', parameters: { accent: 'x9' } },
+        reason: 'narrowed',
+      },
+    ];
+    expect(named.map(unreadByThisVersion)).toEqual([true, true]);
+  });
+
+  it('leaves out every value a version 1 read narrows', () => {
+    const narrowed = opened(
+      readFileSync(frozenV030Path, 'utf8'),
+    ).divergences.filter(({ reason }) => reason === 'narrowed');
+    expect(narrowed.length).toBeGreaterThan(0);
+    expect(narrowed.some(unreadByThisVersion)).toBe(false);
   });
 });

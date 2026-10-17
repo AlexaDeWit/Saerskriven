@@ -276,8 +276,9 @@ refused with exit code 1, and nothing written, where the file holds what this
 version of saer cannot read and the write would drop: a key the format does
 not declare, or an accent value the model has no key for, both of which
 `validate` warns of. The error names each one and says to upgrade saer, and
-`--drop-undeclared` rewrites the file without them. Otherwise, whatever the
-read and the write did not carry exactly,
+`--drop-undeclared` rewrites the file without them and lists them on standard
+error under a heading of their own. Otherwise, whatever the read and the write
+did not carry exactly,
 [a rounded coordinate aside](packages/formats/README.md#divergences), goes to
 standard error as a warning, and the command still writes the document and
 exits 0.
