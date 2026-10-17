@@ -113,12 +113,25 @@ const rounded = (point: Point): Point => ({
 const numberIn = (style: string, pattern: RegExp): number =>
   Number(pattern.exec(style)?.[1] ?? Number.NaN);
 
+/**
+ * The x and y of the first `translate()` in `style`, a missing y reading as
+ * 0: Firefox writes `translate(5px, 0px)` back as `translate(5px)`. Both are
+ * NaN where `style` holds no translate.
+ */
+export const translateOf = (style: string): Point => {
+  const translate = /translate\((-?[\d.]+)px(?:,\s*(-?[\d.]+)px)?\)/u.exec(
+    style,
+  );
+  return translate === null
+    ? { x: Number.NaN, y: Number.NaN }
+    : { x: Number(translate[1]), y: Number(translate[2] ?? 0) };
+};
+
 /** Reads live model-space bounds from the node style before drag frames reach the store. */
 export const boxOf = async (node: Locator): Promise<Box> => {
   const style = (await node.getAttribute('style')) ?? '';
   return {
-    x: numberIn(style, /translate\((-?[\d.]+)px/u),
-    y: numberIn(style, /translate\(-?[\d.]+px,\s*(-?[\d.]+)px/u),
+    ...translateOf(style),
     width: numberIn(style, /width:\s*([\d.]+)px/u),
     height: numberIn(style, /height:\s*([\d.]+)px/u),
   };

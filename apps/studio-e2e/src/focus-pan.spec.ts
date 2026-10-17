@@ -10,6 +10,7 @@ import {
   focusRingShown,
   lineOf,
   screenBoxOf,
+  translateOf,
   viewportTransform,
   viewportZoom,
   type Box,
@@ -57,13 +58,6 @@ const panTakesAtLeast = 400;
 const panRunsOut = 1000;
 
 const scrolledAcross = -100;
-
-const offsetIn = (transform: string): Point => {
-  const [x, y] = [...transform.matchAll(/(-?[\d.]+)px/gu)].map((found) =>
-    Number(found[1]),
-  );
-  return { x: x ?? Number.NaN, y: y ?? Number.NaN };
-};
 
 const viewportBox = (page: Page): Promise<Box> =>
   screenBoxOf(canvasContainer(page), 'the canvas');
@@ -207,7 +201,7 @@ const followedPast = async (
   edge: keyof typeof farArrow,
 ): Promise<void> => {
   const step = farStep * (await viewportZoom(page));
-  const start = offsetIn(await viewportTransform(page));
+  const start = translateOf(await viewportTransform(page));
 
   await pressTimes(
     page,
@@ -219,7 +213,7 @@ const followedPast = async (
   const gap = (await edgeGaps(page, item))[edge];
   expect(gap, `the ${edge} edge`).toBeGreaterThanOrEqual(0);
   expect(gap, `the ${edge} edge`).toBeLessThan(justInside);
-  const rested = offsetIn(await viewportTransform(page));
+  const rested = translateOf(await viewportTransform(page));
   if (edge === 'right') {
     expect(rested.x).toBeLessThan(start.x);
     expect(rested.y).toBe(start.y);
@@ -253,7 +247,7 @@ test('Tab onto a flow outside the viewport brings it just inside, by the least d
 }) => {
   const flow = await firstFlowScrolledOut(page);
   const zoom = await viewportZoom(page);
-  const before = offsetIn(await viewportTransform(page));
+  const before = translateOf(await viewportTransform(page));
 
   const shown = await focusRingShown(flow, beforeCanvas(page), () =>
     tabTo(page, flow),
@@ -263,7 +257,7 @@ test('Tab onto a flow outside the viewport brings it just inside, by the least d
   const { left } = await edgeGaps(page, flow);
   expect(left).toBeGreaterThanOrEqual(0);
   expect(left).toBeLessThan(justInside);
-  expect(offsetIn(await viewportTransform(page)).y).toBe(before.y);
+  expect(translateOf(await viewportTransform(page)).y).toBe(before.y);
   expect(await viewportZoom(page)).toBe(zoom);
 });
 
@@ -288,7 +282,9 @@ test('Tab onto an element outside the viewport brings it just inside, by the lea
   const { bottom } = await edgeGaps(page, item);
   expect(bottom).toBeGreaterThanOrEqual(0);
   expect(bottom).toBeLessThan(justInside);
-  expect(offsetIn(await viewportTransform(page)).x).toBe(offsetIn(scrolled).x);
+  expect(translateOf(await viewportTransform(page)).x).toBe(
+    translateOf(scrolled).x,
+  );
   expect(await viewportZoom(page)).toBe(zoom);
   expect(await undoOffered(page)).toBe(false);
 });
@@ -489,7 +485,9 @@ test('Tab onto a bend handle outside the viewport brings it just inside', async 
   const { top } = await edgeGaps(page, bend);
   expect(top).toBeGreaterThanOrEqual(0);
   expect(top).toBeLessThan(justInside);
-  expect(offsetIn(await viewportTransform(page)).x).toBe(offsetIn(scrolled).x);
+  expect(translateOf(await viewportTransform(page)).x).toBe(
+    translateOf(scrolled).x,
+  );
 });
 
 test('a pointer drag that carries an element past the edge leaves the view where it is', async ({
@@ -674,10 +672,10 @@ test('scrolling during the pan takes the view, and the pan does not take it back
   );
   await canvasSettled(page);
 
-  const from = offsetIn(
+  const from = translateOf(
     await page.evaluate(() => window.saerskrivenScrolledFrom ?? ''),
   );
-  const rested = offsetIn(await viewportTransform(page));
+  const rested = translateOf(await viewportTransform(page));
   expect(rested.x).toBeCloseTo(from.x + scrolledAcross, 1);
   expect(rested.y).toBeCloseTo(from.y, 1);
   expect(await insideTheViewport(page, flow)).toBe(false);
