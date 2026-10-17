@@ -34,9 +34,6 @@ export const reportsFrCA = catalogue(reportMessages)('fr-CA')({
   'share-clipboard-refused':
     'Le navigateur n’a pas permis à Saerskriven de mettre le lien dans le presse-papiers.',
   'dismiss-share': 'Masquer le rapport du lien',
-  'newer-version':
-    'Les versions antérieures de Saerskriven ne peuvent plus ouvrir ce modèle.',
-  'dismiss-version': 'Masquer le rapport de version',
   unplaced:
     'Une extrémité de flux désigne un élément que le canevas ne dessine pas comme une boîte, alors ce flux n’est pas dans le dessin.',
   'unplaced-source': 'La source du flux {flow} désigne {element}.',

@@ -53,23 +53,17 @@ const show = (model: Model, diagram = overview): void => {
 };
 
 describe('what Add existing element offers', () => {
-  it('lists the elements and the flows the diagram does not place, with the diagrams that do', () => {
+  it('lists the elements the diagram does not place, with the diagrams that do, and no flow', () => {
     const offered = existingEntries(sharedModel, overview);
-    expect(ids(offered.elements)).toEqual([cardVault, fraudCheck]);
-    expect(ids(offered.flows)).toEqual([score]);
-    expect(
-      offered.elements.map(({ diagrams }) => diagrams.map(({ id }) => id)),
-    ).toEqual([[payments], [payments]]);
+    expect(ids(offered)).toEqual([cardVault, fraudCheck]);
+    expect(offered.map(({ diagrams }) => diagrams.map(({ id }) => id))).toEqual(
+      [[payments], [payments]],
+    );
   });
 
-  it('offers every element and flow on an empty diagram, and nothing on a diagram the model lacks', () => {
-    const offered = existingEntries(withThird, third);
-    expect(offered.elements).toHaveLength(7);
-    expect(offered.flows).toHaveLength(4);
-    expect(existingEntries(sharedModel, diagramId('missing'))).toEqual({
-      elements: [],
-      flows: [],
-    });
+  it('offers every element but the flows on an empty diagram, and nothing on a diagram the model lacks', () => {
+    expect(existingEntries(withThird, third)).toHaveLength(7);
+    expect(existingEntries(sharedModel, diagramId('missing'))).toEqual([]);
   });
 });
 
@@ -150,24 +144,15 @@ describe('where Add existing element places what is picked', () => {
     });
   });
 
-  it('places a flow with no bends, following the route where its element is on the diagram and drawn away where it is not', () => {
+  it('leaves out a flow, which the picker does not offer', () => {
     expect(
-      placementOf(
-        existingPlacements(sharedModel, overview, [score], centre),
-        score,
-      ),
-    ).toEqual({
-      element: score,
-      waypoints: [],
-      source: { position: centre },
-      target: {},
-    });
-    expect(
-      placementOf(
-        existingPlacements(sharedModel, overview, [score, fraudCheck], centre),
-        score,
-      ),
-    ).toMatchObject({ source: {}, target: {} });
+      existingPlacements(
+        sharedModel,
+        overview,
+        [score, fraudCheck],
+        centre,
+      ).map(({ element }) => element),
+    ).toEqual([fraudCheck]);
   });
 
   it('leaves out a pick the diagram already places', () => {
@@ -215,5 +200,19 @@ describe('Add existing element', () => {
 
     expect(offersExisting(modelStore.getState())).toBe(false);
     expect(currentAnnouncement().message).toContain('Main');
+  });
+
+  it('opens nothing and says so where the diagram leaves only a flow off', () => {
+    show(sharedModel);
+    addExisting([cardVault, fraudCheck], { x: 0, y: 0 });
+    resetAnnouncements();
+
+    openAddExisting();
+
+    expect(
+      diagramsOf(modelStore.getState().present, score).map(({ id }) => id),
+    ).toEqual([payments]);
+    expect(offersExisting(modelStore.getState())).toBe(false);
+    expect(currentAnnouncement().message).toContain('High level');
   });
 });

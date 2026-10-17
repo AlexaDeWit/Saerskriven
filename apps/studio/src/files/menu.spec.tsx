@@ -1,3 +1,4 @@
+import { writtenSaerskrivenYamlVersion } from '@saerskriven/formats';
 import { brotliUnbuilt } from '@saerskriven/formats/fixtures';
 import { emptyModel } from '@saerskriven/model';
 import { diagramId } from '@saerskriven/model/fixtures';
@@ -14,13 +15,19 @@ import userEvent from '@testing-library/user-event';
 import { Either } from 'effect';
 import { Action } from '../store/actions.js';
 import { elementById, isDirty } from '../store/selectors.js';
-import { initialState, nameOf, placeholderModel } from '../store/state.js';
+import {
+  FileLifecycle,
+  initialState,
+  nameOf,
+  placeholderModel,
+} from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
 import {
   actorElement,
   mainDiagram,
   nativeSource,
   newNote,
+  otherElement,
   recordedModel,
   sampleModel,
   twoDiagramModel,
@@ -414,6 +421,28 @@ describe('what the studio says about the file', () => {
     expect(item('Add existing element').getAttribute('aria-keyshortcuts')).toBe(
       'E',
     );
+  });
+
+  it('says nothing under the card at the edit that moves a Saerskriven YAML file to version 3', () => {
+    modelStore.setState(
+      {
+        ...initialState(twoDiagramModel),
+        file: FileLifecycle.Opened({ name: 'two.yaml', source: nativeSource }),
+      },
+      true,
+    );
+    mounted(specBridge());
+
+    act(() => {
+      dispatch(
+        Action.MergeElements({ elementId: otherElement, intoId: actorElement }),
+      );
+    });
+
+    expect(writtenSaerskrivenYamlVersion(modelStore.getState().present)).toBe(
+      3,
+    );
+    expect(screen.getByTestId('loss-report').children).toHaveLength(0);
   });
 
   it('offers Merge an element into this one only while the one element selected has another of its kind, and gives it no shortcut', async () => {

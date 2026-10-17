@@ -23,7 +23,7 @@ person can do with it is in [Using the studio](../../../../docs/studio.md).
 | `connecting.ts`, `flow-target-chooser.tsx`                                                      | The flow a start-flow command holds until a target is chosen, and the listbox that chooses it                                                              |
 | `add-existing.ts`, `add-existing-picker.tsx`                                                    | Whether the picker under the card is open and for which command, what Add existing element offers and where it places the picks, and the picker            |
 | `merge-into.ts`                                                                                 | When Merge an element into this one is available, the elements the picker offers it, and the merge it runs                                                 |
-| `other-diagrams.ts`, `shared-mark.tsx`                                                          | The elements on more than one diagram and the other diagrams of one, and the mark a placement of such an element carries                                   |
+| `other-diagrams.ts`                                                                             | The diagrams other than the one on screen that place an element                                                                                            |
 | `inline-editing.tsx`                                                                            | The inline name and Note editors, and the node and edge bodies that mount them                                                                             |
 | `resize-layer-position.ts`                                                                      | Live offsets for a node while its resize button holds focus                                                                                                |
 | `selection-controls.tsx`, `selection-control.ts`                                                | The controls over a selection, and the event a command opens one of them through                                                                           |
@@ -199,17 +199,6 @@ package's edge body adds React Flow's invisible interaction path, and holds the
 flow's name, so a click on the line, the wider path or the name selects the
 flow.
 
-The mark on a placement of an element on more than one diagram is a square
-holding a link glyph, unlike the round badge and a note's accent bar. It hangs
-on the top left corner of the element's box, opposite the badge, and steps out
-past that corner while the element is selected, as the badge does at the top
-right. A selected boundary box draws its mark in React Flow's viewport portal,
-as it draws its badge, so the nodes around it do not cover it. A flow's mark
-stands left of its name block, in the layer that holds the blocks, outside the
-room the block search keeps clear: that search places blocks from the model
-alone, so that the studio and every export agree, and it knows nothing of the
-mark. The canvas package does not draw the mark, so no export carries it.
-
 React Flow z-index values are set by hand: a boundary at -1, a regular node at
 0 and a selected regular node at 1, so selection keeps a regular node visible
 without raising a boundary above what it encloses. A resize control with
@@ -235,8 +224,7 @@ stays at -1, so its badge draws in React Flow's viewport portal, where the
 badge layer's z-index lifts it above the nodes around it. Scaled up at low
 zoom, the two right-hand corner handles grow inward from the right side, so
 neither reaches the stepped-out badge, and the top left one grows inward from
-the left side, so it does not reach the stepped-out mark of an element on
-several diagrams. `selectionBounds` measures a selection
+the left side. `selectionBounds` measures a selection
 with each badge where it is drawn, for Fit selection and the group drag's
 bounds. A trust boundary curve's corner handles sit outside its corners
 instead, clear of the badge on its corner and of the handle on a point there.

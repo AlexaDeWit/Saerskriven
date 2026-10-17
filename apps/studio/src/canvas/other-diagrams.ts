@@ -12,10 +12,21 @@ const sharedByDiagrams = new WeakMap<
 >();
 
 /**
- * The elements placed on more than one of `diagrams`. The set is worked out
- * once per array, so a selector reading it on every node costs one lookup.
+ * The diagrams other than `shownOn` that place `elementId`, in the model's
+ * order. Which elements stand on more than one diagram is worked out once per
+ * diagrams array, so naming every node of a diagram costs one lookup each.
  */
-export function sharedElementIds(
+export function otherDiagrams(
+  model: Pick<Model, 'diagrams'>,
+  elementId: ElementId,
+  shownOn: DiagramId,
+): readonly Diagram[] {
+  return sharedElementIds(model.diagrams).has(elementId)
+    ? diagramsOf(model, elementId).filter(({ id }) => id !== shownOn)
+    : [];
+}
+
+function sharedElementIds(
   diagrams: readonly Diagram[],
 ): ReadonlySet<ElementId> {
   const held = sharedByDiagrams.get(diagrams);
@@ -34,15 +45,4 @@ export function sharedElementIds(
   }
   sharedByDiagrams.set(diagrams, shared);
   return shared;
-}
-
-/** The diagrams other than `shownOn` that place `elementId`, in the model's order. */
-export function otherDiagrams(
-  model: Pick<Model, 'diagrams'>,
-  elementId: ElementId,
-  shownOn: DiagramId,
-): readonly Diagram[] {
-  return sharedElementIds(model.diagrams).has(elementId)
-    ? diagramsOf(model, elementId).filter(({ id }) => id !== shownOn)
-    : [];
 }

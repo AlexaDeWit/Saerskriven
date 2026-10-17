@@ -10,19 +10,17 @@ import type { FileSession } from './file-commands.js';
 import styles from './menu.module.css';
 import { reportSections } from './session.js';
 import { describeShareNotice } from './share-notice.js';
-import { useVersionNotice } from './version-notice.js';
 
 /**
  * The failure notice, the report of the last file crossing, the export
- * report, the share report and the version report, which hang under the
- * chrome card. Each is empty until something is refused, costs the model a
- * key, opens as a new model, is shared, or comes to save in a version earlier
- * releases cannot open ({@link useVersionNotice}), and each is worded on
- * render, so a change of language rewords a standing report. The crossing
- * report draws one heading for each part of it that has a line. A report that
- * replaces another is drawn as new nodes above the same Dismiss button, so
- * the live region says its notice and headings although the last report had
- * the same ones, and focus on the button holds.
+ * report and the share report, which hang under the chrome card. Each is
+ * empty until something is refused, costs the model a key, opens as a new
+ * model, or is shared, and each is worded on render, so a change of language
+ * rewords a standing report. The crossing report draws one heading for each
+ * part of it that has a line. A report that replaces another is drawn as new
+ * nodes above the same Dismiss button, so the live region says its notice and
+ * headings although the last report had the same ones, and focus on the
+ * button holds.
  */
 export function FileReports({ session }: { readonly session: FileSession }) {
   const { t } = useTranslator();
@@ -42,7 +40,6 @@ export function FileReports({ session }: { readonly session: FileSession }) {
       : describeExportNotice(t, exportNotice);
   const shared =
     shareNotice === undefined ? undefined : describeShareNotice(t, shareNotice);
-  const version = useVersionNotice(report);
 
   return (
     <>
@@ -94,15 +91,6 @@ export function FileReports({ session }: { readonly session: FileSession }) {
             <Dismiss
               label={t('reports.dismiss-share')}
               onClick={dismissShareNotice}
-            />
-          </div>
-        )}
-        {version.shown && (
-          <div data-testid="version-report">
-            <p className={styles.headline}>{t('reports.newer-version')}</p>
-            <Dismiss
-              label={t('reports.dismiss-version')}
-              onClick={version.dismiss}
             />
           </div>
         )}

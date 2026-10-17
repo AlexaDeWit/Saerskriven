@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { copiesModelInput } from '@saerskriven/model/fixtures';
 import {
+  clickInsideCorner,
   nodeNamed,
   openModelDocument,
   runFromMenu,
@@ -13,7 +14,7 @@ const picker = (page: Page) =>
 
 const sharedApi = /^Orders API, process, .*also on Fulfilment$/u;
 
-test('Merge an element into this one picks by keyboard and keeps the selected element on both diagrams, as one undo step', async ({
+test('Merge an element into this one picks one box at a time, by click or keyboard, and keeps the selected element on both diagrams, as one undo step', async ({
   page,
 }) => {
   await openModelDocument(page, copiesModelInput);
@@ -24,8 +25,11 @@ test('Merge an element into this one picks by keyboard and keeps the selected el
   const copy = picker(page).getByRole('radio', { name: 'Orders API' });
   await expect(webShop).toBeFocused();
   await expect(copy).toHaveAccessibleDescription(/Fulfilment/u);
+  await clickInsideCorner(webShop);
+  await expect(webShop).toBeChecked();
   await page.keyboard.press('ArrowDown');
   await expect(copy).toBeChecked();
+  await expect(webShop).not.toBeChecked();
   const merge = picker(page).getByRole('button', { name: 'Merge' });
   await tabTo(page, merge, copy);
   await page.keyboard.press('Enter');

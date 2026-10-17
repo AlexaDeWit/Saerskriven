@@ -328,6 +328,48 @@ describe('DiagramCanvas', () => {
     ).toEqual(left);
   });
 
+  it('draws a shared element and a shared flow as it draws them on one diagram, their names alone saying where else they are', () => {
+    const api = elementId('payments-api');
+    const charge = elementId('charge');
+    modelStore.setState(
+      { ...initialState(sharedModel), activeDiagram: diagramId('overview') },
+      true,
+    );
+    render(<DiagramCanvas />);
+    const drawn = () => ({
+      node: document.querySelector(`.react-flow__node[data-id="${api}"]`)
+        ?.innerHTML,
+      blocks: document.querySelector(
+        `.${canvasInteractionClassNames.flowBlockSurface}`,
+      )?.innerHTML,
+    });
+    const shared = drawn();
+    expect(
+      document
+        .querySelector(`.react-flow__node[data-id="${api}"]`)
+        ?.getAttribute('aria-label'),
+    ).toMatch(/, also on Payments$/u);
+
+    act(() => {
+      dispatch(
+        Action.DeleteFromDiagram({
+          diagramId: diagramId('payments'),
+          elementIds: [api, charge],
+          decimals: 0,
+        }),
+      );
+    });
+
+    expect(
+      document
+        .querySelector(`.react-flow__node[data-id="${api}"]`)
+        ?.getAttribute('aria-label'),
+    ).not.toMatch(/also on/u);
+    expect(shared.node).toBeDefined();
+    expect(shared.blocks).toBeDefined();
+    expect(drawn()).toEqual(shared);
+  });
+
   it('leaves the model alone on the delete key while nothing is selected', () => {
     render(<DiagramCanvas />);
 

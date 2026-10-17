@@ -65,11 +65,6 @@ import {
 } from './edits.js';
 import { keyboardMoved } from './keyboard-moves.js';
 import { NodeFold } from './live-edges.js';
-import {
-  SharedFlowMark,
-  SharedNodeMark,
-  useSharedElement,
-} from './shared-mark.js';
 import { useFlowBlockPortal } from './flow-block-layer.js';
 import { useResizeLayerPosition } from './resize-layer-position.js';
 import { useTranslator } from '../messages/locale.js';
@@ -309,7 +304,6 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
       [node.id],
     ),
   );
-  const shared = useSharedElement(node.id);
   const editingName = editor?.kind === 'name' && node.kind !== 'text';
   const editingNote = editor?.kind === 'note' && node.kind === 'text';
   const editing = editingName || editingNote;
@@ -343,13 +337,6 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
         resizing={resizing}
         textVisible={!editing}
       />
-      {shared && (
-        <SharedNodeMark
-          absolute={{ x: props.positionAbsoluteX, y: props.positionAbsoluteY }}
-          node={node}
-          selected={props.selected}
-        />
-      )}
       {editingName && placement !== undefined && (
         <div
           className={`${styles.overText} nodrag nopan`}
@@ -405,7 +392,6 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
       [edge?.id],
     ),
   );
-  const shared = useSharedElement(id);
 
   return (
     <>
@@ -416,9 +402,6 @@ function EditingEdgeBody(props: EdgeProps<CanvasFlowEdge>) {
         renderBlock={renderBlock}
         textVisible={!editing}
       />
-      {shared &&
-        edge !== undefined &&
-        renderBlock?.(<SharedFlowMark edge={edge} />)}
       {editing && edge !== undefined && (
         <EdgeLabelRenderer>
           <div

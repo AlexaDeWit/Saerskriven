@@ -64,17 +64,12 @@ whatever its extension. What Save does next depends on the format:
   Saerskriven YAML file is written as version 2 while version 2 holds the
   model, and as version 3 once it does not
   ([which version a save writes](saerskriven-yaml.md#which-version-a-save-writes)).
-  The edit that moves the model to version 3 shows a notice under the card
-  that earlier releases of Saerskriven can no longer open it, which stands
-  until dismissed, until an edit takes the model back to version 2, or until
-  an undo, an open or a close.
 - OTM and TM-BOM: Saerskriven reads these and does not write them, so the file
   opens as a new, unsaved model under a notice saying so, and no Save ever
   writes to it. Save makes a Saerskriven YAML file under the file's stem, as
   `example.yaml` for `example.json`: the save picker proposes that name, and a
-  browser without one downloads under it. Where that model saves as version
-  3, the same notice of earlier releases shows when the file opens. What each
-  format becomes is in [OTM and TM-BOM](#otm-and-tm-bom).
+  browser without one downloads under it. What each format becomes is in
+  [OTM and TM-BOM](#otm-and-tm-bom).
 
 Where the browser offers the File System Access API, Save writes to the file
 that was opened or last saved as, without asking. With no such file, as for a
@@ -334,27 +329,21 @@ one set of facts and one set of threats, drawn on each, so renaming it or
 changing one of its facts or threats changes it on every diagram.
 
 **Add existing element**, in the menu or E outside a form field, opens a list
-under the card of the elements and flows the diagram on screen does not draw,
-each with the diagrams it is already on. Focus moves to the first of them.
-Pick one or more with a click or Space, then press Add: they arrive at the
-centre of the view as one undo step, selected, each at the size it has on the
-first diagram that draws it, and without that diagram's accent. Picks from one
-diagram keep their layout there, and the picks of each diagram stand side by
-side. Escape or Cancel adds nothing and puts focus back where it was. The menu
-item is unavailable while the diagram on screen draws every element, and E
-then says so.
+under the card of the elements the diagram on screen does not draw, each a box
+with the diagrams it is already on. Focus moves to the first of them. A click
+anywhere on a box, or Space or Enter on it, picks it, and the same again puts
+it back. Press Add: the picks arrive at the centre of the view as one undo
+step, selected, each at the size it has on the first diagram that draws it,
+and without that diagram's accent. Picks from one diagram keep their layout
+there, and the picks of each diagram stand side by side. Escape or Cancel adds
+nothing and puts focus back where it was. The menu item is unavailable while
+the list would be empty, and E then says so.
 
-The list holds every flow the diagram does not draw, and adds only the ones
-picked. An added flow takes no bends: an end whose element is on the diagram
-follows the route, and any other end is drawn away from its element, as
-[Flows](#flows) describes. A flow already on the diagram whose end was drawn
+The list holds no flows. A flow already on the diagram whose end was drawn
 away from an added element attaches to it.
 
-Every placement of an element on more than one diagram carries a mark: a small
-square holding a link glyph, on the top left corner of its box, or left of a
-flow's name. It steps past the corner while the element is selected, clear of
-the resize handle there. The mark is a shape in the ink of a name, so it does
-not depend on colour and survives forced colours, and no export draws it. The
+An element on more than one diagram draws the same on each. Its accessible
+name ends by naming the others ([Accessibility](#accessibility)), and the
 threat panel shows an **Also on** line under the element's name, naming its
 other diagrams. Each name shows that diagram with the element selected and
 focused.
@@ -367,9 +356,10 @@ become one. Select the element to keep and choose **Merge an element into this
 one** in the Edit menu, beside Add existing element. It has no shortcut, and it
 is unavailable unless one element is selected and the model holds another of
 its kind. The list under the card offers every other element of that kind,
-each with the diagrams it is on, and focus moves to the first. Pick one with a
-click or the arrow keys, then press Merge. Escape or Cancel merges nothing, and
-showing another diagram puts the list away.
+each a box with the diagrams it is on, and focus moves to the first. Pick one
+with a click anywhere on its box, Space, Enter or the arrow keys, then press
+Merge. Escape or Cancel merges nothing, and showing another diagram puts the
+list away.
 
 The element kept keeps its id, name, details and security properties, and the
 other goes with its own. The kept element's relationship lists (the boundaries
@@ -386,7 +376,8 @@ A merge is refused for two kinds, for a flow joining the two, and for two flows
 that do not join the same two elements in the same direction, since a flow has
 the same ends on every diagram. To merge two copies of a flow, merge the
 elements at its ends first. A merge that leaves an element on a second diagram
-moves the file to version 3, with the notice [Files](#files) describes.
+moves the file to
+[version 3](saerskriven-yaml.md#which-version-a-save-writes).
 
 ## Selecting
 
@@ -1053,7 +1044,9 @@ from its element as on another diagram. An element on more than one diagram
 ends by naming the others ("also on Payments"). The inline name field is
 named "Name of" the element it renames. Selection is a dashed frame and a
 heavier line, and focus is a separate ring, so neither depends on colour and
-both survive forced colours. The diagram follows the system contrast theme,
+both survive forced colours. A picked box in the Add existing element and
+Merge lists takes a heavier border and a fill, the system highlight in a
+contrast theme. The diagram follows the system contrast theme,
 whatever Appearance selects. The grid is not drawn in a contrast theme, but
 snapping still works. A badge carries its open count over a severity
 letter, and a flag is a triangle marked `!`.
@@ -1119,6 +1112,8 @@ navigation keys do not.
 - Link existing, Attach existing, Add existing element and Merge an element
   into this one have no search or filter, and neither the threat list nor the
   threat register has a filter, a search, or an order but the one above.
+- A flow cannot be added to another diagram in the studio. The MCP server's
+  `place_element` places one ([shared elements](mcp.md#shared-elements)).
 - A threat's id and number cannot be edited.
 - A custom methodology cannot be created in the studio. A threat that arrived
   with one shows it and can be moved to a listed category.
