@@ -150,10 +150,10 @@ catalog:
   oxfmt: 0.71.0
   # Pinned exactly: oxlint minors add rules, so a range bump could redden CI
   # outside a reviewed PR. Renovate proposes the bumps.
-  oxlint: 1.86.0
+  oxlint: 1.87.0
   # tsgolint bundles its own typescript-go checker, so it does not care about
   # the catalog's typescript version.
-  oxlint-tsgolint: 7.0.2003
+  oxlint-tsgolint: 7.0.2004
   # Radix headless primitives, styled in apps/studio (issue #86). The unified
   # package covers every primitive the panels adopt. Icons remain a separate
   # package because Radix publishes them apart from its primitives.
