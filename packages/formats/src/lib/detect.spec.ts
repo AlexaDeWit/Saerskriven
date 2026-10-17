@@ -39,7 +39,7 @@ const nativeMinimalVersion2 = minimalYamlV1.replace(
 
 const laterFormatVersion = minimalYamlV1.replace(
   'formatVersion: 1',
-  'formatVersion: 3',
+  'formatVersion: 4',
 );
 
 const danglingReference = oneThreatYamlV1.replace(
@@ -290,7 +290,7 @@ describe('a file from a release neither codec models', () => {
     );
   });
 
-  it('claims no Saerskriven file stamped other than 1 or 2', () => {
+  it('claims no Saerskriven file stamped other than 1, 2 or 3', () => {
     expect(outcome(laterFormatVersion)).toEqual(
       DetectionFailure.NoFormatClaimed({ tried: formatNameSchema.options }),
     );
@@ -304,7 +304,7 @@ describe('the codec the result carries', () => {
       text: featureCompleteText,
       stamp: '2.6.2',
     },
-    { name: 'the native file', text: featureCompleteYaml, stamp: 2 },
+    { name: 'the native file', text: featureCompleteYaml, stamp: 3 },
   ])('writes $name back as the format that answered', ({ text, stamp }) => {
     const answer = opened(text);
     const written = rewritten(answer);

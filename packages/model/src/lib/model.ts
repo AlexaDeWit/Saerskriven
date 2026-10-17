@@ -63,7 +63,8 @@ export type DiagramInput = z.input<typeof diagramSchema>;
  * number above the last issued) are parseModel's refinements, so this schema
  * alone accepts duplicates, dangling ids, and a mark below a threat it
  * holds. Internal to the package: every Model value comes through
- * parseModel, which parseDrawnModel calls for a read.
+ * parseModel, which the native read calls, and parseDrawnModel for the read
+ * of any other format.
  */
 export const modelSchema = z.object({
   metadata: modelMetadataSchema,

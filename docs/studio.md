@@ -60,7 +60,14 @@ the React Flow attribution, and any other build says `development`.
 whatever its extension. What Save does next depends on the format:
 
 - Saerskriven YAML and Threat Dragon: **Save** writes back to the file in the
-  format it was read as, unless the save picker is used to choose another.
+  format it was read as, unless the save picker is used to choose another. A
+  Saerskriven YAML file is written as version 2 while version 2 holds the
+  model, and as version 3 once it does not
+  ([which version a save writes](saerskriven-yaml.md#which-version-a-save-writes)).
+  The edit that moves the model to version 3 shows a notice under the card
+  that earlier releases of Saerskriven can no longer open it, which stands
+  until dismissed, until an edit takes the model back to version 2, or until
+  an undo, an open or a close.
 - OTM and TM-BOM: Saerskriven reads these and does not write them, so the file
   opens as a new, unsaved model under a notice saying so, and no Save ever
   writes to it. Save makes a Saerskriven YAML file under the file's stem, as

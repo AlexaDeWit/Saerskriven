@@ -53,6 +53,9 @@
     },
     {
       "path": "./scripts/nightly"
+    },
+    {
+      "path": "./packages/wire-saerskriven-yaml-v3"
     }
   ],
   "compilerOptions": {}

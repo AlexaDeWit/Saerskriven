@@ -77,8 +77,9 @@ export type WriteResult = {
  * stopped. `MalformedText` carries the parser's message, since no path into
  * a document exists yet. `InvalidWireDocument` has paths into the wire
  * document, with an import's own codes beside the parse issue codes, and
- * `InvalidModel` paths into the model a read mapped the file to, each of its
- * diagrams owning its elements.
+ * `InvalidModel` paths into the model a read mapped the file to, as the file
+ * holds it: where the file's diagrams own their elements, an element is
+ * pathed under the diagram holding it.
  */
 export type ReadFailure = Data.TaggedEnum<{
   ExceededReadLimit: {

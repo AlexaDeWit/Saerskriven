@@ -1,5 +1,5 @@
 import type { Model } from '@saerskriven/model';
-import type { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
+import type { saerskrivenYamlV3WireSchema } from '@saerskriven/wire-saerskriven-yaml-v3';
 import { Data, Either } from 'effect';
 import { BrotliFailure, compressBrotli, decompressBrotli } from './brotli.js';
 import { ReadFailure, type ReadResult } from './lib/codec.js';
@@ -137,7 +137,7 @@ export async function readShareLink(
   wasm: Uint8Array,
 ): Promise<
   Either.Either<
-    ReadResult<typeof saerskrivenYamlV2WireSchema>,
+    ReadResult<typeof saerskrivenYamlV3WireSchema>,
     ShareLinkFailure | ReadFailure
   >
 > {

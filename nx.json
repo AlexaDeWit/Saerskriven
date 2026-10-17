@@ -30,6 +30,7 @@
     "cliTestFixtures": [
       "{workspaceRoot}/test-data/threat-dragon/feature-complete.json",
       "{workspaceRoot}/test-data/saerskriven/feature-complete.yaml",
+      "{workspaceRoot}/test-data/saerskriven/feature-complete-v3.yaml",
       "{workspaceRoot}/test-data/saerskriven/two-diagrams.yaml",
       "{workspaceRoot}/test-data/saerskriven/saerskriven-v0.3.0.yaml",
       "{workspaceRoot}/test-data/otm/example.json",
@@ -48,6 +49,7 @@
       "{workspaceRoot}/test-data/otm/**/*",
       "{workspaceRoot}/test-data/threat-dragon/feature-complete.json",
       "{workspaceRoot}/test-data/saerskriven/feature-complete.yaml",
+      "{workspaceRoot}/test-data/saerskriven/feature-complete-v3.yaml",
       "{workspaceRoot}/test-data/studio/recovery-v0.4.0.json",
       "{workspaceRoot}/test-data/adversarial/deep-nesting.json"
     ],
@@ -309,7 +311,7 @@
     // projects by default. With every package private that set is empty.
     // With one package not private it versions that one alone and the other
     // manifests keep the old number with nothing said. The list versions all
-    // fifteen and excludes the operator tooling under scripts. Nothing is
+    // sixteen and excludes the operator tooling under scripts. Nothing is
     // published: the version is what a release needs.
     "projects": ["@saerskriven/*"],
     "projectsRelationship": "fixed",

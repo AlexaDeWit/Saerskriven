@@ -8,6 +8,7 @@ import {
   threatDragonCodec,
   unreadByThisVersion,
   writeThrough,
+  writtenSaerskrivenYamlVersion,
   type DetectedRead,
   type Divergence,
   type FormatName,
@@ -59,7 +60,8 @@ const projections = {
  * this version cannot read, unless `dropUndeclared` drops it, which is then
  * listed under a heading of its own. What else the read and the write
  * reported goes to standard error as a warning, which fails no write that
- * goes ahead.
+ * goes ahead. A Saerskriven YAML document written as version 3, which a
+ * release reading only versions 1 and 2 refuses, is warned of there too.
  */
 export function convert(file: string, options: ConvertOptions): CommandOutcome {
   return Either.match(
@@ -142,9 +144,18 @@ function converted(
     options.out,
     written.output,
     describeDropped(dropped) +
+      describeVersion(read.model, options.to) +
       describeDivergences([...kept, ...written.divergences]),
     replaced,
   );
+}
+
+function describeVersion(model: Model, to: FormatName): string {
+  return to === 'saerskriven-yaml' && writtenSaerskrivenYamlVersion(model) === 3
+    ? lines(
+        'warning: written as Saerskriven YAML version 3, which a release reading only versions 1 and 2 refuses.',
+      )
+    : '';
 }
 
 function describeDropped(dropped: readonly Divergence[]): string {

@@ -1,31 +1,42 @@
 import {
+  accentField,
   generateElementId,
   inNumberOrder,
   parseDrawnModel,
   renameElement,
   setAccent,
+  reversed,
   type BoundaryShape,
   type Model,
+  type PlacedFlowEnd,
   type Placement,
   type Point,
   type Size,
 } from '@saerskriven/model';
+import { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
 import {
-  saerskrivenYamlV2WireSchema,
-  type SaerskrivenYamlV2Document,
-} from '@saerskriven/wire-saerskriven-yaml-v2';
+  saerskrivenYamlV3WireSchema,
+  type SaerskrivenYamlV3Document,
+} from '@saerskriven/wire-saerskriven-yaml-v3';
 import {
   elementId,
   drawnFixture,
   fixtureOf,
+  placedOnto,
+  placementIn,
   validModel,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { parse } from 'yaml';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
-import { featureCompleteYaml } from './saerskriven-yaml.fixtures.js';
+import { canonicalOrder } from './canonical-order.js';
 import {
+  featureCompleteYaml,
+  withFlowDrawnAway,
+} from './saerskriven-yaml.fixtures.js';
+import {
+  saerskrivenYamlV3Document,
   writeSaerskrivenYaml,
   writeSaerskrivenYamlDocument,
 } from './saerskriven-yaml-write.js';
@@ -57,9 +68,24 @@ function backwardsShape(shape: BoundaryShape): BoundaryShape {
     : { waypoints: shape.waypoints.map(backwardsPoint), kind: 'curve' };
 }
 
+function backwardsEnd(end: PlacedFlowEnd): PlacedFlowEnd {
+  return end.position === undefined
+    ? end
+    : {
+        position: backwardsPoint(end.position),
+        ...(end.side === undefined ? {} : { side: end.side }),
+      };
+}
+
 function backwardsPlacement(placement: Placement): Placement {
   if ('waypoints' in placement) {
-    return { ...placement, waypoints: placement.waypoints.map(backwardsPoint) };
+    return {
+      target: backwardsEnd(placement.target),
+      source: backwardsEnd(placement.source),
+      waypoints: placement.waypoints.map(backwardsPoint),
+      element: placement.element,
+      ...accentField(placement),
+    };
   }
   if ('shape' in placement) {
     return { ...placement, shape: backwardsShape(placement.shape) };
@@ -71,11 +97,11 @@ function backwardsPlacement(placement: Placement): Placement {
   };
 }
 
-const backwards: Model = {
-  assumptions: featureComplete.assumptions,
-  mitigations: featureComplete.mitigations,
-  lastIssuedThreatNumber: featureComplete.lastIssuedThreatNumber,
-  threats: featureComplete.threats.map((threat) => ({
+const backwardsOf = (model: Model): Model => ({
+  assumptions: model.assumptions,
+  mitigations: model.mitigations,
+  lastIssuedThreatNumber: model.lastIssuedThreatNumber,
+  threats: model.threats.map((threat) => ({
     appliesToModel: threat.appliesToModel,
     elements: threat.elements,
     description: threat.description,
@@ -86,16 +112,30 @@ const backwards: Model = {
     number: threat.number,
     id: threat.id,
   })),
-  diagrams: featureComplete.diagrams.map((diagram) => ({
+  diagrams: model.diagrams.map((diagram) => ({
     ...diagram,
     placements: diagram.placements.map(backwardsPlacement),
   })),
-  elements: featureComplete.elements,
-  metadata: featureComplete.metadata,
-};
+  elements: model.elements,
+  metadata: model.metadata,
+});
 
-const otherDocument: SaerskrivenYamlV2Document = {
-  formatVersion: 2,
+function reversedKeys(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(reversedKeys);
+  }
+  return isRecord(value)
+    ? Object.fromEntries(
+        reversed(Object.entries(value)).map(([key, held]) => [
+          key,
+          reversedKeys(held),
+        ]),
+      )
+    : value;
+}
+
+const otherDocument: SaerskrivenYamlV3Document = {
+  formatVersion: 3,
   metadata: {
     title: 'Another file entirely',
     owner: '',
@@ -103,6 +143,7 @@ const otherDocument: SaerskrivenYamlV2Document = {
     contributors: [],
   },
   diagrams: [],
+  elements: [],
   threats: [],
   lastIssuedThreatNumber: 0,
   mitigations: [],
@@ -171,26 +212,95 @@ describe('the feature-complete model as a Saerskriven YAML file', () => {
     const numbers = inNumberOrder(featureComplete.threats).map(
       (threat) => threat.number,
     );
-    const reversed: Model = {
+    const threatsReversed: Model = {
       ...featureComplete,
-      threats: featureComplete.threats.map(
-        (_threat, index, threats) => threats[threats.length - 1 - index],
-      ),
+      threats: reversed(featureComplete.threats),
     };
-    expect(reversed.threats.map((threat) => threat.number)).not.toEqual(
+    expect(threatsReversed.threats.map((threat) => threat.number)).not.toEqual(
       numbers,
     );
     expect(
       listOf(
-        at(parseDocument(writeSaerskrivenYaml(reversed).output), 'threats'),
+        at(
+          parseDocument(writeSaerskrivenYaml(threatsReversed).output),
+          'threats',
+        ),
       ).map((threat) => at(threat, 'number')),
     ).toEqual(numbers);
   });
 });
 
+describe('a Saerskriven YAML write of an element on a second diagram', () => {
+  const placedAgain = {
+    ...placementIn(featureComplete, 'actor-patient'),
+    position: { x: 520, y: 120 },
+  };
+  const shared = placedOnto(featureComplete, [placedAgain], 1);
+  const sharedWrite = writeSaerskrivenYaml(shared);
+  const document = parseDocument(sharedWrite.output);
+
+  it('writes version 3, each element once at the root and that one placed on both diagrams', () => {
+    expect(at(document, 'formatVersion')).toBe(3);
+    expect(
+      listOf(at(document, 'elements')).map((element) => at(element, 'id')),
+    ).toEqual(featureComplete.elements.map(({ id }) => id));
+    expect(
+      listOf(at(document, 'diagrams')).map(
+        (diagram) =>
+          listOf(at(diagram, 'placements')).filter(
+            (placement) => at(placement, 'element') === 'actor-patient',
+          ).length,
+      ),
+    ).toEqual([1, 1]);
+  });
+
+  it('writes the root keys in the order the version 3 schema declares them, and the same bytes each time', () => {
+    expect(keysOf(document)).toEqual(
+      Object.keys(saerskrivenYamlV3WireSchema.shape),
+    );
+    expect(writeSaerskrivenYaml(shared).output).toBe(sharedWrite.output);
+  });
+
+  it('writes version 2 again, to the byte, once the element is on one diagram again', () => {
+    const unshared = {
+      ...shared,
+      diagrams: shared.diagrams.map((diagram) => ({
+        ...diagram,
+        placements: diagram.placements.filter(
+          (placement) => placement !== placedAgain,
+        ),
+      })),
+    };
+    expect(writeSaerskrivenYaml(unshared).output).toBe(written.output);
+  });
+});
+
+describe('a Saerskriven YAML write of a model only version 3 holds', () => {
+  const drawnAway = withFlowDrawnAway(featureComplete);
+
+  it('writes the same bytes whatever order the model was built in', () => {
+    expect(writeSaerskrivenYaml(backwardsOf(drawnAway)).output).toBe(
+      writeSaerskrivenYaml(drawnAway).output,
+    );
+  });
+
+  it('orders a document built in reverse key order at every depth as it orders the one the writer builds', () => {
+    const document = saerskrivenYamlV3Document(drawnAway);
+    expect(
+      JSON.stringify(
+        canonicalOrder(saerskrivenYamlV3WireSchema, reversedKeys(document)),
+      ),
+    ).toBe(
+      JSON.stringify(canonicalOrder(saerskrivenYamlV3WireSchema, document)),
+    );
+  });
+});
+
 describe('a Saerskriven YAML write', () => {
   it('writes the same bytes whatever order the model was built in', () => {
-    expect(writeSaerskrivenYaml(backwards).output).toBe(written.output);
+    expect(writeSaerskrivenYaml(backwardsOf(featureComplete)).output).toBe(
+      written.output,
+    );
   });
 
   it('cannot be changed by the source document the contract offers', () => {

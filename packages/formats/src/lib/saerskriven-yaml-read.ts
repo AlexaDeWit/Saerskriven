@@ -1,37 +1,36 @@
 import {
   accentSchema,
+  atDrawnPaths,
   elementIdSchema,
+  parseModel,
   type Accent,
   type AssumptionInput,
   type BoundaryShapeInput,
-  type DrawnDiagramInput,
-  type DrawnElementInput,
-  type DrawnFlowEndpointInput,
-  type DrawnModelInput,
+  type DiagramInput,
+  type ElementInput,
+  type FlowEndpointInput,
   type MitigationInput,
   type Model,
+  type ModelInput,
   type ModelMetadataInput,
+  type PlacementInput,
   type ThreatInput,
 } from '@saerskriven/model';
 import type {
-  saerskrivenYamlV2WireSchema,
-  SaerskrivenYamlV2Assumption,
-  SaerskrivenYamlV2BoundaryShape,
-  SaerskrivenYamlV2Diagram,
-  SaerskrivenYamlV2Document,
-  SaerskrivenYamlV2Element,
-  SaerskrivenYamlV2Endpoint,
-  SaerskrivenYamlV2Metadata,
-  SaerskrivenYamlV2Mitigation,
-  SaerskrivenYamlV2Threat,
-} from '@saerskriven/wire-saerskriven-yaml-v2';
+  saerskrivenYamlV3WireSchema,
+  SaerskrivenYamlV3Assumption,
+  SaerskrivenYamlV3BoundaryShape,
+  SaerskrivenYamlV3Diagram,
+  SaerskrivenYamlV3Document,
+  SaerskrivenYamlV3Element,
+  SaerskrivenYamlV3Endpoint,
+  SaerskrivenYamlV3Metadata,
+  SaerskrivenYamlV3Mitigation,
+  SaerskrivenYamlV3Placement,
+  SaerskrivenYamlV3Threat,
+} from '@saerskriven/wire-saerskriven-yaml-v3';
 import { Either } from 'effect';
-import {
-  modelFrom,
-  parseWire,
-  type ReadFailure,
-  type ReadResult,
-} from './codec.js';
+import { parseWire, ReadFailure, type ReadResult } from './codec.js';
 import type { Divergence } from './divergence.js';
 import { parseYaml } from './parse-yaml.js';
 import {
@@ -57,18 +56,20 @@ import { undeclaredDivergences } from './undeclared.js';
 
 /**
  * A native text of any released version, told apart by `formatVersion`,
- * with its document brought to the current version for a later save. A key
- * the version's schema does not declare is dropped and reported, so a file
- * from a later release still reads. Records are mapped field by field onto
- * the model's input types, mirroring `saerskriven-yaml-write.ts`, and ids
- * cross as plain strings for `parseDrawnModel` to brand. A threat that leaves
- * `appliesToModel` out does not apply to the model. An element whose
+ * with its document brought to the current version, 3, for a later save. A
+ * key the version's schema does not declare is dropped and reported, so a
+ * file from a later release still reads. Records are mapped field by field
+ * onto the model's input types, mirroring `saerskriven-yaml-write.ts`, and
+ * ids cross as plain strings for `parseModel` to brand. A refusal of the
+ * model is pathed into the file as its own version holds it: a file below
+ * version 3 has its diagrams own their elements. A threat that leaves
+ * `appliesToModel` out does not apply to the model. A placement whose
  * `accent` is none of the model's keys is read with no accent and reported
  * as `narrowed`.
  */
 export function readSaerskrivenYaml(
   text: string,
-): Either.Either<ReadResult<typeof saerskrivenYamlV2WireSchema>, ReadFailure> {
+): Either.Either<ReadResult<typeof saerskrivenYamlV3WireSchema>, ReadFailure> {
   return Either.flatMap(parseYaml(text), mapDocument);
 }
 
@@ -79,17 +80,17 @@ export function readSaerskrivenYaml(
 export function readSaerskrivenYamlDocument(
   document: SaerskrivenYamlVersionedDocument,
 ): Either.Either<Model, ReadFailure> {
-  return modelFrom(toModelInput(currentSaerskrivenYaml(document).document));
+  return modelOf(document, currentSaerskrivenYaml(document).document);
 }
 
 function mapDocument(
   given: unknown,
-): Either.Either<ReadResult<typeof saerskrivenYamlV2WireSchema>, ReadFailure> {
+): Either.Either<ReadResult<typeof saerskrivenYamlV3WireSchema>, ReadFailure> {
   return Either.flatMap(
     parseWire(saerskrivenYamlVersionsSchema, given),
     (wire) => {
       const current = currentSaerskrivenYaml(wire);
-      return Either.map(modelFrom(toModelInput(current.document)), (model) => ({
+      return Either.map(modelOf(wire, current.document), (model) => ({
         model,
         source: current.document,
         divergences: [
@@ -102,9 +103,24 @@ function mapDocument(
   );
 }
 
-function toModelInput(document: SaerskrivenYamlV2Document): DrawnModelInput {
+function modelOf(
+  stated: SaerskrivenYamlVersionedDocument,
+  current: SaerskrivenYamlV3Document,
+): Either.Either<Model, ReadFailure> {
+  return Either.mapLeft(parseModel(toModelInput(current)), ({ issues }) =>
+    ReadFailure.InvalidModel({
+      issues:
+        stated.formatVersion === 3
+          ? issues
+          : atDrawnPaths(issues, stated.diagrams),
+    }),
+  );
+}
+
+function toModelInput(document: SaerskrivenYamlV3Document): ModelInput {
   return {
     metadata: toMetadata(document.metadata),
+    elements: document.elements.map(toElement),
     diagrams: document.diagrams.map(toDiagram),
     threats: document.threats.map(toThreat),
     lastIssuedThreatNumber: document.lastIssuedThreatNumber,
@@ -113,7 +129,7 @@ function toModelInput(document: SaerskrivenYamlV2Document): DrawnModelInput {
   };
 }
 
-function toMetadata(metadata: SaerskrivenYamlV2Metadata): ModelMetadataInput {
+function toMetadata(metadata: SaerskrivenYamlV3Metadata): ModelMetadataInput {
   return {
     title: metadata.title,
     owner: metadata.owner,
@@ -122,15 +138,31 @@ function toMetadata(metadata: SaerskrivenYamlV2Metadata): ModelMetadataInput {
   };
 }
 
-function toDiagram(diagram: SaerskrivenYamlV2Diagram): DrawnDiagramInput {
+function toDiagram(diagram: SaerskrivenYamlV3Diagram): DiagramInput {
   return {
     id: diagram.id,
     title: diagram.title,
-    elements: diagram.elements.map(toElement),
+    placements: diagram.placements.map(toPlacement),
   };
 }
 
-function toElement(element: SaerskrivenYamlV2Element): DrawnElementInput {
+function toPlacement(placement: SaerskrivenYamlV3Placement): PlacementInput {
+  const held = { element: placement.element, ...toAccent(placement) };
+  if ('waypoints' in placement) {
+    return {
+      ...held,
+      waypoints: placement.waypoints,
+      source: placement.source,
+      target: placement.target,
+    };
+  }
+  if ('shape' in placement) {
+    return { ...held, shape: toBoundaryShape(placement.shape) };
+  }
+  return { ...held, position: placement.position, size: placement.size };
+}
+
+function toElement(element: SaerskrivenYamlV3Element): ElementInput {
   if (element.kind === 'flow') {
     return {
       kind: 'flow',
@@ -138,7 +170,6 @@ function toElement(element: SaerskrivenYamlV2Element): DrawnElementInput {
       ...toCommon(element),
       source: toEndpoint(element.source),
       target: toEndpoint(element.target),
-      waypoints: element.waypoints,
       bidirectional: element.bidirectional ?? false,
     };
   }
@@ -147,66 +178,59 @@ function toElement(element: SaerskrivenYamlV2Element): DrawnElementInput {
       kind: 'trust-boundary',
       ...boundaryProperties(element),
       ...toCommon(element),
-      shape: toBoundaryShape(element.shape),
     };
   }
   if (element.kind === 'text') {
-    return {
-      kind: 'text',
-      ...toCommon(element),
-      position: element.position,
-      size: element.size,
-      text: element.text,
-    };
+    return { kind: 'text', ...toCommon(element), text: element.text };
   }
-  const node = {
-    ...toCommon(element),
-    position: element.position,
-    size: element.size,
-  };
   if (element.kind === 'actor') {
-    return { kind: 'actor', ...node, ...actorProperties(element) };
+    return { kind: 'actor', ...toCommon(element), ...actorProperties(element) };
   }
   if (element.kind === 'process') {
-    return { kind: 'process', ...node, ...processProperties(element) };
+    return {
+      kind: 'process',
+      ...toCommon(element),
+      ...processProperties(element),
+    };
   }
-  return { kind: 'store', ...node, ...storeProperties(element) };
+  return { kind: 'store', ...toCommon(element), ...storeProperties(element) };
 }
 
-function toCommon(element: SaerskrivenYamlV2Element) {
+function toCommon(element: SaerskrivenYamlV3Element) {
   return {
     id: element.id,
     name: element.name,
     description: element.description,
     outOfScope: element.outOfScope,
     reasonOutOfScope: element.reasonOutOfScope,
-    ...toAccent(element),
   };
 }
 
-function toAccent(element: SaerskrivenYamlV2Element): { accent?: Accent } {
-  const accent = accentSchema.safeParse(element.accent);
+function toAccent(placement: SaerskrivenYamlV3Placement): {
+  accent?: Accent;
+} {
+  const accent = accentSchema.safeParse(placement.accent);
   return accent.success ? { accent: accent.data } : {};
 }
 
-function unknownAccents(document: SaerskrivenYamlV2Document): Divergence[] {
+function unknownAccents(document: SaerskrivenYamlV3Document): Divergence[] {
   return document.diagrams
-    .flatMap((diagram) => diagram.elements)
-    .flatMap((element): Divergence[] => {
+    .flatMap((diagram) => diagram.placements)
+    .flatMap((placement): Divergence[] => {
       if (
-        element.accent === undefined ||
-        accentSchema.safeParse(element.accent).success
+        placement.accent === undefined ||
+        accentSchema.safeParse(placement.accent).success
       ) {
         return [];
       }
-      const id = elementIdSchema.safeParse(element.id);
+      const id = elementIdSchema.safeParse(placement.element);
       return id.success
         ? [
             {
               subject: { kind: 'element', id: id.data },
               detail: {
                 code: 'accent-unknown',
-                parameters: { accent: element.accent },
+                parameters: { accent: placement.accent },
               },
               reason: 'narrowed',
             },
@@ -215,26 +239,21 @@ function unknownAccents(document: SaerskrivenYamlV2Document): Divergence[] {
     });
 }
 
-function toEndpoint(
-  endpoint: SaerskrivenYamlV2Endpoint,
-): DrawnFlowEndpointInput {
-  if (endpoint.kind === 'free') {
-    return { kind: 'free', position: endpoint.position };
-  }
-  return endpoint.side === undefined
-    ? { kind: 'attached', element: endpoint.element }
-    : { kind: 'attached', element: endpoint.element, side: endpoint.side };
+function toEndpoint(endpoint: SaerskrivenYamlV3Endpoint): FlowEndpointInput {
+  return endpoint.kind === 'free'
+    ? { kind: 'free' }
+    : { kind: 'attached', element: endpoint.element };
 }
 
 function toBoundaryShape(
-  shape: SaerskrivenYamlV2BoundaryShape,
+  shape: SaerskrivenYamlV3BoundaryShape,
 ): BoundaryShapeInput {
   return shape.kind === 'box'
     ? { kind: 'box', position: shape.position, size: shape.size }
     : { kind: 'curve', waypoints: shape.waypoints };
 }
 
-function toThreat(threat: SaerskrivenYamlV2Threat): ThreatInput {
+function toThreat(threat: SaerskrivenYamlV3Threat): ThreatInput {
   return {
     id: threat.id,
     number: threat.number,
@@ -249,7 +268,7 @@ function toThreat(threat: SaerskrivenYamlV2Threat): ThreatInput {
 }
 
 function toMitigation(
-  mitigation: SaerskrivenYamlV2Mitigation,
+  mitigation: SaerskrivenYamlV3Mitigation,
 ): MitigationInput {
   return {
     id: mitigation.id,
@@ -261,7 +280,7 @@ function toMitigation(
 }
 
 function toAssumption(
-  assumption: SaerskrivenYamlV2Assumption,
+  assumption: SaerskrivenYamlV3Assumption,
 ): AssumptionInput {
   return {
     id: assumption.id,

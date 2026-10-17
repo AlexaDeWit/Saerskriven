@@ -1,18 +1,22 @@
 # The Saerskriven YAML format
 
-Saerskriven's own file format, version 2. Everything the internal model holds
-has a place in the file, and everything this release declares for the file has
-a place in the model, so a version 2 file this release wrote reads and writes
-back with nothing changed and no divergence reported in either direction. A
-file from a later release can hold more, and what this release has no place
-for it drops and reports: a key it does not declare ([Reading](#reading)), and
-an accent it does not know ([Accents](#accents)). A version 1 file still
-reads, through the migration Reading describes. The other format Saerskriven
-reads, Threat Dragon v2 JSON, is somebody else's shape and does not have that
-property.
+Saerskriven's own file format. A save writes version 2 while version 2 holds
+the model, and version 3, which holds each element once and lets one element
+be drawn on several diagrams, once it does not
+([Which version a save writes](#which-version-a-save-writes)). Everything the
+internal model holds has a place in the file, and everything this release
+declares for the file has a place in the model, so a file this release wrote
+reads and writes back with nothing changed and no divergence reported in
+either direction. A file from a later release can hold more, and what this
+release has no place for it drops and reports: a key it does not declare
+([Reading](#reading)), and an accent it does not know ([Accents](#accents)). A
+version 1 file still reads, through the migration Reading describes. The other
+format Saerskriven reads, Threat Dragon v2 JSON, is somebody else's shape and
+does not have that property.
 
 Each version is declared by a package of one zod schema that imports nothing
-but zod: `@saerskriven/wire-saerskriven-yaml-v2` for version 2 and
+but zod: `@saerskriven/wire-saerskriven-yaml-v3` for version 3,
+`@saerskriven/wire-saerskriven-yaml-v2` for version 2 and
 `@saerskriven/wire-saerskriven-yaml` for version 1. Those are the format's
 definition, and this page describes them rather than restating them. The codec
 is `saerskrivenYamlCodec` in `@saerskriven/formats`, the only place that knows
@@ -20,18 +24,19 @@ both the file and the model.
 
 ## The file
 
-YAML, UTF-8, one document, a mapping at the root with seven keys in this
-order:
+YAML, UTF-8, one document, a mapping at the root with its keys in this order.
+Version 3 has all eight, and version 2 has every one but `elements`:
 
-| Key                      | What it holds                                                                   |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| `formatVersion`          | `2`, exactly                                                                    |
-| `metadata`               | Title, owner, description, contributors                                         |
-| `assumptions`            | What the analysis rests on, linked to threats by id, and `appliesToModel`       |
-| `diagrams`               | The diagrams, each owning its elements and their geometry                       |
-| `mitigations`            | Mitigating work, addressing threats by id                                       |
-| `threats`                | The threats, each attached to elements by id, and optionally `appliesToModel`   |
-| `lastIssuedThreatNumber` | The highest threat number ever issued or kept by a paste, counting removed ones |
+| Key                      | What it holds                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `formatVersion`          | `2` or `3`, exactly                                                                                                                                    |
+| `metadata`               | Title, owner, description, contributors                                                                                                                |
+| `assumptions`            | What the analysis rests on, linked to threats by id, and `appliesToModel`                                                                              |
+| `diagrams`               | The diagrams: in version 2 each owns its elements and their geometry, and in version 3 each holds placements of the elements ([Version 3](#version-3)) |
+| `elements`               | Version 3 only: each element once, with its facts and relationships, wherever it is drawn                                                              |
+| `mitigations`            | Mitigating work, addressing threats by id                                                                                                              |
+| `threats`                | The threats, each attached to elements by id, and optionally `appliesToModel`                                                                          |
+| `lastIssuedThreatNumber` | The highest threat number ever issued or kept by a paste, counting removed ones                                                                        |
 
 Every key is required unless the schema marks it optional, and every list may
 be empty. Nothing is defaulted: a model saves before it is drawn, and it does so
@@ -42,7 +47,9 @@ one way. An attached endpoint's `side`, one of `top`, `right`, `bottom` and
 `left`, pins the end to that side of its element, and absent leaves the side to
 the renderer. A write states `bidirectional` on every flow and `side` on every
 pinned end. The security facts and declared relationships below are optional
-from the first release too, with absence meaning unknown. What a key added
+from the first release too, with absence meaning unknown. Version 3 keeps
+every key of version 2, with the same optionality and the same rule for when a
+write states it, and moves some of them onto placements. What a key added
 later costs the format, and when a write states one, is under `formatVersion`
 below.
 
@@ -50,13 +57,85 @@ That order is three tiers, so a key added to the format later has an obvious
 home rather than an argued one. The header comes first, `formatVersion` and
 then `metadata`, because it says what the file is and what it covers. The
 content follows in alphabetical order, since no other order among
-`assumptions`, `diagrams`, `mitigations` and `threats` is more true than the
-rest. The bookkeeping the editor keeps for itself goes last, where it is out
-of the way of a reader.
+`assumptions`, `diagrams`, `elements`, `mitigations` and `threats` is more
+true than the rest. The bookkeeping the editor keeps for itself goes last,
+where it is out of the way of a reader.
 
 An element and a threat category are tagged unions, written with the tag
 first: `kind` for an element, a flow endpoint and a boundary shape,
-`methodology` for a category.
+`methodology` for a category. A version 3 placement has no tag: its keys tell
+which geometry it holds.
+
+## Version 3
+
+Version 3 holds each element once, in the root `elements` list, and gives
+each diagram `placements` in the order it draws them. An element holds its id,
+kind, name, description and scope, its security facts and relationship lists,
+a Note's text, and for a flow its direction and, for each end, the element it
+attaches to (`kind: attached` and `element`) or `kind: free`. A placement holds
+`element`, the id of the element it draws, an optional `accent`, and the
+element's geometry on that diagram, which its keys tell apart:
+
+| Element kind                | Placement geometry                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------- |
+| Actor, process, store, Note | `position` and `size`                                                                       |
+| Trust boundary              | `shape`, a box or a curve as in version 2                                                   |
+| Flow                        | `waypoints`, and a `source` and a `target`, each a pinned `side` or a free end's `position` |
+
+An end attached to an element placed on the same diagram holds no `position`,
+and its `side` pins it where one is given, as in version 2. A free end holds
+its `position` and no `side`. A diagram places an element at most once, and
+every element is placed at least once. This release still refuses a file that
+places one element on two diagrams or draws a flow end away from its element,
+so every version 3 file it reads is one version 2 also holds.
+
+### Why a new version
+
+Sharing an element is a change an older release cannot pass over. Had it been
+an optional key of version 2, a release of version 2 would open the file and
+drop what it does not declare, and the studio's save, which does not refuse
+that ([Reading](#reading)), would write the file without it. A release that
+does not know version 3 refuses the whole file at `formatVersion` instead, so
+it cannot damage one. The accent also moves from the element to its
+placement, a rename, which the rule under `formatVersion` makes breaking.
+[The proposal on #847](https://github.com/AlexaDeWit/Saerskriven/issues/847#issuecomment-6226181435)
+sets out the design and its reasons.
+
+### Which version a save writes
+
+A save writes version 2 while version 2 holds the model, and version 3 once it
+does not. Version 2 holds a model where:
+
+- every element is on exactly one diagram,
+- no flow end is drawn away from its element, and
+- every relationship list, `containedElements`, `crossingFlows` and
+  `trustBoundaryIds`, names elements of the one diagram that draws the element
+  holding it.
+
+The version follows from the model alone, never from the version the file was
+read as. Two writes of one model are byte-identical, a file keeps its version
+and its bytes through every edit version 2 can hold, and a file goes back to
+version 2 once its last shared element is unshared. A version 1 file is
+written as version 2. No file changes version unless its content needs it, so
+a file an earlier release opens stays one it opens, and a tracked file's diff
+moves every element only at the edit that needs version 3.
+
+A release that reads only versions 1 and 2 refuses a version 3 file, so three
+tools say when they write one:
+
+- The studio shows a report under the card at the edit that moves the model
+  from version 2 to version 3, worked out from the model before and after the
+  edit.
+- `saer_edit` answers `movedToVersion3` for a batch that moves a file from
+  version 2 to version 3, worked out the same way ([writing](mcp.md#writing)).
+- `saer convert` warns on standard error whenever the document it writes is
+  version 3, since a conversion is not an edit and holds no earlier model.
+
+`saer_create` and `saer_import` write a new file and say nothing of its
+version, and nothing is said at a move back to version 2. A share link, the
+studio's clipboard and its recovery snapshot carry the text or the document a
+save writes, so they follow the same rule, and the snapshot keeps no retained
+document for a Saerskriven YAML file, which its save does not read.
 
 ## `formatVersion`
 
@@ -115,14 +194,17 @@ version arrives as a wire package of its own beside the one before it, so
 `@saerskriven/wire-saerskriven-yaml` goes on declaring version 1 unchanged and
 a file of that version keeps the reading it has. The migration from one
 version to the next lives in `@saerskriven/formats`, which the layer matrix
-makes the only place allowed to know two wire packages. A write emits the
-version this release is current on, which is 2, and a release from before
-version 2 refuses that file at `formatVersion`.
+makes the only place allowed to know two wire packages. A write emits version
+2 or version 3, as [Which version a save writes](#which-version-a-save-writes)
+sets out. A release that reads only versions 1 and 2 refuses a version 3 file
+whole, at `formatVersion`, and a release from before version 2 refuses a
+version 2 file the same way.
 
 Every released version reads, for good. A read dispatches on the version the
-file states: a version 2 file goes straight to the mapping, and a version 1
-file goes through the v1 to v2 migration first, so a file Saerskriven has ever
-written opens in every later release of it.
+file states: a version 3 file goes straight to the mapping, a version 2 file
+goes through the v2 to v3 step first, and a version 1 file through the v1 to
+v2 migration before that, so a file Saerskriven has ever written opens in
+every later release of it.
 
 The internal model cannot change this. The wire schema declares its own ids,
 its own vocabularies, and its own record shapes, and the layer matrix forbids
@@ -137,7 +219,7 @@ a version carries is a change to its wire schema, deliberately.
 
 A key this release does not declare is not a refusal. The read drops it and
 reports it as an `undeclared` divergence naming its path, so a file written
-by a later release of version 2 still reads here, minus what this release has
+by a later release of its version still reads here, minus what this release has
 no home for. Its `saer_edit`, and `saer convert` rewriting the file in place,
 refuse to write such a file unless the call says to drop the key
 ([writing](mcp.md#writing), [usage](../README.md#usage)), while the studio, a
@@ -178,14 +260,24 @@ v2 migration reads a version 1 file in three steps over its document:
   and does not. Nothing is reported, since nothing is lost. This is the only
   place an empty threat list is read as a model link.
 
-Every status carries over as the file states it. The document a read hands
-back for a later write is the migrated version 2 document, so a version 1
-file written back unedited reports nothing more than its read did, and is
-written as version 2.
+Every status carries over as the file states it. A version 1 file then takes
+the v2 to v3 step a version 2 file takes.
+
+The v2 to v3 step moves each element to the root `elements` list, in the order
+the diagrams draw them, and leaves on the diagram that drew it a placement
+holding its accent and geometry, in the same order. Every id, order and value
+carries over, an accent no release knows included, so the step reports
+nothing. The document a read hands back for a later write is the migrated
+version 3 document, so a version 1 or 2 file written back unedited reports
+nothing more than its read did, and is written as version 2, which holds every
+model those versions read as.
 
 What a read does refuse, it refuses with a path: into the file where the
 schema is what said no, and into the model where a rule no schema states did,
-such as a threat referring to an element no diagram holds.
+such as a threat referring to an element no diagram holds. A model's path
+names the field where the file states it: in version 1 or 2 under the diagram
+that holds the element, and in version 3 under `elements` or under the
+placement.
 
 ## Geometry
 
@@ -247,26 +339,30 @@ The studio edits these values under **Security properties**
 
 ## Accents
 
-An element of any kind, a Note included, may state `accent`, one of eight
-keys: `s1` to `s4` for a strong accent and `l1` to `l4` for a light one, over
-four palette slots. A key names a slot and never a colour.
+An element of any kind, a Note included, may take `accent`, one of eight keys:
+`s1` to `s4` for a strong accent and `l1` to `l4` for a light one, over four
+palette slots. A key names a slot and never a colour.
 [The studio](studio.md#accents) and an exported drawing decide how a slot is
-drawn, and the model reads no meaning into one.
+drawn, and the model reads no meaning into one. An accent belongs to the
+diagram the element is drawn on: version 2 states it on the element, and
+version 3 on the placement, after `element`.
 
 The key arrived after version 2's first release, so a write states it only on
 an element that holds an accent, as `accent: s1` after `reasonOutOfScope`, and
-a file with none is written as it was before the key existed.
+a file with none is written as it was before the key existed. Version 3 states
+it on the same terms, on a placement that holds one.
 
 `accent` is text in the wire schema, not an enumerated vocabulary, so the
 refusal of an unknown enumerated value does not reach it. A text that is none
 of the eight keys reads as no accent and is reported as a `narrowed`
 divergence naming the element and the text, so a file holding a key a later
-release adds still opens. A write drops it, so `saer_edit`, and `saer convert`
-rewriting the file in place, refuse on the terms of an undeclared key
-([Reading](#reading)), and the studio's next save writes no accent for that
-element. A value that is not text is refused at its path, as any mistyped key
-is. In a version 1 file, `accent` is an undeclared key: dropped, and reported
-as one.
+release adds still opens. The v2 to v3 step moves such a text onto the
+placement as the file states it, and the read reports it there. A write drops
+it, so `saer_edit`, and `saer convert` rewriting the file in place, refuse on
+the terms of an undeclared key ([Reading](#reading)), and the studio's next
+save writes no accent for that element. A value that is not text is refused at
+its path, as any mistyped key is. In a version 1 file, `accent` is an
+undeclared key: dropped, and reported as one.
 
 A release of version 2 from before the key reads the file, drops each
 `accent`, reports it as `undeclared` with its path, and writes the file
@@ -285,10 +381,13 @@ produce the same file, so a diff shows the edit and nothing else.
 - **Threats** are written in number order. A threat number is unique across
   the model and no edit changes it, so ordering by it is total and holds each
   threat's position in the file steady as the model is edited.
-- **Diagrams, elements, mitigations and assumptions** keep the order the
-  model holds them in. Diagrams and elements are drawn in that order, so it
-  is information rather than incidental. Mitigations and assumptions have
-  nothing to sort on that would order them any better: their ids are
+- **Diagrams, elements, placements, mitigations and assumptions** keep the
+  order the model holds them in. Version 2 writes a diagram's elements in the
+  order it draws them, and version 3 the root elements in the model's order and
+  a diagram's placements in the order it draws them. Diagrams and elements are
+  drawn in that order, so it is information rather than incidental.
+  Mitigations and assumptions have nothing to sort on that would order them
+  any better: their ids are
   generated, so sorting by id scatters them and drops each new record
   wherever its id falls, and a title moves when a record is retitled.
 - **No line is wrapped.** A long description is one long line, so editing a
@@ -302,7 +401,9 @@ hand-edited file reaches canonical order the next time Saerskriven saves it.
 
 A share link carries a whole model in its URL fragment:
 `<base URL>#share=<encoding>.<payload>`. The payload is the file a save writes,
-the native YAML text in UTF-8, never the editor's own state. The codec is
+the native YAML text in UTF-8, never the editor's own state, so a link holds
+version 3 wherever a save would write it, and a release that reads only
+versions 1 and 2 refuses that link at `formatVersion`. The codec is
 `writeShareLink` and `readShareLink` on the `@saerskriven/formats/share-link`
 subpath, which take the brotli module as bytes.
 
@@ -360,6 +461,53 @@ diagrams:
         size:
           width: 100
           height: 60
+mitigations: []
+threats:
+  - id: threat-1
+    number: 1
+    title: Spoofed caller
+    category:
+      methodology: STRIDE
+      category: spoofing
+    severity: high
+    status: open
+    description: An unauthenticated caller reaches the gateway.
+    elements:
+      - element-1
+lastIssuedThreatNumber: 1
+```
+
+The same model in version 3, as the version 3 projection writes it and a test
+compares, though a save writes version 2 for a model version 2 holds:
+
+<!-- prettier-ignore -->
+```yaml
+formatVersion: 3
+metadata:
+  title: Order service
+  owner: Alexandra de Wit
+  description: ""
+  contributors:
+    - Alexandra de Wit
+assumptions: []
+diagrams:
+  - id: diagram-1
+    title: High level
+    placements:
+      - element: element-1
+        position:
+          x: 120
+          y: 80
+        size:
+          width: 100
+          height: 60
+elements:
+  - kind: process
+    id: element-1
+    name: Gateway
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
 mitigations: []
 threats:
   - id: threat-1

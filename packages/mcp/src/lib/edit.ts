@@ -1,6 +1,7 @@
 import {
   divergenceLines,
   divergenceSchema,
+  movesToSaerskrivenYamlVersion3,
   quotedForTerminal,
   retainedSource,
   unreadByThisVersion,
@@ -83,6 +84,11 @@ export const editResultSchema = writeReportSchema.extend({
     .describe(
       'What the file held that this version of saer cannot read and the write dropped, as `dropUndeclared` allowed: each key the wire schema does not declare, by its path, and each accent value the model has no key for, by its element.',
     ),
+  movedToVersion3: z
+    .boolean()
+    .describe(
+      'Whether the batch moved a Saerskriven YAML file from version 2 to version 3, by making the model hold what version 2 cannot. A release that reads only versions 1 and 2 refuses the file whole from then on. Always false for a Threat Dragon file.',
+    ),
 });
 
 /** What `saer_edit` answers with. */
@@ -90,7 +96,7 @@ export type EditResult = z.infer<typeof editResultSchema>;
 
 /** What `saer_edit` tells a client it is for. */
 export const editDescription = [
-  'Apply a batch of edits to one Saerskriven threat model file and save the file in the format it is already in. A Saerskriven YAML file is written as version 2, whichever version it was read from.',
+  'Apply a batch of edits to one Saerskriven threat model file and save the file in the format it is already in. A Saerskriven YAML file is written as version 2, whichever version it was read from, while version 2 holds the model, and as version 3 once it holds what version 2 cannot: an element on more than one diagram, a flow end drawn away from its element, or a relationship list naming an element of another diagram. A release that reads only versions 1 and 2 refuses a version 3 file whole, and `movedToVersion3` in the result says when a batch moved the file there.',
   'The edits are applied in order to one parsed model, and the file is written once at the end. The first edit the model refuses stops the batch: nothing is written, the file stays byte for byte as it was, and the result names the index that was refused and what the model said about it. The batch is the unit of change rather than the edit.',
   `A batch that would take the file past ${readBoundPhrase}, is refused the same way, so make a smaller change rather than retrying it.`,
   `Each edit is an object carrying \`op\` and that op's own fields. The ops are ${editOps.join(', ')}.`,
@@ -154,6 +160,9 @@ export function editModel(
         culled: [...batch.culled],
         culledThreats: [...batch.culledThreats],
         dropped: [...dropped],
+        movedToVersion3:
+          read.read.format === 'saerskriven-yaml' &&
+          movesToSaerskrivenYamlVersion3(read.read.model, batch.model),
       }),
     ),
   );
@@ -163,6 +172,11 @@ export function editModel(
 export function renderEdit(result: EditResult): readonly string[] {
   return [
     `edits applied: ${String(result.applied)}`,
+    ...(result.movedToVersion3
+      ? [
+          'format version: moved from Saerskriven YAML version 2 to version 3, which a release reading only versions 1 and 2 refuses.',
+        ]
+      : []),
     'culled:',
     ...(result.culled.length === 0
       ? ['No record culled.']
@@ -207,7 +221,10 @@ function saved(
   workspace: ModelWorkspace,
   read: ReadModelFile,
   model: Model,
-  batch: Pick<EditResult, 'applied' | 'culled' | 'culledThreats' | 'dropped'>,
+  batch: Pick<
+    EditResult,
+    'applied' | 'culled' | 'culledThreats' | 'dropped' | 'movedToVersion3'
+  >,
 ): Either.Either<EditResult, readonly string[]> {
   const file = resultPath(workspace, read.path);
   return pipe(

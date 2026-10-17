@@ -15,6 +15,7 @@ import {
 } from '@saerskriven/model/fixtures';
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
+import { saerskrivenYamlV3WireSchema } from '@saerskriven/wire-saerskriven-yaml-v3';
 import { Either } from 'effect';
 import * as fc from 'fast-check';
 import { readFileSync } from 'node:fs';
@@ -23,6 +24,11 @@ import { parse } from 'yaml';
 import { inferredMitigationStatus } from './mitigation-text.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import {
+  saerskrivenYamlText,
+  saerskrivenYamlV3Document,
+} from './saerskriven-yaml-write.js';
+import {
+  featureCompleteV3Yaml,
   featureCompleteYaml,
   featureCompleteYamlModel,
   frozenV021Model,
@@ -48,11 +54,15 @@ const description = readFileSync(
 
 const fence = '```yaml\n';
 
-const exampleStart = description.indexOf(fence) + fence.length;
+function exampleAfter(from: number): string {
+  const start = description.indexOf(fence, from) + fence.length;
+  return description.slice(start, description.indexOf('```', start));
+}
 
-const documentedExample = description.slice(
-  exampleStart,
-  description.indexOf('```', exampleStart),
+const documentedExample = exampleAfter(0);
+
+const documentedV3Example = exampleAfter(
+  description.indexOf(documentedExample) + documentedExample.length,
 );
 
 const asWritten = (value: number): string => value.toLocaleString('en-CA');
@@ -119,6 +129,14 @@ describe('the Saerskriven YAML codec', () => {
     );
   });
 
+  it('prints the version 3 example as the projection of the same model, to the byte', () => {
+    const reading = readOrThrow(documentedV3Example);
+    expect(reading.model).toEqual(readOrThrow(documentedExample).model);
+    expect(saerskrivenYamlText(saerskrivenYamlV3Document(reading.model))).toBe(
+      documentedV3Example,
+    );
+  });
+
   it('is described with the bound on coordinates and sizes the model holds', () => {
     const bound = asWritten(geometryLimits.bound);
 
@@ -127,6 +145,35 @@ describe('the Saerskriven YAML codec', () => {
     );
     expect(description).toContain(
       `from ${asWritten(geometryLimits.leastExtent)} to ${bound}`,
+    );
+  });
+});
+
+describe('the frozen version 3 file', () => {
+  const reading = readOrThrow(featureCompleteV3Yaml);
+
+  it('uses every field, enum value and variant the version 3 wire schema declares', () => {
+    expect(
+      unusedConstructs(saerskrivenYamlV3WireSchema, [
+        parse(featureCompleteV3Yaml),
+      ]),
+    ).toEqual([]);
+  });
+
+  it('reads as the feature-complete model, with nothing diverging', () => {
+    expect(reading.model).toStrictEqual(drawnFixture(featureCompleteYamlModel));
+    expect(reading.divergences).toEqual([]);
+  });
+
+  it('saves back as version 2, the feature-complete file to the byte, since version 2 holds its model', () => {
+    expect(saerskrivenYamlCodec.write(reading.model).output).toBe(
+      featureCompleteYaml,
+    );
+  });
+
+  it('is the version 3 projection of its model, to the byte', () => {
+    expect(saerskrivenYamlText(saerskrivenYamlV3Document(reading.model))).toBe(
+      featureCompleteV3Yaml,
     );
   });
 });

@@ -6,7 +6,8 @@ const endpoint = { flow: 'text', element: 'text' } as const;
  * The reports under the chrome card: what a file crossing cost or converted,
  * the notice a file opens with when Saerskriven does not write its format,
  * what an export left out or could not do, the file types an export offers,
- * and the link Share copied or could not write.
+ * the link Share copied or could not write, and an edit after which earlier
+ * releases cannot open the model.
  */
 export const reportMessages = {
   region: text(),
@@ -30,6 +31,8 @@ export const reportMessages = {
   'share-refused': text(),
   'share-clipboard-refused': text(),
   'dismiss-share': text(),
+  'newer-version': text(),
+  'dismiss-version': text(),
   unplaced: text(),
   'unplaced-source': text(endpoint),
   'unplaced-target': text(endpoint),

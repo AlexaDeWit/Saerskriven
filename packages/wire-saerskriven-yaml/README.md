@@ -10,10 +10,12 @@ its own parse boundary, and a file is not a model. Nothing here is defaulted
 and nothing is transformed.
 
 Version 2 is
-[`@saerskriven/wire-saerskriven-yaml-v2`](../wire-saerskriven-yaml-v2/README.md).
+[`@saerskriven/wire-saerskriven-yaml-v2`](../wire-saerskriven-yaml-v2/README.md)
+and version 3
+[`@saerskriven/wire-saerskriven-yaml-v3`](../wire-saerskriven-yaml-v3/README.md).
 [The format documentation](../../docs/saerskriven-yaml.md#formatversion) states
-the compatibility contract both versions follow, and `saerskrivenYamlCodec` in
+the compatibility contract every version follows, and `saerskrivenYamlCodec` in
 [`@saerskriven/formats`](../formats/README.md) reads version 1 through its
-migration to version 2.
+migration to version 2 and then to version 3.
 
 Unit tests: `pnpm nx test @saerskriven/wire-saerskriven-yaml`.

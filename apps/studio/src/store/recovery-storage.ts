@@ -87,7 +87,12 @@ export type RecoverySnapshot = z.output<typeof recoverySnapshotSchema>;
 /** A snapshot as recovery storage holds it, before the document is mapped. */
 export type StoredSnapshot = z.input<typeof recoverySnapshotSchema>;
 
-/** Builds the current recovery version from store data. */
+/**
+ * Builds the current recovery version from store data. The document is the
+ * one a save writes, and a Saerskriven YAML file keeps no retained document,
+ * which its save ignores, so the snapshot holds the native format only in the
+ * version a save writes.
+ */
 export function recoverySnapshot(
   present: Model,
   dirty: boolean,
@@ -99,7 +104,7 @@ export function recoverySnapshot(
     document: writeSaerskrivenYamlDocument(present),
     writtenBy: { studioVersion },
     dirty,
-    file,
+    file: storedFile(file),
     ...(activeDiagram === undefined ? {} : { activeDiagram }),
   };
 }
@@ -255,6 +260,16 @@ export const inertRestoreMark: RestoreMark = {
   raise: () => undefined,
   lower: () => undefined,
 };
+
+function storedFile(file: FileLifecycle): FileLifecycle {
+  return FileLifecycle.$is('Opened')(file) &&
+    file.source.format === 'saerskriven-yaml'
+    ? FileLifecycle.Opened({
+        name: file.name,
+        source: { format: 'saerskriven-yaml' },
+      })
+    : file;
+}
 
 function readItem(
   storage: () => StorageBackend,

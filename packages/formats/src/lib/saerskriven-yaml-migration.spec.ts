@@ -1,12 +1,18 @@
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
+import { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
 import {
-  saerskrivenYamlV2WireSchema,
-  type SaerskrivenYamlV2Document,
-} from '@saerskriven/wire-saerskriven-yaml-v2';
+  saerskrivenYamlV3WireSchema,
+  type SaerskrivenYamlV3Document,
+} from '@saerskriven/wire-saerskriven-yaml-v3';
 import type { SaerskrivenYamlThreat } from '@saerskriven/wire-saerskriven-yaml';
+import { parse } from 'yaml';
 import type { canonicalOrder } from './canonical-order.js';
 import { currentSaerskrivenYaml } from './saerskriven-yaml-migration.js';
-import { version1Document } from './saerskriven-yaml.fixtures.js';
+import {
+  featureCompleteV3Yaml,
+  featureCompleteYaml,
+  version1Document,
+} from './saerskriven-yaml.fixtures.js';
 
 type Schema = Parameters<typeof canonicalOrder>[0];
 
@@ -94,9 +100,31 @@ describe('the version 2 wire schema', () => {
 });
 
 describe('currentSaerskrivenYaml', () => {
-  it('gives a document the version 2 schema holds as it is', () => {
-    expect(saerskrivenYamlV2WireSchema.parse(migrated.document)).toEqual(
+  it('gives a document the version 3 schema holds as it is', () => {
+    expect(saerskrivenYamlV3WireSchema.parse(migrated.document)).toEqual(
       migrated.document,
+    );
+  });
+
+  it('places each version 2 element on the diagram that drew it, keeping every id, order and value, its accent on its placement, and reports nothing', () => {
+    expect(
+      currentSaerskrivenYaml(
+        saerskrivenYamlV2WireSchema.parse(parse(featureCompleteYaml)),
+      ),
+    ).toEqual({
+      document: saerskrivenYamlV3WireSchema.parse(parse(featureCompleteV3Yaml)),
+      divergences: [],
+    });
+  });
+
+  it('carries an accent no release knows onto the placement as the file states it', () => {
+    const document = saerskrivenYamlV2WireSchema.parse(
+      parse(featureCompleteYaml.replace('accent: s1', 'accent: s9')),
+    );
+    expect(
+      currentSaerskrivenYaml(document).document.diagrams[0].placements,
+    ).toContainEqual(
+      expect.objectContaining({ element: 'process-booking', accent: 's9' }),
     );
   });
 
@@ -144,8 +172,8 @@ describe('currentSaerskrivenYaml', () => {
     ]);
   });
 
-  it('hands back a version 2 document as it is, reporting nothing', () => {
-    const document: SaerskrivenYamlV2Document = migrated.document;
+  it('hands back a version 3 document as it is, reporting nothing', () => {
+    const document: SaerskrivenYamlV3Document = migrated.document;
     expect(currentSaerskrivenYaml(document)).toEqual({
       document,
       divergences: [],

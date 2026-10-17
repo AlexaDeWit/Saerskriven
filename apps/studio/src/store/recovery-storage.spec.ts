@@ -183,7 +183,59 @@ describe('local recovery storage', () => {
     expect(source?.document).toEqual(
       saerskrivenYamlCodec.wire.parse(source?.document),
     );
-    expect(source?.document).toMatchObject({ formatVersion: 2 });
+    expect(source?.document).toMatchObject({ formatVersion: 3 });
+  });
+
+  it('stores the document a save writes and no retained document for a Saerskriven YAML file, so a file version 2 holds stores no version 3 text', () => {
+    const read = Either.getOrThrow(
+      saerskrivenYamlCodec.read(
+        committedText('saerskriven/feature-complete-v3.yaml'),
+      ),
+    );
+    const stored = recoverySnapshot(
+      read.model,
+      false,
+      FileLifecycle.Opened({
+        name: 'model.yaml',
+        source: { format: 'saerskriven-yaml', document: read.source },
+      }),
+    );
+    expect(stored.document.formatVersion).toBe(2);
+    expect(stored.file).toEqual(
+      FileLifecycle.Opened({
+        name: 'model.yaml',
+        source: { format: 'saerskriven-yaml' },
+      }),
+    );
+    expect(JSON.stringify(stored)).not.toContain('"formatVersion":3');
+  });
+
+  it('keeps the retained document of a Threat Dragon file', () => {
+    expect(recoverySnapshot(sampleModel, false, opened()).file).toEqual(
+      opened(),
+    );
+  });
+
+  it('restores a version 3 document and retained source', () => {
+    const read = Either.getOrThrow(
+      saerskrivenYamlCodec.read(
+        committedText('saerskriven/feature-complete-v3.yaml'),
+      ),
+    );
+    const file = FileLifecycle.Opened({
+      name: 'model.yaml',
+      source: { format: 'saerskriven-yaml', document: read.source },
+    });
+    const restored = loadStored(
+      JSON.stringify({
+        ...recoverySnapshot(read.model, false, file),
+        document: read.source,
+        file,
+      }),
+    );
+    expect(restored).toEqual(
+      Either.right(expectedRestore(read.model, false, file)),
+    );
   });
 
   it('restores a version 2 snapshot, keeping the model link of an assumption that links threats', () => {
@@ -207,7 +259,17 @@ describe('local recovery storage', () => {
     storage.replace(recoverySnapshot(present, true, file, secondDiagram));
 
     expect(storage.load()).toEqual(
-      Either.right(expectedRestore(present, true, file, secondDiagram)),
+      Either.right(
+        expectedRestore(
+          present,
+          true,
+          FileLifecycle.Opened({
+            name: 'model.yaml',
+            source: { format: 'saerskriven-yaml' },
+          }),
+          secondDiagram,
+        ),
+      ),
     );
     const restored = Either.getOrThrow(storage.load());
     expect(restored?.dirty).toBe(true);
@@ -289,14 +351,18 @@ describe('local recovery storage', () => {
         ...current,
         document: {
           ...current.document,
-          diagrams: current.document.diagrams.map((diagram) => ({
-            ...diagram,
-            elements: diagram.elements.map((element) =>
-              'position' in element
-                ? { ...element, position: { x: 1_000_001, y: 0 } }
-                : element,
-            ),
-          })),
+          diagrams: current.document.diagrams.map((diagram) =>
+            'elements' in diagram
+              ? {
+                  ...diagram,
+                  elements: diagram.elements.map((element) =>
+                    'position' in element
+                      ? { ...element, position: { x: 1_000_001, y: 0 } }
+                      : element,
+                  ),
+                }
+              : diagram,
+          ),
         },
       }),
       RecoveryProblem.Unsupported(),

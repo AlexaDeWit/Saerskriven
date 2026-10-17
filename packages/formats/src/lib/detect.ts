@@ -1,5 +1,5 @@
 import { issueFloodCode, type Model } from '@saerskriven/model';
-import type { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
+import type { saerskrivenYamlV3WireSchema } from '@saerskriven/wire-saerskriven-yaml-v3';
 import { threatDragonWireSchema } from '@saerskriven/wire-threat-dragon';
 import { Data, Either } from 'effect';
 import { z } from 'zod';
@@ -27,7 +27,7 @@ export type FormatName = z.infer<typeof formatNameSchema>;
  */
 export type DetectedRead =
   | Answer<'threat-dragon', typeof threatDragonWireSchema>
-  | Answer<'saerskriven-yaml', typeof saerskrivenYamlV2WireSchema>;
+  | Answer<'saerskriven-yaml', typeof saerskrivenYamlV3WireSchema>;
 
 /**
  * A format paired with the wire document a later write merges onto, for a
@@ -37,7 +37,7 @@ export type DetectedRead =
  */
 export type RetainedSource =
   | Retained<'threat-dragon', typeof threatDragonWireSchema>
-  | Retained<'saerskriven-yaml', typeof saerskrivenYamlV2WireSchema>;
+  | Retained<'saerskriven-yaml', typeof saerskrivenYamlV3WireSchema>;
 
 /**
  * No registered codec claimed the text. `tried` names every format offered
@@ -68,7 +68,7 @@ export const DetectionFailure = Data.taggedEnum<DetectionFailure>();
  * reason reach the reader in place of a claim by nobody. A claimed failure
  * is returned as that codec's own, and an `ExceededReadLimit` stops
  * detection outright, since the next codec would pay the same cost. A file
- * from an unmodelled release, such as a `formatVersion` other than 1 and 2,
+ * from an unmodelled release, such as a `formatVersion` other than 1 to 3,
  * is claimed by nobody.
  */
 export function readAnyFormat(

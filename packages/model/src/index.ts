@@ -73,7 +73,7 @@ export {
   type ValueKind,
 } from './lib/parse-issue.js';
 export * from './lib/parse.js';
-export { parseDrawnModel } from './lib/parse-drawn.js';
+export { atDrawnPaths, parseDrawnModel } from './lib/parse-drawn.js';
 export * from './lib/empty.js';
 export * from './lib/operation-failures.js';
 export * from './lib/element-operations.js';

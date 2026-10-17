@@ -8,11 +8,16 @@ import {
   type SaerskrivenYamlV2Document,
   type SaerskrivenYamlV2Threat,
 } from '@saerskriven/wire-saerskriven-yaml-v2';
+import {
+  saerskrivenYamlV3WireSchema,
+  type SaerskrivenYamlV3Document,
+} from '@saerskriven/wire-saerskriven-yaml-v3';
 import { z } from 'zod';
 import { droppedAssumptionElementLinks } from './saerskriven-yaml-migration-assumption-element-links.js';
 import { assumptionsWithModelLinks } from './saerskriven-yaml-migration-assumption-model-links.js';
 import type { Divergence } from './divergence.js';
 import { withMitigationTextAsRecords } from './saerskriven-yaml-migration-mitigation-text.js';
+import { withElementsPlaced } from './saerskriven-yaml-migration-placements.js';
 
 /**
  * Every released version of Saerskriven YAML, told apart by `formatVersion`.
@@ -22,7 +27,11 @@ import { withMitigationTextAsRecords } from './saerskriven-yaml-migration-mitiga
  */
 export const saerskrivenYamlVersionsSchema = z.discriminatedUnion(
   'formatVersion',
-  [saerskrivenYamlWireSchema, saerskrivenYamlV2WireSchema],
+  [
+    saerskrivenYamlWireSchema,
+    saerskrivenYamlV2WireSchema,
+    saerskrivenYamlV3WireSchema,
+  ],
 );
 
 /** A Saerskriven YAML document of any released version. */
@@ -32,43 +41,49 @@ export type SaerskrivenYamlVersionedDocument = z.infer<
 
 /** A document in the current version, and what bringing it there cost. */
 export type CurrentSaerskrivenYaml = {
-  readonly document: SaerskrivenYamlV2Document;
+  readonly document: SaerskrivenYamlV3Document;
   readonly divergences: readonly Divergence[];
 };
 
 /**
- * A document of any released version in the current one. A version 2
- * document comes back as it is, reporting nothing. A version 1 document goes
- * through two steps: each threat's mitigation text made a record under the
- * one-to-one status rule, and each assumption given the model link
- * {@link assumptionsWithModelLinks} reads. The version 1 `elements` list has
- * no version 2 key, so {@link droppedAssumptionElementLinks} reports each
- * assumption that held one, read from the original document. Statuses carry
- * over one to one.
+ * A document of any released version in the current one, version 3, one
+ * step at a time. A version 3 document comes back as it is. The step from
+ * version 2 places each element on the diagram that drew it
+ * ({@link withElementsPlaced}) and reports nothing. The step from version 1
+ * makes each threat's mitigation text a record under the one-to-one status
+ * rule and gives each assumption the model link
+ * {@link assumptionsWithModelLinks} reads. The version 1 `elements` list of
+ * an assumption has no later key, so {@link droppedAssumptionElementLinks}
+ * reports each assumption that held one, read from the original document.
+ * Statuses carry over one to one.
  */
 export function currentSaerskrivenYaml(
   document: SaerskrivenYamlVersionedDocument,
 ): CurrentSaerskrivenYaml {
-  return document.formatVersion === 2
-    ? { document, divergences: [] }
-    : migratedFromVersion1(document);
+  if (document.formatVersion === 3) {
+    return { document, divergences: [] };
+  }
+  if (document.formatVersion === 2) {
+    return { document: withElementsPlaced(document), divergences: [] };
+  }
+  return {
+    document: withElementsPlaced(version2From(document)),
+    divergences: droppedAssumptionElementLinks(document),
+  };
 }
 
-function migratedFromVersion1(
+function version2From(
   document: SaerskrivenYamlDocument,
-): CurrentSaerskrivenYaml {
+): SaerskrivenYamlV2Document {
   const stepped = withMitigationTextAsRecords(document);
   return {
-    document: {
-      formatVersion: 2,
-      metadata: stepped.metadata,
-      assumptions: assumptionsWithModelLinks(stepped),
-      diagrams: stepped.diagrams,
-      mitigations: stepped.mitigations,
-      threats: stepped.threats.map(withoutMitigationText),
-      lastIssuedThreatNumber: stepped.lastIssuedThreatNumber,
-    },
-    divergences: droppedAssumptionElementLinks(document),
+    formatVersion: 2,
+    metadata: stepped.metadata,
+    assumptions: assumptionsWithModelLinks(stepped),
+    diagrams: stepped.diagrams,
+    mitigations: stepped.mitigations,
+    threats: stepped.threats.map(withoutMitigationText),
+    lastIssuedThreatNumber: stepped.lastIssuedThreatNumber,
   };
 }
 

@@ -256,9 +256,22 @@ describe('what an applied edit writes', () => {
       culled: [],
       culledThreats: [],
       dropped: [],
+      movedToVersion3: false,
       divergences: [],
     });
     expect(written).not.toEqual(quoted);
+  });
+
+  it('says in a line of the text result when a batch moved the file to version 3', () => {
+    const attempted = attempt();
+    const applied = Either.getOrThrow(
+      attempted.edit(modelFile, revisionIn(attempted, modelFile), [renaming]),
+    );
+    const lines = renderEdit({ ...applied, movedToVersion3: true });
+    expect(lines).toHaveLength(textOf(Either.right(applied)).length + 1);
+    expect(lines[1]).toMatch(
+      /^format version: moved from Saerskriven YAML version 2 to version 3/u,
+    );
   });
 
   it('reads as the lines a text result carries', () => {
@@ -1162,6 +1175,24 @@ describe('what an edit does with what this version cannot read', () => {
       { op: 'set_model_metadata', title: 'Saerskriven, migrated' },
     ]);
     expect(Either.getOrUndefined(applied)?.dropped).toEqual([]);
+    expect(
+      attempted.bytes(file).toString('utf8').startsWith('formatVersion: 2\n'),
+    ).toBe(true);
+  });
+
+  it('writes a version 3 file version 2 holds back as version 2, which moves it nowhere', () => {
+    const attempted = attempt();
+    const file = attempted.place(
+      'version-3.yaml',
+      readFileSync(
+        testDataPath('saerskriven/feature-complete-v3.yaml'),
+        'utf8',
+      ),
+    );
+    const applied = attempted.edit(file, revisionIn(attempted, file), [
+      { op: 'set_model_metadata', title: 'Clinic booking, edited' },
+    ]);
+    expect(Either.getOrUndefined(applied)?.movedToVersion3).toBe(false);
     expect(
       attempted.bytes(file).toString('utf8').startsWith('formatVersion: 2\n'),
     ).toBe(true);
