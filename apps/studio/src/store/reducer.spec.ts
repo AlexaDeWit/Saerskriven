@@ -2,6 +2,7 @@ import { ReadFailure } from '@saerskriven/formats';
 import { ShareLinkFailure } from '@saerskriven/formats/share-link';
 import {
   addElement,
+  diagramsOf,
   emptyModel,
   OperationFailure,
   type DiagramId,
@@ -129,6 +130,17 @@ const applied: ActionsByTag<ModelActionTag> = {
   RenameDiagram: Action.RenameDiagram({
     diagramId: mainDiagram,
     title: 'Retitled',
+  }),
+  PlaceElements: Action.PlaceElements({
+    diagramId: mainDiagram,
+    placements: [
+      {
+        element: otherElement,
+        position: { x: 400, y: 200 },
+        size: { width: 120, height: 60 },
+      },
+    ],
+    decimals: 3,
   }),
   InsertFragment: Action.InsertFragment({
     diagramId: mainDiagram,
@@ -314,6 +326,17 @@ const refused: ActionsByTag<ModelActionTag> = {
   RenameDiagram: Action.RenameDiagram({
     diagramId: diagramId('diagram-missing'),
     title: 'Retitled',
+  }),
+  PlaceElements: Action.PlaceElements({
+    diagramId: mainDiagram,
+    placements: [
+      {
+        element: actorElement,
+        position: { x: 400, y: 200 },
+        size: { width: 120, height: 60 },
+      },
+    ],
+    decimals: undefined,
   }),
   InsertFragment: Action.InsertFragment({
     diagramId: mainDiagram,
@@ -587,6 +610,9 @@ function stateFor(action: Action): State {
   if (Action.$is('SetAwayEndPosition')(action)) {
     return { ...initialState(sharedModel), activeDiagram: action.diagramId };
   }
+  if (Action.$is('PlaceElements')(action)) {
+    return initialState(twoDiagramModel);
+  }
   if (Action.$is('UnlinkAssumptionFromModel')(action)) {
     return modelScopedStart;
   }
@@ -648,6 +674,37 @@ describe('an operation the model refuses', () => {
   it('clears the failure on the next edit that lands', () => {
     const stuck = reduce(start, refused.AddElement);
     expect(reduce(stuck, applied.AddElement).lastFailure).toBeUndefined();
+  });
+});
+
+describe('placing elements the model already holds', () => {
+  const two = initialState(twoDiagramModel);
+
+  it('puts each on the diagram it names beside its other placements', () => {
+    const placed = reduce(two, applied.PlaceElements);
+    expect(
+      diagramsOf(placed.present, otherElement).map(({ id }) => id),
+    ).toEqual([mainDiagram, secondDiagram]);
+    expect(placed.present.elements).toBe(two.present.elements);
+  });
+
+  it('places none of them where the diagram refuses one', () => {
+    const next = reduce(
+      two,
+      Action.PlaceElements({
+        diagramId: mainDiagram,
+        decimals: 3,
+        placements: [
+          ...applied.PlaceElements.placements,
+          ...refused.PlaceElements.placements,
+        ],
+      }),
+    );
+    expect(next.present).toBe(two.present);
+    expect(next.past).toEqual([]);
+    expect(next.lastFailure).toMatchObject({
+      failure: { _tag: 'ElementAlreadyOnDiagram', elementId: actorElement },
+    });
   });
 });
 

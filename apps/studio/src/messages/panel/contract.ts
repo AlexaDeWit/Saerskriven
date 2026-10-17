@@ -25,6 +25,8 @@ export const panelMessages = {
   'also-on-elements': text({ list: 'list' }),
   'on-elements': text({ list: 'list' }),
   'on-no-element': text(),
+  'also-on-diagrams': text({ diagrams: 'node' }),
+  'show-on-diagram': text({ diagram: 'text' }),
   'security-properties': text(),
   'not-recorded-hint': text(),
   'no-relationships': text(),

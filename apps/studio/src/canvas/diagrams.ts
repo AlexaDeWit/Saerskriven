@@ -46,12 +46,17 @@ export function showDiagram(
 }
 
 /**
- * Shows the diagram drawing `elementId`, selects the element and focuses it,
- * and says the diagram's title where another was on screen. It answers
- * whether the model holds the element.
+ * Shows the diagram `diagramId` names where it draws `elementId`, or else the
+ * first diagram that does, selects the element and focuses it, and says the
+ * diagram's title where another was on screen. It answers whether the model
+ * holds the element.
  */
-export function revealElement(elementId: ElementId): boolean {
-  const [diagram] = diagramsOf(modelStore.getState().present, elementId);
+export function revealElement(
+  elementId: ElementId,
+  diagramId?: DiagramId,
+): boolean {
+  const drawing = diagramsOf(modelStore.getState().present, elementId);
+  const diagram = drawing.find(({ id }) => id === diagramId) ?? drawing.at(0);
   if (diagram === undefined) {
     return false;
   }

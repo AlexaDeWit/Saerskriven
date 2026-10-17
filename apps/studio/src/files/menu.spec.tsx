@@ -23,6 +23,7 @@ import {
   newNote,
   recordedModel,
   sampleModel,
+  twoDiagramModel,
 } from '../store/store.fixtures.js';
 import { SaveOutcome, type ChosenFile } from './bridge.js';
 import {
@@ -392,6 +393,27 @@ describe('what the studio says about the file', () => {
     });
 
     expect(item('Rename selection').getAttribute('data-disabled')).toBeNull();
+  });
+
+  it('offers Add existing element only while the diagram on screen leaves an element of the model off', async () => {
+    const user = userEvent.setup();
+    mounted(specBridge());
+
+    await openMenu(user);
+    expect(
+      item('Add existing element').getAttribute('data-disabled'),
+    ).not.toBeNull();
+
+    act(() => {
+      modelStore.setState(initialState(twoDiagramModel), true);
+    });
+
+    expect(
+      item('Add existing element').getAttribute('data-disabled'),
+    ).toBeNull();
+    expect(item('Add existing element').getAttribute('aria-keyshortcuts')).toBe(
+      'E',
+    );
   });
 
   it('offers no rename over a text note, which draws prose rather than a name', async () => {

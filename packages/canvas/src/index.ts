@@ -5,7 +5,12 @@ export {
 } from './lib/badges.js';
 export { drawnBounds, type CanvasBounds } from './lib/bounds.js';
 export { type FlowLabelPlacement } from './lib/flow-blocks.js';
-export { boxesOverlap, boxOfPoints, type Box } from './lib/geometry.js';
+export {
+  boxesOverlap,
+  boxOfPoints,
+  shiftedBy,
+  type Box,
+} from './lib/geometry.js';
 export {
   boxElementStrokeInsets,
   ElementGlyph,

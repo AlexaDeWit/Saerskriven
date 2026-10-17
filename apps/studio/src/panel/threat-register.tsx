@@ -10,6 +10,7 @@ import { hostPlatform } from '../commands/shortcuts.js';
 import { useTranslator } from '../messages/locale.js';
 import { elementsAndDiagrams } from '../store/selectors.js';
 import { useModelStore } from '../store/store.js';
+import { listed } from '../ui/listed.js';
 import { inReviewOrder } from '../ui/review-order.js';
 import { VisuallyHidden } from '../ui/visually-hidden.js';
 import { marked, markedWithin } from './marked.js';
@@ -179,7 +180,7 @@ function RegisterRow({
 }) {
   const model = useModelStore(useShallow(elementsAndDiagrams));
   const { t, locale } = useTranslator();
-  const placed: readonly Placement[] = [
+  const placed: readonly Attachment[] = [
     ...(threat.appliesToModel ? [{ label: t('panel.whole-model') }] : []),
     ...threatAttachments(model, threat, t),
   ];
@@ -246,16 +247,4 @@ function RegisterRow({
   );
 }
 
-type Placement = { readonly label: string; readonly id?: ElementId };
-
-function listed<Item extends { readonly label: string }>(
-  items: readonly Item[],
-  locale: string,
-): readonly (Item | string)[] {
-  const waiting = [...items];
-  return new Intl.ListFormat(locale, { type: 'conjunction' })
-    .formatToParts(items.map(({ label }) => label))
-    .map((part) =>
-      part.type === 'element' ? (waiting.shift() ?? part.value) : part.value,
-    );
-}
+type Attachment = { readonly label: string; readonly id?: ElementId };

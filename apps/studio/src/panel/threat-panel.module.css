@@ -121,6 +121,29 @@
   overflow-wrap: anywhere;
 }
 
+.alsoOn {
+  margin: 0;
+  padding: var(--saer-space-2) var(--saer-space-3);
+  border-bottom: 1px solid var(--saer-colour-border);
+  color: var(--saer-colour-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.alsoOnLink {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--saer-colour-text);
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.alsoOnLink:hover {
+  text-decoration-thickness: 2px;
+}
+
 .instruction,
 .spread {
   margin: 0;
@@ -147,6 +170,7 @@
 }
 
 .heading:focus-visible,
+.alsoOnLink:focus-visible,
 .drawerToggle:focus-visible,
 .width:focus-visible,
 .close:focus-visible,

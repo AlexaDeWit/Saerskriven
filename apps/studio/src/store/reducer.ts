@@ -33,6 +33,7 @@ import {
   replaceThreat,
   resizeElement,
   reverseFlow,
+  placeElement,
   unplaceElement,
   setAccent,
   setBoundaryShape,
@@ -69,6 +70,13 @@ export function reduce(state: State, action: Action): State {
       edited(state, setElementDetails(state.present, elementId, change)),
     SetAccent: ({ diagramId, elementIds, accent }) =>
       edited(state, setAccent(state.present, diagramId, elementIds, accent)),
+    PlaceElements: ({ diagramId, placements, decimals }) =>
+      edited(
+        state,
+        foldedEdits(state.present, placements, (model, placement) =>
+          placeElement(model, diagramId, placement, decimals),
+        ),
+      ),
     InsertFragment: ({ diagramId, fragment }) =>
       edited(state, insertFragment(state.present, diagramId, fragment)),
     ReconnectFlow: ({ diagramId, elementId, side, endpointId, anchor }) =>
@@ -119,12 +127,8 @@ export function reduce(state: State, action: Action): State {
     ArrangeElements: ({ diagramId, moves, decimals }) =>
       edited(
         state,
-        moves.reduce<Either.Either<Model, OperationFailure>>(
-          (outcome, { elementId, offset }) =>
-            Either.flatMap(outcome, (model) =>
-              moveElement(model, diagramId, elementId, offset, decimals),
-            ),
-          Either.right(state.present),
+        foldedEdits(state.present, moves, (model, { elementId, offset }) =>
+          moveElement(model, diagramId, elementId, offset, decimals),
         ),
       ),
     AddElement: ({ diagramId, element, decimals }) =>
@@ -390,11 +394,17 @@ function editElements(
     elementId: ElementId,
   ) => Either.Either<Model, OperationFailure>,
 ): Either.Either<Model, OperationFailure> {
-  return [...new Set(elementIds)].reduce<
-    Either.Either<Model, OperationFailure>
-  >(
-    (outcome, elementId) =>
-      Either.flatMap(outcome, (current) => edit(current, elementId)),
+  return foldedEdits(model, [...new Set(elementIds)], edit);
+}
+
+function foldedEdits<Item>(
+  model: Model,
+  items: readonly Item[],
+  edit: (current: Model, item: Item) => Either.Either<Model, OperationFailure>,
+): Either.Either<Model, OperationFailure> {
+  return items.reduce<Either.Either<Model, OperationFailure>>(
+    (outcome, item) =>
+      Either.flatMap(outcome, (current) => edit(current, item)),
     Either.right(model),
   );
 }

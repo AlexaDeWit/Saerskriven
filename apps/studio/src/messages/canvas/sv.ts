@@ -39,6 +39,11 @@ export const canvasSv = catalogue(canvasMessages)('sv')({
     other: '{count} objekt togs bort från {diagram}.',
   },
   'still-on': 'Finns kvar i {diagrams}.',
+  'added-existing': {
+    one: '{count} objekt lades till i {diagram}.',
+    other: '{count} objekt lades till i {diagram}.',
+  },
+  'nothing-to-add': 'Alla objekt finns redan i {diagram}.',
   'flows-detached': {
     one: '{count} flöde lossades.',
     other: '{count} flöden lossades.',

@@ -5,6 +5,12 @@ export const toolsSv = catalogue(toolMessages)('sv')({
   'diagram-region': 'Diagram',
   'free-point': 'en fri punkt',
   'away-end': '{name} i ett annat diagram',
+  'also-on-diagrams': 'även i {diagrams}',
+  'existing-elements': 'Objekt',
+  'existing-flows': 'Flöden',
+  'existing-detail': '{what}, i {diagrams}',
+  'add-picked': 'Lägg till {count}',
+  'pick-existing-first': 'Välj först ett objekt eller ett flöde.',
   'flow-between': 'mellan {source} och {target}',
   'flow-from-to': 'från {source} till {target}',
   'open-threats': {

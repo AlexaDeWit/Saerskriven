@@ -47,8 +47,9 @@ host provides.
   `DeleteFromDiagram` folds over its IDs taking an element on another diagram
   off the one it names and removing every other from the model, `SetAccent`
   hands its ID array to the one operation that takes several, and
-  `InsertFragment` and `ArrangeElements` apply a paste or an arrangement
-  atomically, before history records the result. `AddDiagram` appends a
+  `PlaceElements`, `InsertFragment` and `ArrangeElements` apply an Add
+  existing element, a paste or an arrangement atomically, before history
+  records the result. `AddDiagram` appends a
   diagram and shows it, the one edit that moves the view as well as the model.
   The other tags cover history, the diagram on screen, selection, inline
   editing, files and failures. An edit that writes geometry carries
@@ -122,12 +123,13 @@ union it mirrors, so a document cannot be filed under the wrong format.
 An edit that writes geometry carries `decimals`, and its arm hands the count
 to the model operation it calls, which rounds what it writes
 ([the model](../../../../packages/model/README.md#operations)). The actions
-are `AddElement`, `MoveElement`, `MoveElements`, `ArrangeElements`,
-`ResizeElement`, `RemoveElements`, `DeleteFromDiagram`, `SetFlowWaypoints`,
-`SetFlowEndPosition`, `SetAwayEndPosition` and `SetBoundaryShape`. The field
-is required, so an edit that means the operation to store what it computes
-says `undefined`, and one that forgot does not compile. The store holds no
-count of its own and rounds nothing itself. Which count an edit names is the canvas's to say
+are `AddElement`, `PlaceElements`, `MoveElement`, `MoveElements`,
+`ArrangeElements`, `ResizeElement`, `RemoveElements`, `DeleteFromDiagram`,
+`SetFlowWaypoints`, `SetFlowEndPosition`, `SetAwayEndPosition` and
+`SetBoundaryShape`. The field is required, so an edit that means the operation
+to store what it computes says `undefined`, and one that forgot does not
+compile. The store holds no count of its own and rounds nothing itself. Which
+count an edit names is the canvas's to say
 ([the canvas](../canvas/README.md#rules-for-changes)).
 
 ## Recovery
