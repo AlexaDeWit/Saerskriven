@@ -137,7 +137,7 @@ as described in
 [Markdown diagram exports](render-themes.md#mermaid-diagrams-in-markdown). An export proposes the open
 file's name with the export's extension, or `Untitled`, and never changes
 which file Save writes to. Where the browser asks where to save, an export
-starts beside the file Save writes back to, and where the browser chooses
+starts beside the file Save writes back to, or where the browser chooses
 while there is none. When the model has several diagrams, the SVG and
 PNG names add the diagram's title, as `payments - Checkout.svg`: characters a
 file name cannot hold become `_`, runs of white space collapse, leading and
