@@ -1,3 +1,36 @@
+## 0.10.0 (2026-10-17)
+
+### 🚀 Features
+
+- ⚠️ refuse writes that would drop what this version cannot read ([#860](https://github.com/AlexaDeWit/Saerskriven/pull/860))
+- merge two elements that stand for the same thing ([#874](https://github.com/AlexaDeWit/Saerskriven/pull/874))
+- **canvas:** draw a note's text from its top left ([#859](https://github.com/AlexaDeWit/Saerskriven/pull/859))
+- **canvas:** accent a note with a bar down its left edge ([#864](https://github.com/AlexaDeWit/Saerskriven/pull/864))
+- **formats:** read and write Saerskriven YAML version 3 ([#868](https://github.com/AlexaDeWit/Saerskriven/pull/868))
+  A model with an element on more than one diagram saves as version 3.
+  Saerskriven 0.9.0 and earlier refuse a version 3 file with
+  `No format claimed the file`, so open it with 0.10.0 or later.
+- **formats:** keep every diagram an OTM file describes ([#871](https://github.com/AlexaDeWit/Saerskriven/pull/871))
+- **model:** share an element across diagrams ([#870](https://github.com/AlexaDeWit/Saerskriven/pull/870))
+- **studio:** reopen a recent file from the menu ([#861](https://github.com/AlexaDeWit/Saerskriven/pull/861))
+- **studio:** act on user testing of shared elements ([#878](https://github.com/AlexaDeWit/Saerskriven/pull/878))
+
+### 🩹 Fixes
+
+- name the format version and fix the shared-element messages ([#879](https://github.com/AlexaDeWit/Saerskriven/pull/879), [#877](https://github.com/AlexaDeWit/Saerskriven/issues/877))
+
+### ⚠️ Breaking Changes
+
+- refuse writes that would drop what this version cannot read ([#860](https://github.com/AlexaDeWit/Saerskriven/pull/860))
+  saer_edit, and saer convert rewriting a file in place,
+  refuse a write that would drop a key or an accent value this version of saer
+  cannot read. Pass dropUndeclared: true or --drop-undeclared to write the file
+  without them.
+
+### ❤️ Thank You
+
+- Alexandra de Wit @AlexaDeWit
+
 ## 0.9.0 (2026-10-10)
 
 ### 🚀 Features
