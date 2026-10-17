@@ -149,6 +149,7 @@ every test run. Regenerate it with `pnpm snapshots:update @saerskriven/model`.
       - `description`: text
       - `outOfScope`: boolean
       - `reasonOutOfScope`: text
+      - `accent`: optional, one of `s1`, `s2`, `s3`, `s4`, `l1`, `l2`, `l3`, `l4`
       - `position`: object
         - `x`: number, -1000000 or more, 1000000 or less
         - `y`: number, -1000000 or more, 1000000 or less

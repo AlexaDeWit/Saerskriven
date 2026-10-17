@@ -91,6 +91,8 @@ const selectorsOf = (rule: string | undefined): string[] =>
 const classesNamedBy = (selector: string): number =>
   selector.split('.').length - 1;
 
+const accentedNoteFrame = `.${canvasClassNames.outOfScope} .${canvasClassNames.shape}.${canvasClassNames.noteFrame}`;
+
 const toned = (theme: RenderTheme): [string, string][] => [
   ...severitySchema.options.map((severity): [string, string] => [
     severityToneClass[severity],
@@ -264,12 +266,13 @@ describe('an out-of-scope element', () => {
     ).toEqual([]);
   });
 
-  it('has only its outline, line and arrowhead drawn in the outline ink, its name, badge, note and flow name as in scope', () => {
+  it('has only its outline, line, arrowhead and note frame drawn in the outline ink, its name, badge, note and flow name as in scope', () => {
     expect(classesStyledBy(rules.join('\n'))).toEqual(
       new Set([
         canvasClassNames.outOfScope,
         canvasClassNames.shape,
         canvasClassNames.flowArrow,
+        canvasClassNames.noteFrame,
       ]),
     );
     expect(outline).toContain(`stroke: ${paletteProperty(outOfScopeOutline)};`);
@@ -304,7 +307,7 @@ describe('an out-of-scope element', () => {
         (rule) =>
           dashOf(rule) !== undefined && !rule.includes(accentClassNames.strong),
       ),
-    ).toEqual([boundary, outline]);
+    ).toEqual([boundary, outline, ruleStarting(accentedNoteFrame)]);
     expect(Math.max(...selectorsOf(boundary).map(classesNamedBy))).toBeLessThan(
       classesNamedBy(dotted),
     );
@@ -372,14 +375,19 @@ describe('an accent', () => {
   });
 
   it.each(slotClasses)(
-    "draws slot $line as an outline, a line and an arrowhead in the slot's colour, and tints only the fill marked for it",
+    "draws slot $line as an outline, a line, an arrowhead and a note's bar in the slot's colour, and tints only the fill marked for it",
     ({ className, line, tint }) => {
       expect(
         ruleIn(themedRules, `.${className} .${canvasClassNames.shape}`),
       ).toContain(`stroke: ${paletteProperty(line)};`);
-      expect(
-        ruleIn(themedRules, `.${className} .${canvasClassNames.flowArrow}`),
-      ).toContain(`fill: ${paletteProperty(line)};`);
+      for (const mark of [
+        canvasClassNames.flowArrow,
+        accentClassNames.noteBar,
+      ]) {
+        expect(ruleIn(themedRules, `.${className} .${mark}`)).toContain(
+          `fill: ${paletteProperty(line)};`,
+        );
+      }
       expect(
         ruleIn(themedRules, `.${className} .${accentClassNames.tinted}`),
       ).toContain(`fill: ${paletteProperty(tint)};`);
@@ -400,6 +408,37 @@ describe('an accent', () => {
       expect(weight).toBeGreaterThan(plain);
     },
   );
+
+  it("sets a strong note's text in the ink of an element's name, which the palette holds legible on every tint", () => {
+    expect(
+      ruleIn(themedRules, `${strong} .${canvasClassNames.note}`),
+    ).toContain(`fill: ${paletteProperty('textPrimary')};`);
+  });
+
+  it("keeps an out-of-scope note's frame in the outline ink at the plain weight, its rule after every accent rule that reaches it and with more classes than a slot's", () => {
+    const frame = themedRules.find((rule) =>
+      rule.startsWith(accentedNoteFrame),
+    );
+    const reaching = [
+      `.${accentClassNames.slot4} .${canvasClassNames.shape} {`,
+      `${strong} .${canvasClassNames.shape} {`,
+      `${strongOutOfScope} .${canvasClassNames.shape} {`,
+    ];
+    expect(frame).toContain(`stroke: ${paletteProperty(outOfScopeOutline)};`);
+    expect(frame).toContain(`stroke-width: ${String(strokeWidths.outline)};`);
+    expect(dashOf(frame)).toEqual([0, strokeWidths.outline * dotPitchRatio]);
+    for (const rule of reaching) {
+      expect(themedBase.indexOf(accentedNoteFrame)).toBeGreaterThan(
+        themedBase.indexOf(rule),
+      );
+      expect(classesNamedBy(accentedNoteFrame)).toBeGreaterThanOrEqual(
+        classesNamedBy(rule),
+      );
+    }
+    expect(classesNamedBy(accentedNoteFrame)).toBeGreaterThan(
+      classesNamedBy(reaching[0]),
+    );
+  });
 
   it('colours the dots of an out-of-scope outline, its rule following the out-of-scope one with as many classes', () => {
     const outOfScope = `.${canvasClassNames.outOfScope} .${canvasClassNames.shape} {`;
@@ -458,19 +497,39 @@ describe('an accent', () => {
       expect(
         ruleIn(forcedRules, `.${className} .${canvasClassNames.shape}`),
       ).toContain('stroke: CanvasText;');
-      expect(
-        ruleIn(forcedRules, `.${className} .${canvasClassNames.flowArrow}`),
-      ).toContain('fill: CanvasText;');
+      for (const mark of [
+        canvasClassNames.flowArrow,
+        accentClassNames.noteBar,
+      ]) {
+        expect(ruleIn(forcedRules, `.${className} .${mark}`)).toContain(
+          'fill: CanvasText;',
+        );
+      }
       expect(
         ruleIn(forcedRules, `.${className} .${accentClassNames.tinted}`),
       ).toContain('fill: Canvas;');
-      expect(
-        ruleIn(forcedRules, `.${className} .${accentClassNames.storeBand}`),
-      ).toContain('fill: none;');
+      for (const band of [
+        accentClassNames.storeBand,
+        accentClassNames.noteGround,
+      ]) {
+        expect(ruleIn(forcedRules, `.${className} .${band}`)).toContain(
+          'fill: none;',
+        );
+      }
     }
+    expect(
+      ruleIn(forcedRules, `${strong} .${canvasClassNames.note}`),
+    ).toContain('fill: CanvasText;');
+    expect(ruleIn(forcedRules, accentedNoteFrame)).toContain(
+      'stroke: CanvasText;',
+    );
     expect(forced).not.toMatch(/--saer-colour-slot/u);
     expect(
-      forcedRules.filter((rule) => rule.includes(accentClassNames.strong)),
+      forcedRules.filter(
+        (rule) =>
+          rule.includes(accentClassNames.strong) &&
+          rule.includes('stroke-width'),
+      ),
     ).toEqual([]);
   });
 });

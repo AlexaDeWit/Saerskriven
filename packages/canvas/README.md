@@ -108,8 +108,12 @@ and a flow's block is held clear of it.
 
 An [accent](../../docs/studio.md#accents) is paint alone: the layout carries
 an element's key to its glyph, which marks its group with the classes of
-`accentClassNames`, and no box, bound or flow name placement reads it. The
-slot colours and tints are palette roles like any other. The studio's sheet
+`accentClassNames`, and no box, bound or flow name placement reads it. A note
+draws its accent as a bar `noteAccentBar` wide down the inside of its left
+edge, narrower than the padding its text starts inside, and a strong one also
+fills its box with the tint and sets its text in a name's ink. Its
+out-of-scope frame keeps the outline ink and weight. The slot colours and
+tints are palette roles like any other. The studio's sheet
 always carries the accent rules, and `renderCanvasStylesheet` writes them only
 for a drawing that holds an accent, so a drawing without one keeps the sheet
 it had. It mixes each tint from the theme's element colour, so a themed

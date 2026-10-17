@@ -25,10 +25,13 @@
   resize: none;
 }
 
+/* A note's accent bar and tint show through, and the drawn text under the
+   field is hidden while it is open. */
 .note {
   height: 100%;
   overflow: auto;
   text-align: start;
+  background: transparent;
 }
 
 /* A refusal shadow leaves the focus outline available. */
@@ -61,6 +64,10 @@
   .refusal {
     background: Canvas;
     color: CanvasText;
+  }
+
+  .note {
+    background: transparent;
   }
 
   .field:focus-visible {

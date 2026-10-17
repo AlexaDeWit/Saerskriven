@@ -19,12 +19,12 @@ import {
 } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
-  accentableSelection,
   activeDiagramId,
   elementById,
   renameable,
   selectedElement,
   selectedElementRecord,
+  selectedElementRecords,
 } from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
@@ -144,12 +144,11 @@ export function toggleBoundaryShape(): void {
 }
 
 /**
- * Gives every selected element and flow that takes an accent the key
- * `accent`, or clears theirs where it is undefined, as one undo step. A
- * selected note is left as it is.
+ * Gives every selected element the key `accent`, or clears theirs where it is
+ * undefined, as one undo step.
  */
 export function accentSelected(accent: Accent | undefined): void {
-  const taking = accentableSelection(modelStore.getState()).map(
+  const taking = selectedElementRecords(modelStore.getState()).map(
     (element) => element.id,
   );
   if (taking.length > 0) {

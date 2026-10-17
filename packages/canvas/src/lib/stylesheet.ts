@@ -113,7 +113,8 @@ export const boundaryStrokeWidth = strokeWidths.outline;
 /**
  * The classes an accent adds to a drawing, which the sheet styles only where
  * a drawing holds one: a slot and `strong` on an element's group, `tinted` on
- * the fill a strong accent tints, and the band a strong accent draws a store.
+ * the fill a strong accent tints, the band a strong accent draws a store and
+ * the ground it draws a note, and the bar any accent draws a note.
  */
 export const accentClassNames = {
   slot1: 'saer-diagram-accent-1',
@@ -123,6 +124,8 @@ export const accentClassNames = {
   strong: 'saer-diagram-accent-strong',
   tinted: 'saer-diagram-tinted',
   storeBand: 'saer-diagram-store-band',
+  noteGround: 'saer-diagram-note-ground',
+  noteBar: 'saer-diagram-note-bar',
 } as const satisfies Record<string, DiagramClassName>;
 
 const accentSlots = {
@@ -274,6 +277,8 @@ const strong = `.${accentClassNames.strong}`;
 
 const strongOutOfScope = `.${canvasClassNames.outOfScope}${strong}`;
 
+const outOfScopeNoteFrame = `.${canvasClassNames.outOfScope} .${canvasClassNames.shape}.${canvasClassNames.noteFrame}`;
+
 const slotRules = (
   colour: (role: keyof Palette) => string,
   rule: (className: string, line: string, tint: string) => string,
@@ -291,15 +296,20 @@ const accentSheetFrom = (
   (className, line, tint) => `.${className} .${canvasClassNames.shape} {
   stroke: ${line};
 }
-.${className} .${canvasClassNames.flowArrow} {
+.${className} .${canvasClassNames.flowArrow},
+.${className} .${accentClassNames.noteBar} {
   fill: ${line};
 }
 .${className} .${accentClassNames.tinted} {
   fill: ${tint};
 }`,
 )}
-.${accentClassNames.storeBand} {
+.${accentClassNames.storeBand},
+.${accentClassNames.noteGround} {
   stroke: none;
+}
+${strong} .${canvasClassNames.note} {
+  fill: ${colour('textPrimary')};
 }
 ${strong} .${canvasClassNames.shape} {
   stroke-width: ${strokeWidths.strongOutline};
@@ -321,12 +331,17 @@ ${strongOutOfScope} .${canvasClassNames.boundaryCurve} {
 ${strongOutOfScope} .${canvasClassNames.flow} {
   stroke-dasharray: ${dotted(strokeWidths.strongFlow)};
 }
+${outOfScopeNoteFrame} {
+  stroke: ${colour(outOfScopeOutline)};
+  stroke-width: ${strokeWidths.outline};
+  stroke-dasharray: ${dotted(strokeWidths.outline)};
+}
 `;
 
 /**
  * The canvas stylesheet with colours read from the studio root properties.
  * Under forced colours an accent draws no slot colour and no tint, and a
- * strong one keeps its weight.
+ * strong one keeps its weight. A note's bar is drawn in the text colour.
  */
 export const themedCanvasStylesheet = `${sheetFrom(paletteProperty)}${accentSheetFrom(paletteProperty)}
 @media (forced-colors: active) {
@@ -343,6 +358,7 @@ export const themedCanvasStylesheet = `${sheetFrom(paletteProperty)}${accentShee
   }
   .${canvasClassNames.label},
   .${canvasClassNames.note},
+  ${strong} .${canvasClassNames.note},
   .${canvasClassNames.flowLabel},
   .${canvasClassNames.flowArrow},
   .${canvasClassNames.outOfScope} .${canvasClassNames.flowArrow} {
@@ -351,7 +367,8 @@ export const themedCanvasStylesheet = `${sheetFrom(paletteProperty)}${accentShee
   .${canvasClassNames.flowBacking} {
     fill: Canvas;
   }
-  .${canvasClassNames.outOfScope} .${canvasClassNames.shape} {
+  .${canvasClassNames.outOfScope} .${canvasClassNames.shape},
+  ${outOfScopeNoteFrame} {
     stroke: CanvasText;
   }
 ${slotRules(
@@ -359,13 +376,15 @@ ${slotRules(
   (className) => `  .${className} .${canvasClassNames.shape} {
     stroke: CanvasText;
   }
-  .${className} .${canvasClassNames.flowArrow} {
+  .${className} .${canvasClassNames.flowArrow},
+  .${className} .${accentClassNames.noteBar} {
     fill: CanvasText;
   }
   .${className} .${accentClassNames.tinted} {
     fill: Canvas;
   }
-  .${className} .${accentClassNames.storeBand} {
+  .${className} .${accentClassNames.storeBand},
+  .${className} .${accentClassNames.noteGround} {
     fill: none;
   }`,
 )}

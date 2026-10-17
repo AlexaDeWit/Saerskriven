@@ -157,8 +157,8 @@ function modelOfDocumentIn(text: string) {
 }
 
 function accentsOf(text: string) {
-  return readingOf(text)?.model.diagrams[0]?.elements.map((element) =>
-    'accent' in element ? element.accent : undefined,
+  return readingOf(text)?.model.diagrams[0]?.elements.map(
+    (element) => element.accent,
   );
 }
 
@@ -348,28 +348,41 @@ describe('a threat that states its model link', () => {
 });
 
 describe('an element that states an accent', () => {
-  it('holds one of the eight keys, on a node and on a flow, reporting nothing', () => {
+  it('holds one of the eight keys, on a node, a flow and a canvas note, reporting nothing', () => {
     const accented = accentOn(
-      accentOn(oneFlowInVersion2, 'Ledger', 's4'),
+      accentOn(noteWithAccent, 'Ledger', 's4'),
       'Posts',
       'l1',
     );
-    expect(accentsOf(accented)).toEqual([undefined, 's4', 'l1']);
+    expect(accentsOf(accented)).toEqual([undefined, 's4', 'l1', 's1']);
     expect(readingOf(accented)?.divergences).toEqual([]);
   });
 
-  it.each(['s5', 'strong', ''])(
-    'reads the key "%s" as no accent and reports it as narrowed, naming the element and the key',
-    (unknown) => {
-      const reading = readingOf(
-        accentOn(oneFlowInVersion2, 'Posts', JSON.stringify(unknown)),
-      );
-      expect(reading?.model.diagrams[0]?.elements[2]).not.toHaveProperty(
+  it.each([
+    ...['s5', 'strong', ''].map((unknown) => ({
+      unknown,
+      on: 'a flow',
+      text: accentOn(oneFlowInVersion2, 'Posts', JSON.stringify(unknown)),
+      at: 2,
+      id: 'element-3',
+    })),
+    {
+      unknown: 'q9',
+      on: 'a canvas note',
+      text: noteWithAccent.replace('accent: s1', 'accent: q9'),
+      at: 3,
+      id: 'element-4',
+    },
+  ])(
+    'reads the key "$unknown" on $on as no accent and reports it as narrowed, naming the element and the key',
+    ({ unknown, text, at, id }) => {
+      const reading = readingOf(text);
+      expect(reading?.model.diagrams[0]?.elements[at]).not.toHaveProperty(
         'accent',
       );
       expect(reading?.divergences).toEqual([
         {
-          subject: { kind: 'element', id: 'element-3' },
+          subject: { kind: 'element', id },
           detail: { code: 'accent-unknown', parameters: { accent: unknown } },
           reason: 'narrowed',
         },
@@ -384,17 +397,7 @@ describe('an element that states an accent', () => {
     ).not.toContain('accent');
   });
 
-  it('is dropped as undeclared on a canvas note, and in a version 1 file, neither of which declares the key', () => {
-    expect(readingOf(noteWithAccent)?.divergences).toEqual([
-      {
-        subject: { kind: 'model' },
-        detail: {
-          code: 'key-undeclared',
-          parameters: { path: 'diagrams.0.elements.3.accent' },
-        },
-        reason: 'undeclared',
-      },
-    ]);
+  it('is dropped as undeclared in a version 1 file, which does not declare the key', () => {
     const versionOne = readingOf(accentOn(oneFlowDocument, 'Ledger', 's4'));
     expect(versionOne?.model.diagrams[0]?.elements[1]).not.toHaveProperty(
       'accent',

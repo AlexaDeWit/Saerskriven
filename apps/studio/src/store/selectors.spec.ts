@@ -1,8 +1,8 @@
 import { emptyModel, type ElementId } from '@saerskriven/model';
+import { elementId } from '@saerskriven/model/fixtures';
 import { Action } from './actions.js';
 import { reduce } from './reducer.js';
 import {
-  accentableSelection,
   activeDiagram,
   activeDiagramId,
   canRedo,
@@ -10,6 +10,7 @@ import {
   isDirty,
   modelAsOpened,
   selectedElement,
+  selectedElementRecords,
   selectedElements,
   selectionAccent,
   severalDiagrams,
@@ -200,18 +201,27 @@ describe('the accent of the selection', () => {
     noted,
     Action.SetAccent({ elementIds: [actorElement], accent: 's3' }),
   );
+  const accentedNote = reduce(
+    accented,
+    Action.SetAccent({ elementIds: [note.id], accent: 's3' }),
+  );
   const selecting = (state: typeof start, ...elementIds: ElementId[]) =>
     reduce(state, Action.Select({ elementIds }));
 
   it.each([
     ['nothing selected', selecting(accented), 'inactive'],
-    ['a note alone', selecting(accented, note.id), 'inactive'],
+    ['a note holding none', selecting(accented, note.id), 'none'],
     ['an element holding none', selecting(accented, processElement), 'none'],
     ['an element holding a key', selecting(accented, actorElement), 's3'],
     [
-      'a key beside a note, which takes none',
-      selecting(accented, note.id, actorElement),
+      'a note holding the key of the element beside it',
+      selecting(accentedNote, note.id, actorElement),
       's3',
+    ],
+    [
+      'a key beside a note holding none',
+      selecting(accented, note.id, actorElement),
+      'mixed',
     ],
     [
       'a key beside an element holding none',
@@ -222,11 +232,17 @@ describe('the accent of the selection', () => {
     expect(selectionAccent(state)).toBe(expected);
   });
 
-  it('is asked of the selected elements that take one, in selection order', () => {
+  it('is asked of every selected element the model holds, a note included, in selection order', () => {
     expect(
-      accentableSelection(
-        selecting(accented, processElement, note.id, actorElement),
+      selectedElementRecords(
+        selecting(
+          accented,
+          processElement,
+          note.id,
+          elementId('element-ghost'),
+          actorElement,
+        ),
       ).map((element) => element.id),
-    ).toEqual([processElement, actorElement]);
+    ).toEqual([processElement, note.id, actorElement]);
   });
 });

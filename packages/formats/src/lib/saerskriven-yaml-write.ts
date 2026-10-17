@@ -111,7 +111,6 @@ function toWireElement(element: Element): SaerskrivenYamlV2Element {
       kind: 'flow',
       ...flowProperties(element),
       ...toWireCommon(element),
-      ...accentField(element),
       source: toWireEndpoint(element.source),
       target: toWireEndpoint(element.target),
       waypoints: element.waypoints,
@@ -123,7 +122,6 @@ function toWireElement(element: Element): SaerskrivenYamlV2Element {
       kind: 'trust-boundary',
       ...boundaryProperties(element),
       ...toWireCommon(element),
-      ...accentField(element),
       shape: toWireBoundaryShape(element.shape),
     };
   }
@@ -138,7 +136,6 @@ function toWireElement(element: Element): SaerskrivenYamlV2Element {
   }
   const node = {
     ...toWireCommon(element),
-    ...accentField(element),
     position: element.position,
     size: element.size,
   };
@@ -158,6 +155,7 @@ function toWireCommon(element: Element) {
     description: element.description,
     outOfScope: element.outOfScope,
     reasonOutOfScope: element.reasonOutOfScope,
+    ...accentField(element),
   };
 }
 

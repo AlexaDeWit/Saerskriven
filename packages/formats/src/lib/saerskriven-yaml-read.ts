@@ -136,7 +136,6 @@ function toElement(element: SaerskrivenYamlV2Element): ElementInput {
       kind: 'flow',
       ...flowProperties(element),
       ...toCommon(element),
-      ...toAccent(element),
       source: toEndpoint(element.source),
       target: toEndpoint(element.target),
       waypoints: element.waypoints,
@@ -148,7 +147,6 @@ function toElement(element: SaerskrivenYamlV2Element): ElementInput {
       kind: 'trust-boundary',
       ...boundaryProperties(element),
       ...toCommon(element),
-      ...toAccent(element),
       shape: toBoundaryShape(element.shape),
     };
   }
@@ -163,7 +161,6 @@ function toElement(element: SaerskrivenYamlV2Element): ElementInput {
   }
   const node = {
     ...toCommon(element),
-    ...toAccent(element),
     position: element.position,
     size: element.size,
   };
@@ -183,10 +180,11 @@ function toCommon(element: SaerskrivenYamlV2Element) {
     description: element.description,
     outOfScope: element.outOfScope,
     reasonOutOfScope: element.reasonOutOfScope,
+    ...toAccent(element),
   };
 }
 
-function toAccent(element: AccentableWireElement): { accent?: Accent } {
+function toAccent(element: SaerskrivenYamlV2Element): { accent?: Accent } {
   const accent = accentSchema.safeParse(element.accent);
   return accent.success ? { accent: accent.data } : {};
 }
@@ -196,7 +194,6 @@ function unknownAccents(document: SaerskrivenYamlV2Document): Divergence[] {
     .flatMap((diagram) => diagram.elements)
     .flatMap((element): Divergence[] => {
       if (
-        element.kind === 'text' ||
         element.accent === undefined ||
         accentSchema.safeParse(element.accent).success
       ) {
@@ -217,11 +214,6 @@ function unknownAccents(document: SaerskrivenYamlV2Document): Divergence[] {
         : [];
     });
 }
-
-type AccentableWireElement = Exclude<
-  SaerskrivenYamlV2Element,
-  { readonly kind: 'text' }
->;
 
 function toEndpoint(endpoint: SaerskrivenYamlV2Endpoint): FlowEndpointInput {
   if (endpoint.kind === 'free') {

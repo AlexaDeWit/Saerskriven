@@ -169,11 +169,11 @@ Canvas and render tests parse it, render draws its goldens, and
 
 A model written to draw every [accent](../docs/studio.md#accents): each of the
 eight keys on an actor, a process or a store, a strong and a light trust
-boundary and flow, a strong curve boundary, a flow that runs both ways, an
-accent on a store, an actor, a flow and a boundary out of scope, one on a
-process and one on a flow under a threat badge, and an actor, a flow and a
-note with none. Canvas and render tests parse it, render draws its goldens,
-and `apps/studio-e2e` opens it.
+boundary, flow and note, a strong curve boundary, a flow that runs both ways,
+an accent on a store, an actor, a flow, a boundary and a note out of scope,
+one on a process and one on a flow under a threat badge, and an actor, a flow
+and a note with none. Canvas and render tests parse it, render draws its
+goldens, and `apps/studio-e2e` opens it.
 
 ## `two-diagrams.model.json`
 

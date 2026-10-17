@@ -75,6 +75,16 @@ const sharpCurveModel = modelWith({
   ],
 });
 
+const accentedNoteModel = modelWith({
+  elements: [
+    {
+      ...boxAt('el-legend', 0, 0, 'text', { width: 200, height: 40 }, 'Legend'),
+      text: 'Light 2 marks the payment path',
+      accent: 'l2',
+    },
+  ],
+});
+
 const forbiddenCharacters = ['\u0000', '\u000B', '\u001B', '\uD800', '\uFFFF'];
 
 const forbidden = forbiddenCharacters.join('');
@@ -531,6 +541,15 @@ describe.each([
       'en-CA',
     ),
     accented: false,
+  },
+  {
+    name: 'a note that holds the only accent',
+    drawn: renderSvg(
+      firstDiagram(accentedNoteModel),
+      accentedNoteModel,
+      'en-CA',
+    ),
+    accented: true,
   },
 ])('$name as a document a reader can open', ({ drawn, accented }) => {
   const { svg } = drawn;

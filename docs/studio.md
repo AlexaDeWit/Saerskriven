@@ -537,15 +537,15 @@ name, and its field refuses an empty one.
 
 An accent draws attention to an element or a flow: one path through a diagram
 during a discussion, or the parts a copy of a diagram is kept to show. It
-means nothing to the model: no rule reads it and no threat depends on it.
+means nothing to the model: no rule reads it and no threat depends on it. A
+set of accented Notes can serve as the diagram's legend.
 
 The card's third row is the accent bar: no accent, four strong accents and
 four light ones, each drawn as an element holding it. Select one or more
-elements or flows and press a swatch. Every selected actor, process, store,
-trust boundary and flow takes it, as one undo step. A Note takes no accent,
-and one in the selection is left as it is. The pressed swatch is the accent
-the selection holds, and none is pressed where the selected elements differ.
-The row is inactive while nothing that takes an accent is selected.
+elements or flows and press a swatch. Everything selected takes it, as one
+undo step. The pressed swatch is the accent the selection holds, and none is
+pressed where the selected elements differ. The row is inactive while nothing
+is selected.
 
 Strong and light share four colours, numbered 1 to 4:
 
@@ -557,13 +557,19 @@ Strong and light share four colours, numbered 1 to 4:
 - A flow and a trust boundary have no fill, so the line carries the accent:
   in the colour for a light one, and heavier too for a strong one. A flow's
   arrowhead takes the colour.
+- A Note has no outline. Either accent draws a bar in the colour down the
+  inside of its left edge, at one weight. A strong accent also fills the Note
+  with the tint, and sets its text in the ink of a name so it stays legible on
+  the tint.
 
-An element out of scope keeps its dots, in the accent's colour. Names, badges
-and flow names are drawn as they are without an accent, and so are the
-selection frame and the focus ring. Light and dark each have their own four
+An element out of scope keeps its dots, in the accent's colour. A Note out of
+scope keeps its dotted frame as it is. Names, badges and flow names are drawn
+as they are without an accent, and so are the selection frame and the focus
+ring. A Note's text keeps its place. Light and dark each have their own four
 colours, so an accent is the same number in both and not the same shade.
 Under a system contrast theme no accent colour is drawn: a strong accent
-keeps its heavier line, and a light one looks like no accent.
+keeps its heavier line, and a light one looks like no accent. A Note keeps its
+bar, in the text colour.
 
 An exported SVG, PNG or PDF draws accents in the light appearance's colours.
 The Mermaid diagrams of a Markdown export draw none. Copy, paste and
@@ -571,8 +577,8 @@ duplicate keep an element's accent. Only the Saerskriven YAML format saves
 accents ([the `accent` key](saerskriven-yaml.md#accents)): a Threat Dragon
 save drops them and reports how many.
 
-While the selection holds something that takes an accent, Tab passes the nine
-swatches after the tools and before the diagram.
+While something is selected, Tab passes the nine swatches after the tools and
+before the diagram.
 
 ## Copy, cut, paste and duplicate
 

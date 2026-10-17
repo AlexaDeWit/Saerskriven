@@ -1,9 +1,4 @@
-import {
-  setAccent,
-  takesAccent,
-  type Model,
-  type Point,
-} from '@saerskriven/model';
+import { setAccent, type Model, type Point } from '@saerskriven/model';
 import { Either } from 'effect';
 import {
   attached,
@@ -273,7 +268,7 @@ const withoutAccents = (items: readonly object[]) =>
   );
 
 describe('layoutDiagram, an accent', () => {
-  it('carries the key of each element and flow that holds one, and no key for the rest', () => {
+  it('carries the key of each element, note and flow that holds one, and no key for the rest', () => {
     expect(accentsOf(accentsLayout.nodes)).toEqual({
       'ac-zone-strong': 's3',
       'ac-zone-light': 'l2',
@@ -290,6 +285,9 @@ describe('layoutDiagram, an accent', () => {
       'ac-badged': 's1',
       'ac-out-strong': 's2',
       'ac-out-light': 'l4',
+      'ac-note-strong': 's3',
+      'ac-note-light': 'l4',
+      'ac-note-out': 's2',
     });
     expect(accentsOf(accentsLayout.edges)).toEqual({
       'ac-flow-strong': 's1',
@@ -305,9 +303,7 @@ describe('layoutDiagram, an accent', () => {
     const cleared = Either.getOrThrow(
       setAccent(
         accentsModel,
-        accentsModel.diagrams[0].elements
-          .filter(takesAccent)
-          .map((element) => element.id),
+        accentsModel.diagrams[0].elements.map((element) => element.id),
         undefined,
       ),
     );

@@ -1006,17 +1006,16 @@ describe('setAccent', () => {
   const api = elementId('element-api');
   const flow = elementId('element-order-flow');
   const perimeter = elementId('element-perimeter');
-  const everyAccentableKind = withNote.diagrams[0].elements
-    .filter((element) => element.kind !== 'text')
-    .map((element) => element.id);
+  const everyKind = withNote.diagrams[0].elements.map((element) => element.id);
 
-  it('gives every element named the one key in one model, keeping their other fields and their order', () => {
-    const next = modelOf(setAccent(withNote, everyAccentableKind, 's2'));
+  it('gives every element named the one key in one model, a canvas note included, keeping their other fields and their order', () => {
+    const next = modelOf(setAccent(withNote, everyKind, 's2'));
     expect(elementIds(next)).toEqual(elementIds(withNote));
     expect(next.diagrams[0].elements).toEqual(
-      withNote.diagrams[0].elements.map((element) =>
-        element.kind === 'text' ? element : { ...element, accent: 's2' },
-      ),
+      withNote.diagrams[0].elements.map((element) => ({
+        ...element,
+        accent: 's2',
+      })),
     );
   });
 
@@ -1041,12 +1040,6 @@ describe('setAccent', () => {
       validModel,
     );
     expect(modelOf(setAccent(validModel, [], 's1'))).toBe(validModel);
-  });
-
-  it('refuses the whole edit over a canvas note, which takes no accent', () => {
-    expect(errorOf(setAccent(withNote, [api, note.id], 's1'))).toEqual(
-      OperationFailure.NotAccentable({ elementId: note.id }),
-    );
   });
 
   it('fails on an unknown element', () => {

@@ -28,6 +28,7 @@ import {
   undeclaredPath,
   undeclaredYaml,
   unknownAccentYaml,
+  unknownNoteAccentYaml,
   type EditInput,
 } from './edit.fixtures.js';
 import {
@@ -301,7 +302,10 @@ describe('what an applied edit writes', () => {
     expect(Either.getOrUndefined(reread)?.format).toEqual('threat-dragon');
   });
 
-  it('adds an element that states an accent', () => {
+  it.each([
+    { kind: 'store', id: 'element-added', name: 'Added' },
+    { kind: 'text', id: 'element-added', name: 'Added', text: 'A legend' },
+  ] as const)('adds a $kind element that states an accent', (element) => {
     const attempted = attempt();
     const applied = attempted.edit(
       modelFile,
@@ -310,13 +314,7 @@ describe('what an applied edit writes', () => {
         {
           op: 'add_element',
           diagram: 'diagram-main',
-          element: {
-            kind: 'store',
-            id: 'element-added',
-            name: 'Added',
-            placement: 'auto',
-            accent: 's4',
-          },
+          element: { ...element, placement: 'auto', accent: 's4' },
         },
       ],
     );
@@ -1007,44 +1005,32 @@ const accentsOf = (
 ) =>
   elementsIn(attempted, file)
     .filter((element) => ids.includes(element.id))
-    .map((element) => ('accent' in element ? element.accent : undefined));
+    .map((element) => element.accent);
 
 describe('what set_accent writes', () => {
-  it('gives every element named the key in the native file, and clears it again with none', () => {
+  it('gives every element named the key in the native file, a text note included, and clears it again with none', () => {
     const attempted = attempt();
-    const named = ['element-api', 'element-order-flow', 'element-perimeter'];
+    const named = [
+      'element-api',
+      'element-order-flow',
+      'element-perimeter',
+      'element-note',
+    ];
     const before = attempted.bytes(modelFile).toString('utf8');
     const set = attempted.edit(modelFile, revisionIn(attempted, modelFile), [
       { op: 'set_accent', elements: named, accent: 'l2' },
     ]);
     expect(Either.getOrUndefined(set)?.divergences).toEqual([]);
-    expect(accentsOf(attempted, modelFile, named)).toEqual(['l2', 'l2', 'l2']);
+    expect(accentsOf(attempted, modelFile, named)).toEqual([
+      'l2',
+      'l2',
+      'l2',
+      'l2',
+    ]);
     attempted.edit(modelFile, revisionIn(attempted, modelFile), [
       { op: 'set_accent', elements: named, accent: 'none' },
     ]);
     expect(attempted.bytes(modelFile).toString('utf8')).toBe(before);
-  });
-
-  it('refuses a batch that names a text note, saying it takes no accent', () => {
-    const attempted = attempt();
-    const refused = attempted.edit(
-      modelFile,
-      revisionIn(attempted, modelFile),
-      [
-        {
-          op: 'set_accent',
-          elements: ['element-api', 'element-note'],
-          accent: 's1',
-        },
-      ],
-    );
-    expect(refusalOf(refused)).toContain(
-      describeOperationFailure(
-        OperationFailure.NotAccentable({
-          elementId: elementId('element-note'),
-        }),
-      ),
-    );
   });
 
   it('reports the accents a Threat Dragon file cannot hold once, with their count, and writes none', () => {
@@ -1098,6 +1084,11 @@ describe('what an edit does with what this version cannot read', () => {
       named: 'the key glow',
     },
     { name: 'accent.yaml', text: unknownAccentYaml, named: 'the accent "q9"' },
+    {
+      name: 'note-accent.yaml',
+      text: unknownNoteAccentYaml,
+      named: 'the accent "q9"',
+    },
   ])(
     'refuses $name, naming what the write would drop, and writes nothing',
     ({ name, text, named }) => {

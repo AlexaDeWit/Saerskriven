@@ -238,6 +238,14 @@ const cueWidths = {
 export const noteFrameOffset = 3;
 
 /**
+ * How wide the bar an accent draws down the inside of a note's left edge is,
+ * in user units, for a strong key and a light one alike: a strong flow's
+ * weight. It is narrower than the padding a note's text starts inside, so the
+ * text keeps its place.
+ */
+export const noteAccentBar = strokeWidths.strongFlow;
+
+/**
  * A square resize handle in the interactive canvas, in pixels at full zoom:
  * `size` is its side inside React Flow's 1px border. `curveGap` is how far a
  * boundary curve's corner handle sits outside the corner on each axis, on

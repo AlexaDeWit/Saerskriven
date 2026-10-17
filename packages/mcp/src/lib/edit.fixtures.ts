@@ -72,17 +72,17 @@ export const editableModel: Model = parsedFixture(draft);
 
 const editableYaml = saerskrivenYamlCodec.write(editableModel).output;
 
-const onTheActor = (line: string): string =>
+const onElementNamed = (name: string, line: string): string =>
   editableYaml.replace(
-    '        name: Customer\n',
-    `        name: Customer\n        ${line}\n`,
+    `        name: ${name}\n`,
+    `        name: ${name}\n        ${line}\n`,
   );
 
 /**
  * {@link editableModel} as a native file holding a key on its actor that the
  * wire schema does not declare, as a file a later release wrote can.
  */
-export const undeclaredYaml = onTheActor('glow: amber');
+export const undeclaredYaml = onElementNamed('Customer', 'glow: amber');
 
 /** Where the key {@link undeclaredYaml} holds sits in its document. */
 export const undeclaredPath = 'diagrams.0.elements.0.glow';
@@ -91,7 +91,16 @@ export const undeclaredPath = 'diagrams.0.elements.0.glow';
  * {@link editableModel} as a native file whose actor holds an accent the
  * model has no key for, as a file a later release wrote can.
  */
-export const unknownAccentYaml = onTheActor('accent: q9');
+export const unknownAccentYaml = onElementNamed('Customer', 'accent: q9');
+
+/**
+ * {@link editableModel} as a native file whose canvas note holds an accent
+ * the model has no key for.
+ */
+export const unknownNoteAccentYaml = onElementNamed(
+  'Reviewer note',
+  'accent: q9',
+);
 
 const featureCompleteDragon = readFileSync(
   testDataPath('threat-dragon/feature-complete.json'),

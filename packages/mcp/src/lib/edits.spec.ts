@@ -111,9 +111,6 @@ const failures: ByTag<OperationFailure> = {
   NotTrustBoundaryElement: OperationFailure.NotTrustBoundaryElement({
     elementId: elementId('element-api'),
   }),
-  NotAccentable: OperationFailure.NotAccentable({
-    elementId: elementId('element-note'),
-  }),
   EmptyName: OperationFailure.EmptyName({
     elementId: elementId('element-api'),
   }),

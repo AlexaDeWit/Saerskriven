@@ -247,11 +247,11 @@ The studio edits these values under **Security properties**
 
 ## Accents
 
-An actor, a process, a store, a flow or a trust boundary may state `accent`,
-one of eight keys: `s1` to `s4` for a strong accent and `l1` to `l4` for a
-light one, over four palette slots. A key names a slot and never a colour.
+An element of any kind, a Note included, may state `accent`, one of eight
+keys: `s1` to `s4` for a strong accent and `l1` to `l4` for a light one, over
+four palette slots. A key names a slot and never a colour.
 [The studio](studio.md#accents) and an exported drawing decide how a slot is
-drawn, and the model reads no meaning into one. A Note states none.
+drawn, and the model reads no meaning into one.
 
 The key arrived after version 2's first release, so a write states it only on
 an element that holds an accent, as `accent: s1` after `reasonOutOfScope`, and
@@ -265,12 +265,14 @@ release adds still opens. A write drops it, so `saer_edit`, and `saer convert`
 rewriting the file in place, refuse on the terms of an undeclared key
 ([Reading](#reading)), and the studio's next save writes no accent for that
 element. A value that is not text is refused at its path, as any mistyped key
-is. On a Note, and in a version 1 file, `accent` is an undeclared key:
-dropped, and reported as one.
+is. In a version 1 file, `accent` is an undeclared key: dropped, and reported
+as one.
 
 A release of version 2 from before the key reads the file, drops each
 `accent`, reports it as `undeclared` with its path, and writes the file
-without it at its next save.
+without it at its next save. A Note took the key in a later release than the
+other kinds, and a release from between the two reads a Note's `accent` as an
+undeclared key.
 
 ## Ordering
 

@@ -147,7 +147,7 @@ describe.each(palettes)('$name', ({ palette }) => {
     ).toEqual([]);
   });
 
-  it("sets an element's name on the tint of each strong accent at the ratio of text", () => {
+  it("sets an element's name, and a strong note's text, on the tint of each strong accent at the ratio of text", () => {
     expect(
       below(
         palette,

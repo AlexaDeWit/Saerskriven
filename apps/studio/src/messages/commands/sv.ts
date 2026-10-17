@@ -96,7 +96,7 @@ export const commandsSv = catalogue(commandMessages)('sv')({
   'when-hand-tool':
     'Håll ned blanksteg för ett tillfälligt handverktyg, utanför textfält',
   'when-accent-bar':
-    'Från accentfältet, med ett objekt eller ett flöde som inte är en notering markerat',
+    'Från accentfältet, med ett objekt eller ett flöde markerat',
   'when-outside-fields-and-menus':
     'Fokus ligger utanför textfält och öppna menyer',
   'group-file': 'Arkiv',

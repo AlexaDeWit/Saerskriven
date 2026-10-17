@@ -142,9 +142,7 @@ function headingFacts(row: ElementDetail | ElementRow): readonly string[] {
     row.kind,
     `diagram ${row.diagram}`,
     `threats ${String(row.threats)}`,
-    ...('accent' in row && row.accent !== undefined
-      ? [`accent ${row.accent}`]
-      : []),
+    ...(row.accent === undefined ? [] : [`accent ${row.accent}`]),
     ...(row.outOfScope ? ['out of scope'] : []),
   ];
 }

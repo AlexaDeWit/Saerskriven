@@ -47,20 +47,14 @@ describe('actorSchema', () => {
 });
 
 describe('accent', () => {
-  it('is held by every kind but a canvas note, whose parse drops one', () => {
+  it('is held by every kind, a canvas note included', () => {
     const accented = elementSchema.options
       .filter((option) => Object.hasOwn(option.shape, 'accent'))
       .map((option) => option.shape.kind.value);
-    expect(accented).toEqual([
-      'actor',
-      'process',
-      'store',
-      'flow',
-      'trust-boundary',
-    ]);
+    expect(accented).toEqual(elementKindSchema.options);
     expect(
       elementSchema.parse({ ...actor, kind: 'text', text: '', accent: 's1' }),
-    ).not.toHaveProperty('accent');
+    ).toHaveProperty('accent', 's1');
   });
 });
 
