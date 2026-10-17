@@ -7,8 +7,8 @@ import {
 } from '@saerskriven/canvas';
 import {
   diagramsOf,
-  drawnElementOn,
   elementIdsIn,
+  firstDrawings,
   type Diagram,
   type DiagramId,
   type DrawnElement,
@@ -200,13 +200,14 @@ export function existingPlacements(
       ({ id, kind }) => chosen.has(id) && kind === 'flow',
     ),
   ];
-  const drafts = ordered.flatMap((element) => {
-    const from = diagramsOf(model, element.id).at(0);
-    const drawn =
-      from === undefined ? undefined : drawnElementOn(model, from, element.id);
-    return from === undefined || drawn === undefined
+  const drawings = new Map(
+    firstDrawings(model).map((drawing) => [drawing.element.id, drawing]),
+  );
+  const drafts = ordered.flatMap(({ id }) => {
+    const drawing = drawings.get(id);
+    return drawing === undefined
       ? []
-      : [draftOf(from, drawn, placed, centre, layoutOf)];
+      : [draftOf(drawing.diagram, drawing.drawn, placed, centre, layoutOf)];
   });
   const offsets = rowOffsets(drafts, centre);
   return drafts.map((draft) => draft.at(offsets.get(draft.from) ?? origin));

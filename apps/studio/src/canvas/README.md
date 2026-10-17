@@ -202,9 +202,12 @@ The mark on a placement of an element on more than one diagram is a square
 holding a link glyph, unlike the round badge and a note's accent bar. It hangs
 on the top left corner of the element's box, opposite the badge, and steps out
 past that corner while the element is selected, as the badge does at the top
-right. A flow's mark stands left of its
-name block, in the layer that holds the blocks. The canvas package does not
-draw it, so no export carries it.
+right. A selected boundary box draws its mark in React Flow's viewport portal,
+as it draws its badge, so the nodes around it do not cover it. A flow's mark
+stands left of its name block, in the layer that holds the blocks, outside the
+room the block search keeps clear: that search places blocks from the model
+alone, so that the studio and every export agree, and it knows nothing of the
+mark. The canvas package does not draw the mark, so no export carries it.
 
 React Flow z-index values are set by hand: a boundary at -1, a regular node at
 0 and a selected regular node at 1, so selection keeps a regular node visible
@@ -230,7 +233,9 @@ node's z-index of 1 draws it above its neighbours. A selected boundary box
 stays at -1, so its badge draws in React Flow's viewport portal, where the
 badge layer's z-index lifts it above the nodes around it. Scaled up at low
 zoom, the two right-hand corner handles grow inward from the right side, so
-neither reaches the stepped-out badge. `selectionBounds` measures a selection
+neither reaches the stepped-out badge, and the top left one grows inward from
+the left side, so it does not reach the stepped-out mark of an element on
+several diagrams. `selectionBounds` measures a selection
 with each badge where it is drawn, for Fit selection and the group drag's
 bounds. A trust boundary curve's corner handles sit outside its corners
 instead, clear of the badge on its corner and of the handle on a point there.

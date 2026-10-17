@@ -1,5 +1,6 @@
 .layer {
   position: absolute;
+  z-index: 1;
   inset-block-start: 0;
   inset-inline-start: 0;
   pointer-events: none;
@@ -14,4 +15,14 @@
   fill: var(--saer-colour-canvas);
   stroke: currentColor;
   stroke-width: 1;
+}
+
+@media (forced-colors: active) {
+  .mark {
+    color: CanvasText;
+  }
+
+  .mark rect {
+    fill: Canvas;
+  }
 }

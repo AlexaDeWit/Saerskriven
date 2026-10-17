@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { canvasInteractionClassNames } from '@saerskriven/canvas';
 import { sharedModelInput } from '@saerskriven/model/fixtures';
+import { boxesOverlap, screenBoxOf, zoomOutTo } from './canvas.fixtures.js';
 import {
   diagramSwitcher,
   nodeNamed,
@@ -81,6 +82,24 @@ test('every placement of a shared element carries the mark, and its name says wh
       `.${canvasInteractionClassNames.flowBlockSurface} [data-shared-mark]`,
     ),
   ).toHaveCount(1);
+});
+
+test('a selected shared element keeps its mark clear of the top left resize handle, at low zoom as well', async ({
+  page,
+}) => {
+  await openModelDocument(page, sharedModelInput);
+  const node = await selectNode(page, paymentsApi);
+  const markClear = async (): Promise<void> => {
+    const handle = await screenBoxOf(
+      node.locator('.react-flow__resize-control.handle.top.left'),
+    );
+    const mark = await screenBoxOf(node.locator('[data-shared-mark] rect'));
+    expect(boxesOverlap(handle, mark)).toBe(false);
+  };
+
+  await markClear();
+  await zoomOutTo(page, 0.45);
+  await markClear();
 });
 
 test('a name on the Also on line shows that diagram with the element selected, by keyboard', async ({

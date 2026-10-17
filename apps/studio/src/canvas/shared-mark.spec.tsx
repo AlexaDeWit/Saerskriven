@@ -4,6 +4,7 @@ import { act, render } from '@testing-library/react';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
+import { laidOutNode } from './canvas.fixtures.js';
 import { DiagramCanvas } from './diagram-canvas.js';
 import { SharedFlowMark } from './shared-mark.js';
 
@@ -46,6 +47,24 @@ describe('the mark on an element placed on more than one diagram', () => {
     });
 
     expect(markOn('payments-api')).toBe('translate(-11 -11)');
+  });
+
+  it("draws a selected boundary box's mark in the viewport portal at the boundary's place, and in the boundary while unselected", () => {
+    render(<DiagramCanvas />);
+    const zone = elementId('payments-zone');
+    const portal = document.querySelector('.react-flow__viewport-portal');
+    expect(node(zone)?.querySelector(mark)).not.toBeNull();
+    expect(portal?.querySelector(mark)).toBeNull();
+
+    act(() => {
+      dispatch(Action.Select({ elementIds: [zone] }));
+    });
+    const raised = portal?.querySelector<SVGElement>(mark);
+    const { position } = laidOutNode(zone);
+
+    expect(node(zone)?.querySelector(mark)).toBeNull();
+    expect(raised?.style.left).toBe(`${String(position.x)}px`);
+    expect(raised?.style.top).toBe(`${String(position.y)}px`);
   });
 
   it("stands left of a flow's name block, on the block's middle", () => {

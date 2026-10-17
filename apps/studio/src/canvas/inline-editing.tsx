@@ -343,7 +343,13 @@ function EditingNodeBody(props: NodeProps<CanvasFlowNode>) {
         resizing={resizing}
         textVisible={!editing}
       />
-      {shared && <SharedNodeMark node={node} selected={props.selected} />}
+      {shared && (
+        <SharedNodeMark
+          absolute={{ x: props.positionAbsoluteX, y: props.positionAbsoluteY }}
+          node={node}
+          selected={props.selected}
+        />
+      )}
       {editingName && placement !== undefined && (
         <div
           className={`${styles.overText} nodrag nopan`}

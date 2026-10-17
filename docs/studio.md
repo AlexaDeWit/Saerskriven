@@ -332,11 +332,11 @@ side. Escape or Cancel adds nothing and puts focus back where it was. The menu
 item is unavailable while the diagram on screen draws every element, and E
 then says so.
 
-The list offers the flows between an added element and the elements on
-screen, and adds only the ones picked. An added flow takes no bends: an end
-whose element is on the diagram follows the route, and any other end is drawn
-away from its element, as [Flows](#flows) describes. A flow already on the
-diagram whose end was drawn away from an added element attaches to it.
+The list holds every flow the diagram does not draw, and adds only the ones
+picked. An added flow takes no bends: an end whose element is on the diagram
+follows the route, and any other end is drawn away from its element, as
+[Flows](#flows) describes. A flow already on the diagram whose end was drawn
+away from an added element attaches to it.
 
 Every placement of an element on more than one diagram carries a mark: a small
 square holding a link glyph, on the top left corner of its box, or left of a

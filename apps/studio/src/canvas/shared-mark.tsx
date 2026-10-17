@@ -1,4 +1,5 @@
 import { Link2Icon } from '@radix-ui/react-icons';
+import { ViewportPortal } from '@xyflow/react';
 import { useCallback } from 'react';
 import {
   svgNumber,
@@ -38,24 +39,30 @@ export function useSharedElement(elementId: ElementId | undefined): boolean {
  * link glyph, hung on the top left corner of its box, opposite the threat
  * badge. A selected node hangs it past that corner, clear of the resize
  * handle there, except a boundary curve, whose corner handles already stand
- * outside its corners. The studio alone draws it: the accessible name says
- * the same, and no export carries it.
+ * outside its corners. A selected trust boundary box stays behind the
+ * elements around it, so it draws the mark in the viewport portal at
+ * `absolute`, the node's place, as it draws its badge. The studio alone draws
+ * the mark: the accessible name says the same, and no export carries it.
  */
 export function SharedNodeMark({
+  absolute,
   node,
   selected,
 }: {
+  readonly absolute: Point;
   readonly node: CanvasNode;
   readonly selected: boolean;
 }) {
   const steps = selected && node.kind !== 'boundary-curve';
-  return (
+  const raised = selected && node.kind === 'boundary-box';
+  const layer = (
     <svg
       aria-hidden="true"
       className={styles.layer}
       data-shared-mark=""
       height={svgNumber(node.size.height)}
       overflow="visible"
+      style={raised ? { left: absolute.x, top: absolute.y } : undefined}
       width={svgNumber(node.size.width)}
     >
       <MarkGlyph
@@ -63,6 +70,7 @@ export function SharedNodeMark({
       />
     </svg>
   );
+  return raised ? <ViewportPortal>{layer}</ViewportPortal> : layer;
 }
 
 /**

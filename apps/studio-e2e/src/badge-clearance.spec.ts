@@ -4,14 +4,13 @@ import { committedText } from '@saerskriven/model/fixtures';
 import {
   boxesOverlap,
   boxOf,
-  canvasSettled,
   centreOf,
   dragBy,
   inkBoxOf,
   onScreen,
   reachesAt,
   screenBoxOf,
-  viewportZoom,
+  zoomOutTo,
 } from './canvas.fixtures.js';
 import {
   openModelDocument,
@@ -79,15 +78,6 @@ const badgeShapes = `.${canvasClassNames.badge} circle, .${canvasClassNames.badg
 const badgeInk = (node: Locator) => inkBoxOf(node.locator(badgeShapes));
 
 const badgeFace = (node: Locator): Locator => node.locator(badgeShapes).first();
-
-const zoomOutTo = async (page: Page, zoom: number): Promise<void> => {
-  const zoomOut = page.getByRole('button', { name: 'Zoom out', exact: true });
-  for (let step = 0; step < 10 && (await viewportZoom(page)) > zoom; step++) {
-    await zoomOut.click();
-    await canvasSettled(page);
-  }
-  expect(await viewportZoom(page)).toBeLessThanOrEqual(zoom);
-};
 
 const expectHandlesOnCornersClearOfBadge = async (
   node: Locator,
