@@ -4,6 +4,7 @@ import {
   type Element,
   type ElementId,
 } from '@saerskriven/model';
+import { CheckIcon } from '@radix-ui/react-icons';
 import { useReactFlow, useStoreApi } from '@xyflow/react';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { closingOn } from '../commands/binding.js';
@@ -35,7 +36,8 @@ import styles from './add-existing-picker.module.css';
 /**
  * The picker under the chrome card, mounted only while it is open. Each entry
  * is one box naming an element and the diagrams it is on, and the box is the
- * control: a click anywhere on it, or Space or Enter, picks it. For Add
+ * control: a click anywhere on it, or Space or Enter, picks it, and a picked
+ * box carries a check beside the element's name. For Add
  * existing element each box is a toggle button for an element the diagram on
  * screen does not place, which the same again puts back, and Add places the
  * ones picked at the centre of the view. For Merge an element into this one
@@ -302,7 +304,12 @@ function ToggleEntry({
       }}
       type="button"
     >
-      <EntryLines {...lines} detailId={detailId} nameId={nameId} />
+      <EntryLines
+        {...lines}
+        detailId={detailId}
+        nameId={nameId}
+        picked={pressed}
+      />
     </button>
   );
 }
@@ -338,7 +345,12 @@ function RadioEntry({
         }}
         type="radio"
       />
-      <EntryLines {...lines} detailId={detailId} nameId={nameId} />
+      <EntryLines
+        {...lines}
+        detailId={detailId}
+        nameId={nameId}
+        picked={checked}
+      />
     </label>
   );
 }
@@ -348,8 +360,13 @@ function EntryLines({
   elements,
   entry,
   nameId,
+  picked,
   text,
-}: EntryProps & { readonly detailId: string; readonly nameId: string }) {
+}: EntryProps & {
+  readonly detailId: string;
+  readonly nameId: string;
+  readonly picked: boolean;
+}) {
   const { t } = useTranslator();
   const { element, diagrams } = entry;
   const what =
@@ -358,7 +375,10 @@ function EntryLines({
       : t(kindMessages[element.kind]);
   return (
     <>
-      <span id={nameId}>{optionName(text)}</span>
+      <span className={styles.title}>
+        <span id={nameId}>{optionName(text)}</span>
+        {picked && <CheckIcon aria-hidden="true" className={styles.check} />}
+      </span>
       <span className={styles.detail} id={detailId}>
         {t('tools.existing-detail', {
           what,

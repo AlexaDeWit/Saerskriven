@@ -43,8 +43,9 @@
 }
 
 /* The box is the control, at least 44 pixels tall. A picked box takes a
-   heavier border and the accent's tint, so its state does not rest on colour,
-   and gives back in padding what its border gains. */
+   heavier border, the accent's tint and a check at the end of the name's
+   line, so its state does not rest on colour, and gives back in padding what
+   its border gains. */
 .entry {
   position: relative;
   display: flex;
@@ -70,17 +71,32 @@
   background: var(--saer-colour-accent-tint);
 }
 
+.title {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  justify-content: space-between;
+  gap: var(--saer-space-2);
+}
+
+.check {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}
+
 .detail {
   color: var(--saer-colour-text-muted);
 }
 
 /* A radio fills its box, so a click anywhere on the box lands on it, and the
-   box draws its state and its focus ring. */
+   box draws its state and its focus ring in place of the browser's. */
 .fill {
   position: absolute;
   inset: 0;
   margin: 0;
   border-radius: inherit;
+  outline: none;
   appearance: none;
 }
 
@@ -121,7 +137,9 @@
   }
 
   .entry[aria-pressed='true'] .detail,
-  .entry:has(> :checked) .detail {
+  .entry[aria-pressed='true'] .check,
+  .entry:has(> :checked) .detail,
+  .entry:has(> :checked) .check {
     color: HighlightText;
   }
 

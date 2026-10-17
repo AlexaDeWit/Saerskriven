@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import { canvasInteractionClassNames } from '@saerskriven/canvas';
+import type { ModelInput } from '@saerskriven/model';
 import { sharedModelInput } from '@saerskriven/model/fixtures';
 import { screenBoxOf } from './canvas.fixtures.js';
 import {
@@ -16,6 +18,23 @@ const picker = (page: Page) =>
   page.getByRole('region', { name: 'Add existing element' });
 
 const paymentsApi = /^Payments API, process/u;
+
+const flowBlocks = (page: Page): Promise<string> =>
+  page.locator(`.${canvasInteractionClassNames.flowBlockSurface}`).innerHTML();
+
+const chargeOnOneDiagram: ModelInput = {
+  ...sharedModelInput,
+  diagrams: sharedModelInput.diagrams.map((diagram) =>
+    diagram.id === 'payments'
+      ? {
+          ...diagram,
+          placements: diagram.placements.filter(
+            ({ element }) => element !== 'charge',
+          ),
+        }
+      : diagram,
+  ),
+};
 
 test('Add existing element picks by keyboard and adds the picks to the diagram on screen as one undo step', async ({
   page,
@@ -87,6 +106,32 @@ test('Escape puts the picker away with nothing added', async ({ page }) => {
 
   await expect(picker(page)).toHaveCount(0);
   await expect(nodeNamed(page, /^Card vault, store/u)).toHaveCount(0);
+});
+
+test('a flow on two diagrams draws the name blocks it draws on one, its name alone saying where else it is', async ({
+  baseURL,
+  browser,
+  page,
+}) => {
+  await openModelDocument(page, sharedModelInput);
+  await expect(
+    nodeNamed(page, /^Charge, flow, .*also on Payments$/u),
+  ).toHaveCount(1);
+  const shared = await flowBlocks(page);
+
+  const alone = await browser.newPage({
+    baseURL,
+    locale: 'en-CA',
+    viewport: page.viewportSize(),
+  });
+  await openModelDocument(alone, chargeOnOneDiagram);
+  await expect(nodeNamed(alone, /^Charge, flow/u)).toHaveCount(1);
+  await expect(nodeNamed(alone, /^Charge, flow, .*also on/u)).toHaveCount(0);
+  const single = await flowBlocks(alone);
+  await alone.close();
+
+  expect(shared).toContain('Charge');
+  expect(single).toBe(shared);
 });
 
 test('a name on the Also on line shows that diagram with the element selected, by keyboard', async ({

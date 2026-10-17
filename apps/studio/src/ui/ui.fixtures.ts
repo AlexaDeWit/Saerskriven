@@ -39,9 +39,13 @@ export const detailsTab = (): HTMLElement =>
 export const numbersIn = (text: string | null | undefined): readonly number[] =>
   (text?.match(/\d+/gu) ?? []).map(Number);
 
+/** The element whose id `control` names in its `attribute`. */
+export const referencedBy = (
+  control: HTMLElement,
+  attribute: 'aria-describedby' | 'aria-labelledby',
+): HTMLElement | null =>
+  document.getElementById(control.getAttribute(attribute) ?? '');
+
 /** The numbers in the text that describes a control, in the order they are said. */
 export const describedNumbers = (control: HTMLElement): readonly number[] =>
-  numbersIn(
-    document.getElementById(control.getAttribute('aria-describedby') ?? '')
-      ?.textContent,
-  );
+  numbersIn(referencedBy(control, 'aria-describedby')?.textContent);

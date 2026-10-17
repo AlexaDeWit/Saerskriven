@@ -18,6 +18,8 @@ import { dispatch, modelStore } from '../store/store.js';
 import { closeAddExisting, openAddExisting } from './add-existing.js';
 import { AddExistingPicker } from './add-existing-picker.js';
 import { openMergeInto } from './merge-into.js';
+import { currentTool, resetTools } from './tools.js';
+import { referencedBy } from '../ui/ui.fixtures.js';
 
 const overview = diagramId('overview');
 const cardVault = elementId('card-vault');
@@ -27,25 +29,24 @@ const score = elementId('score');
 const placedOn = (id: ElementId): string[] =>
   diagramsOf(modelStore.getState().present, id).map(({ id: on }) => on);
 
-const referenced = (
-  control: HTMLElement,
-  by: 'aria-describedby' | 'aria-labelledby',
-): HTMLElement | null =>
-  document.getElementById(control.getAttribute(by) ?? '');
-
 const describedBy = (control: HTMLElement): string =>
-  referenced(control, 'aria-describedby')?.textContent ?? '';
+  referencedBy(control, 'aria-describedby')?.textContent ?? '';
 
 const namesIn = (group: HTMLElement, role: 'button' | 'radio'): string[] =>
   within(group)
     .getAllByRole(role)
-    .map((box) => referenced(box, 'aria-labelledby')?.textContent ?? '');
+    .map((box) => referencedBy(box, 'aria-labelledby')?.textContent ?? '');
 
 const picker = () =>
   screen.queryByRole('region', { name: 'Add existing element' });
 
 const entryBox = (name: string): HTMLElement =>
   screen.getByRole('button', { name });
+
+const carriesCheck = (control: HTMLElement): boolean =>
+  (control.closest('label') ?? control).querySelector(
+    'svg[aria-hidden="true"]',
+  ) !== null;
 
 const mounted = () =>
   render(
@@ -67,6 +68,7 @@ describe('the Add existing element picker', () => {
 
   afterEach(() => {
     act(closeAddExisting);
+    resetTools();
   });
 
   it('lists the elements the diagram on screen does not place and no flow, each one box described by the diagrams it is on, in a group the heading names', () => {
@@ -87,14 +89,17 @@ describe('the Add existing element picker', () => {
     mounted();
     act(openAddExisting);
     const vault = entryBox('Card vault');
-    const detail = referenced(vault, 'aria-describedby');
+    const detail = referencedBy(vault, 'aria-describedby');
     assert.isNotNull(detail);
 
     await user.click(detail);
     expect(vault.getAttribute('aria-pressed')).toBe('true');
+    expect(carriesCheck(vault)).toBe(true);
+    expect(carriesCheck(entryBox('Fraud check'))).toBe(false);
     expect(screen.getByRole('button', { name: 'Add 1' })).toBeDefined();
     await user.click(vault);
     expect(vault.getAttribute('aria-pressed')).toBe('false');
+    expect(carriesCheck(vault)).toBe(false);
 
     expect(document.activeElement).toBe(vault);
     await user.keyboard(' ');
@@ -102,6 +107,29 @@ describe('the Add existing element picker', () => {
     await user.keyboard('{Enter}');
     expect(vault.getAttribute('aria-pressed')).toBe('false');
     expect(screen.getByRole('button', { name: 'Add' })).toBeDefined();
+  });
+
+  it('keeps page keys off the selection behind it while a box has focus', async () => {
+    const user = userEvent.setup();
+    const api = elementId('payments-api');
+    modelStore.setState(
+      {
+        ...initialState(sharedModel),
+        activeDiagram: overview,
+        selection: [api],
+      },
+      true,
+    );
+    mounted();
+    act(openAddExisting);
+    expect(document.activeElement).toBe(entryBox('Card vault'));
+
+    await user.keyboard('{Delete}{Shift>}{Delete}{/Shift}p');
+
+    expect(modelStore.getState().present).toBe(sharedModel);
+    expect(modelStore.getState().selection).toEqual([api]);
+    expect(currentTool().active).toBe('select');
+    expect(document.activeElement).toBe(entryBox('Card vault'));
   });
 
   it('opens on the command key, picks by Space and adds the picks as one undo step', async () => {
@@ -260,18 +288,20 @@ describe('the picker choosing the element to merge into the one selected', () =>
     act(openMergeInto);
     const webShop = screen.getByRole('radio', { name: 'Web shop' });
     const copy = screen.getByRole('radio', { name: 'Orders API' });
-    const detail = referenced(webShop, 'aria-describedby');
+    const detail = referencedBy(webShop, 'aria-describedby');
     assert.isNotNull(detail);
 
     await user.click(detail);
     expect(
       within(mergeChoices()).getAllByRole('radio', { checked: true }),
     ).toEqual([webShop]);
+    expect([carriesCheck(webShop), carriesCheck(copy)]).toEqual([true, false]);
     copy.focus();
     await user.keyboard('{Enter}');
     expect(
       within(mergeChoices()).getAllByRole('radio', { checked: true }),
     ).toEqual([copy]);
+    expect([carriesCheck(webShop), carriesCheck(copy)]).toEqual([false, true]);
     await user.click(screen.getByRole('button', { name: 'Merge' }));
 
     expect(mergePicker()).toBeNull();

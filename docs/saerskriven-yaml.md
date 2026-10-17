@@ -152,10 +152,10 @@ tools say when they write one:
 
 The studio says nothing of the version it saves, and `saer_create` and
 `saer_import` write a new file and say nothing of its version. Nothing is said
-at a move back to version 2. A share link, the
-studio's clipboard and its recovery snapshot carry the text or the document a
-save writes, so they follow the same rule, and the snapshot keeps no retained
-document for a Saerskriven YAML file, which its save does not read.
+at a move back to version 2. A share link, the studio's clipboard and its
+recovery snapshot carry the text or the document a save writes, so they follow
+the same rule, and the snapshot keeps no retained document for a Saerskriven
+YAML file, which its save does not read.
 
 ## `formatVersion`
 

@@ -342,10 +342,10 @@ the list would be empty, and E then says so.
 The list holds no flows. A flow already on the diagram whose end was drawn
 away from an added element attaches to it.
 
-An element on more than one diagram draws the same on each. Its accessible
-name ends by naming the others ([Accessibility](#accessibility)), and the
-threat panel shows an **Also on** line under the element's name, naming its
-other diagrams. Each name shows that diagram with the element selected and
+An element on more than one diagram carries no mark on the canvas. Its
+accessible name ends by naming the others ([Accessibility](#accessibility)),
+and the threat panel shows an **Also on** line under the element's name,
+naming its other diagrams. Each name shows that diagram with the element selected and
 focused.
 
 ## Merging two elements
@@ -722,8 +722,10 @@ diagrams it is still on. Delete on an element's only diagram removes it from
 the model, as above. **Delete from model**, in the menu or Shift+Delete,
 removes the selection from every diagram it is on. Cut takes a shared element
 off the diagram on screen too, so pasting it makes a copy. To move an element
-to another diagram, add it there with
-[Add existing element](#adding-an-existing-element), then delete it here.
+other than a flow to another diagram, add it there with
+[Add existing element](#adding-an-existing-element), then delete it here. A
+flow cannot be added there in the studio
+([Current limitations](#current-limitations)).
 
 Every edit is one undo step: a placement, a drag, a resize, a committed field,
 a paste. Selecting, panning, zooming and switching diagrams add no undo step
