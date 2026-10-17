@@ -102,38 +102,6 @@ export const boxesOverlap = (one: Box, other: Box): boolean =>
   one.y < other.y + other.height &&
   other.y < one.y + one.height;
 
-/**
- * A point of `box`, relative to its top left, that `cover` leaves clear: the
- * middle of the largest strip of `box` left of, right of, above or below
- * `cover`. Undefined where `cover` hides all of `box`.
- */
-export const pointClearOf = (box: Box, cover: Box): Point | undefined => {
-  const right = Math.max(box.x, cover.x + cover.width);
-  const below = Math.max(box.y, cover.y + cover.height);
-  const strips: readonly Box[] = [
-    { ...box, width: Math.min(box.width, cover.x - box.x) },
-    { ...box, x: right, width: box.x + box.width - right },
-    { ...box, height: Math.min(box.height, cover.y - box.y) },
-    { ...box, y: below, height: box.y + box.height - below },
-  ];
-  const largest = strips
-    .filter(({ width, height }) => width > 0 && height > 0)
-    .reduce<Box | undefined>(
-      (best, strip) =>
-        best === undefined ||
-        strip.width * strip.height > best.width * best.height
-          ? strip
-          : best,
-      undefined,
-    );
-  return largest === undefined
-    ? undefined
-    : {
-        x: largest.x - box.x + largest.width / 2,
-        y: largest.y - box.y + largest.height / 2,
-      };
-};
-
 const decimals = 3;
 const coordinateTolerance = 0.01;
 

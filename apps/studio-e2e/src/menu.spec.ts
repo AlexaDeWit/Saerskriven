@@ -3,9 +3,8 @@ import { testDataPath } from '@saerskriven/model/fixtures';
 import { commandChord, registeredChords } from './chords.fixtures.js';
 import {
   canvasSettled,
+  clearPositionOn,
   elementNodes,
-  pointClearOf,
-  screenBoxOf,
 } from './canvas.fixtures.js';
 import {
   expectFileShown,
@@ -97,24 +96,10 @@ test('the canvas stays live behind the open menu', async ({ page }) => {
   await openMenu(page);
 
   await expect(page.getByRole('main')).not.toHaveAttribute('aria-hidden');
-  const menu = await screenBoxOf(page.getByRole('menu'), 'the open menu');
-  const nodes = [placeholder.store, placeholder.actor].map((name) =>
-    nodeNamed(page, name),
-  );
-  const clearPoints = await Promise.all(
-    nodes.map(async (node) =>
-      pointClearOf(await screenBoxOf(node, 'a placeholder node'), menu),
-    ),
-  );
-  const index = clearPoints.findIndex((point) => point !== undefined);
-  expect(
-    index,
-    'part of a placeholder node lies clear of the open menu',
-  ).toBeGreaterThanOrEqual(0);
-  const node = nodes[index];
-  await node.click({ position: clearPoints[index] });
+  const store = nodeNamed(page, placeholder.store);
+  await store.click({ position: await clearPositionOn(store) });
 
-  await expect(node).toHaveClass(/selected/u);
+  await expect(store).toHaveClass(/selected/u);
   await expect(page.getByRole('menu')).toHaveCount(0);
 });
 
