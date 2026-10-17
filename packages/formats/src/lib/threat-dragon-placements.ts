@@ -1,5 +1,7 @@
 import {
   elementIdSchema,
+  isEmptyName,
+  type Diagram,
   type DiagramId,
   type DrawnElement,
   type DrawnFlowEndpoint,
@@ -61,7 +63,8 @@ export function cellIdsOf(
 
 /**
  * Each element placed on more than one diagram, reported once as split
- * across the cells it is written as, naming its diagrams by title.
+ * across the cells it is written as, naming its diagrams by title, or by id
+ * where the title is blank.
  */
 export function splitElements(model: Model): readonly Divergence[] {
   return model.elements.flatMap((element): Divergence[] => {
@@ -75,11 +78,7 @@ export function splitElements(model: Model): readonly Divergence[] {
             subject: { kind: 'element', id: element.id },
             detail: {
               code: 'element-split-across-diagrams',
-              parameters: {
-                diagrams: diagrams.map(({ id, title }) =>
-                  title.trim() === '' ? id : title,
-                ),
-              },
+              parameters: { diagrams: diagrams.map(diagramName) },
             },
             reason: 'split',
           },
@@ -88,15 +87,17 @@ export function splitElements(model: Model): readonly Divergence[] {
 }
 
 /**
- * `element` as one diagram's cells name it: its own cell id, its flow ends
+ * `element` as the cells of `diagram` name it: its own cell id, its flow ends
  * fastened to the cells of that diagram, and its relationship lists naming
  * the cells that diagram places. An end drawn away from an element the
  * diagram does not place is written as a free end at its point, and a list
- * leaves out an element the diagram does not place, each reported.
+ * leaves out an element the diagram does not place, each reported, the list
+ * naming the diagram.
  */
 export function inCellTerms(
   element: DrawnElement,
   cellIds: CellIds,
+  diagram: Diagram,
 ): CelledElement {
   const id = cellIds.get(element.id) ?? element.id;
   if (element.kind === 'flow') {
@@ -117,7 +118,7 @@ export function inCellTerms(
         ...[source.away, target.away].flatMap((away) =>
           away === undefined ? [] : [freedDivergence(element.id, away)],
         ),
-        ...droppedDivergence(element.id, boundaries.dropped),
+        ...droppedDivergence(element.id, boundaries.dropped, diagram),
       ],
     };
   }
@@ -136,6 +137,7 @@ export function inCellTerms(
       divergences: droppedDivergence(
         element.id,
         contained.dropped + crossing.dropped,
+        diagram,
       ),
     };
   }
@@ -221,6 +223,7 @@ function freedDivergence(flow: ElementId, element: ElementId): Divergence {
 function droppedDivergence(
   element: ElementId,
   count: number,
+  diagram: Diagram,
 ): readonly Divergence[] {
   return count === 0
     ? []
@@ -229,9 +232,13 @@ function droppedDivergence(
           subject: { kind: 'element', id: element },
           detail: {
             code: 'relationships-off-diagram-dropped',
-            parameters: { count },
+            parameters: { count, diagram: diagramName(diagram) },
           },
           reason: 'unrepresentable',
         },
       ];
+}
+
+function diagramName({ id, title }: Diagram): string {
+  return isEmptyName(title) ? id : title;
 }

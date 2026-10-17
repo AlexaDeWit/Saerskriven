@@ -24,7 +24,7 @@ import {
 import { basename, dirname, join } from 'node:path';
 import { z } from 'zod';
 import { fileArgumentSchema } from './path-arguments.js';
-import { readingSchema, renderReading } from './reading.js';
+import { readingSchema, renderReading, savedVersion } from './reading.js';
 import { revisionOf } from './revision.js';
 import {
   confined,
@@ -110,6 +110,18 @@ export function renderWriteReport(report: WriteReport): readonly string[] {
 }
 
 /**
+ * The line a write tool's text result carries where the write took a file to
+ * Saerskriven YAML version 3, and none where it did not.
+ */
+export function movedToVersion3Lines(moved: boolean): readonly string[] {
+  return moved
+    ? [
+        'format version: moved to Saerskriven YAML version 3, which a release reading only versions 1 and 2 refuses.',
+      ]
+    : [];
+}
+
+/**
  * `model` as a new native YAML file at the path a call names, refused where
  * the path is outside every permitted directory or taken. `carried`
  * divergences come before the codec's own.
@@ -133,6 +145,7 @@ export function createdModel(
             (revision): WriteReport => ({
               file,
               format: 'saerskriven-yaml',
+              ...savedVersion('saerskriven-yaml', model),
               revision,
               divergences: [...carried, ...written.divergences],
             }),

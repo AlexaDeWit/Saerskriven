@@ -81,7 +81,7 @@ export const issuesEnCA = catalogue(issueMessages)('en-CA')({
   'related-boundary-unknown': '"{id}" names no trust boundary of the model',
   'related-flow-unknown': '"{id}" names no flow of the model',
   'related-off-diagram':
-    '"{id}" is on another diagram, and this file relates elements of one diagram only',
+    '"{id}" is on another diagram, and this file relates elements of one diagram only, a limit Saerskriven YAML version 3 lifts',
   'issue-flood': 'the file has more problems than a parse can list',
   'schema-threw': 'the parse stopped before it could report what is wrong',
 });

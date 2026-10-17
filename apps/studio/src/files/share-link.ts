@@ -239,6 +239,7 @@ async function encodedLink(
 const readFailureTags: Readonly<Record<ReadFailure['_tag'], true>> = {
   ExceededReadLimit: true,
   MalformedText: true,
+  LaterFormatVersion: true,
   InvalidWireDocument: true,
   InvalidModel: true,
 };

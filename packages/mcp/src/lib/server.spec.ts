@@ -833,6 +833,7 @@ describe('a modern client of the server object, over what no era changes', () =>
         totals: {
           diagrams: 2,
           elements: 13,
+          sharedElements: 0,
           threats: 24,
           mitigations: 13,
           assumptions: 0,

@@ -18,7 +18,7 @@ export function describeOperationFailure(failure: OperationFailure): string {
     InvalidFragment: ({ issues }) =>
       `The edit does not apply to this model: ${issueLines(issues)}.`,
     UnknownDiagram: ({ diagramId }) =>
-      `The model holds no diagram ${quotedForTerminal(diagramId)}.`,
+      `The model holds no diagram named ${quotedForTerminal(diagramId)}. Call saer_inspect for the id and the title of every diagram it holds.`,
     DuplicateDiagramId: ({ diagramId }) =>
       `The model already holds a diagram ${quotedForTerminal(diagramId)}.`,
     EmptyTitle: ({ diagramId }) =>
@@ -26,7 +26,7 @@ export function describeOperationFailure(failure: OperationFailure): string {
     RefusedTitleCharacter: ({ diagramId, at }) =>
       `The title for diagram ${quotedForTerminal(diagramId)} carries a character the model does not accept, at index ${String(at)}.`,
     DiagramNotEmpty: ({ diagramId, elements }) =>
-      `Diagram ${quotedForTerminal(diagramId)} still holds ${String(elements)} elements, and only an empty diagram is removed.`,
+      `Diagram ${quotedForTerminal(diagramId)} still holds ${String(elements)} ${elements === 1 ? 'element' : 'elements'}, and only an empty diagram is removed. Take an element also on another diagram off it with unplace_element, and remove the others with remove_element.`,
     UnknownElement: ({ elementId }) =>
       `The model holds no element ${quotedForTerminal(elementId)}.`,
     ElementNotOnDiagram: ({ elementId, diagramId }) =>
@@ -54,7 +54,7 @@ export function describeOperationFailure(failure: OperationFailure): string {
     UnknownAssumption: ({ assumptionId }) =>
       `The model holds no assumption ${quotedForTerminal(assumptionId)}.`,
     DuplicateElementId: ({ elementId }) =>
-      `The model already holds an element ${quotedForTerminal(elementId)}.`,
+      `The model already holds an element ${quotedForTerminal(elementId)}. To draw it on one more diagram, use place_element.`,
     DuplicateThreatId: ({ threatId }) =>
       `The model already holds a threat ${quotedForTerminal(threatId)}.`,
     DuplicateMitigationId: ({ mitigationId }) =>

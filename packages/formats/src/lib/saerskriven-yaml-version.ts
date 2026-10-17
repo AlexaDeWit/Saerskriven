@@ -7,9 +7,18 @@ import {
   type ElementId,
   type Model,
 } from '@saerskriven/model';
+import { z } from 'zod';
+
+/** The versions of Saerskriven YAML a save writes. */
+export const writtenSaerskrivenYamlVersionSchema = z.union([
+  z.literal(2),
+  z.literal(3),
+]);
 
 /** A version of Saerskriven YAML a save writes. */
-export type WrittenSaerskrivenYamlVersion = 2 | 3;
+export type WrittenSaerskrivenYamlVersion = z.infer<
+  typeof writtenSaerskrivenYamlVersionSchema
+>;
 
 /**
  * The version a save of `model` writes: 2 while version 2 holds the model,

@@ -7,6 +7,8 @@ import {
   pastBoundFile,
   refusalOf,
   rootWorkspace,
+  treeHolding,
+  twoDiagramsYaml,
   unreadableTree,
 } from './read-tools.fixtures.js';
 import { validate } from './validate.js';
@@ -41,6 +43,22 @@ describe('what saer_validate reports', () => {
     ).join('\n');
     expect(refused).toContain('threat-dragon');
     expect(refused).toContain('saerskriven-yaml');
+  });
+
+  it('refuses a native file a later release wrote, naming its version, the versions read and the upgrade', () => {
+    const later = treeHolding(
+      twoDiagramsYaml().replace(/^formatVersion: \d+$/mu, 'formatVersion: 4'),
+    );
+    expect(refusalOf(validate(later, {})).slice(1)).toEqual([
+      'The file is Saerskriven YAML version 4, and this release of saer reads versions 1 to 3.',
+      'Upgrade saer to a release that reads it.',
+    ]);
+  });
+
+  it('names the version a native model saves as', () => {
+    expect(
+      answerOf(validate(treeHolding(twoDiagramsYaml()), {})),
+    ).toMatchObject({ format: 'saerskriven-yaml', savesAsVersion: 2 });
   });
 
   it('refuses a claimed file with the path of the issue inside it', () => {

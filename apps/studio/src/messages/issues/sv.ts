@@ -80,7 +80,7 @@ export const issuesSv = catalogue(issueMessages)('sv')({
   'related-boundary-unknown': '”{id}” namnger ingen förtroendegräns i modellen',
   'related-flow-unknown': '”{id}” namnger inget flöde i modellen',
   'related-off-diagram':
-    '”{id}” finns i ett annat diagram, och den här filen kopplar bara samman element i ett och samma diagram',
+    '”{id}” finns i ett annat diagram, och den här filen kopplar bara samman element i ett och samma diagram, en gräns som Saerskriven YAML version 3 tar bort',
   'issue-flood': 'filen bär fler problem än en tolkning kan räkna upp',
   'schema-threw': 'tolkningen stannade innan den kunde säga vad som är fel',
 });

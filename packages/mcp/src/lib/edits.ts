@@ -6,6 +6,7 @@ import {
   addElement,
   boundaryShapeSchema,
   diagramIdSchema,
+  diagramsNamed,
   diagramsOf,
   droppedRecords,
   droppedThreats,
@@ -49,6 +50,7 @@ import {
   addedElement,
   addedElementSchema,
   consistentPropertyEdit,
+  diagramNaming,
   editedProperties,
   placementEditSchema,
   placementFor,
@@ -72,14 +74,14 @@ const elementEditSchema = z.object({
 });
 
 const diagramEditSchema = z.object({
-  diagram: diagramIdSchema.describe('The id of the diagram.'),
+  diagram: diagramIdSchema.describe(`The diagram. ${diagramNaming}`),
 });
 
 const onDiagramSchema = z.object({
   diagram: diagramIdSchema
     .optional()
     .describe(
-      'The diagram whose drawing the edit changes. Needed only for an element on more than one diagram, which the edit refuses without it.',
+      `The diagram whose drawing the edit changes. ${diagramNaming} Needed only for an element on more than one diagram, which the edit refuses without it.`,
     ),
 });
 
@@ -93,7 +95,9 @@ const drawnEditSchema = elementEditSchema.extend(onDiagramSchema.shape);
 export const modelEditSchema = z.discriminatedUnion('op', [
   z.object({
     op: z.literal('add_element'),
-    diagram: diagramIdSchema.describe('The diagram the element joins.'),
+    diagram: diagramIdSchema.describe(
+      `The diagram the element joins. ${diagramNaming}`,
+    ),
     element: addedElementSchema,
   }),
   elementEditSchema
@@ -109,7 +113,9 @@ export const modelEditSchema = z.discriminatedUnion('op', [
   placementEditSchema.extend({ op: z.literal('place_element') }),
   elementEditSchema.extend({
     op: z.literal('unplace_element'),
-    diagram: diagramIdSchema.describe('The diagram to take the element off.'),
+    diagram: diagramIdSchema.describe(
+      `The diagram to take the element off. ${diagramNaming}`,
+    ),
   }),
   elementEditSchema.extend({
     op: z.literal('merge_elements'),
@@ -172,7 +178,7 @@ export const modelEditSchema = z.discriminatedUnion('op', [
   drawnEditSchema.extend({
     op: z.literal('reconnect_flow'),
     diagram: onDiagramSchema.shape.diagram.describe(
-      'The diagram whose drawing `anchor` pins the end on, which has to place `endpoint`. Needed only for a flow on more than one diagram, which the edit refuses without it.',
+      `The diagram whose drawing \`anchor\` pins the end on, which has to place \`endpoint\`. ${diagramNaming} Needed only for a flow on more than one diagram, which the edit refuses without it.`,
     ),
     side: flowEndSchema,
     endpoint: elementIdSchema.describe(
@@ -193,8 +199,9 @@ export const modelEditSchema = z.discriminatedUnion('op', [
   }),
   elementEditSchema.extend({ op: z.literal('reverse_flow') }),
   ...registerEditSchemas,
-  diagramEditSchema.extend({
+  z.object({
     op: z.literal('add_diagram'),
+    diagram: diagramIdSchema.describe('The id of the new diagram.'),
     title: acceptedTextSchema,
   }),
   diagramEditSchema.extend({
@@ -335,11 +342,12 @@ export function renderRefusedEdit(refused: RefusedEdit): readonly string[] {
 
 function applyEdit(
   model: Model,
-  edit: ModelEdit,
+  given: ModelEdit,
 ): Either.Either<Model, OperationFailure> {
-  if (isRegisterEdit(edit)) {
-    return applyRegisterEdit(model, edit);
+  if (isRegisterEdit(given)) {
+    return applyRegisterEdit(model, given);
   }
+  const edit = onDiagramNamed(model, given);
   switch (edit.op) {
     case 'add_element':
       return addElement(
@@ -421,6 +429,19 @@ function applyEdit(
     default:
       return unappliedEdit(edit);
   }
+}
+
+function onDiagramNamed<
+  Edit extends {
+    readonly op: string;
+    readonly diagram?: DiagramId | undefined;
+  },
+>(model: Model, edit: Edit): Edit {
+  if (edit.op === 'add_diagram' || edit.diagram === undefined) {
+    return edit;
+  }
+  const [named] = diagramsNamed(model.diagrams, edit.diagram);
+  return named === undefined ? edit : { ...edit, diagram: named.id };
 }
 
 function placementIndex(model: Model, diagramId: string): number {
