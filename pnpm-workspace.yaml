@@ -131,7 +131,7 @@ catalog:
   # commander tokenizes argv and a zod schema is the one gate on what a
   # command needs (issue #33).
   commander: ^15.0.0
-  effect: ^3.22.0
+  effect: ^4.0.0
   esbuild: ^0.28.0
   eslint: ^10.0.0
   # Declared here rather than reached through effect, which depends on it:
