@@ -31,6 +31,7 @@ import {
   RegisteredMenuCommand,
 } from './menu-items.js';
 import type { FileSession } from './file-commands.js';
+import { RecentMenu } from './recent-menu.js';
 import cursor from '../ui/cursor-row.module.css';
 import styles from './menu.module.css';
 import { AppearanceMenu, LanguageMenu } from './settings-menu.js';
@@ -123,6 +124,13 @@ export function StudioMenu({
   useAsking(session.linking, unsaved, setOpen, session.cancelLink);
   const askingLink = session.linking && unsaved;
   useAsking(session.closing, unsaved, setOpen, session.cancelClose);
+  const cancelRecent = session.recent?.cancel ?? nothingAsked;
+  useAsking(
+    session.recent?.asking !== undefined,
+    unsaved,
+    setOpen,
+    cancelRecent,
+  );
   useChoosing(session.choosing, setOpen);
 
   const {
@@ -145,6 +153,7 @@ export function StudioMenu({
             cancelLink();
             cancelClose();
             cancelChoice();
+            cancelRecent();
           }
         }}
         open={open}
@@ -282,6 +291,7 @@ function FileMenu({
     confirmClose,
     confirmLink,
     opening,
+    recent,
   } = session;
   const { t } = useTranslator();
   const format = formatOf(file);
@@ -307,6 +317,7 @@ function FileMenu({
         proceed={confirmOpen}
         question="menu.discard-and-open"
       />
+      {recent !== undefined && <RecentMenu recent={recent} unsaved={unsaved} />}
       <MenuCommand command="save" />
       <RegisteredMenuCommand
         asking={
@@ -438,6 +449,10 @@ function ExportMenu() {
       <MenuCommand command="export-pdf" />
     </Submenu>
   );
+}
+
+function nothingAsked(): void {
+  return undefined;
 }
 
 function useAsking(

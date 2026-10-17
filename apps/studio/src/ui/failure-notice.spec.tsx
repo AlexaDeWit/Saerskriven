@@ -183,6 +183,7 @@ const studioFailures: ByTag<StudioFailure> = {
     failure: readFailures.InvalidWireDocument,
   }),
   File: StudioFailure.File({ reason: 'The folder is read only.' }),
+  RecentFileGone: StudioFailure.RecentFileGone({ name: 'moved.yaml' }),
   Link: StudioFailure.Link({
     failure: LinkFailure.Codec({
       failure: ShareLinkFailure.UnknownEncoding({ prefix: '2' }),

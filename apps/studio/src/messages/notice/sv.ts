@@ -10,6 +10,8 @@ export const noticeSv = catalogue(noticeMessages)('sv')({
   },
   'operation-refused': 'Modellen avvisade ändringen.',
   'file-unreachable': 'Saerskriven kunde inte nå filen.',
+  'recent-file-gone': 'Saerskriven hittade inte {name}.',
+  'recent-file-dropped': 'Filen togs bort från Senaste filer.',
   'recovery-rejected':
     'Saerskriven avvisade den sparade återställningsögonblicksbilden.',
   'recovery-unavailable': 'Lokal återställning är inte tillgänglig.',

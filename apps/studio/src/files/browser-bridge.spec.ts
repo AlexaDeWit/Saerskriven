@@ -5,11 +5,13 @@ import {
   type FileContent,
   type SaveFileType,
 } from './bridge.js';
+import { browserBridge, pickerIds } from './browser-bridge.js';
 import {
   chosenFile,
   deferred,
   dismissal,
   handleFor,
+  memoryRecentStore,
   openPicker,
   recordDownloads,
   settled,
@@ -31,10 +33,42 @@ const inTheFormatOf = (name: string): string =>
 
 let downloads: readonly string[] = [];
 
-const freshBridge = async (): Promise<FileBridge> => {
-  vi.resetModules();
-  return (await import('./browser-bridge.js')).browserFileBridge;
+const freshBridge = (): FileBridge => browserBridge(memoryRecentStore());
+
+type Handle = ReturnType<typeof handleFor>;
+
+const names = async (bridge: FileBridge): Promise<readonly string[]> =>
+  (await bridge.recentFiles()).map(({ name }) => name);
+
+const declined = (name: string): Handle => ({
+  ...handleFor(name, 'a: 1', []),
+  requestPermission: () => Promise.resolve<PermissionState>('denied'),
+});
+
+const picking = (...handles: readonly Handle[]) => {
+  const picker = vi.fn<(options: unknown) => Promise<readonly Handle[]>>();
+  for (const handle of handles) {
+    picker.mockResolvedValueOnce([handle]);
+  }
+  vi.stubGlobal('showOpenFilePicker', picker);
+  return picker;
 };
+
+const interruptions = [
+  [
+    'an open supersedes it',
+    async (bridge: FileBridge): Promise<void> => {
+      await settled(bridge.open(1024));
+    },
+  ],
+  [
+    'the file is released',
+    (bridge: FileBridge): Promise<void> => {
+      bridge.release();
+      return Promise.resolve();
+    },
+  ],
+] as const;
 
 beforeEach(() => {
   downloads = recordDownloads();
@@ -56,7 +90,7 @@ describe('opening', () => {
         handleFor('original.yaml', 'a: 1', [], () => failure.promise),
       ]);
       vi.stubGlobal('showOpenFilePicker', picker);
-      const bridge = await freshBridge();
+      const bridge = freshBridge();
       await settled(bridge.open(1024));
       if (older === 'open') {
         picker.mockResolvedValueOnce([
@@ -96,7 +130,7 @@ describe('opening', () => {
   );
 
   it('asks the caller for its own picker where the browser has none', async () => {
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
 
     expect(await settled(bridge.open(1024))).toEqual(OpenOutcome.NoPicker());
   });
@@ -105,7 +139,7 @@ describe('opening', () => {
     vi.stubGlobal('showOpenFilePicker', () =>
       Promise.resolve([handleFor('model.yaml', 'a: 1', [])]),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
 
     expect(await settled(bridge.open(1024))).toEqual(
       OpenOutcome.Chosen({ name: 'model.yaml', text: 'a: 1' }),
@@ -116,7 +150,7 @@ describe('opening', () => {
     vi.stubGlobal('showOpenFilePicker', () =>
       Promise.reject(new Error('NotAllowedError')),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
 
     expect(await settled(bridge.open(1024))).toEqual(
       OpenOutcome.Unreadable({ reason: 'NotAllowedError' }),
@@ -128,7 +162,7 @@ describe('opening', () => {
     { named: 'handed nothing over', picked: () => Promise.resolve([]) },
   ])('says nothing where the picker $named', async ({ picked }) => {
     vi.stubGlobal('showOpenFilePicker', picked);
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
 
     expect(await settled(bridge.open(1024))).toEqual(OpenOutcome.Cancelled());
   });
@@ -140,7 +174,7 @@ describe('saving', () => {
     vi.stubGlobal('showOpenFilePicker', () =>
       Promise.resolve([handleFor('model.yaml', 'a: 1', written)]),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
     await settled(bridge.open(1024));
 
     expect(await settled(bridge.save('proposed.yaml', 'b: 2'))).toEqual(
@@ -159,7 +193,7 @@ describe('saving', () => {
         },
       ]),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
     await settled(bridge.open(1024));
 
     expect(await settled(bridge.save('model.yaml', 'b: 2'))).toEqual(
@@ -172,7 +206,7 @@ describe('saving', () => {
     vi.stubGlobal('showOpenFilePicker', () =>
       Promise.resolve([handleFor('huge.json', 'a'.repeat(100), written)]),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
 
     expect((await settled(bridge.open(10)))._tag).toBe('TooLarge');
     expect(await settled(bridge.save('threat-model.yaml', 'a: 1'))).toEqual(
@@ -183,7 +217,7 @@ describe('saving', () => {
   });
 
   it('offers a download where no file was opened through a picker', async () => {
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
 
     expect(await settled(bridge.save('threat-model.yaml', 'a: 1'))).toEqual(
       SaveOutcome.Written({ name: 'threat-model.yaml' }),
@@ -196,7 +230,7 @@ describe('saving', () => {
     vi.stubGlobal('showSaveFilePicker', () =>
       Promise.resolve(handleFor('chosen.yaml', '', written)),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
 
     expect(
       await settled(bridge.saveAs('proposed.yaml', types, inTheFormatOf)),
@@ -213,13 +247,15 @@ describe('saving', () => {
       asked.push(options);
       return Promise.resolve(handleFor('chosen.json', '', written));
     });
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
 
     expect(
       await settled(bridge.saveAs('proposed.yaml', types, inTheFormatOf)),
     ).toEqual(SaveOutcome.Written({ name: 'chosen.json' }));
 
-    expect(asked).toEqual([{ suggestedName: 'proposed.yaml', types }]);
+    expect(asked).toEqual([
+      { id: pickerIds.save, suggestedName: 'proposed.yaml', types },
+    ]);
     expect(written).toEqual(['{}']);
   });
 
@@ -234,7 +270,7 @@ describe('saving', () => {
         createWritable: () => Promise.reject(new Error('NotAllowedError')),
       }),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
     await settled(bridge.open(1024));
 
     expect(
@@ -252,7 +288,7 @@ describe('saving', () => {
       Promise.resolve([handleFor('model.json', '{}', written)]),
     );
     vi.stubGlobal('showSaveFilePicker', () => Promise.reject(dismissal()));
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
     await settled(bridge.open(1024));
 
     expect(
@@ -269,7 +305,7 @@ describe('saving', () => {
     vi.stubGlobal('showOpenFilePicker', () =>
       Promise.resolve([handleFor('model.json', '{}', written)]),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
     await settled(bridge.open(1024));
 
     expect(bridge.asksWhere()).toBe(false);
@@ -287,7 +323,7 @@ describe('saving', () => {
       Promise.resolve([handleFor('model.yaml', 'a: 1', [])]),
     );
     vi.stubGlobal('showSaveFilePicker', () => Promise.reject(dismissal()));
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
 
     expect(bridge.writesBack()).toBe(false);
     await settled(bridge.open(1024));
@@ -298,11 +334,11 @@ describe('saving', () => {
     expect(bridge.writesBack()).toBe(false);
   });
 
-  it('says it can ask where wherever the browser has that picker', async () => {
+  it('says it can ask where wherever the browser has that picker', () => {
     vi.stubGlobal('showSaveFilePicker', () =>
       Promise.resolve(handleFor('chosen.yaml', '', [])),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
 
     expect(bridge.asksWhere()).toBe(true);
   });
@@ -312,7 +348,7 @@ describe('saving', () => {
     vi.stubGlobal('showOpenFilePicker', () =>
       Promise.resolve([handleFor('model.json', '{}', written)]),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
     await settled(bridge.open(1024));
 
     await settled(bridge.received(chosenFile('other.yaml', 'a: 1'), 1024));
@@ -327,7 +363,7 @@ describe('saving', () => {
     vi.stubGlobal('showOpenFilePicker', () =>
       Promise.resolve([handleFor('model.json', '{}', written)]),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
     await settled(bridge.open(1024));
 
     bridge.release();
@@ -348,7 +384,7 @@ describe('saving', () => {
           handleFor('notes.txt', 'not a model', rejected),
         ]);
       vi.stubGlobal('showOpenFilePicker', picker);
-      const bridge = await freshBridge();
+      const bridge = freshBridge();
       await settled(bridge.open(1024));
 
       const result =
@@ -378,7 +414,7 @@ describe('exporting', () => {
     vi.stubGlobal('showSaveFilePicker', () =>
       Promise.resolve(handleFor('model.svg', '', exported)),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
     await settled(bridge.open(1024));
 
     expect(await bridge.exportFile('model.svg', types[0], '<svg/>')).toEqual(
@@ -390,8 +426,28 @@ describe('exporting', () => {
     expect(opened).toEqual(['second']);
   });
 
+  it('starts the export picker beside the open file, and where the browser chooses without one', async () => {
+    const opened = handleFor('model.yaml', 'a: 1', []);
+    picking(opened);
+    const asked: unknown[] = [];
+    vi.stubGlobal('showSaveFilePicker', (options: unknown) => {
+      asked.push(options);
+      return Promise.resolve(handleFor('model.svg', '', []));
+    });
+    const bridge = freshBridge();
+
+    await bridge.exportFile('model.svg', types[0], '<svg/>');
+    await settled(bridge.open(1024));
+    await bridge.exportFile('model.svg', types[0], '<svg/>');
+
+    expect(asked).toEqual([
+      { startIn: undefined, suggestedName: 'model.svg', types: [types[0]] },
+      { startIn: opened, suggestedName: 'model.svg', types: [types[0]] },
+    ]);
+  });
+
   it('downloads binary content under the proposed name without a picker', async () => {
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
     const pdf = new Uint8Array([37, 80, 68, 70]);
 
     expect(await bridge.exportFile('Untitled.pdf', types[0], pdf)).toEqual(
@@ -404,7 +460,7 @@ describe('exporting', () => {
     vi.stubGlobal('showSaveFilePicker', () =>
       Promise.reject(new Error('NotAllowedError')),
     );
-    const bridge = await freshBridge();
+    const bridge = freshBridge();
 
     expect(await bridge.exportFile('model.svg', types[0], '<svg/>')).toEqual(
       SaveOutcome.Refused({ reason: 'NotAllowedError' }),
@@ -415,5 +471,196 @@ describe('exporting', () => {
     expect(await bridge.exportFile('model.svg', types[0], '<svg/>')).toEqual(
       SaveOutcome.Cancelled(),
     );
+  });
+});
+
+describe('the recent list', () => {
+  it('lists each file a settlement takes up, most recent first, and the same file once', async () => {
+    picking(
+      handleFor('first.yaml', 'a: 1', []),
+      handleFor('second.yaml', 'a: 1', []),
+      handleFor('first.yaml', 'a: 1', []),
+    );
+    const bridge = freshBridge();
+
+    await settled(bridge.open(1024));
+    await settled(bridge.open(1024));
+    expect(await names(bridge)).toEqual(['second.yaml', 'first.yaml']);
+
+    await settled(bridge.open(1024));
+    expect(await names(bridge)).toEqual(['first.yaml', 'second.yaml']);
+  });
+
+  it('lists a file a save-as wrote, and not one whose open settled without it', async () => {
+    picking(handleFor('imported.json', '{}', []));
+    vi.stubGlobal('showSaveFilePicker', () =>
+      Promise.resolve(handleFor('saved.yaml', '', [])),
+    );
+    const bridge = freshBridge();
+
+    (await bridge.open(1024)).settle(false);
+    await settled(bridge.saveAs('proposed.yaml', types, inTheFormatOf));
+
+    expect(await names(bridge)).toEqual(['saved.yaml']);
+  });
+
+  it('leaves the list alone when a save writes back to the open file', async () => {
+    picking(handleFor('model.yaml', 'a: 1', []));
+    const bridge = freshBridge();
+    await settled(bridge.open(1024));
+    await bridge.clearRecent();
+
+    await settled(bridge.save('model.yaml', 'b: 2'));
+
+    expect(await names(bridge)).toEqual([]);
+  });
+
+  it('keeps the ten most recent files', async () => {
+    const files = Array.from(
+      { length: 11 },
+      (_, index) => `model-${String(index)}.yaml`,
+    );
+    picking(...files.map((name) => handleFor(name, 'a: 1', [])));
+    const bridge = freshBridge();
+
+    for (let opened = 0; opened < files.length; opened += 1) {
+      await settled(bridge.open(1024));
+    }
+
+    expect(await names(bridge)).toEqual(
+      Array.from({ length: 10 }, (_, index) => files[files.length - 1 - index]),
+    );
+  });
+
+  it('keeps both files where two tabs each take one up at once', async () => {
+    picking(
+      handleFor('first.yaml', 'a: 1', []),
+      handleFor('second.yaml', 'a: 1', []),
+    );
+    const store = memoryRecentStore();
+    const tabs = [browserBridge(store), browserBridge(store)];
+
+    await Promise.all(tabs.map((tab) => settled(tab.open(1024))));
+
+    const listed = await names(tabs[0]);
+    expect(listed).toHaveLength(2);
+    expect(listed).toEqual(
+      expect.arrayContaining(['first.yaml', 'second.yaml']),
+    );
+  });
+
+  it('reopens a listed file once the browser grants the permission Save needs', async () => {
+    const requestPermission = vi.fn<() => Promise<PermissionState>>(() =>
+      Promise.resolve<PermissionState>('granted'),
+    );
+    picking({ ...handleFor('model.yaml', 'a: 1', []), requestPermission });
+    const bridge = freshBridge();
+    await settled(bridge.open(1024));
+    const [file] = await bridge.recentFiles();
+    bridge.release();
+
+    expect(await settled(bridge.reopen(file, 1024))).toEqual(
+      OpenOutcome.Chosen({ name: 'model.yaml', text: 'a: 1' }),
+    );
+    expect(requestPermission).toHaveBeenCalledWith({ mode: 'readwrite' });
+    expect(bridge.writesBack()).toBe(true);
+  });
+
+  it('keeps a file whose permission was declined, and opens nothing', async () => {
+    picking(declined('model.yaml'));
+    const bridge = freshBridge();
+    await settled(bridge.open(1024));
+    const [file] = await bridge.recentFiles();
+
+    expect(await settled(bridge.reopen(file, 1024))).toEqual(
+      OpenOutcome.Declined(),
+    );
+    expect(await names(bridge)).toEqual(['model.yaml']);
+  });
+
+  it('drops a file that is no longer there, naming it', async () => {
+    const handle = handleFor('moved.yaml', 'a: 1', []);
+    picking(handle);
+    const bridge = freshBridge();
+    await settled(bridge.open(1024));
+    const [file] = await bridge.recentFiles();
+    handle.getFile = () =>
+      Promise.reject(new DOMException('Not found.', 'NotFoundError'));
+
+    expect(await settled(bridge.reopen(file, 1024))).toEqual(
+      OpenOutcome.Gone({ name: 'moved.yaml' }),
+    );
+    expect(await names(bridge)).toEqual([]);
+  });
+
+  it('starts the next open picker in the folder of a file a reopen did not open, and only the next', async () => {
+    const refused = declined('model.yaml');
+    const picker = picking(
+      refused,
+      handleFor('other.yaml', 'a: 1', []),
+      handleFor('third.yaml', 'a: 1', []),
+    );
+    const bridge = freshBridge();
+    await settled(bridge.open(1024));
+    const [file] = await bridge.recentFiles();
+
+    await settled(bridge.reopen(file, 1024));
+    await settled(bridge.open(1024));
+    await settled(bridge.open(1024));
+
+    expect(picker.mock.calls.map(([options]) => options)).toEqual([
+      { id: pickerIds.open, multiple: false, startIn: undefined },
+      { id: pickerIds.open, multiple: false, startIn: refused },
+      { id: pickerIds.open, multiple: false, startIn: undefined },
+    ]);
+  });
+
+  it.each(interruptions)(
+    'settles nothing, and leaves the next open picker alone, where %s before a reopen lands',
+    async (_, interrupt) => {
+      const picker = picking(
+        declined('model.yaml'),
+        handleFor('other.yaml', 'a: 1', []),
+        handleFor('third.yaml', 'a: 1', []),
+      );
+      const bridge = freshBridge();
+      await settled(bridge.open(1024));
+      const [file] = await bridge.recentFiles();
+
+      const reopening = bridge.reopen(file, 1024);
+      await interrupt(bridge);
+
+      expect((await reopening).settle('unchanged')).toBe(false);
+      await settled(bridge.open(1024));
+      expect(picker.mock.calls.at(-1)?.[0]).toMatchObject({
+        startIn: undefined,
+      });
+    },
+  );
+
+  it('gives the open and the save picker each a folder of its own to remember', () => {
+    expect(pickerIds.open).not.toBe(pickerIds.save);
+  });
+
+  it('empties the list', async () => {
+    picking(handleFor('model.yaml', 'a: 1', []));
+    const bridge = freshBridge();
+    await settled(bridge.open(1024));
+
+    await bridge.clearRecent();
+
+    expect(await names(bridge)).toEqual([]);
+  });
+
+  it('keeps no list where the browser has no open picker', async () => {
+    vi.stubGlobal('showSaveFilePicker', () =>
+      Promise.resolve(handleFor('saved.yaml', '', [])),
+    );
+    const bridge = freshBridge();
+
+    await settled(bridge.saveAs('proposed.yaml', types, inTheFormatOf));
+
+    expect(bridge.keepsRecent()).toBe(false);
+    expect(await bridge.recentFiles()).toEqual([]);
   });
 });

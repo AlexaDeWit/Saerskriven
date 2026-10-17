@@ -188,6 +188,7 @@ export type Action = Data.TaggedEnum<{
     readonly operation: 'open' | 'save';
     readonly reason: string;
   };
+  RecentFileGone: { readonly name: string };
   LinkRefused: { readonly failure: LinkFailure };
   DismissFailure: {};
 }>;

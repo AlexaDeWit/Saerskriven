@@ -183,9 +183,10 @@ export function saveTarget(
 }
 
 /**
- * Cancellation produces no action. A file in a format Saerskriven only reads
- * opens as a new model under its own stem as YAML, and `untitled` names one
- * whose stem reduces to nothing, in the active locale.
+ * Cancellation, and a permission the person declined, produce no action. A
+ * file in a format Saerskriven only reads opens as a new model under its own
+ * stem as YAML, and `untitled` names one whose stem reduces to nothing, in the
+ * active locale.
  */
 export function openedBy(
   outcome: OpenOutcome,
@@ -206,6 +207,8 @@ export function openedBy(
       Action.FileRefused({ operation: 'open', reason }),
     Cancelled: () => undefined,
     NoPicker: () => undefined,
+    Gone: ({ name }) => Action.RecentFileGone({ name }),
+    Declined: () => undefined,
   });
 }
 

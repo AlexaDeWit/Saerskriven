@@ -41,6 +41,10 @@ export function describeFailure(
       headline: t('notice.file-unreachable'),
       details: [reason],
     }),
+    RecentFileGone: ({ name }) => ({
+      headline: t('notice.recent-file-gone', { name }),
+      details: [t('notice.recent-file-dropped')],
+    }),
     Link: ({ failure: refusal }) => ({
       headline: t('notice.link-refused'),
       details: linkFailureLines(t, refusal),

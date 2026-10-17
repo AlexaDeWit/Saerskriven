@@ -28,9 +28,11 @@ import {
   type FileContent,
   type FileBridge,
   type FileResult,
+  type RecentFile,
   type SaveFileType,
 } from './bridge.js';
 import type { RenderExports } from './export-commands.js';
+import type { RecentEntry, RecentStore } from './recent-store.js';
 import type { ShareLinks } from './share-link.js';
 import { writeClipboard } from '../system-clipboard.js';
 
@@ -192,7 +194,11 @@ export const openPicker = () =>
 export const dismissal = (): DOMException =>
   new DOMException('The user dismissed the picker.', 'AbortError');
 
-/** A browser file handle whose writes and completion a spec controls. */
+/**
+ * A browser file handle whose writes and completion a spec controls. It is
+ * the same entry as any handle of the same name, and the browser grants its
+ * permission.
+ */
 export const handleFor = (
   name: string,
   text: string,
@@ -209,7 +215,22 @@ export const handleFor = (
       },
       close,
     }),
+  isSameEntry: (other: { readonly name: string }) =>
+    Promise.resolve(other.name === name),
+  requestPermission: () => Promise.resolve<PermissionState>('granted'),
 });
+
+/** A recent list held in memory, standing in for IndexedDB, which jsdom lacks. */
+export function memoryRecentStore(): RecentStore {
+  let entries: readonly RecentEntry[] = [];
+  return {
+    read: () => Promise.resolve(entries),
+    update: (change) => {
+      entries = change(entries);
+      return Promise.resolve();
+    },
+  };
+}
 
 /** A promise whose result a spec supplies after starting concurrent operations. */
 export function deferred<Value>() {
@@ -230,14 +251,30 @@ export function deferred<Value>() {
   };
 }
 
-/** Settles a bridge outcome without codec validation for platform-level specs. */
+const settlement = {
+  Chosen: true,
+  TooLarge: false,
+  Unreadable: false,
+  Cancelled: 'unchanged',
+  NoPicker: 'unchanged',
+  Gone: false,
+  Declined: 'unchanged',
+  Written: true,
+  Refused: true,
+} as const satisfies Record<
+  (OpenOutcome | SaveOutcome)['_tag'],
+  boolean | 'unchanged'
+>;
+
+/**
+ * Settles a bridge outcome as the session settles one whose text the codec
+ * accepts, for platform-level specs.
+ */
 export async function settled<Outcome extends OpenOutcome | SaveOutcome>(
   pending: Promise<FileResult<Outcome>>,
 ): Promise<Outcome> {
   const result = await pending;
-  result.settle(
-    result.outcome._tag !== 'TooLarge' && result.outcome._tag !== 'Unreadable',
-  );
+  result.settle(settlement[result.outcome._tag]);
   return result.outcome;
 }
 
@@ -272,16 +309,27 @@ type SpecBridgeOptions = {
   readonly chooses?: string;
   readonly picker?: boolean;
   readonly save?: SaveOutcome;
+  readonly recent?: readonly ChosenFile[];
+  readonly reopens?: OpenOutcome;
 };
 
 /**
  * A bridge reading through the size bound it is handed and recording the
  * writes. By default an open is cancelled and a save writes the proposed name.
  * It holds the name of the file an open or a save-as settled on, as the
- * browser's bridge holds that file's handle.
+ * browser's bridge holds that file's handle. Given `recent`, it keeps a recent
+ * list by name, most recent first, which each name a settlement adopts joins
+ * at the top. A reopen reads that file, or answers `reopens`, and a file it
+ * finds gone leaves the list.
  */
 export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
-  const ownership = fileOwnership<string>();
+  const recent = (options.recent ?? []).map(({ name }) => name);
+  const keep = (names: readonly string[]): void => {
+    recent.splice(0, recent.length, ...names);
+  };
+  const ownership = fileOwnership<string>((name) => {
+    keep([name, ...recent.filter((kept) => kept !== name)]);
+  });
   const writes: Recorded[] = [];
   const offered: (readonly SaveFileType[])[] = [];
   const releases: Releases = { count: 0 };
@@ -302,6 +350,22 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
     return options.offers === undefined
       ? Promise.resolve(OpenOutcome.Cancelled())
       : readWithin(options.offers, maxBytes);
+  };
+
+  const reopened = async (
+    file: RecentFile,
+    maxBytes: number,
+  ): Promise<OpenOutcome> => {
+    const kept = options.recent?.find(({ name }) => name === file.name);
+    const outcome =
+      options.reopens ??
+      (kept === undefined
+        ? OpenOutcome.Gone({ name: file.name })
+        : await readWithin(kept, maxBytes));
+    if (OpenOutcome.$is('Gone')(outcome)) {
+      keep(recent.filter((name) => name !== file.name));
+    }
+    return outcome;
   };
 
   const answer = (
@@ -335,6 +399,22 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
         () => readWithin(file, maxBytes),
         () => undefined,
       ),
+    reopen: (file, maxBytes) =>
+      request(
+        () => reopened(file, maxBytes),
+        () => file.name,
+      ),
+    keepsRecent: () => options.recent !== undefined,
+    recentFiles: () =>
+      Promise.resolve(
+        options.recent === undefined
+          ? []
+          : recent.map((name) => ({ key: name, name })),
+      ),
+    clearRecent: () => {
+      keep([]);
+      return Promise.resolve();
+    },
     save: (name, text) => {
       const held = ownership.current();
       return request(

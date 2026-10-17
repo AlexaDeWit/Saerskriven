@@ -17,6 +17,23 @@ describe('fileOwnership', () => {
     },
   );
 
+  it('hears each handle a settlement takes up in place of the one held, and no other', () => {
+    const adopted: string[] = [];
+    const ownership = fileOwnership<string>((handle) => {
+      adopted.push(handle);
+    });
+
+    ownership.begin()('read', 'model.yaml').settle(true);
+    ownership.begin()('written', 'model.yaml').settle(true);
+    ownership.begin()('dismissed', 'other.yaml').settle('unchanged');
+    ownership.begin()('refused', 'other.yaml').settle(false);
+    const stale = ownership.begin();
+    ownership.begin()('written', 'saved.yaml').settle(true);
+    stale('read', 'stale.yaml').settle(true);
+
+    expect(adopted).toEqual(['model.yaml', 'saved.yaml']);
+  });
+
   it('invalidates a pending result when the file closes', () => {
     const ownership = fileOwnership<string>();
     const pending = ownership.begin();
