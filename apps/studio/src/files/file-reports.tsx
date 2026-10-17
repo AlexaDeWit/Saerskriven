@@ -42,7 +42,7 @@ export function FileReports({ session }: { readonly session: FileSession }) {
       : describeExportNotice(t, exportNotice);
   const shared =
     shareNotice === undefined ? undefined : describeShareNotice(t, shareNotice);
-  const version = useVersionNotice();
+  const version = useVersionNotice(report);
 
   return (
     <>

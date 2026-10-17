@@ -72,8 +72,9 @@ whatever its extension. What Save does next depends on the format:
   opens as a new, unsaved model under a notice saying so, and no Save ever
   writes to it. Save makes a Saerskriven YAML file under the file's stem, as
   `example.yaml` for `example.json`: the save picker proposes that name, and a
-  browser without one downloads under it. What each format becomes is in
-  [OTM and TM-BOM](#otm-and-tm-bom).
+  browser without one downloads under it. Where that model saves as version
+  3, the same notice of earlier releases shows when the file opens. What each
+  format becomes is in [OTM and TM-BOM](#otm-and-tm-bom).
 
 Where the browser offers the File System Access API, Save writes to the file
 that was opened or last saved as, without asking. With no such file, as for a
