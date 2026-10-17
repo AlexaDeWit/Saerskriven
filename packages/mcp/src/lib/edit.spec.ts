@@ -28,6 +28,7 @@ import {
   undeclaredPath,
   undeclaredYaml,
   unknownAccentYaml,
+  unknownNoteAccentYaml,
   type EditInput,
 } from './edit.fixtures.js';
 import {
@@ -1083,6 +1084,11 @@ describe('what an edit does with what this version cannot read', () => {
       named: 'the key glow',
     },
     { name: 'accent.yaml', text: unknownAccentYaml, named: 'the accent "q9"' },
+    {
+      name: 'note-accent.yaml',
+      text: unknownNoteAccentYaml,
+      named: 'the accent "q9"',
+    },
   ])(
     'refuses $name, naming what the write would drop, and writes nothing',
     ({ name, text, named }) => {

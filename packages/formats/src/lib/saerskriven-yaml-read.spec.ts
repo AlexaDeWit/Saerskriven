@@ -358,18 +358,31 @@ describe('an element that states an accent', () => {
     expect(readingOf(accented)?.divergences).toEqual([]);
   });
 
-  it.each(['s5', 'strong', ''])(
-    'reads the key "%s" as no accent and reports it as narrowed, naming the element and the key',
-    (unknown) => {
-      const reading = readingOf(
-        accentOn(oneFlowInVersion2, 'Posts', JSON.stringify(unknown)),
-      );
-      expect(reading?.model.diagrams[0]?.elements[2]).not.toHaveProperty(
+  it.each([
+    ...['s5', 'strong', ''].map((unknown) => ({
+      unknown,
+      on: 'a flow',
+      text: accentOn(oneFlowInVersion2, 'Posts', JSON.stringify(unknown)),
+      at: 2,
+      id: 'element-3',
+    })),
+    {
+      unknown: 'q9',
+      on: 'a canvas note',
+      text: noteWithAccent.replace('accent: s1', 'accent: q9'),
+      at: 3,
+      id: 'element-4',
+    },
+  ])(
+    'reads the key "$unknown" on $on as no accent and reports it as narrowed, naming the element and the key',
+    ({ unknown, text, at, id }) => {
+      const reading = readingOf(text);
+      expect(reading?.model.diagrams[0]?.elements[at]).not.toHaveProperty(
         'accent',
       );
       expect(reading?.divergences).toEqual([
         {
-          subject: { kind: 'element', id: 'element-3' },
+          subject: { kind: 'element', id },
           detail: { code: 'accent-unknown', parameters: { accent: unknown } },
           reason: 'narrowed',
         },

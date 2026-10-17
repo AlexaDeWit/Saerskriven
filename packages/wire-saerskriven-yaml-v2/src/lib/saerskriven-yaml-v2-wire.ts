@@ -100,9 +100,7 @@ const trustBoundarySchema = elementBaseSchema.extend({
   shape: boundaryShapeSchema,
 });
 
-const textSchema = elementBaseSchema.extend({
-  position: pointSchema,
-  size: sizeSchema,
+const textSchema = nodeBaseSchema.extend({
   kind: z.literal('text'),
   text: z.string(),
 });

@@ -330,32 +330,22 @@ describe('an accented glyph', () => {
     ).toContain(`<rect class="${noteBar}" width="2" height="30">`);
   });
 
-  it("keeps an accented note's text where it draws it with no accent", () => {
-    const note = accentsLayout.nodes.find(
-      (candidate) => candidate.id === 'ac-note-strong',
-    );
-    if (note === undefined) {
-      throw new Error('The accents layout holds no strong note');
-    }
-    const { accent: _accent, ...plain } = note;
-    expect(fromText(drawn(note))).toBe(fromText(drawn(plain)));
-  });
-
   it('leaves a trust boundary and a flow unfilled, whatever their strength', () => {
     for (const id of ['ac-zone-strong', 'ac-edge-strong', 'ac-flow-strong']) {
       expect(accented(id)).not.toContain(tinted);
     }
   });
 
-  it('draws the name and the badge of an accented element as it draws them with no accent', () => {
-    const node = accentsLayout.nodes.find(
-      (candidate) => candidate.id === 'ac-badged',
-    );
-    if (node === undefined || node.kind === 'text') {
-      throw new Error('The accents layout holds no badged process');
+  it.each([
+    ['the name and the badge of an accented process', 'ac-badged', true],
+    ["a strong note's text", 'ac-note-strong', false],
+  ] as const)('draws %s as it draws them with no accent', (_, id, badged) => {
+    const node = accentsLayout.nodes.find((candidate) => candidate.id === id);
+    if (node === undefined) {
+      throw new Error(`No element ${id} in the accents layout`);
     }
     const { accent: _accent, ...plain } = node;
-    expect(node.badge).toBeDefined();
+    expect(node.badge !== undefined).toBe(badged);
     expect(fromText(drawn(node))).toBe(fromText(drawn(plain)));
   });
 });

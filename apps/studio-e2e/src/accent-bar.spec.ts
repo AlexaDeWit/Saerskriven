@@ -6,6 +6,7 @@ import {
   darkPalette,
   lightPalette,
   rgbColour,
+  type Colour,
 } from '@saerskriven/canvas';
 import { committedText } from '@saerskriven/model/fixtures';
 import { audit } from './accessibility.fixtures.js';
@@ -19,6 +20,7 @@ import {
   paintOf,
   reachesAt,
   screenBoxOf,
+  screenshotPixels,
   weightOf,
 } from './canvas.fixtures.js';
 import { commandChord, registeredChords } from './chords.fixtures.js';
@@ -93,6 +95,28 @@ const noteGroundOf = (note: Locator): Locator =>
 
 const noteTextOf = (note: Locator): Locator =>
   note.locator(`text.${canvasClassNames.note}`);
+
+const shows = async (
+  page: Page,
+  shot: Locator,
+  colour: Colour,
+): Promise<boolean> => {
+  const pixels = await screenshotPixels(
+    page,
+    await shot.screenshot({ scale: 'css' }),
+  );
+  const ink = [1, 3, 5].map((at) =>
+    Number.parseInt(colour.slice(at, at + 2), 16),
+  );
+  return pixels.data.some(
+    (_, at) =>
+      at % 4 === 0 &&
+      ink.every(
+        (channel, index) =>
+          Math.abs((pixels.data[at + index] ?? 0) - channel) <= 6,
+      ),
+  );
+};
 
 const selectAll = async (page: Page): Promise<void> => {
   await page.keyboard.press(
@@ -250,6 +274,22 @@ test('an accented note out of scope keeps its dotted frame in the outline ink, a
     await dashOf(outlineOf(nodeNamed(page, drawn.outOfScopeLightActor))),
   );
   await expect(noteBarOf(nodeNamed(page, drawn.outOfScopeNote))).toHaveCount(1);
+});
+
+test("an accented note's field lets its bar and tint show while its text is edited, and sets the text in a name's ink", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await openAccents(page);
+  await selectByKeyboard(page, drawn.strongNote);
+  await page.keyboard.press('Enter');
+  const field = page.getByRole('textbox', { name: 'Note text' });
+  await expect(field).toBeFocused();
+
+  await expect(field).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(field).toHaveCSS('color', rgbColour(darkPalette.textPrimary));
+  expect(await shows(page, field, darkPalette.slot3)).toBe(true);
+  expect(await shows(page, field, darkPalette.slot3Tint)).toBe(true);
 });
 
 test('the swatches follow the tools in the tab order while a selection holds, each showing its focus, and Enter applies one', async ({

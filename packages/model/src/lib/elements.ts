@@ -94,9 +94,7 @@ export const storeSchema = nodeBaseSchema.extend({
 export type Store = z.infer<typeof storeSchema>;
 
 /** Canvas note with separate content and outline name. */
-export const textSchema = elementBaseSchema.extend({
-  position: pointSchema,
-  size: sizeSchema,
+export const textSchema = nodeBaseSchema.extend({
   kind: z.literal('text'),
   text: acceptedTextSchema,
 });
