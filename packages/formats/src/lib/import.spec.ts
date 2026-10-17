@@ -11,6 +11,7 @@ import { divergenceDetailText } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { importModel, readOrImport } from './import.js';
 import {
+  imported,
   importCorpus,
   importTexts,
   otmFeatureComplete,
@@ -26,27 +27,27 @@ import { unusedConstructs } from './wire-coverage.fixtures.js';
 it.each(['otm', 'tmbom'] as const)(
   'imports the upstream %s graph into a native file in JSON or YAML syntax',
   (format) => {
-    const imported = Either.getOrThrowWith(
+    const converted = Either.getOrThrowWith(
       importModel(importTexts[format]),
       (failure) => new Error(JSON.stringify(failure)),
     );
     const yaml = stringify(JSON.parse(importTexts[format]) as unknown);
-    expect(Either.getOrThrow(importModel(yaml))).toEqual(imported);
-    expect(imported.format).toBe(format);
+    expect(Either.getOrThrow(importModel(yaml))).toEqual(converted);
+    expect(converted.format).toBe(format);
     expect(
-      drawnElements(imported.model, imported.model.diagrams[0]).filter(
+      drawnElements(converted.model, converted.model.diagrams[0]).filter(
         (element) => element.kind === 'flow',
       ),
     ).toHaveLength(format === 'otm' ? 2 : 9);
-    expect(imported.model.threats).toHaveLength(format === 'otm' ? 2 : 27);
-    expect(imported.model.mitigations.length).toBeGreaterThan(0);
-    expect(imported).not.toHaveProperty('source');
-    const written = saerskrivenYamlCodec.write(imported.model);
+    expect(converted.model.threats).toHaveLength(format === 'otm' ? 2 : 27);
+    expect(converted.model.mitigations.length).toBeGreaterThan(0);
+    expect(converted).not.toHaveProperty('source');
+    const written = saerskrivenYamlCodec.write(converted.model);
     expect(written.divergences).toEqual([]);
     expect(
       Either.getOrThrow(saerskrivenYamlCodec.read(written.output)).model,
-    ).toEqual(imported.model);
-    expect(imported.divergences).toEqual(
+    ).toEqual(converted.model);
+    expect(converted.divergences).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ reason: 'unrepresentable' }),
       ]),
@@ -582,12 +583,6 @@ const refusalDetails = (text: string) =>
       readFailureIssues(failure).map((issue) => issue.detail),
     onRight: () => [],
   });
-
-const imported = (document: unknown) =>
-  Either.getOrThrowWith(
-    importModel(JSON.stringify(document)),
-    (failure) => new Error(JSON.stringify(failure)),
-  );
 
 const namesIn = (model: Model): ReadonlyMap<string, string> =>
   new Map<string, string>([

@@ -1,6 +1,7 @@
 import {
   boundedParse,
   parseDrawnModel,
+  parseModel,
   schemaFailureIssues,
   type Model,
   type ParseIssue,
@@ -122,6 +123,20 @@ export function modelFrom(
   scope: RelationshipScope,
 ): Either.Either<Model, ReadFailure> {
   return Either.mapLeft(parseDrawnModel(input, scope), (failure) =>
+    ReadFailure.InvalidModel({ issues: failure.issues }),
+  );
+}
+
+/**
+ * A mapped model input that holds each element once at its root and its
+ * placements on the diagrams, through `parseModel`, refused as
+ * `InvalidModel`. Such an input can place one element on several diagrams,
+ * so its relationship lists resolve anywhere in the model.
+ */
+export function placedModelFrom(
+  input: unknown,
+): Either.Either<Model, ReadFailure> {
+  return Either.mapLeft(parseModel(input), (failure) =>
     ReadFailure.InvalidModel({ issues: failure.issues }),
   );
 }

@@ -211,11 +211,22 @@ canvas can address.
 
 Open reads a file stamped `otmVersion: 0.2.0`. All components become process
 nodes because OTM component types do not define a DFD vocabulary. Their
-original types remain in their descriptions. All graph records enter one
-diagram, using geometry from the first declared diagram representation
-where available. Missing geometry receives a deterministic layout. Additional
-representations, code references, and drawing attributes are reported as
-omissions. Invalid geometry produces a model failure.
+original types remain in their descriptions. Each diagram representation
+becomes a diagram under its name. A file that declares none gives one diagram
+under the project's name.
+
+A component or trust zone stands on each diagram it has an entry for, at that
+entry's geometry, as one element with one set of threats
+([shared elements](saerskriven-yaml.md#shared-elements)). A second entry for
+the same diagram is reported as an omission, and an entry's own id is not
+kept. One with no entry stands on the first diagram. A dataflow stands on each
+diagram that holds either of its ends. An end whose component is not on that
+diagram is [drawn away](#flows) from it, beside the end that is: left of it
+for a source, right of it for a target. Missing geometry receives a
+deterministic layout. Code references and drawing attributes are reported as
+omissions. Invalid geometry produces a model failure. A model with an element,
+a dataflow included, on more than one diagram saves as
+[version 3](saerskriven-yaml.md#which-version-a-save-writes).
 
 Trust zones become drawn boxes. Parent relationships and numeric trust
 ratings do not enter the core. A bidirectional dataflow becomes one

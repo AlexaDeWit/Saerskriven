@@ -3,13 +3,13 @@
 Zod schemas and inferred types for the threat model core: ids, geometry,
 elements, their placements on diagrams, threats, mitigations, assumptions, and
 model metadata. `parseModel` is the parse boundary every `Model` value comes
-through: the native read calls it, and so does `parseDrawnModel`, the entry
-point of the Threat Dragon, OTM and TM-BOM reads. `emptyModel` is the one
-model the package parses for you, where a model that has not been drawn
-starts. Fallible exports return Effect's `Either` with a package-owned tagged
-failure, and an infallible operation returns its result bare, on the terms
-[`CODING.md`](../../CODING.md#error-handling) sets. Each export's TSDoc states
-its behaviour.
+through: the native read and the OTM import call it, and so does
+`parseDrawnModel`, the entry point of the Threat Dragon and TM-BOM reads.
+`emptyModel` is the one model the package parses for you, where a model that
+has not been drawn starts. Fallible exports return Effect's `Either` with a
+package-owned tagged failure, and an infallible operation returns its result
+bare, on the terms [`CODING.md`](../../CODING.md#error-handling) sets. Each
+export's TSDoc states its behaviour.
 
 ## Elements and placements
 
@@ -34,7 +34,9 @@ elements anywhere in the model, and a reader of one diagram shows the members
 that diagram places. `parseModel` and `parseDrawnModel` take a
 `RelationshipScope`: `model`, or `diagram`, which keeps each list inside the
 diagram drawing its element. Each format's read names the scope it keeps, so a
-version 1 or 2 file and an import read as they did.
+version 1 or 2 file, a Threat Dragon file and a TM-BOM import read as they
+did, and the OTM import, which can place one element on several diagrams,
+takes `model`.
 
 A reader of a diagram takes its elements as it draws them: `drawnElements`
 gives a diagram's elements in draw order, each a `DrawnElement`, the

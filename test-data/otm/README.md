@@ -10,3 +10,7 @@ The repository formatter controls whitespace. The example contains
 `dataflows[].representations` and a representation's `package` field, which
 neither the upstream schema nor its format tables declare. The wire schema
 omits them and the import reports them as undeclared.
+
+`multi-diagram.json` is this project's own, written by hand
+([`test-data/README.md`](../README.md#otmmulti-diagramjson)), and the licence
+above does not cover it.

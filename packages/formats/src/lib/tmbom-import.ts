@@ -1,9 +1,13 @@
 import type { TmbomDocument } from '@saerskriven/wire-tmbom';
+import { modelFrom } from './codec.js';
 import { importContext } from './import-model.js';
 import { tmbomGraph } from './tmbom-graph.js';
 import { tmbomRegister } from './tmbom-register.js';
 
-/** Converts a TM-BOM graph and register into one native model. */
+/**
+ * Converts a TM-BOM graph and register into one native model. `model`
+ * parses the conversion once `context` holds no failure and no issue.
+ */
 export function mapTmbom(document: TmbomDocument) {
   const context = importContext();
   context.fields(document, [
@@ -27,24 +31,22 @@ export function mapTmbom(document: TmbomDocument) {
     context,
   );
   context.omitted(document);
-  return {
-    context,
-    input: {
-      metadata: {
-        title: scope.title,
-        owner: '',
-        contributors: [],
-        description: context.text([
-          scope.description,
-          document.description ?? '',
-          ...descriptionLines,
-        ]),
-      },
-      diagrams: [{ id: 'tmbom-diagram', title: scope.title, elements }],
-      threats,
-      mitigations,
-      assumptions,
-      lastIssuedThreatNumber: threats.length,
+  const input = {
+    metadata: {
+      title: scope.title,
+      owner: '',
+      contributors: [],
+      description: context.text([
+        scope.description,
+        document.description ?? '',
+        ...descriptionLines,
+      ]),
     },
+    diagrams: [{ id: 'tmbom-diagram', title: scope.title, elements }],
+    threats,
+    mitigations,
+    assumptions,
+    lastIssuedThreatNumber: threats.length,
   };
+  return { context, model: () => modelFrom(input, 'diagram') };
 }

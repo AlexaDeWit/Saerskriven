@@ -1,9 +1,14 @@
 import type { OtmDocument } from '@saerskriven/wire-otm';
+import { placedModelFrom } from './codec.js';
 import { importContext } from './import-model.js';
 import { otmGraph } from './otm-graph.js';
 import { otmRegister } from './otm-register.js';
 
-/** Converts OTM into a native diagram and separate threat occurrences. */
+/**
+ * Converts OTM into a native model, a diagram for each diagram
+ * representation and a threat for each occurrence. `model` parses the
+ * conversion once `context` holds no failure and no issue.
+ */
 export function mapOtm(document: OtmDocument) {
   const context = importContext();
   context.fields(document, [
@@ -29,29 +34,22 @@ export function mapOtm(document: OtmDocument) {
     context,
   );
   context.omitted(document);
-  return {
-    context,
-    input: {
-      metadata: {
-        title: project.name,
-        owner: project.owner ?? '',
-        description: context.text([
-          project.description ?? '',
-          ...descriptionLines,
-        ]),
-        contributors: [],
-      },
-      diagrams: [
-        {
-          id: context.id('otm-diagram', project.id),
-          title: graph.title,
-          elements: graph.elements,
-        },
-      ],
-      threats,
-      mitigations,
-      assumptions: [],
-      lastIssuedThreatNumber: threats.length,
+  const input = {
+    metadata: {
+      title: project.name,
+      owner: project.owner ?? '',
+      description: context.text([
+        project.description ?? '',
+        ...descriptionLines,
+      ]),
+      contributors: [],
     },
+    elements: graph.elements,
+    diagrams: graph.diagrams,
+    threats,
+    mitigations,
+    assumptions: [],
+    lastIssuedThreatNumber: threats.length,
   };
+  return { context, model: () => placedModelFrom(input) };
 }

@@ -1,0 +1,160 @@
+{
+  "otmVersion": "0.2.0",
+  "project": {
+    "name": "Card payments",
+    "id": "card-payments"
+  },
+  "representations": [
+    {
+      "name": "Overview",
+      "id": "overview",
+      "type": "diagram"
+    },
+    {
+      "name": "Payments",
+      "id": "payments",
+      "type": "diagram"
+    },
+    {
+      "name": "Shop code",
+      "id": "shop-code",
+      "type": "code"
+    }
+  ],
+  "trustZones": [
+    {
+      "id": "internet",
+      "name": "Internet",
+      "risk": { "trustRating": 10 },
+      "representations": [
+        {
+          "representation": "overview",
+          "id": "internet-overview",
+          "position": { "x": 0, "y": 0 },
+          "size": { "width": 320, "height": 320 }
+        },
+        {
+          "representation": "payments",
+          "id": "internet-payments",
+          "position": { "x": 0, "y": 100 },
+          "size": { "width": 320, "height": 280 }
+        }
+      ]
+    },
+    {
+      "id": "cloud",
+      "name": "Cloud",
+      "risk": { "trustRating": 80 },
+      "representations": [
+        {
+          "representation": "overview",
+          "id": "cloud-overview",
+          "position": { "x": 400, "y": 0 },
+          "size": { "width": 640, "height": 480 }
+        }
+      ]
+    }
+  ],
+  "components": [
+    {
+      "name": "Web shop",
+      "id": "web-shop",
+      "type": "web-client",
+      "parent": { "trustZone": "internet" },
+      "representations": [
+        {
+          "representation": "overview",
+          "id": "web-shop-overview",
+          "position": { "x": 80, "y": 80 },
+          "size": { "width": 160, "height": 80 }
+        },
+        {
+          "representation": "payments",
+          "id": "web-shop-payments",
+          "position": { "x": 60, "y": 200 },
+          "size": { "width": 200, "height": 100 }
+        },
+        {
+          "representation": "shop-code",
+          "id": "web-shop-code",
+          "file": "web/src/checkout.ts",
+          "line": 10
+        },
+        {
+          "representation": "overview",
+          "id": "web-shop-overview-again",
+          "position": { "x": 900, "y": 900 },
+          "size": { "width": 160, "height": 80 }
+        }
+      ],
+      "threats": [{ "threat": "card-skimming", "state": "exposed" }]
+    },
+    {
+      "name": "Order service",
+      "id": "order-service",
+      "type": "web-service",
+      "parent": { "trustZone": "cloud" },
+      "representations": [
+        {
+          "representation": "overview",
+          "id": "order-service-overview",
+          "position": { "x": 480, "y": 80 },
+          "size": { "width": 160, "height": 80 }
+        }
+      ]
+    },
+    {
+      "name": "Payment gateway",
+      "id": "payment-gateway",
+      "type": "payment-service",
+      "parent": { "trustZone": "cloud" },
+      "representations": [
+        {
+          "representation": "payments",
+          "id": "payment-gateway-payments",
+          "position": { "x": 480, "y": 200 },
+          "size": { "width": 200, "height": 100 }
+        }
+      ]
+    },
+    {
+      "name": "Audit log",
+      "id": "audit-log",
+      "type": "log-store",
+      "parent": { "trustZone": "cloud" }
+    }
+  ],
+  "dataflows": [
+    {
+      "name": "Checkout",
+      "id": "checkout",
+      "source": "web-shop",
+      "destination": "order-service"
+    },
+    {
+      "name": "Payment confirmed",
+      "id": "payment-confirmed",
+      "source": "payment-gateway",
+      "destination": "web-shop"
+    },
+    {
+      "name": "Settle order",
+      "id": "settle-order",
+      "source": "order-service",
+      "destination": "payment-gateway"
+    },
+    {
+      "name": "Audit order",
+      "id": "audit-order",
+      "source": "order-service",
+      "destination": "audit-log"
+    }
+  ],
+  "threats": [
+    {
+      "name": "Card details skimmed",
+      "id": "card-skimming",
+      "risk": { "likelihood": 40, "impact": 80 }
+    }
+  ]
+}

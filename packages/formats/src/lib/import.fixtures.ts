@@ -1,11 +1,13 @@
 import { committedText } from '@saerskriven/model/fixtures';
 import { otmWireSchema, type OtmDocument } from '@saerskriven/wire-otm';
 import { tmbomWireSchema, type TmbomDocument } from '@saerskriven/wire-tmbom';
+import { Either } from 'effect';
 import { vendoredTexts } from './corpus.fixtures.js';
+import { importModel } from './import.js';
 
 /**
- * Every OTM and TM-BOM document the repository vendors, named by its path
- * under `test-data`.
+ * Every OTM and TM-BOM document under `test-data`, vendored or written here,
+ * named by its path there.
  */
 export const importCorpus: readonly { name: string; text: string }[] =
   vendoredTexts(['otm', 'tmbom'], (name) => name.endsWith('.json'));
@@ -19,6 +21,21 @@ export const importTexts = {
 /** A fresh OTM example for tests that change source facts. */
 export const otmFixture = () =>
   otmWireSchema.parse(JSON.parse(importTexts.otm) as unknown);
+/** `document` imported as JSON text, throwing the failure where it is refused. */
+export const imported = (document: unknown) =>
+  Either.getOrThrowWith(
+    importModel(JSON.stringify(document)),
+    (failure) => new Error(JSON.stringify(failure)),
+  );
+
+/**
+ * A fresh copy of `otm/multi-diagram.json`, whose components and trust zones
+ * stand on two diagram representations, for tests that change source facts.
+ */
+export const otmMultiDiagramFixture = () =>
+  otmWireSchema.parse(
+    JSON.parse(committedText('otm/multi-diagram.json')) as unknown,
+  );
 /** A fresh TM-BOM example for tests that change source facts. */
 export const tmbomFixture = () =>
   tmbomWireSchema.parse(JSON.parse(importTexts.tmbom) as unknown);
