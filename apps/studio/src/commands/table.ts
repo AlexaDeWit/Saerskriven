@@ -7,6 +7,7 @@ import {
   duplicateSelected,
   pasteSelected,
 } from '../canvas/clipboard.js';
+import { openAddExisting } from '../canvas/add-existing.js';
 import { startFlow } from '../canvas/connecting.js';
 import {
   beginRenamingDiagram,
@@ -16,6 +17,7 @@ import {
 import {
   accentSelected,
   removeSelected,
+  removeSelectedFromModel,
   renameSelected,
   reverseSelectedFlow,
   selectAll,
@@ -410,6 +412,22 @@ export const commandTable = {
     shortcuts: [bare('Delete'), bare('Backspace')],
     when: 'commands.when-selection-exists-outside-fields',
     run: removeSelected,
+  }),
+  'delete-from-model': command({
+    id: 'delete-from-model',
+    label: 'commands.label-delete-from-model',
+    group: 'commands.group-edit',
+    shortcuts: [shift('Delete'), shift('Backspace')],
+    when: 'commands.when-selection-exists-outside-fields',
+    run: removeSelectedFromModel,
+  }),
+  'add-existing': command({
+    id: 'add-existing',
+    label: 'commands.label-add-existing',
+    group: 'commands.group-edit',
+    shortcuts: [bare('e')],
+    when: 'commands.when-outside-fields-and-menus',
+    run: openAddExisting,
   }),
   rename: command({
     id: 'rename',

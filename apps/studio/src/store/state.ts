@@ -182,7 +182,7 @@ const placeholderDocument = {
 
 /** The editable model shown before a file or recovery snapshot opens. */
 export const placeholderModel: Model = Either.getOrElse(
-  parseDrawnModel(placeholderDocument),
+  parseDrawnModel(placeholderDocument, 'diagram'),
   () => emptyModel,
 );
 

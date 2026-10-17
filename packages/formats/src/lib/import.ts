@@ -135,7 +135,7 @@ function convert(
   if (mapped.context.failure !== undefined) {
     return Either.left(mapped.context.failure);
   }
-  return Either.map(modelFrom(mapped.input), (model) => ({
+  return Either.map(modelFrom(mapped.input, 'diagram'), (model) => ({
     format,
     model,
     divergences: [...undeclared, ...mapped.context.divergences],

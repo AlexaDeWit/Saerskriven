@@ -49,8 +49,10 @@ export const drawnTextSchema = nodeBaseSchema.extend(textSchema.shape);
 export type DrawnText = z.infer<typeof drawnTextSchema>;
 
 /**
- * A flow end as one diagram draws it: attached to an element, where an absent
- * `side` leaves the side to the renderer, or free at a canvas position.
+ * A flow end as one diagram draws it: attached to an element the diagram
+ * places, where an absent `side` leaves the side to the renderer, free at a
+ * canvas position, or `away`, attached to an element the diagram does not
+ * place and drawn at a canvas position.
  */
 export const drawnFlowEndpointSchema = z.discriminatedUnion('kind', [
   z.object({
@@ -60,6 +62,11 @@ export const drawnFlowEndpointSchema = z.discriminatedUnion('kind', [
   }),
   z.object({
     kind: z.literal('free'),
+    position: pointSchema,
+  }),
+  z.object({
+    kind: z.literal('away'),
+    element: elementIdSchema,
     position: pointSchema,
   }),
 ]);

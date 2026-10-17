@@ -94,6 +94,9 @@ const openPlacements = {
   'threat-unplaceable': 'save-only',
   'threat-model-link-dropped': 'save-only',
   'threat-split-across-elements': 'save-only',
+  'element-split-across-diagrams': 'save-only',
+  'flow-end-drawn-away-freed': 'save-only',
+  'relationships-off-diagram-dropped': 'save-only',
   'threat-category-unnamed': 'save-only',
   'mitigation-records-merged': 'save-only',
   'mitigation-title-merged': 'save-only',
@@ -426,6 +429,19 @@ function lossDetail(t: Speaker, detail: ReportedDetail, held: Held): string {
       return t('divergence.threat-model-link-dropped');
     case 'threat-split-across-elements':
       return t('divergence.split-into-copies', detail.parameters);
+    case 'element-split-across-diagrams':
+      return t('divergence.element-split-across-diagrams', {
+        diagrams: detail.parameters.diagrams.join(', '),
+      });
+    case 'flow-end-drawn-away-freed':
+      return t('divergence.flow-end-drawn-away-freed', {
+        name: heldNameOrId(detail.parameters.element, held),
+      });
+    case 'relationships-off-diagram-dropped':
+      return t(
+        'divergence.relationships-off-diagram-dropped',
+        detail.parameters,
+      );
     case 'threat-category-unnamed':
       return t('divergence.threat-category-unnamed');
     case 'mitigation-records-merged':
@@ -506,11 +522,20 @@ function strayAttachment(
   if (kind === undefined) {
     return t('divergence.threat-attachment-stray-unknown');
   }
-  const id = elementIdSchema.safeParse(element);
-  const name = id.success ? (held.elements.get(id.data)?.name ?? '') : '';
+  const name = heldName(element, held);
   return isEmptyName(name)
     ? t(`divergence.threat-attachment-stray-${kind}`)
     : t(`divergence.threat-attachment-stray-${kind}-named`, { name });
+}
+
+function heldNameOrId(element: string, held: Held): string {
+  const name = heldName(element, held);
+  return isEmptyName(name) ? element : name;
+}
+
+function heldName(element: string, held: Held): string {
+  const id = elementIdSchema.safeParse(element);
+  return id.success ? (held.elements.get(id.data)?.name ?? '') : '';
 }
 
 function statusLabel(t: Speaker, status: string): string {

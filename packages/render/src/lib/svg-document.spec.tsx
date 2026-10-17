@@ -9,6 +9,7 @@ import {
 } from '@saerskriven/canvas';
 import type { Locale } from '@saerskriven/i18n';
 import {
+  drawnElements,
   type Diagram,
   type Element as DiagramElement,
   type Model,
@@ -534,6 +535,11 @@ describe.each([
     accented: diagramOf(entry).placements.some(
       (placement) => 'accent' in placement,
     ),
+    awayEnd: drawnElements(entry.model, diagramOf(entry)).some(
+      (element) =>
+        element.kind === 'flow' &&
+        [element.source, element.target].some((end) => end.kind === 'away'),
+    ),
   })),
   {
     name: 'text XML forbids',
@@ -543,6 +549,7 @@ describe.each([
       'en-CA',
     ),
     accented: false,
+    awayEnd: false,
   },
   {
     name: 'a note that holds the only accent',
@@ -552,8 +559,9 @@ describe.each([
       'en-CA',
     ),
     accented: true,
+    awayEnd: false,
   },
-])('$name as a document a reader can open', ({ drawn, accented }) => {
+])('$name as a document a reader can open', ({ drawn, accented, awayEnd }) => {
   const { svg } = drawn;
 
   it('parses as well-formed XML with one svg root in the SVG namespace', () => {
@@ -577,10 +585,10 @@ describe.each([
     ]);
   });
 
-  it('carries the stylesheet in a style element, verbatim, with the accent rules only where the diagram holds an accent', () => {
+  it('carries the stylesheet in a style element, verbatim, with the accent and away-end rules only where the diagram holds them', () => {
     const styles = [...documentOf(svg).getElementsByTagName('style')];
     expect(styles.map((style) => style.textContent)).toEqual([
-      renderCanvasStylesheet(defaultRenderTheme, accented),
+      renderCanvasStylesheet(defaultRenderTheme, { accent: accented, awayEnd }),
     ]);
     expect(svg.includes('saer-diagram-accent')).toBe(accented);
   });

@@ -22,7 +22,11 @@ Two codecs are registered:
   [`@saerskriven/wire-threat-dragon`](../wire-threat-dragon/README.md). The read
   is [`threat-dragon-read.ts`](src/lib/threat-dragon-read.ts) and the merge and
   its numbering rules are
-  [`threat-dragon-write.ts`](src/lib/threat-dragon-write.ts).
+  [`threat-dragon-write.ts`](src/lib/threat-dragon-write.ts). Threat Dragon
+  draws an element on one diagram, so an element on several is written as a
+  cell on each, under the ids `cellIdsOf`
+  ([`threat-dragon-placements.ts`](src/lib/threat-dragon-placements.ts))
+  gives, and reads back as one element per cell.
 - `saerskrivenYamlCodec`, the native format, declared by
   [`@saerskriven/wire-saerskriven-yaml-v3`](../wire-saerskriven-yaml-v3/README.md)
   for version 3,
@@ -164,6 +168,9 @@ beside it:
   [`test-data/saerskriven/feature-complete-v3.yaml`](../../test-data/saerskriven/feature-complete-v3.yaml),
   the same model in version 3. It is frozen: a later change to the writer
   never rewrites it.
+  [`test-data/saerskriven/shared-elements-v3.yaml`](../../test-data/saerskriven/shared-elements-v3.yaml)
+  holds what only version 3 can, an element on two diagrams and a flow end
+  drawn away from its element, and is frozen too.
 - OTM and TM-BOM: `otmFeatureComplete`, `tmbomFeatureComplete` and
   `tmbomScopeVariants` in [`import.fixtures.ts`](src/lib/import.fixtures.ts).
   A TM-BOM scope holds one value of each of its enums, so the variants carry

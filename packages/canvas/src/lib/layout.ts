@@ -2,6 +2,8 @@ import {
   accentField,
   decimalsOf,
   drawnElements,
+  elementsById,
+  flowEndName,
   storedNumber,
   type Accent,
   type Diagram,
@@ -9,11 +11,13 @@ import {
   type DrawnFlow,
   type DrawnFlowEndpoint,
   type DrawnTrustBoundary,
+  type Element,
   type ElementId,
   type Model,
   type Point,
   type Size,
 } from '@saerskriven/model';
+import type { AwayEnd } from './away-ends.js';
 import { badgesByElement, type ThreatBadge } from './badges.js';
 import { drawnBounds, type CanvasBounds } from './bounds.js';
 import {
@@ -55,7 +59,11 @@ export type CanvasBoundaryNode = Extract<
   { readonly kind: 'boundary-box' | 'boundary-curve' }
 >;
 
-/** A laid-out flow before its label is placed. */
+/**
+ * A laid-out flow before its label is placed. An end drawn away from an
+ * element the diagram does not place is drawn at its own point, as a free end
+ * is, and `sourceAway` or `targetAway` names the element it attaches to.
+ */
 export type CanvasEdgeGeometry = {
   readonly id: ElementId;
   readonly name: string;
@@ -72,6 +80,8 @@ export type CanvasEdgeGeometry = {
   readonly targetElement: ElementId | undefined;
   readonly waypoints: readonly Point[];
   readonly bidirectional: boolean;
+  readonly sourceAway?: AwayEnd;
+  readonly targetAway?: AwayEnd;
 };
 
 /**
@@ -119,8 +129,11 @@ export function layoutDiagram(diagram: Diagram, model: Model): CanvasLayout {
   const elements = drawnElements(model, diagram);
   const nodes = elements.flatMap((element) => nodesOf(element, badges));
   const boxes = nodeBoxesOf(nodes);
+  const everywhere = elementsById(model.elements);
   const placed = elements.flatMap((element) =>
-    element.kind === 'flow' ? [placeFlow(element, boxes, badges)] : [],
+    element.kind === 'flow'
+      ? [placeFlow(element, boxes, badges, everywhere)]
+      : [],
   );
   const ordered = settledCurveNames([
     ...nodes.filter((node) => isBoundary(node)),
@@ -256,6 +269,7 @@ function placeFlow(
   flow: DrawnFlow,
   boxes: ReadonlyMap<ElementId, NodeBox>,
   badges: ReadonlyMap<ElementId, ThreatBadge>,
+  everywhere: ReadonlyMap<ElementId, Element>,
 ): PlacedFlow {
   const source = resolveEndpoint(flow.source, boxes);
   const target = resolveEndpoint(flow.target, boxes);
@@ -292,16 +306,39 @@ function placeFlow(
       targetElement: anchors.target.element,
       waypoints: flow.waypoints,
       bidirectional: flow.bidirectional,
+      ...awayField('sourceAway', flow.source, everywhere),
+      ...awayField('targetAway', flow.target, everywhere),
     },
     unplaced,
   };
+}
+
+function awayField(
+  field: 'sourceAway' | 'targetAway',
+  endpoint: DrawnFlowEndpoint,
+  everywhere: ReadonlyMap<ElementId, Element>,
+): { readonly sourceAway?: AwayEnd; readonly targetAway?: AwayEnd } {
+  if (endpoint.kind !== 'away') {
+    return {};
+  }
+  const element = everywhere.get(endpoint.element);
+  const away = {
+    element: endpoint.element,
+    name: flowEndName(
+      element === undefined
+        ? { kind: 'missing', element: endpoint.element }
+        : { kind: 'element', element },
+      '',
+    ),
+  };
+  return field === 'sourceAway' ? { sourceAway: away } : { targetAway: away };
 }
 
 function resolveEndpoint(
   endpoint: DrawnFlowEndpoint,
   boxes: ReadonlyMap<ElementId, NodeBox>,
 ): ResolvedEndpoint {
-  if (endpoint.kind === 'free') {
+  if (endpoint.kind !== 'attached') {
     return { kind: 'free', point: endpoint.position };
   }
   const box = boxes.get(endpoint.element);

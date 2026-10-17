@@ -20,6 +20,7 @@ import type { DiagramId, ElementId } from './ids.js';
 import { reversed, sameItems } from './lists.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
+import { withPlacedEnds } from './placed-ends.js';
 
 /** The failures an edit of one flow's direction can produce. */
 export type FlowEditFailure = Extract<
@@ -31,6 +32,11 @@ export type FlowEditFailure = Extract<
 export type FlowRouteFailure =
   | UndrawnElementFailure
   | Extract<OperationFailure, { _tag: 'NotFlowElement' }>;
+
+/** The failures {@link setAwayEndPosition} can produce. */
+export type SetAwayEndPositionFailure =
+  | FlowRouteFailure
+  | Extract<OperationFailure, { _tag: 'FlowEndNotAway' }>;
 
 /** The failures {@link reconnectFlow} can produce. */
 export type ReconnectFlowFailure =
@@ -70,7 +76,9 @@ export function setFlowWaypoints(
  * actor, process or store the diagram `diagramId` names places, that the
  * flow's other end does not already attach to, so a flow never connects an
  * element to itself. The end is pinned to `anchor` on that diagram, and an
- * absent anchor releases its pinned side.
+ * absent anchor releases its pinned side. Which element the end reaches is
+ * the flow's on every diagram drawing it: on one that does not place the new
+ * element the end is drawn away, where it was drawn before.
  */
 export function reconnectFlow(
   model: Model,
@@ -103,7 +111,10 @@ export function reconnectFlow(
           previous.element === endpointId &&
           previous.side === anchor
           ? model
-          : withDrawn(model, diagramIndex, { ...flow, [side]: next }),
+          : withPlacedEnds(
+              model,
+              withDrawn(model, diagramIndex, { ...flow, [side]: next }),
+            ),
       );
     },
   );
@@ -111,9 +122,12 @@ export function reconnectFlow(
 
 /**
  * Frees one end of a flow at a canvas position on the diagram `diagramId`
- * names, or moves an end already free, storing the position at `decimals`
- * and preserving the model for an end already free there, as given or as it
- * would be stored. The other end may be free too, as `addElement` accepts.
+ * names, or moves an end already free there, storing the position at
+ * `decimals` and preserving the model for a free end already at it, as given
+ * or as it would be stored. An end attached to an element, placed on that
+ * diagram or drawn away from it, is freed on every diagram drawing the flow,
+ * each keeping the point it was drawn at. The other end may be free too, as
+ * `addElement` accepts.
  */
 export function setFlowEndPosition(
   model: Model,
@@ -128,13 +142,64 @@ export function setFlowEndPosition(
     ({ diagramIndex, drawn: flow }) => {
       const held = flow[side];
       const stored = storedPoint(position, decimals);
-      return held.kind === 'free' &&
-        (samePoint(held.position, position) || samePoint(held.position, stored))
+      if (held.kind !== 'free') {
+        return withPlacedEnds(
+          model,
+          withDrawn(model, diagramIndex, {
+            ...flow,
+            [side]: { kind: 'free', position: stored },
+          }),
+          decimals,
+        );
+      }
+      return samePoint(held.position, position) ||
+        samePoint(held.position, stored)
         ? model
         : withDrawn(model, diagramIndex, {
             ...flow,
             [side]: { kind: 'free', position: stored },
           });
+    },
+  );
+}
+
+/**
+ * Moves one end of a flow drawn away from its element on the diagram
+ * `diagramId` names to a canvas position there, stored at `decimals`, and
+ * keeps it attached to that element. Preserves the model for an end already
+ * at the position, as given or as it would be stored. Refuses an end that
+ * diagram does not draw away with `FlowEndNotAway`.
+ */
+export function setAwayEndPosition(
+  model: Model,
+  diagramId: DiagramId,
+  elementId: ElementId,
+  side: 'source' | 'target',
+  position: Point,
+  decimals?: Decimals,
+): Either.Either<Model, SetAwayEndPositionFailure> {
+  return Either.flatMap(
+    locatedFlow(model, diagramId, elementId),
+    ({
+      diagramIndex,
+      drawn: flow,
+    }): Either.Either<Model, SetAwayEndPositionFailure> => {
+      const held = flow[side];
+      if (held.kind !== 'away') {
+        return Either.left(
+          OperationFailure.FlowEndNotAway({ elementId, diagramId, side }),
+        );
+      }
+      const stored = storedPoint(position, decimals);
+      return Either.right(
+        samePoint(held.position, position) || samePoint(held.position, stored)
+          ? model
+          : withPlacement(
+              model,
+              diagramIndex,
+              placementOf({ ...flow, [side]: { ...held, position: stored } }),
+            ),
+      );
     },
   );
 }
@@ -236,7 +301,7 @@ function reversedFlow(flow: DrawnFlow): DrawnFlow {
 export function attachedEndpoint(
   element: ElementId,
   side: Side | undefined,
-): DrawnFlowEndpoint {
+): Extract<DrawnFlowEndpoint, { readonly kind: 'attached' }> {
   return side === undefined
     ? { kind: 'attached', element }
     : { kind: 'attached', element, side };
@@ -246,12 +311,18 @@ function sameEndpoint(
   left: DrawnFlowEndpoint,
   right: DrawnFlowEndpoint,
 ): boolean {
-  if (left.kind === 'free' || right.kind === 'free') {
+  if (left.kind === 'attached' || right.kind === 'attached') {
     return (
-      left.kind === 'free' &&
-      right.kind === 'free' &&
-      samePoint(left.position, right.position)
+      left.kind === 'attached' &&
+      right.kind === 'attached' &&
+      left.element === right.element &&
+      left.side === right.side
     );
   }
-  return left.element === right.element && left.side === right.side;
+  return (
+    left.kind === right.kind &&
+    samePoint(left.position, right.position) &&
+    (left.kind === 'free' ||
+      (right.kind === 'away' && left.element === right.element))
+  );
 }

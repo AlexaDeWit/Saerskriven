@@ -22,6 +22,7 @@ import { describeOperation } from '../ui/failure-notice.js';
 import { announce } from './announcements.js';
 import { commandDecimals } from './stored-decimals.js';
 import {
+  deletedFromModel,
   focusCanvas,
   focusElement,
   removalCascade,
@@ -66,7 +67,10 @@ export async function copySelected(cut = false): Promise<void> {
     modelStore.getState().present === state.present &&
     sameSelection(modelStore.getState().selection, state.selection)
   ) {
-    const removed = removalCascade(state.present, state.selection).threats;
+    const removed = removalCascade(
+      state.present,
+      deletedFromModel(state),
+    ).threats;
     removeSelected();
     announce((t) =>
       sentences(

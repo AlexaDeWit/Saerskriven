@@ -1,5 +1,6 @@
 import { useRef, type RefObject } from 'react';
 import { AccentBar } from '../canvas/accent-bar.js';
+import { AddExistingPicker } from '../canvas/add-existing-picker.js';
 import { CanvasAnnouncement } from '../canvas/canvas-announcement.js';
 import { FlowTargetChooser } from '../canvas/flow-target-chooser.js';
 import { Toolbox } from '../canvas/toolbox.js';
@@ -50,6 +51,7 @@ export function StudioChrome({
         <div className={styles.reports} ref={reports}>
           <FileReports session={session} />
           <FlowTargetChooser />
+          <AddExistingPicker />
         </div>
         <CanvasAnnouncement />
       </div>

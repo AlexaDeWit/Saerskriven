@@ -4,6 +4,7 @@ import {
   schemaFailureIssues,
   type Model,
   type ParseIssue,
+  type RelationshipScope,
   type SchemaParser,
 } from '@saerskriven/model';
 import { Data, Either } from 'effect';
@@ -113,10 +114,14 @@ export function parseWire<Wire>(
 
 /**
  * A mapped model input whose diagrams own their elements through
- * `parseDrawnModel`, refused as `InvalidModel`.
+ * `parseDrawnModel`, its relationship lists resolving within `scope`, refused
+ * as `InvalidModel`.
  */
-export function modelFrom(input: unknown): Either.Either<Model, ReadFailure> {
-  return Either.mapLeft(parseDrawnModel(input), (failure) =>
+export function modelFrom(
+  input: unknown,
+  scope: RelationshipScope,
+): Either.Either<Model, ReadFailure> {
+  return Either.mapLeft(parseDrawnModel(input, scope), (failure) =>
     ReadFailure.InvalidModel({ issues: failure.issues }),
   );
 }

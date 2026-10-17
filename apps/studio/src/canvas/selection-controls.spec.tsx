@@ -7,7 +7,15 @@ import {
   within,
 } from '@testing-library/react';
 import type { Point } from '@saerskriven/model';
-import { drawnAt, elementIn, redrawn } from '@saerskriven/model/fixtures';
+import {
+  diagramId,
+  drawnAt,
+  drawnOn,
+  elementId as parsedElementId,
+  elementIn,
+  redrawn,
+  sharedModel,
+} from '@saerskriven/model/fixtures';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -425,6 +433,53 @@ describe('SelectionControls', () => {
       },
     );
     expect(modelStore.getState().past).toEqual([canvasModel]);
+  });
+
+  describe('on an end drawn away from an element of another diagram', () => {
+    const charge = parsedElementId('charge');
+    const onOverview = (): void => {
+      modelStore.setState(
+        {
+          ...initialState(sharedModel),
+          activeDiagram: diagramId('overview'),
+          selection: [charge],
+        },
+        true,
+      );
+    };
+
+    it('starts on that element, worded as on another diagram, and moves the end keeping it', () => {
+      onOverview();
+      opened('reconnect-target');
+      const targets = screen.getByRole<HTMLSelectElement>('combobox', {
+        name: 'Target',
+      });
+      expect(targets.value).toBe('card-vault');
+      expect(
+        screen.getByRole('option', { name: 'Card vault on another diagram' }),
+      ).toBeDefined();
+      fireEvent.change(screen.getByRole('spinbutton', { name: 'X' }), {
+        target: { value: '700' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Apply endpoint' }));
+      expect(
+        drawnOn(modelStore.getState().present, 'overview', 'charge'),
+      ).toMatchObject({
+        target: { kind: 'away', element: 'card-vault', position: { x: 700 } },
+      });
+    });
+
+    it('frees the end on Free point', () => {
+      onOverview();
+      opened('reconnect-target');
+      fireEvent.change(screen.getByRole('combobox', { name: 'Target' }), {
+        target: { value: '' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Apply endpoint' }));
+      expect(
+        drawnOn(modelStore.getState().present, 'overview', 'charge'),
+      ).toMatchObject({ target: { kind: 'free' } });
+    });
   });
 
   it('stores a typed free end at six decimals at the most', () => {

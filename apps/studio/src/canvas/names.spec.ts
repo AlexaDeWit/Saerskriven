@@ -1,5 +1,6 @@
 import { layoutDiagram, type CanvasLayout } from '@saerskriven/canvas';
 import type { Model } from '@saerskriven/model';
+import { diagramId, sharedModel } from '@saerskriven/model/fixtures';
 import {
   canvasModel,
   flaggedCanvasModel,
@@ -147,6 +148,29 @@ describe('accessibleNames', () => {
 
   it('names every element the layout draws', () => {
     expect(names.size).toBe(layout.nodes.length + layout.edges.length);
+  });
+});
+
+describe('the name of an element on more than one diagram', () => {
+  const overview = diagramId('overview');
+  const shared = layoutDiagram(sharedModel.diagrams[0], sharedModel);
+  const named = (locale: Parameters<typeof inLocale>[0], id: string) =>
+    accessibleNames(shared, sharedModel, inLocale(locale), overview).get(id);
+
+  it.each([
+    ['en-CA', 'also on Payments'],
+    ['fr-CA', 'aussi sur Payments'],
+    ['sv', 'även i Payments'],
+  ] as const)('ends by naming its other diagrams in %s', (locale, words) => {
+    expect(named(locale, 'payments-api')?.endsWith(`, ${words}`)).toBe(true);
+    expect(named(locale, 'charge')?.endsWith(`, ${words}`)).toBe(true);
+  });
+
+  it('says nothing of other diagrams for an element on one, or with no diagram named', () => {
+    expect(named('en-CA', 'customer')).toBe('Customer, actor');
+    expect(
+      accessibleNames(shared, sharedModel, t).get('payments-api'),
+    ).not.toContain('also on');
   });
 });
 

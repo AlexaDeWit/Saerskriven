@@ -1,10 +1,13 @@
 import {
   diagramsOf,
-  drawnElements,
+  elementIdsIn,
+  firstDrawings,
+  type Diagram,
   type Element,
   type ElementDetailsChange,
   type ElementId,
   type ElementProperties,
+  type Model,
 } from '@saerskriven/model';
 import { Collapsible } from 'radix-ui';
 import { useEffect, useState } from 'react';
@@ -15,7 +18,9 @@ import {
 } from '../canvas/announcements.js';
 import { useTranslator } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
-import { elementsAndDiagrams } from '../store/selectors.js';
+import type { StudioTranslator } from '../messages/catalogues.js';
+import { diagramTitle } from '../messages/diagram-title.js';
+import { activeDiagram, elementsAndDiagrams } from '../store/selectors.js';
 import { dispatch, useModelStore } from '../store/store.js';
 import type { RefusedDraft } from '../ui/text-field.js';
 import {
@@ -55,6 +60,7 @@ export function ElementPropertiesEditor({
 }) {
   const { t } = useTranslator();
   const model = useModelStore(useShallow(elementsAndDiagrams));
+  const onScreen = useModelStore(activeDiagram);
   const [diagram] = diagramsOf(model, elementId);
   const element = model.elements.find(
     (candidate) => candidate.id === elementId,
@@ -136,7 +142,8 @@ export function ElementPropertiesEditor({
             {hasOpened && (
               <PropertyFields
                 element={element}
-                elements={drawnElements(model, diagram)}
+                elements={model.elements}
+                elsewhere={elsewhereOf(model, onScreen, t)}
                 commit={commit}
                 refused={refused}
                 drafts={current}
@@ -146,6 +153,23 @@ export function ElementPropertiesEditor({
         </Collapsible.Root>
       )}
     </>
+  );
+}
+
+function elsewhereOf(
+  model: Pick<Model, 'elements' | 'diagrams'>,
+  onScreen: Diagram | undefined,
+  t: StudioTranslator['t'],
+): ReadonlyMap<ElementId, string> {
+  const here =
+    onScreen === undefined ? new Set<string>() : elementIdsIn(onScreen);
+  return new Map(
+    firstDrawings(model)
+      .filter(({ element }) => !here.has(element.id))
+      .map(({ element, diagram }) => [
+        element.id,
+        diagramTitle(diagram.title, t),
+      ]),
   );
 }
 
@@ -179,12 +203,14 @@ function propertyValue(
 function PropertyFields({
   element,
   elements,
+  elsewhere,
   commit,
   refused,
   drafts,
 }: {
   readonly element: Exclude<Element, { kind: 'text' }>;
   readonly elements: readonly Element[];
+  readonly elsewhere: ReadonlyMap<ElementId, string>;
   readonly commit: (properties: ElementProperties) => void;
   readonly refused: (
     field: string,
@@ -316,6 +342,7 @@ function PropertyFields({
             (candidate) => candidate.kind === 'trust-boundary',
           )}
           elements={elements}
+          elsewhere={elsewhere}
           onCommit={(value) => {
             commit({ kind: 'flow', trustBoundaryIds: value });
           }}
@@ -330,6 +357,7 @@ function PropertyFields({
         value={element.containedElements}
         choices={elements.filter((candidate) => candidate.id !== element.id)}
         elements={elements}
+        elsewhere={elsewhere}
         onCommit={(value) => {
           commit({ kind: 'trust-boundary', containedElements: value });
         }}
@@ -339,6 +367,7 @@ function PropertyFields({
         value={element.crossingFlows}
         choices={elements.filter((candidate) => candidate.kind === 'flow')}
         elements={elements}
+        elsewhere={elsewhere}
         onCommit={(value) => {
           commit({ kind: 'trust-boundary', crossingFlows: value });
         }}

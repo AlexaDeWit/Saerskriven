@@ -1,6 +1,6 @@
 import {
-  drawnElements,
   elementsById,
+  firstDrawings,
   flowEnds,
   generateThreatId,
   isEmptyName,
@@ -23,7 +23,11 @@ import {
 } from '../messages/enum-labels.js';
 import { sentences, type Said } from '../messages/said.js';
 import { Action } from '../store/actions.js';
-import { selectedElement, selectedElementRecord } from '../store/selectors.js';
+import {
+  elementById,
+  selectedElement,
+  selectedElementRecord,
+} from '../store/selectors.js';
 import type { State } from '../store/state.js';
 import { distinctTexts, optionName } from './distinct-labels.js';
 import type { Choice } from './pick-existing.js';
@@ -45,7 +49,9 @@ export function panelSubject(state: State): PanelSubject | undefined {
   if (selected.length > 1) {
     return { kind: 'several', count: selected.length };
   }
-  const element = selectedElementRecord(state);
+  const drawn = selectedElementRecord(state);
+  const element =
+    drawn === undefined ? undefined : elementById(state, drawn.id);
   return element === undefined ? undefined : { kind: 'element', element };
 }
 
@@ -173,23 +179,23 @@ export function attachableThreats(
   }));
 }
 
-/** Offers unattached elements with the title of the diagram that draws each one. */
+/**
+ * Offers unattached elements once each, with the title of the first diagram
+ * that draws it.
+ */
 export function attachableElements(
   model: Pick<Model, 'elements' | 'diagrams'>,
   threat: Threat,
   t: StudioTranslator['t'],
 ): readonly Choice<ElementId>[] {
+  const elements = elementsById(model.elements);
   return distinctTexts(
-    model.diagrams.flatMap((diagram) => {
-      const drawn = drawnElements(model, diagram);
-      const elements = elementsById(drawn);
-      return drawn
-        .filter((element) => !threat.elements.includes(element.id))
-        .map((element) => ({
-          ...labelledElement(element, elements, t),
-          detail: diagramTitle(diagram.title, t),
-        }));
-    }),
+    firstDrawings(model)
+      .filter(({ element }) => !threat.elements.includes(element.id))
+      .map(({ element, diagram }) => ({
+        ...labelledElement(element, elements, t),
+        detail: diagramTitle(diagram.title, t),
+      })),
   ).map(([{ id, detail }, text]) => ({ id, text: { ...text, detail } }));
 }
 
@@ -254,22 +260,19 @@ function attachedElements(
   threat: Threat,
   t: StudioTranslator['t'],
 ) {
-  return model.diagrams.flatMap((diagram) => {
-    const drawn = drawnElements(model, diagram);
-    const elements = elementsById(drawn);
-    return drawn
-      .filter((element) => threat.elements.includes(element.id))
-      .map((element) => {
-        const ends = unlabelledFlowEnds(element, elements, t);
-        return {
-          ...labelledElement(element, elements, t),
-          flowPhrase:
-            ends === undefined
-              ? undefined
-              : t('panel.unlabelled-flow-phrase', { ends }),
-        };
-      });
-  });
+  const elements = elementsById(model.elements);
+  return firstDrawings(model)
+    .filter(({ element }) => threat.elements.includes(element.id))
+    .map(({ element }) => {
+      const ends = unlabelledFlowEnds(element, elements, t);
+      return {
+        ...labelledElement(element, elements, t),
+        flowPhrase:
+          ends === undefined
+            ? undefined
+            : t('panel.unlabelled-flow-phrase', { ends }),
+      };
+    });
 }
 
 /** Flow labels stay stand-alone here, while Detach uses the shared flow phrase. */

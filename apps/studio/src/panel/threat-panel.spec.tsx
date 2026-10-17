@@ -1,4 +1,5 @@
 import {
+  elementOf,
   renameElement,
   type ElementId,
   type Severity,
@@ -47,7 +48,7 @@ import {
   threatsTab,
 } from '../ui/ui.fixtures.js';
 import {
-  elementIn,
+  heldElement,
   redrawn,
   softHyphen,
   threatId,
@@ -76,7 +77,10 @@ const showPanel = (
   render(
     <ThreatPanel
       {...panelProps({
-        subject: { kind: 'element', element: sampleElement(selection) },
+        subject: {
+          kind: 'element',
+          element: elementOf(sampleElement(selection)),
+        },
         ...overrides,
       })}
     />,
@@ -388,7 +392,7 @@ describe(
           {...panelProps({
             subject: {
               kind: 'element',
-              element: elementIn(unlabelled, requestFlow),
+              element: heldElement(unlabelled, requestFlow),
             },
           })}
         />,
@@ -400,12 +404,17 @@ describe(
     });
 
     it('heads an element called nothing by its kind, opening with a capital', () => {
-      const nameless = { ...sampleElement(processElement), name: '' };
+      const nameless = {
+        ...elementOf(sampleElement(processElement)),
+        name: '',
+      };
       modelStore.setState(
         {
           ...initialState(
             redrawn(sampleModel, (element) =>
-              element.id === processElement ? nameless : element,
+              element.id === processElement
+                ? { ...element, name: '' }
+                : element,
             ),
           ),
           selection: [processElement],
@@ -800,7 +809,10 @@ describe(
     it('shows Threats again when focus is asked for while Details shows', async () => {
       const user = userEvent.setup();
       const props = panelProps({
-        subject: { kind: 'element', element: sampleElement(actorElement) },
+        subject: {
+          kind: 'element',
+          element: elementOf(sampleElement(actorElement)),
+        },
       });
       dispatch(Action.Select({ elementIds: [actorElement] }));
       const { rerender } = render(<ThreatPanel {...props} />);
@@ -816,7 +828,10 @@ describe(
       const focused = vi.fn<() => void>();
       const props = panelProps({
         onFocused: focused,
-        subject: { kind: 'element', element: sampleElement(processElement) },
+        subject: {
+          kind: 'element',
+          element: elementOf(sampleElement(processElement)),
+        },
       });
       dispatch(Action.Select({ elementIds: [processElement] }));
       const { rerender } = render(<ThreatPanel {...props} />);

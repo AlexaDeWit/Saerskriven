@@ -21,7 +21,9 @@ export function showsReason(element: Element): boolean {
 }
 
 /** The accessible name of an element's description field, worded for its kind, with its name where it has one. */
-export function descriptionLabel(element: Element): Said {
+export function descriptionLabel(
+  element: Pick<Element, 'name' | 'kind'>,
+): Said {
   const { name, kind } = element;
   return (speak) =>
     isEmptyName(name)

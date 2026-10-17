@@ -26,9 +26,11 @@ const freePoint = '';
 /**
  * The form moving one end of the selected flow: to another element and side,
  * or free at a typed position, which is stored as typed up to
- * `mostTypedDecimals`. The position starts where the end is drawn: a free
- * end's own stored position, or an attached end's anchor, which is worked out
- * and so written at `commandDecimals`.
+ * `mostTypedDecimals`. An end drawn away from an element on another diagram
+ * starts on that element, worded as on another diagram, and moves to a typed
+ * position keeping it, where Free point frees it. The position starts
+ * where the end is drawn: its own stored position, or an attached end's
+ * anchor, which is worked out and so written at `commandDecimals`.
  */
 export function EndpointEditor({
   state,
@@ -47,21 +49,28 @@ export function EndpointEditor({
     (node) => other?.kind !== 'attached' || node.id !== other.element,
   );
   const previous = flow?.[side];
+  const away = previous?.kind === 'away' ? previous.element : undefined;
   const [target, setTarget] = useState<
     ElementId | typeof freePoint | undefined
   >(
-    previous?.kind === 'attached'
-      ? previous.element
-      : previous?.kind === 'free'
+    previous === undefined
+      ? options[0]?.id
+      : previous.kind === 'free'
         ? freePoint
-        : options[0]?.id,
+        : previous.element,
   );
   const [anchor, setAnchor] = useState<Side | undefined>(
     previous?.kind === 'attached' ? previous.side : undefined,
   );
   const edge = layout.edges.find((candidate) => candidate.id === flow?.id);
   const drawn = side === 'source' ? edge?.source : edge?.target;
-  const drawnAt = previous?.kind === 'free' ? undefined : commandDecimals;
+  const awayName = (side === 'source' ? edge?.sourceAway : edge?.targetAway)
+    ?.name;
+  const positioned = target === freePoint || target === away;
+  const drawnAt =
+    previous === undefined || previous.kind === 'attached'
+      ? commandDecimals
+      : undefined;
   const [position, setPosition] = useState({
     x: String(storedNumber(drawn?.x ?? 0, drawnAt)),
     y: String(storedNumber(drawn?.y ?? 0, drawnAt)),
@@ -75,7 +84,7 @@ export function EndpointEditor({
     if (flow === undefined || target === undefined || diagramId === undefined) {
       return;
     }
-    if (target === freePoint) {
+    if (positioned) {
       const at = pointSchema.safeParse({
         x: numeric(position.x),
         y: numeric(position.y),
@@ -85,18 +94,23 @@ export function EndpointEditor({
         announce((speak) => speak('canvas.position-invalid', coordinateRange));
         return;
       }
+      const placed = {
+        diagramId,
+        elementId: flow.id,
+        side,
+        position: at.data,
+        decimals: mostTypedDecimals,
+      };
       const moved = changedModel(
-        Action.SetFlowEndPosition({
-          diagramId,
-          elementId: flow.id,
-          side,
-          position: at.data,
-          decimals: mostTypedDecimals,
-        }),
+        target === freePoint
+          ? Action.SetFlowEndPosition(placed)
+          : Action.SetAwayEndPosition(placed),
       );
       close();
       if (moved) {
-        announce(freeEndSaid(flow, side));
+        announce(
+          freeEndSaid(flow, side, target === away || previous?.kind === 'free'),
+        );
       }
       return;
     }
@@ -133,11 +147,19 @@ export function EndpointEditor({
               setTarget(
                 event.target.value === freePoint
                   ? freePoint
-                  : options.find((node) => node.id === event.target.value)?.id,
+                  : event.target.value === away
+                    ? away
+                    : options.find((node) => node.id === event.target.value)
+                        ?.id,
               );
             }}
           >
             <option value={freePoint}>{t('tools.free-position')}</option>
+            {away === undefined ? null : (
+              <option value={away}>
+                {t('tools.away-end', { name: awayName ?? away })}
+              </option>
+            )}
             {options.map((node) => (
               <option key={node.id} value={node.id}>
                 {isEmptyName(node.name) ? node.id : node.name}
@@ -146,7 +168,7 @@ export function EndpointEditor({
           </select>
         </label>
       )}
-      {flow !== undefined && target !== freePoint && (
+      {flow !== undefined && !positioned && (
         <label className={styles.field}>
           {t('tools.side')}
           <select
@@ -168,7 +190,7 @@ export function EndpointEditor({
         </label>
       )}
       {flow !== undefined &&
-        target === freePoint &&
+        positioned &&
         (['x', 'y'] as const).map((axis) => (
           <NumberField
             key={axis}
@@ -179,7 +201,7 @@ export function EndpointEditor({
             }}
           />
         ))}
-      {refused && target === freePoint && (
+      {refused && positioned && (
         <p>{t('canvas.position-invalid', coordinateRange)}</p>
       )}
       <div className={styles.actions}>

@@ -1,0 +1,238 @@
+formatVersion: 3
+metadata:
+  title: Card payments
+  owner: ""
+  description: ""
+  contributors: []
+assumptions: []
+diagrams:
+  - id: overview
+    title: High level
+    placements:
+      - element: payments-zone
+        shape:
+          kind: box
+          position:
+            x: 380
+            y: 140
+          size:
+            width: 240
+            height: 140
+      - element: customer
+        position:
+          x: 40
+          y: 180
+        size:
+          width: 120
+          height: 60
+      - element: web-app
+        position:
+          x: 200
+          y: 180
+        size:
+          width: 140
+          height: 60
+      - element: payments-api
+        accent: s1
+        position:
+          x: 420
+          y: 180
+        size:
+          width: 140
+          height: 60
+      - element: legend
+        position:
+          x: 40
+          y: 320
+        size:
+          width: 220
+          height: 60
+      - element: sign-in
+        waypoints: []
+        source: {}
+        target: {}
+      - element: card-details
+        waypoints: []
+        source: {}
+        target: {}
+      - element: charge
+        waypoints: []
+        source: {}
+        target:
+          position:
+            x: 680
+            y: 210
+  - id: payments
+    title: Payments
+    placements:
+      - element: payments-zone
+        shape:
+          kind: box
+          position:
+            x: 220
+            y: 60
+          size:
+            width: 420
+            height: 160
+      - element: fraud-check
+        position:
+          x: 40
+          y: 100
+        size:
+          width: 140
+          height: 60
+      - element: payments-api
+        position:
+          x: 240
+          y: 100
+        size:
+          width: 140
+          height: 60
+      - element: card-vault
+        position:
+          x: 460
+          y: 100
+        size:
+          width: 120
+          height: 60
+      - element: legend
+        position:
+          x: 40
+          y: 260
+        size:
+          width: 220
+          height: 60
+      - element: charge
+        waypoints: []
+        source: {}
+        target: {}
+      - element: score
+        waypoints: []
+        source: {}
+        target: {}
+elements:
+  - kind: actor
+    id: customer
+    name: Customer
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
+  - kind: process
+    id: web-app
+    name: Web app
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
+  - kind: process
+    id: payments-api
+    name: Payments API
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
+  - kind: store
+    id: card-vault
+    name: Card vault
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
+  - kind: process
+    id: fraud-check
+    name: Fraud check
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
+  - kind: flow
+    id: sign-in
+    name: Sign in
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
+    source:
+      kind: attached
+      element: customer
+    target:
+      kind: attached
+      element: web-app
+    bidirectional: false
+  - kind: flow
+    id: card-details
+    name: Card details
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
+    source:
+      kind: attached
+      element: web-app
+    target:
+      kind: attached
+      element: payments-api
+    bidirectional: false
+  - kind: flow
+    id: charge
+    name: Charge
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
+    source:
+      kind: attached
+      element: payments-api
+    target:
+      kind: attached
+      element: card-vault
+    bidirectional: false
+  - kind: flow
+    id: score
+    name: Score
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
+    source:
+      kind: attached
+      element: fraud-check
+    target:
+      kind: attached
+      element: payments-api
+    bidirectional: false
+  - kind: trust-boundary
+    id: payments-zone
+    name: Payments zone
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
+    containedElements:
+      - payments-api
+      - card-vault
+    crossingFlows:
+      - card-details
+  - kind: text
+    id: legend
+    name: ""
+    description: ""
+    outOfScope: false
+    reasonOutOfScope: ""
+    text: Shared elements stand on both diagrams.
+mitigations: []
+threats:
+  - id: threat-card-data
+    number: 1
+    title: Card data read from the API
+    category:
+      methodology: STRIDE
+      category: information-disclosure
+    severity: high
+    status: open
+    description: ""
+    elements:
+      - payments-api
+  - id: threat-charge-replay
+    number: 2
+    title: Charge replayed
+    category:
+      methodology: STRIDE
+      category: tampering
+    severity: medium
+    status: open
+    description: ""
+    elements:
+      - charge
+lastIssuedThreatNumber: 2

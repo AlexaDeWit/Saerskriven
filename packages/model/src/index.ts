@@ -74,9 +74,11 @@ export {
 } from './lib/parse-issue.js';
 export * from './lib/parse.js';
 export { atDrawnPaths, parseDrawnModel } from './lib/parse-drawn.js';
+export type { RelationshipScope } from './lib/violations.js';
 export * from './lib/empty.js';
 export * from './lib/operation-failures.js';
 export * from './lib/element-operations.js';
+export * from './lib/placement-operations.js';
 export * from './lib/flow-operations.js';
 export * from './lib/boundary-operations.js';
 export * from './lib/diagram-operations.js';

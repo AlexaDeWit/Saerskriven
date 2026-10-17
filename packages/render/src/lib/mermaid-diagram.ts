@@ -5,10 +5,11 @@ import {
   reversed,
   isEmptyName,
   type Diagram,
+  type DrawnElement,
+  type DrawnFlow,
+  type DrawnFlowEndpoint,
   type Element,
   type ElementId,
-  type Flow,
-  type FlowEndpoint,
   type Model,
 } from '@saerskriven/model';
 import { exportText, type ExportText } from '../messages/catalogues.js';
@@ -23,15 +24,25 @@ export type MermaidNotes = {
 
 type Drawing = {
   readonly messages: ExportText;
-  readonly elements: ReadonlyMap<ElementId, Element>;
+  readonly elements: ReadonlyMap<ElementId, DrawnElement>;
+  readonly everywhere: ReadonlyMap<ElementId, Element>;
   readonly identifiers: Map<ElementId, string>;
   readonly references: Map<ElementId, string>;
   readonly lines: string[];
 };
 
-type NodeElement = Exclude<Element, { kind: 'flow' | 'trust-boundary' }>;
+type NodeElement = Exclude<DrawnElement, { kind: 'flow' | 'trust-boundary' }>;
 
-/** One diagram's Mermaid source and structural notes, without Markdown framing. */
+type Named = Pick<Element, 'id' | 'kind' | 'name' | 'outOfScope'> & {
+  readonly text?: string;
+};
+
+/**
+ * One diagram's Mermaid source and structural notes, without Markdown
+ * framing. A boundary groups the members the diagram places, and a flow end
+ * attached to an element the diagram does not place is drawn as a reference
+ * to it.
+ */
 export function mermaidDiagram(
   model: Model,
   diagram: Diagram,
@@ -41,6 +52,7 @@ export function mermaidDiagram(
   const drawing: Drawing = {
     messages: exportText(locale),
     elements: elementsById(elements),
+    everywhere: elementsById(model.elements),
     identifiers: new Map(
       elements.map((element, index) => [element.id, `n${index}`]),
     ),
@@ -79,12 +91,12 @@ export function mermaidDiagram(
 }
 
 function writeNodes(
-  elements: readonly Element[],
+  elements: readonly DrawnElement[],
   groups: ReadonlyMap<ElementId, readonly ElementId[]>,
   drawing: Drawing,
 ): void {
   const contained = new Set([...groups.values()].flat());
-  const stack: (Element | 'end')[] = reversed(
+  const stack: (DrawnElement | 'end')[] = reversed(
     elements.filter((element) => !contained.has(element.id)),
   );
   while (stack.length > 0) {
@@ -118,7 +130,7 @@ function identifier(id: ElementId, { identifiers }: Drawing): string {
   return generated;
 }
 
-function name(element: Element): string {
+function name(element: Named): string {
   return isEmptyName(element.name) ? element.id : headingText(element.name);
 }
 
@@ -130,10 +142,10 @@ function escaped(value: string): string {
   ).join('');
 }
 
-function label(element: Element, messages: ExportText): string {
+function label(element: Named, messages: ExportText): string {
   const value =
     element.kind === 'text'
-      ? `${name(element)}: ${element.text}`
+      ? `${name(element)}: ${element.text ?? ''}`
       : name(element);
   return escaped(
     element.outOfScope
@@ -161,8 +173,8 @@ function node(element: NodeElement, drawing: Drawing): string {
 }
 
 function endpoint(
-  end: FlowEndpoint,
-  flow: Flow,
+  end: DrawnFlowEndpoint,
+  flow: DrawnFlow,
   side: 'source' | 'target',
   drawing: Drawing,
 ): string {
@@ -173,13 +185,15 @@ function endpoint(
     );
     return id;
   }
-  const element = drawing.elements.get(end.element);
+  const drawn =
+    end.kind === 'attached' ? drawing.elements.get(end.element) : undefined;
   if (
-    element !== undefined &&
-    element.kind !== 'flow' &&
-    element.kind !== 'trust-boundary'
+    drawn !== undefined &&
+    drawn.kind !== 'flow' &&
+    drawn.kind !== 'trust-boundary'
   )
     return identifier(end.element, drawing);
+  const element = drawing.everywhere.get(end.element);
   const id = `ref_${identifier(end.element, drawing)}`;
   if (!drawing.references.has(end.element)) {
     const value = element === undefined ? end.element : name(element);

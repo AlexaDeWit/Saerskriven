@@ -22,18 +22,20 @@ Cached tests only read committed snapshots, and
 producer is `@saerskriven/render`. Review and commit the snapshot diff with the
 source change.
 
-| File                                          | Written by        | Read by                                                           |
-| --------------------------------------------- | ----------------- | ----------------------------------------------------------------- |
-| `render/every-glyph.snapshot.svg`             | `packages/render` | no other suite                                                    |
-| `render/every-glyph.snapshot.png`             | `packages/render` | no other suite                                                    |
-| `render/two-diagrams-storefront.snapshot.svg` | `packages/render` | `apps/cli`, `apps/studio-e2e`                                     |
-| `render/two-diagrams-storefront.snapshot.png` | `packages/render` | `apps/cli`, `apps/studio-e2e`, `scripts/release/install-smoke.sh` |
-| `render/two-diagrams-fulfilment.snapshot.svg` | `packages/render` | `apps/cli`                                                        |
-| `render/two-diagrams-fulfilment.snapshot.png` | `packages/render` | `apps/cli`                                                        |
-| `render/accents.snapshot.svg`                 | `packages/render` | no other suite                                                    |
-| `render/accents.snapshot.png`                 | `packages/render` | no other suite                                                    |
-| `render/two-diagrams.snapshot.typ`            | `packages/render` | `apps/studio-e2e`                                                 |
-| `render/two-diagrams.register.snapshot.md`    | `packages/render` | `apps/cli`, `apps/studio-e2e`                                     |
+| File                                           | Written by        | Read by                                                           |
+| ---------------------------------------------- | ----------------- | ----------------------------------------------------------------- |
+| `render/every-glyph.snapshot.svg`              | `packages/render` | no other suite                                                    |
+| `render/every-glyph.snapshot.png`              | `packages/render` | no other suite                                                    |
+| `render/two-diagrams-storefront.snapshot.svg`  | `packages/render` | `apps/cli`, `apps/studio-e2e`                                     |
+| `render/two-diagrams-storefront.snapshot.png`  | `packages/render` | `apps/cli`, `apps/studio-e2e`, `scripts/release/install-smoke.sh` |
+| `render/two-diagrams-fulfilment.snapshot.svg`  | `packages/render` | `apps/cli`                                                        |
+| `render/two-diagrams-fulfilment.snapshot.png`  | `packages/render` | `apps/cli`                                                        |
+| `render/accents.snapshot.svg`                  | `packages/render` | no other suite                                                    |
+| `render/accents.snapshot.png`                  | `packages/render` | no other suite                                                    |
+| `render/shared-elements-overview.snapshot.svg` | `packages/render` | no other suite                                                    |
+| `render/shared-elements-overview.snapshot.png` | `packages/render` | no other suite                                                    |
+| `render/two-diagrams.snapshot.typ`             | `packages/render` | `apps/studio-e2e`                                                 |
+| `render/two-diagrams.register.snapshot.md`     | `packages/render` | `apps/cli`, `apps/studio-e2e`                                     |
 
 The `.snapshot.png` rasters are written only where the rasterizer module
 [`SAERSKRIVEN_RESVG_WASM`](../docs/build.md#the-svg-rasterizer) names has been
@@ -52,6 +54,7 @@ no target writes them. They are read as follows:
 | `threat-dragon/feature-complete.json`     | `packages/formats`, `packages/mcp`, `apps/cli`, `apps/studio`, `apps/studio-e2e`                                                |
 | `saerskriven/feature-complete.yaml`       | `packages/formats`, `apps/cli`, `apps/studio`, `apps/studio-e2e`                                                                |
 | `saerskriven/feature-complete-v3.yaml`    | `packages/formats`, `packages/mcp`, `apps/cli`, `apps/studio`                                                                   |
+| `saerskriven/shared-elements-v3.yaml`     | `packages/formats`, `apps/cli`                                                                                                  |
 | `saerskriven/v0.2.1.yaml`                 | `packages/formats`, `nix/check.nix`                                                                                             |
 | `saerskriven/saerskriven-v0.3.0.yaml`     | `packages/formats`                                                                                                              |
 | `studio/recovery-v0.4.0.json`             | `apps/studio`                                                                                                                   |

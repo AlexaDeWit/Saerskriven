@@ -245,11 +245,13 @@
   bottom: 0;
 }
 
+/* Grow low-zoom corner handles inward: the right-hand ones leave the badge
+   clear, and the top left one the mark of an element on several diagrams. */
 .canvas :global(.react-flow__resize-control.handle.top.left) {
   translate: 0 0;
+  transform-origin: 0 50%;
 }
 
-/* Grow low-zoom corner handles inward to leave the badge clear. */
 .canvas :global(.react-flow__resize-control.handle.top.right) {
   translate: -100% 0;
   transform-origin: 100% 50%;

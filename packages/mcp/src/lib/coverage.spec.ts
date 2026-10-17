@@ -8,6 +8,7 @@ import {
   answerOf,
   featureCompleteFile,
   featureCompleteWorkspace,
+  sharedTree,
 } from './read-tools.fixtures.js';
 import { readNamed } from './reading.js';
 
@@ -48,5 +49,16 @@ describe('what saer_coverage reports', () => {
       'format: threat-dragon',
       `revision: ${reading.revision}`,
     ]);
+  });
+});
+
+describe('the coverage of a model sharing elements', () => {
+  it('lists each element once, with every diagram it is on', () => {
+    const shared = answerOf(coverage(sharedTree(), {}));
+    const ids = shared.perElement.map(({ id }) => id);
+    expect(ids).toEqual([...new Set(ids)]);
+    expect(
+      shared.perElement.find(({ id }) => id === 'payments-api')?.diagrams,
+    ).toEqual(['overview', 'payments']);
   });
 });

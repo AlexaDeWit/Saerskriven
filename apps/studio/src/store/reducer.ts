@@ -25,7 +25,7 @@ import {
   attachThreat,
   detachThreat,
   editNote,
-  elementIdsAcross,
+  elementIdsIn,
   moveElement,
   removeElement,
   removeThreat,
@@ -33,13 +33,15 @@ import {
   replaceThreat,
   resizeElement,
   reverseFlow,
+  placeElement,
+  unplaceElement,
   setAccent,
   setBoundaryShape,
   setFlowDirection,
+  setAwayEndPosition,
   setFlowEndPosition,
   setFlowWaypoints,
   OperationFailure,
-  type Decimals,
   type Diagram,
   type DiagramId,
   type ElementId,
@@ -47,7 +49,8 @@ import {
 } from '@saerskriven/model';
 import { Either } from 'effect';
 import { Action } from './actions.js';
-import { activeDiagramId, holdsDiagram } from './selectors.js';
+import { deletionsOn } from './deletion.js';
+import { activeDiagram, activeDiagramId, holdsDiagram } from './selectors.js';
 import { sameSelection } from './selection.js';
 import {
   FileLifecycle,
@@ -67,6 +70,13 @@ export function reduce(state: State, action: Action): State {
       edited(state, setElementDetails(state.present, elementId, change)),
     SetAccent: ({ diagramId, elementIds, accent }) =>
       edited(state, setAccent(state.present, diagramId, elementIds, accent)),
+    PlaceElements: ({ diagramId, placements, decimals }) =>
+      edited(
+        state,
+        foldedEdits(state.present, placements, (model, placement) =>
+          placeElement(model, diagramId, placement, decimals),
+        ),
+      ),
     InsertFragment: ({ diagramId, fragment }) =>
       edited(state, insertFragment(state.present, diagramId, fragment)),
     ReconnectFlow: ({ diagramId, elementId, side, endpointId, anchor }) =>
@@ -95,6 +105,18 @@ export function reduce(state: State, action: Action): State {
           decimals,
         ),
       ),
+    SetAwayEndPosition: ({ diagramId, elementId, side, position, decimals }) =>
+      edited(
+        state,
+        setAwayEndPosition(
+          state.present,
+          diagramId,
+          elementId,
+          side,
+          position,
+          decimals,
+        ),
+      ),
     ReverseFlow: ({ elementId }) =>
       edited(state, reverseFlow(state.present, elementId)),
     SetBoundaryShape: ({ diagramId, elementId, shape, decimals }) =>
@@ -105,20 +127,38 @@ export function reduce(state: State, action: Action): State {
     ArrangeElements: ({ diagramId, moves, decimals }) =>
       edited(
         state,
-        moves.reduce<Either.Either<Model, OperationFailure>>(
-          (outcome, { elementId, offset }) =>
-            Either.flatMap(outcome, (model) =>
-              moveElement(model, diagramId, elementId, offset, decimals),
-            ),
-          Either.right(state.present),
+        foldedEdits(state.present, moves, (model, { elementId, offset }) =>
+          moveElement(model, diagramId, elementId, offset, decimals),
         ),
       ),
     AddElement: ({ diagramId, element, decimals }) =>
       edited(state, addElement(state.present, diagramId, element, decimals)),
-    RemoveElement: ({ elementId, decimals }) =>
-      removedElements(state, [elementId], decimals),
     RemoveElements: ({ elementIds, decimals }) =>
-      removedElements(state, elementIds, decimals),
+      removedElements(state, elementIds, (model, removed) =>
+        removeElement(model, removed, decimals),
+      ),
+    DeleteFromDiagram: ({ diagramId, elementIds, decimals }) => {
+      if (!holdsDiagram(state.present, diagramId)) {
+        return edited(
+          state,
+          Either.left(OperationFailure.UnknownDiagram({ diagramId })),
+        );
+      }
+      const deletions = deletionsOn(state.present, diagramId, elementIds);
+      const leaving = new Set<string>(
+        deletions.flatMap(({ elementId, fromModel }) =>
+          fromModel ? [elementId] : [],
+        ),
+      );
+      return removedElements(
+        state,
+        deletions.map(({ elementId }) => elementId),
+        (model, removed) =>
+          leaving.has(removed)
+            ? removeElement(model, removed, decimals)
+            : unplaceElement(model, diagramId, removed, decimals),
+      );
+    },
     MoveElement: ({ diagramId, elementId, offset, decimals }) =>
       edited(
         state,
@@ -321,17 +361,16 @@ function withSelection(state: State, elementIds: readonly ElementId[]): State {
 function removedElements(
   state: State,
   elementIds: readonly ElementId[],
-  decimals: Decimals | undefined,
+  remove: (
+    model: Model,
+    elementId: ElementId,
+  ) => Either.Either<Model, OperationFailure>,
 ): State {
   const removed = new Set(elementIds);
   if (removed.size === 0) {
     return state;
   }
-  const outcome = editElements(
-    state.present,
-    [...removed],
-    (model, elementId) => removeElement(model, elementId, decimals),
-  );
+  const outcome = editElements(state.present, [...removed], remove);
   const next = edited(state, outcome);
   if (Either.isLeft(outcome)) {
     return next;
@@ -355,19 +394,23 @@ function editElements(
     elementId: ElementId,
   ) => Either.Either<Model, OperationFailure>,
 ): Either.Either<Model, OperationFailure> {
-  return [...new Set(elementIds)].reduce<
-    Either.Either<Model, OperationFailure>
-  >(
-    (outcome, elementId) =>
-      Either.flatMap(outcome, (current) => edit(current, elementId)),
+  return foldedEdits(model, [...new Set(elementIds)], edit);
+}
+
+function foldedEdits<Item>(
+  model: Model,
+  items: readonly Item[],
+  edit: (current: Model, item: Item) => Either.Either<Model, OperationFailure>,
+): Either.Either<Model, OperationFailure> {
+  return items.reduce<Either.Either<Model, OperationFailure>>(
+    (outcome, item) =>
+      Either.flatMap(outcome, (current) => edit(current, item)),
     Either.right(model),
   );
 }
 
 function followed(state: State, synced: SyncedState): State {
   const { present, past, future, saved, file, recoveryCurrent } = synced;
-  const drawn = elementIdsAcross(present.diagrams);
-  const selection = state.selection.filter((selected) => drawn.has(selected));
   return {
     ...state,
     present,
@@ -376,15 +419,34 @@ function followed(state: State, synced: SyncedState): State {
     saved,
     file,
     recoveryCurrent,
+    ...onScreen(state, present, false),
+    lastFailure: undefined,
+  };
+}
+
+function onScreen(
+  state: State,
+  present: Model,
+  keepUnheld: boolean,
+): Pick<State, 'selection' | 'inlineEditor'> {
+  const diagram = activeDiagram({
+    present,
+    activeDiagram: state.activeDiagram,
+  });
+  const placed =
+    diagram === undefined ? new Set<string>() : elementIdsIn(diagram);
+  const held = new Set<string>(present.elements.map(({ id }) => id));
+  const kept = (elementId: ElementId): boolean =>
+    placed.has(elementId) || (keepUnheld && !held.has(elementId));
+  const selection = state.selection.filter(kept);
+  return {
     selection: sameSelection(state.selection, selection)
       ? state.selection
       : selection,
     inlineEditor:
-      state.inlineEditor !== undefined &&
-      drawn.has(state.inlineEditor.elementId)
+      state.inlineEditor !== undefined && kept(state.inlineEditor.elementId)
         ? state.inlineEditor
         : undefined,
-    lastFailure: undefined,
   };
 }
 
@@ -397,6 +459,7 @@ function undone(state: State): State {
         present: previous,
         past: state.past.slice(0, -1),
         future: [state.present, ...state.future],
+        ...onScreen(state, previous, true),
         lastFailure: undefined,
       };
 }
@@ -410,6 +473,7 @@ function redone(state: State): State {
         present: next,
         past: [...state.past, state.present],
         future: state.future.slice(1),
+        ...onScreen(state, next, true),
         lastFailure: undefined,
       };
 }

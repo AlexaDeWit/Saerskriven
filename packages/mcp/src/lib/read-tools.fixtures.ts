@@ -4,6 +4,7 @@ import {
   committedText,
   parsedFixture,
   repositoryRoot,
+  sharedModel,
 } from '@saerskriven/model/fixtures';
 import { Either } from 'effect';
 import { mkdtempSync, writeFileSync } from 'node:fs';
@@ -69,6 +70,14 @@ export function twoDiagramsWorkspace(): ModelWorkspace {
 /** The two-diagram model as text, for a fixture that rewrites part of it. */
 export function twoDiagramsYaml(): string {
   return committedText('saerskriven/two-diagrams.yaml');
+}
+
+/**
+ * A disposable root whose default model is the model package's two diagrams
+ * sharing elements, written as the version 3 file it needs.
+ */
+export function sharedTree(): ModelWorkspace {
+  return treeHolding(saerskrivenYamlCodec.write(sharedModel).output);
 }
 
 /** A workspace over the checkout carrying no default model. */

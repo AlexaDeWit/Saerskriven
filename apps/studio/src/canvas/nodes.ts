@@ -11,7 +11,7 @@ import {
   type CanvasLayout,
   type CanvasNode,
 } from '@saerskriven/canvas';
-import type { ElementId, Model } from '@saerskriven/model';
+import type { DiagramId, ElementId, Model } from '@saerskriven/model';
 import { flowEnds } from './elements.js';
 import type { StudioTranslator } from '../messages/catalogues.js';
 import { accessibleNames } from './names.js';
@@ -29,15 +29,17 @@ export type DiagramGraph = {
  * The laid-out diagram as React Flow takes it, each element carrying its
  * accessible name, its role description, its selection and whether a flow
  * can end on it, followed by the free-end anchors. Every object is new on
- * each call. `layout` must be laid out from `model`.
+ * each call. `layout` must be laid out from `model`, from the diagram
+ * `shownOn` names where one is given.
  */
 export function diagramGraph(
   layout: CanvasLayout,
   model: Model,
   selection: readonly ElementId[],
   t: StudioTranslator['t'],
+  shownOn?: DiagramId,
 ): DiagramGraph {
-  const names = accessibleNames(layout, model, t);
+  const names = accessibleNames(layout, model, t, shownOn);
   const ends = new Set<string>(flowEnds(layout).map((node) => node.id));
   const selected = new Set<string>(selection);
   const elementRole = { 'aria-roledescription': t('canvas.element-role') };

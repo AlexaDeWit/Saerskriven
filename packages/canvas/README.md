@@ -25,6 +25,15 @@ end naming an element the canvas draws as no box leaves that flow out of the
 layout and in `unplaced`. `canvasNodeOf` converts a single element and
 `isBoundary` tells a trust boundary node apart.
 
+[`away-ends.ts`](src/lib/away-ends.ts): a flow end attached to an element the
+diagram does not place is drawn at the point its placement holds, as a free
+end is, and the flow's `sourceAway` or `targetAway` names the element.
+`awayEndLabels` hangs a dashed frame holding the element's name beyond that
+point, on the side the line arrives from, and the glyph draws it apart from
+the flow's scope and accent. `drawnBounds` holds the frame. The studio's sheet
+always carries its rule, and `renderCanvasStylesheet` writes it only for a
+drawing that holds such an end.
+
 [`bounds.ts`](src/lib/bounds.ts): `bounds` and `drawnBounds` hold everything
 the layout paints except stroke widths, which a caller sizing a viewBox pads
 for. Nothing else needs padding.
@@ -115,8 +124,8 @@ fills its box with the tint and sets its text in a name's ink. Its
 out-of-scope frame keeps the outline ink and weight. The slot colours and
 tints are palette roles like any other. The studio's sheet
 always carries the accent rules, and `renderCanvasStylesheet` writes them only
-for a drawing that holds an accent, so a drawing without one keeps the sheet
-it had. It mixes each tint from the theme's element colour, so a themed
+for a drawing its `holds` say holds an accent, so a drawing without one keeps
+the sheet it had. It mixes each tint from the theme's element colour, so a themed
 drawing keeps a name readable on one.
 
 [`render-theme.ts`](src/lib/render-theme.ts): `renderThemeSchema` and

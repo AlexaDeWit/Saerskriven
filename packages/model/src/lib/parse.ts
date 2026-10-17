@@ -8,9 +8,22 @@ import {
   type ParseIssueDetail,
   type SchemaParser,
 } from './parse-issue.js';
-import { collectViolations, refusingViolations } from './violations.js';
+import {
+  collectViolations,
+  refusingViolations,
+  type RelationshipScope,
+} from './violations.js';
 
-const refinedModelSchema = refusingViolations(modelSchema, collectViolations);
+const refinedModelSchema = refusingViolations(modelSchema, (model) =>
+  collectViolations(model, 'model'),
+);
+
+const refinedSchemas = {
+  model: refinedModelSchema,
+  diagram: refusingViolations(modelSchema, (model) =>
+    collectViolations(model, 'diagram'),
+  ),
+} as const satisfies Record<RelationshipScope, typeof refinedModelSchema>;
 
 /** A parsed model remains structurally typed. Its type alone does not prove reference validity. */
 export type Model = z.infer<typeof refinedModelSchema>;
@@ -92,9 +105,16 @@ export type ParseFailure = Data.TaggedEnum<{
 /** Constructors for {@link ParseFailure}, with Effect's `$is` and `$match`. */
 export const ParseFailure = Data.taggedEnum<ParseFailure>();
 
-/** Parses model structure, unique identities, issuance bookkeeping and diagram-local references. */
-export function parseModel(input: unknown): Either.Either<Model, ParseFailure> {
-  return Either.mapLeft(boundedParse(refinedModelSchema, input), (failure) =>
+/**
+ * Parses model structure, unique identities, placements, issuance
+ * bookkeeping and references, a boundary's and a flow's relationship lists
+ * resolving within `scope`.
+ */
+export function parseModel(
+  input: unknown,
+  scope: RelationshipScope = 'model',
+): Either.Either<Model, ParseFailure> {
+  return Either.mapLeft(boundedParse(refinedSchemas[scope], input), (failure) =>
     ParseFailure.InvalidModel({ issues: schemaFailureIssues(failure) }),
   );
 }

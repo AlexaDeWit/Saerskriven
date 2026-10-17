@@ -7,6 +7,7 @@ import {
   forgedLinesIn,
   recordLinksTree,
   refusalOf,
+  sharedTree,
   twoDiagramsWorkspace,
 } from './read-tools.fixtures.js';
 
@@ -120,5 +121,15 @@ describe('a threat whose id carries a line feed', () => {
   it('forges no line in the text of the result', () => {
     const read = answerOf(getThreat(forgedIdsTree(), { ref: '1' }));
     expect(forgedLinesIn(renderThreatRecord(read))).toEqual([]);
+  });
+});
+
+describe('a threat on an element on more than one diagram', () => {
+  it('lists the element once, with every diagram it is on, in its result and its lines', () => {
+    const read = answerOf(getThreat(sharedTree(), { ref: '1' }));
+    expect(read.elements.map(({ id, diagrams }) => ({ id, diagrams }))).toEqual(
+      [{ id: 'payments-api', diagrams: ['overview', 'payments'] }],
+    );
+    expect(renderThreatRecord(read).join('\n')).toContain('also on payments');
   });
 });

@@ -51,7 +51,8 @@
           "...",
           "viteGlobals",
           "{workspaceRoot}/test-data/every-glyph.model.json",
-          "{workspaceRoot}/test-data/two-diagrams.model.json"
+          "{workspaceRoot}/test-data/two-diagrams.model.json",
+          "{workspaceRoot}/test-data/accents.model.json"
         ]
       }
     }

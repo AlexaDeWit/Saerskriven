@@ -1,5 +1,6 @@
 import {
   reconnectFlow,
+  setAwayEndPosition,
   setFlowEndPosition,
   setFlowWaypoints,
   type Decimals,
@@ -121,13 +122,9 @@ function editedRoute(
     return reconnectFlow(model, diagramId, flow.id, target.end, target.element);
   }
   if (target.kind === 'free') {
-    return setFlowEndPosition(
-      model,
-      diagramId,
-      flow.id,
-      target.end,
-      target.point,
-    );
+    return (
+      flow[target.end].kind === 'away' ? setAwayEndPosition : setFlowEndPosition
+    )(model, diagramId, flow.id, target.end, target.point);
   }
   return setFlowWaypoints(
     model,
@@ -164,13 +161,16 @@ function routeAction(
     });
   }
   if (target.kind === 'free') {
-    return Action.SetFlowEndPosition({
+    const end = {
       diagramId,
       elementId: flow.id,
       side: target.end,
       position: target.point,
       decimals,
-    });
+    };
+    return flow[target.end].kind === 'away'
+      ? Action.SetAwayEndPosition(end)
+      : Action.SetFlowEndPosition(end);
   }
   return Action.SetFlowWaypoints({
     diagramId,
@@ -211,9 +211,16 @@ function routeAnnouncement(flow: DrawnFlow, target: RouteTarget): Said {
   };
 }
 
-/** What freeing one end of `flow`, or moving it where it is already free, says. */
-export function freeEndSaid(flow: DrawnFlow, end: 'source' | 'target'): Said {
-  const moved = flow[end].kind === 'free';
+/**
+ * What freeing one end of `flow` says, or moving it, `moved`, which by
+ * default is where it is drawn at a point already, free or away from its
+ * element.
+ */
+export function freeEndSaid(
+  flow: DrawnFlow,
+  end: 'source' | 'target',
+  moved = flow[end].kind !== 'attached',
+): Said {
   return (t) => {
     const named = { flow: spokenElement(t, flow) };
     if (end === 'source') {

@@ -1,4 +1,4 @@
-import type { Element } from '@saerskriven/model';
+import type { DrawnElement } from '@saerskriven/model';
 import {
   useEffect,
   useEffectEvent,
@@ -177,7 +177,7 @@ function CardCommand({
   );
 }
 
-function useSelectedElement(): Element | undefined {
+function useSelectedElement(): DrawnElement | undefined {
   const state = useModelStore((value) => value);
   const tool = useTool();
   return state.inlineEditor === undefined && tool.active === 'select'

@@ -7,9 +7,11 @@ import {
   type NodeBox,
 } from '@saerskriven/canvas';
 import {
+  diagramsOf,
   threatHasReference,
   type Accent,
   type Decimals,
+  type Diagram,
   type DrawnElement,
   type Element,
   type ElementId,
@@ -19,6 +21,7 @@ import {
 } from '@saerskriven/model';
 import { Action } from '../store/actions.js';
 import {
+  activeDiagram,
   activeDiagramId,
   drawnElementById,
   elementById,
@@ -27,6 +30,7 @@ import {
   selectedElementRecord,
   selectedElementRecords,
 } from '../store/selectors.js';
+import { deletionsOn } from '../store/deletion.js';
 import type { State } from '../store/state.js';
 import { changedModel, dispatch, modelStore } from '../store/store.js';
 import { announce, spokenElement } from './announcements.js';
@@ -37,6 +41,7 @@ import {
   type FlowSides,
   switchedShape,
 } from './elements.js';
+import { diagramTitle } from '../messages/diagram-title.js';
 import { sentences, type Speaker } from '../messages/said.js';
 import { currentLayout } from './layout.js';
 import { elementIds } from './nodes.js';
@@ -163,28 +168,94 @@ export function accentSelected(accent: Accent | undefined): void {
   }
 }
 
-/** Removes the selection and announces its combined cascade once. */
+/**
+ * Deletes the selection from the diagram on screen, as one undo step: an
+ * element also on another diagram comes off this one, and every other
+ * element is removed from the model. Announces the removal's cascade once,
+ * then the diagrams what came off this one is still on.
+ */
 export function removeSelected(): boolean {
   const state = modelStore.getState();
+  const diagram = activeDiagram(state);
   const selection = state.selection;
+  if (selection.length === 0 || diagram === undefined) {
+    return false;
+  }
+  const deletions = deletionsOn(state.present, diagram.id, selection);
+  const deleted = deletions.flatMap(({ elementId, fromModel }) =>
+    fromModel ? [elementId] : [],
+  );
+  const shared = deletions.flatMap(({ elementId, fromModel }) =>
+    fromModel ? [] : [elementId],
+  );
+  const removed = removedSubject(state, deleted);
+  const cascade = removalCascade(state.present, deleted);
+  const unplaced = unplacedSubject(state, diagram, shared);
+  if (
+    !changedModel(
+      Action.DeleteFromDiagram({
+        diagramId: diagram.id,
+        elementIds: selection,
+        decimals: commandDecimals,
+      }),
+    )
+  ) {
+    return false;
+  }
+  announce((t) =>
+    sentences(
+      deleted.length === 0 ? '' : describeRemoval(t, removed, cascade),
+      unplaced === undefined ? '' : describeUnplacing(t, unplaced),
+    ),
+  );
+  return true;
+}
+
+/**
+ * Removes the selection the diagram on screen places from the model and every
+ * diagram it is on, as one undo step, and announces its combined cascade
+ * once. A selected id the diagram does not place is left alone, as Delete
+ * leaves it.
+ */
+export function removeSelectedFromModel(): boolean {
+  const state = modelStore.getState();
+  const diagramId = activeDiagramId(state);
+  const selection =
+    diagramId === undefined
+      ? []
+      : deletionsOn(state.present, diagramId, state.selection).map(
+          ({ elementId }) => elementId,
+        );
   if (selection.length === 0) {
     return false;
   }
-  const one = selection.at(0);
   const removed = removedSubject(state, selection);
   const cascade = removalCascade(state.present, selection);
-  const action =
-    selection.length === 1 && one !== undefined
-      ? Action.RemoveElement({ elementId: one, decimals: commandDecimals })
-      : Action.RemoveElements({
-          elementIds: selection,
-          decimals: commandDecimals,
-        });
-  if (!changedModel(action)) {
+  if (
+    !changedModel(
+      Action.RemoveElements({
+        elementIds: selection,
+        decimals: commandDecimals,
+      }),
+    )
+  ) {
     return false;
   }
   announce((t) => describeRemoval(t, removed, cascade));
   return true;
+}
+
+/**
+ * The ids of the selection a Delete on the diagram on screen removes from
+ * the model, the rule {@link deletionsOn} states.
+ */
+export function deletedFromModel(state: State): readonly ElementId[] {
+  const diagramId = activeDiagramId(state);
+  return diagramId === undefined
+    ? []
+    : deletionsOn(state.present, diagramId, state.selection).flatMap(
+        ({ elementId, fromModel }) => (fromModel ? [elementId] : []),
+      );
 }
 
 /**
@@ -212,6 +283,41 @@ export function removalCascade(
 export type RemovedSubject =
   | { readonly name: string; readonly kind: Element['kind'] }
   | { readonly count: number };
+
+/**
+ * What a Delete took off the diagram on screen and kept in the model: one
+ * element by its own name and kind, or a count of them, the diagram's title,
+ * and the titles of the other diagrams they are still on.
+ */
+export type UnplacedSubject = {
+  readonly removed: RemovedSubject;
+  readonly diagram: string;
+  readonly stillOn: readonly string[];
+};
+
+/** Says what came off the diagram on screen, and the diagrams it is still on. */
+export function describeUnplacing(
+  t: Speaker,
+  unplaced: UnplacedSubject,
+): string {
+  const diagram = diagramTitle(unplaced.diagram, t);
+  return sentences(
+    'count' in unplaced.removed
+      ? t('canvas.unplaced-elements', {
+          count: unplaced.removed.count,
+          diagram,
+        })
+      : t('canvas.unplaced-named', {
+          name: spokenElement(t, unplaced.removed),
+          diagram,
+        }),
+    t('canvas.still-on', {
+      diagrams: unplaced.stillOn
+        .map((title) => diagramTitle(title, t))
+        .join(', '),
+    }),
+  );
+}
 
 /** Describes removal with explicit counts, including zero. */
 export function describeRemoval(
@@ -453,6 +559,28 @@ function placed(
   dispatch(Action.Select({ elementIds: [elementId] }));
   dispatch(Action.InlineEditing({ editor: { kind: editor, elementId } }));
   return true;
+}
+
+function unplacedSubject(
+  state: State,
+  diagram: Diagram,
+  shared: readonly ElementId[],
+): UnplacedSubject | undefined {
+  if (shared.length === 0) {
+    return undefined;
+  }
+  const others = new Set<string>(
+    shared.flatMap((elementId) =>
+      diagramsOf(state.present, elementId).map(({ id }) => id),
+    ),
+  );
+  return {
+    removed: removedSubject(state, shared),
+    diagram: diagram.title,
+    stillOn: state.present.diagrams
+      .filter(({ id }) => id !== diagram.id && others.has(id))
+      .map(({ title }) => title),
+  };
 }
 
 function removedSubject(

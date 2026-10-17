@@ -3,6 +3,7 @@ import {
   elementIdSchema,
   type Diagram,
   type DiagramId,
+  type ElementId,
   type Model,
 } from '@saerskriven/model';
 import type {
@@ -14,6 +15,7 @@ import type {
 import type { Divergence } from './divergence.js';
 import { mergeCell, withNeededPorts } from './threat-dragon-cells.js';
 import { cellsOf, indexById, portSides } from './threat-dragon-document.js';
+import { inCellTerms, type CellIds } from './threat-dragon-placements.js';
 import type { HighWaterMark } from './threat-dragon-threats.js';
 
 /** A diagram as a merge produced it, and what producing it cost. */
@@ -96,11 +98,13 @@ export function numberDiagrams(
 }
 
 /**
- * One diagram of the model as Threat Dragon draws it. `diagramType` and
- * `thumbnail` keep what the source said, or take Threat Dragon's values for a
- * diagram of no methodology. A diagram that draws nothing and declared no
- * cell list keeps declaring none, and a node cell gains a port for each side
- * a pinned flow end asks for. `writeThreatDragon` writes the release stamp.
+ * One diagram of the model as Threat Dragon draws it, each element under the
+ * cell id `cellIds` gives it there, or its own where it gives none, carrying
+ * the threats nested under the element. `diagramType` and `thumbnail` keep
+ * what the source said, or take Threat Dragon's values for a diagram of no
+ * methodology. A diagram that draws nothing and declared no cell list keeps
+ * declaring none, and a node cell gains a port for each side a pinned flow
+ * end asks for. `writeThreatDragon` writes the release stamp.
  */
 export function mergeDiagram(
   model: Model,
@@ -108,21 +112,34 @@ export function mergeDiagram(
   held: ThreatDragonDiagram | undefined,
   id: number,
   byCell: ReadonlyMap<string, readonly ThreatDragonThreat[]>,
+  cellIds: CellIds = new Map(),
 ): MergedDiagram {
   const heldCells = held ? cellsOf(held) : [];
   const cells = indexById(heldCells);
   const ports = portSides(heldCells);
-  const drawn = drawnElements(model, diagram);
-  const merged = drawn.map((element, index) =>
-    mergeCell(
+  const drawn = drawnElements(model, diagram).map((element) => ({
+    own: element.id,
+    ...inCellTerms(element, cellIds),
+  }));
+  const merged = drawn.map(({ own, element, divergences }, index) => {
+    const cell = mergeCell(
       element,
       cells.get(element.id),
-      byCell.get(element.id) ?? [],
+      byCell.get(own) ?? [],
       index,
       ports,
-    ),
-  );
-  const kept = new Set<string>(drawn.map((element) => element.id));
+    );
+    return {
+      ...cell,
+      divergences: [
+        ...divergences,
+        ...cell.divergences.map((divergence) =>
+          aboutElement(divergence, element.id, own),
+        ),
+      ],
+    };
+  });
+  const kept = new Set<string>(drawn.map(({ element }) => element.id));
   return {
     diagram: {
       ...held,
@@ -145,6 +162,16 @@ export function mergeDiagram(
         .map(discardedCell),
     ],
   };
+}
+
+function aboutElement(
+  divergence: Divergence,
+  cell: ElementId,
+  own: ElementId,
+): Divergence {
+  return divergence.subject.kind === 'element' && divergence.subject.id === cell
+    ? { ...divergence, subject: { kind: 'element', id: own } }
+    : divergence;
 }
 
 function claimNumber(

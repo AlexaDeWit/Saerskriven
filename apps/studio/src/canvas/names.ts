@@ -1,4 +1,5 @@
 import type {
+  AwayEnd,
   BadgeMarks,
   CanvasEdge,
   CanvasLayout,
@@ -10,6 +11,7 @@ import type {
 import {
   flagsByElement,
   isEmptyName,
+  type DiagramId,
   type Element,
   type ElementId,
   type FlowEnd,
@@ -25,8 +27,10 @@ import {
   kindMessages,
   severityMessages,
 } from '../messages/enum-labels.js';
+import { diagramTitle } from '../messages/diagram-title.js';
 import { useLanguage } from '../messages/locale.js';
 import type { Said } from '../messages/said.js';
+import { otherDiagrams } from './other-diagrams.js';
 
 const elementKindOf = {
   actor: 'actor',
@@ -40,24 +44,28 @@ const elementKindOf = {
 /**
  * The accessible name of every element the layout drew, keyed by its React
  * Flow id: its name, kind, badge and raised flags, and for a flow the
- * elements its ends attach to. `layout` must be laid out from `model`.
+ * elements its ends attach to, an end drawn away from its element named as
+ * on another diagram. Laid out from `shownOn`, an element also on other
+ * diagrams ends by naming them. `layout` must be laid out from `model`.
  */
 export function accessibleNames(
   layout: CanvasLayout,
   model: Model,
   t: StudioTranslator['t'],
+  shownOn?: DiagramId,
 ): ReadonlyMap<string, string> {
   const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
   const flags = flagsByElement(model);
-  const flagWords = (element: ElementId): string[] =>
-    (flags.get(element) ?? []).map((flag) => t(flagMessages[flag]));
+  const trailing = (element: ElementId): string[] => [
+    ...(flags.get(element) ?? []).map((flag) => t(flagMessages[flag])),
+    ...elsewhereWords(model, element, shownOn, t),
+  ];
   return new Map<string, string>([
     ...layout.nodes.map(
-      (node) => [node.id, nodeName(node, flagWords(node.id), t)] as const,
+      (node) => [node.id, nodeName(node, trailing(node.id), t)] as const,
     ),
     ...layout.edges.map(
-      (edge) =>
-        [edge.id, edgeName(edge, nodes, flagWords(edge.id), t)] as const,
+      (edge) => [edge.id, edgeName(edge, nodes, trailing(edge.id), t)] as const,
     ),
   ]);
 }
@@ -144,36 +152,53 @@ export function resizeLabels(
   };
 }
 
+function elsewhereWords(
+  model: Model,
+  element: ElementId,
+  shownOn: DiagramId | undefined,
+  t: StudioTranslator['t'],
+): string[] {
+  const elsewhere =
+    shownOn === undefined ? [] : otherDiagrams(model, element, shownOn);
+  return elsewhere.length === 0
+    ? []
+    : [
+        t('tools.also-on-diagrams', {
+          diagrams: elsewhere.map(({ title }) => diagramTitle(title, t)),
+        }),
+      ];
+}
+
 function nodeName(
   node: CanvasNode,
-  flags: readonly string[],
+  trailing: readonly string[],
   t: StudioTranslator['t'],
 ): string {
   return spoken([
     node.name,
     t(kindMessages[elementKindOf[node.kind]]),
     ...badgeWords(node.badge, t),
-    ...flags,
+    ...trailing,
   ]);
 }
 
 function edgeName(
   edge: CanvasEdge,
   nodes: ReadonlyMap<ElementId, CanvasNode>,
-  flags: readonly string[],
+  trailing: readonly string[],
   t: StudioTranslator['t'],
 ): string {
   return spoken([
     edge.name,
     t(kindMessages.flow),
     endsText(
-      endName(edge.sourceElement, nodes, t),
-      endName(edge.targetElement, nodes, t),
+      endName(edge.sourceElement, edge.sourceAway, nodes, t),
+      endName(edge.targetElement, edge.targetAway, nodes, t),
       edge.bidirectional,
       t,
     ),
     ...badgeWords(edge.badge, t),
-    ...flags,
+    ...trailing,
   ]);
 }
 
@@ -191,9 +216,13 @@ function endsText(
 
 function endName(
   element: ElementId | undefined,
+  away: AwayEnd | undefined,
   nodes: ReadonlyMap<ElementId, CanvasNode>,
   t: StudioTranslator['t'],
 ): string {
+  if (away !== undefined) {
+    return t('tools.away-end', { name: away.name });
+  }
   if (element === undefined) {
     return t('tools.free-point');
   }

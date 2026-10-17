@@ -22,6 +22,7 @@ host provides.
 | `store.ts`             | The store, `dispatch`, `useModelStore` and the canvas-or-panel change subscription                                                        |
 | `selectors.ts`         | What views derive from the state                                                                                                          |
 | `selection.ts`         | `sameSelection`, the comparison the reducer uses to keep an unchanged selection's array identity                                          |
+| `deletion.ts`          | `deletionsOn`, what a Delete on the diagram on screen does to each element it names                                                       |
 | `recovery-storage.ts`  | The recovery snapshot and the restore mark                                                                                                |
 | `sync.ts`              | The tab sync channel                                                                                                                      |
 | `development-model.ts` | The model a development session injects, read in development builds only                                                                  |
@@ -42,10 +43,13 @@ host provides.
 - `actions.ts` is the `Action` union, an Effect `Data.taggedEnum`. A model edit
   carries one operation and its arguments, so an unlink that removes a record
   from its last reference is one undo step. `MoveElements` and
-  `RemoveElements` fold the matching operation over one ID array, `SetAccent`
+  `RemoveElements` fold the matching operation over one ID array, and
+  `DeleteFromDiagram` folds over its IDs taking an element on another diagram
+  off the one it names and removing every other from the model, `SetAccent`
   hands its ID array to the one operation that takes several, and
-  `InsertFragment` and `ArrangeElements` apply a paste or an arrangement
-  atomically, before history records the result. `AddDiagram` appends a
+  `PlaceElements`, `InsertFragment` and `ArrangeElements` apply an Add
+  existing element, a paste or an arrangement atomically, before history
+  records the result. `AddDiagram` appends a
   diagram and shows it, the one edit that moves the view as well as the model.
   The other tags cover history, the diagram on screen, selection, inline
   editing, files and failures. An edit that writes geometry carries
@@ -96,7 +100,10 @@ away leaves the canvas on something. `selection` is a unique, ordered array of
 element IDs, and an unchanged selection keeps its array identity, so repeated
 canvas callbacks do not erase the announcement for the selection change they
 completed. A removal drops every removed ID from it and closes a matching
-editor. `inlineEditor` names the element and whether the field edits its name
+editor. An undo or a redo drops an ID the model holds that the diagram on
+screen no longer places, and keeps one the model no longer holds, so a redo
+that brings an element back brings its selection back too. Following another
+tab drops both. `inlineEditor` names the element and whether the field edits its name
 or its Note text. It is in the store because a command reaches it from the
 keyboard. Being total, the reducer cannot refuse `Opened` or `Closed` over
 unsaved work, so those guards, and the one on closing the tab, belong in the
@@ -116,12 +123,13 @@ union it mirrors, so a document cannot be filed under the wrong format.
 An edit that writes geometry carries `decimals`, and its arm hands the count
 to the model operation it calls, which rounds what it writes
 ([the model](../../../../packages/model/README.md#operations)). The actions
-are `AddElement`, `MoveElement`, `MoveElements`, `ArrangeElements`,
-`ResizeElement`, `RemoveElement`, `RemoveElements`, `SetFlowWaypoints`,
-`SetFlowEndPosition` and `SetBoundaryShape`. The field is required, so an edit
-that means the operation to store what it computes says `undefined`, and one
-that forgot does not compile. The store holds no count of its own and rounds
-nothing itself. Which count an edit names is the canvas's to say
+are `AddElement`, `PlaceElements`, `MoveElement`, `MoveElements`,
+`ArrangeElements`, `ResizeElement`, `RemoveElements`, `DeleteFromDiagram`,
+`SetFlowWaypoints`, `SetFlowEndPosition`, `SetAwayEndPosition` and
+`SetBoundaryShape`. The field is required, so an edit that means the operation
+to store what it computes says `undefined`, and one that forgot does not
+compile. The store holds no count of its own and rounds nothing itself. Which
+count an edit names is the canvas's to say
 ([the canvas](../canvas/README.md#rules-for-changes)).
 
 ## Recovery

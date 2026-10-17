@@ -121,6 +121,15 @@ const reported: readonly DivergenceDetail[] = [
   { code: 'threat-model-link-dropped' },
   { code: 'threat-split-across-elements', parameters: { count: 21 } },
   {
+    code: 'element-split-across-diagrams',
+    parameters: { diagrams: ['split-diagram-one', 'split-diagram-two'] },
+  },
+  {
+    code: 'flow-end-drawn-away-freed',
+    parameters: { element: 'away-element' },
+  },
+  { code: 'relationships-off-diagram-dropped', parameters: { count: 25 } },
+  {
     code: 'threat-category-unnamed',
     parameters: { methodology: 'unnamed-method', category: 'unnamed-category' },
   },

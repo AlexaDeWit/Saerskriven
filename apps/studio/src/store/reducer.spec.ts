@@ -2,6 +2,7 @@ import { ReadFailure } from '@saerskriven/formats';
 import { ShareLinkFailure } from '@saerskriven/formats/share-link';
 import {
   addElement,
+  diagramsOf,
   emptyModel,
   OperationFailure,
   type DiagramId,
@@ -13,6 +14,7 @@ import {
   diagramId,
   elementId,
   mitigationId,
+  sharedModel,
   softHyphen,
   threatId,
 } from '@saerskriven/model/fixtures';
@@ -129,6 +131,17 @@ const applied: ActionsByTag<ModelActionTag> = {
     diagramId: mainDiagram,
     title: 'Retitled',
   }),
+  PlaceElements: Action.PlaceElements({
+    diagramId: mainDiagram,
+    placements: [
+      {
+        element: otherElement,
+        position: { x: 400, y: 200 },
+        size: { width: 120, height: 60 },
+      },
+    ],
+    decimals: 3,
+  }),
   InsertFragment: Action.InsertFragment({
     diagramId: mainDiagram,
     fragment: placeholderModel,
@@ -145,11 +158,12 @@ const applied: ActionsByTag<ModelActionTag> = {
     endpointId: elementId('extra-actor'),
   }),
   AddElement: addedProcess,
-  RemoveElement: Action.RemoveElement({
-    elementId: processElement,
+  RemoveElements: Action.RemoveElements({
+    elementIds: [actorElement, processElement],
     decimals: 3,
   }),
-  RemoveElements: Action.RemoveElements({
+  DeleteFromDiagram: Action.DeleteFromDiagram({
+    diagramId: mainDiagram,
     elementIds: [actorElement, processElement],
     decimals: 3,
   }),
@@ -196,6 +210,13 @@ const applied: ActionsByTag<ModelActionTag> = {
     side: 'target',
     position: { x: 400, y: 200 },
     decimals: 3,
+  }),
+  SetAwayEndPosition: Action.SetAwayEndPosition({
+    diagramId: diagramId('overview'),
+    elementId: elementId('charge'),
+    side: 'target',
+    position: { x: 700, y: 260 },
+    decimals: 1,
   }),
   ReverseFlow: Action.ReverseFlow({ elementId: elementId('placeholder-flow') }),
   SetBoundaryShape: Action.SetBoundaryShape({
@@ -306,6 +327,17 @@ const refused: ActionsByTag<ModelActionTag> = {
     diagramId: diagramId('diagram-missing'),
     title: 'Retitled',
   }),
+  PlaceElements: Action.PlaceElements({
+    diagramId: mainDiagram,
+    placements: [
+      {
+        element: actorElement,
+        position: { x: 400, y: 200 },
+        size: { width: 120, height: 60 },
+      },
+    ],
+    decimals: undefined,
+  }),
   InsertFragment: Action.InsertFragment({
     diagramId: mainDiagram,
     fragment: sampleModel,
@@ -329,12 +361,13 @@ const refused: ActionsByTag<ModelActionTag> = {
     element: newProcess('process-refused', 'Refused'),
     decimals: undefined,
   }),
-  RemoveElement: Action.RemoveElement({
-    elementId: elementId('element-missing'),
-    decimals: undefined,
-  }),
   RemoveElements: Action.RemoveElements({
     elementIds: [processElement, elementId('element-missing')],
+    decimals: undefined,
+  }),
+  DeleteFromDiagram: Action.DeleteFromDiagram({
+    diagramId: diagramId('diagram-missing'),
+    elementIds: [processElement],
     decimals: undefined,
   }),
   MoveElement: Action.MoveElement({
@@ -375,6 +408,13 @@ const refused: ActionsByTag<ModelActionTag> = {
     bidirectional: true,
   }),
   SetFlowEndPosition: Action.SetFlowEndPosition({
+    diagramId: mainDiagram,
+    elementId: processElement,
+    side: 'source',
+    position: { x: 0, y: 0 },
+    decimals: undefined,
+  }),
+  SetAwayEndPosition: Action.SetAwayEndPosition({
     diagramId: mainDiagram,
     elementId: processElement,
     side: 'source',
@@ -567,6 +607,12 @@ function stateFor(action: Action): State {
   if (Action.$is('SetBoundaryShape')(action)) {
     return boundaryStart;
   }
+  if (Action.$is('SetAwayEndPosition')(action)) {
+    return { ...initialState(sharedModel), activeDiagram: action.diagramId };
+  }
+  if (Action.$is('PlaceElements')(action)) {
+    return initialState(twoDiagramModel);
+  }
   if (Action.$is('UnlinkAssumptionFromModel')(action)) {
     return modelScopedStart;
   }
@@ -578,6 +624,11 @@ function stateFor(action: Action): State {
   }
   return Action.$is('EditNote')(action) ? noteStart : start;
 }
+
+const removedProcess = Action.RemoveElements({
+  elementIds: [processElement],
+  decimals: 3,
+});
 
 describe('purity', () => {
   for (const [state, action] of purityCases) {
@@ -623,6 +674,37 @@ describe('an operation the model refuses', () => {
   it('clears the failure on the next edit that lands', () => {
     const stuck = reduce(start, refused.AddElement);
     expect(reduce(stuck, applied.AddElement).lastFailure).toBeUndefined();
+  });
+});
+
+describe('placing elements the model already holds', () => {
+  const two = initialState(twoDiagramModel);
+
+  it('puts each on the diagram it names beside its other placements', () => {
+    const placed = reduce(two, applied.PlaceElements);
+    expect(
+      diagramsOf(placed.present, otherElement).map(({ id }) => id),
+    ).toEqual([mainDiagram, secondDiagram]);
+    expect(placed.present.elements).toBe(two.present.elements);
+  });
+
+  it('places none of them where the diagram refuses one', () => {
+    const next = reduce(
+      two,
+      Action.PlaceElements({
+        diagramId: mainDiagram,
+        decimals: 3,
+        placements: [
+          ...applied.PlaceElements.placements,
+          ...refused.PlaceElements.placements,
+        ],
+      }),
+    );
+    expect(next.present).toBe(two.present);
+    expect(next.past).toEqual([]);
+    expect(next.lastFailure).toMatchObject({
+      failure: { _tag: 'ElementAlreadyOnDiagram', elementId: actorElement },
+    });
   });
 });
 
@@ -763,8 +845,12 @@ describe('an edit that names its decimals', () => {
   ].reduce(reduce, placed);
 
   it.each([
-    Action.RemoveElement({ elementId: actor, decimals: 1 }),
     Action.RemoveElements({ elementIds: [beside, actor], decimals: 1 }),
+    Action.DeleteFromDiagram({
+      diagramId: placeholderDiagram,
+      elementIds: [actor],
+      decimals: 1,
+    }),
   ])(
     '$_tag frees the flow end it detaches at the count it names',
     (removal) => {
@@ -1169,7 +1255,7 @@ describe('selection', () => {
       start,
       Action.Select({ elementIds: [processElement] }),
     );
-    expect(reduce(selected, applied.RemoveElement).selection).toEqual([]);
+    expect(reduce(selected, removedProcess).selection).toEqual([]);
   });
 
   it('stays on an element another removal does not touch', () => {
@@ -1177,9 +1263,7 @@ describe('selection', () => {
       start,
       Action.Select({ elementIds: [actorElement] }),
     );
-    expect(reduce(selected, applied.RemoveElement).selection).toEqual([
-      actorElement,
-    ]);
+    expect(reduce(selected, removedProcess).selection).toEqual([actorElement]);
   });
 
   it('clears every removed member of a multi-selection', () => {
@@ -1309,7 +1393,7 @@ describe('the inline editor', () => {
   });
 
   it('closes when the element it names is removed', () => {
-    expect(reduce(opened, applied.RemoveElement).inlineEditor).toBeUndefined();
+    expect(reduce(opened, removedProcess).inlineEditor).toBeUndefined();
   });
 });
 
@@ -1425,7 +1509,7 @@ describe('following another tab', () => {
         editor: { kind: 'name', elementId: actorElement },
       }),
     ),
-    refused.RemoveElement,
+    refused.RemoveElements,
   );
   const elsewhere = reduce(
     reduce(withHistory, applied.AddElement),

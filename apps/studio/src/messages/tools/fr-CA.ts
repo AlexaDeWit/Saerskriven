@@ -4,6 +4,13 @@ import { toolMessages } from './contract.js';
 export const toolsFrCA = catalogue(toolMessages)('fr-CA')({
   'diagram-region': 'Diagramme',
   'free-point': 'un point libre',
+  'away-end': '{name} sur un autre diagramme',
+  'also-on-diagrams': 'aussi sur {diagrams}',
+  'existing-elements': 'Éléments',
+  'existing-flows': 'Flux',
+  'existing-detail': '{what}, sur {diagrams}',
+  'add-picked': 'Ajouter {count}',
+  'pick-existing-first': 'Choisissez d’abord un élément ou un flux.',
   'flow-between': 'entre {source} et {target}',
   'flow-from-to': 'depuis {source} vers {target}',
   'open-threats': {

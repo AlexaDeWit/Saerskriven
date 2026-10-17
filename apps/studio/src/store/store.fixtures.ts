@@ -1,8 +1,10 @@
 import { threatDragonCodec, type RetainedSource } from '@saerskriven/formats';
 import {
+  elementOf,
   type DiagramId,
   type DrawnElement,
   type DrawnModelInput,
+  type Element,
   type ElementId,
   type Model,
   type Point,
@@ -12,8 +14,8 @@ import {
   assumptionId,
   diagramId,
   elementId,
-  elementIn,
   drawnAt,
+  heldElement,
   drawnFixture,
   mitigationId,
   threatId,
@@ -297,11 +299,11 @@ export function newNote(id: string, text: string): DrawnElement {
  * spec title gives it: a masculine and a feminine kind in French, which a
  * message putting "de" or "à" before an element words apart.
  */
-export const namelessElements: readonly (readonly [string, DrawnElement])[] = [
-  ['nameless process', newProcess('process-unnamed', '')],
+export const namelessElements: readonly (readonly [string, Element])[] = [
+  ['nameless process', elementOf(newProcess('process-unnamed', ''))],
   [
     'nameless trust boundary',
-    { ...elementIn(validModel, 'element-perimeter'), name: '' },
+    { ...heldElement(validModel, 'element-perimeter'), name: '' },
   ],
 ];
 
@@ -309,12 +311,15 @@ export const namelessElements: readonly (readonly [string, DrawnElement])[] = [
  * {@link namelessElements} named, and a store whose name starts with a vowel,
  * which French would elide "de" before.
  */
-export const namedElements: readonly (readonly [string, DrawnElement])[] = [
-  ['named process', newProcess('process-named', 'Studio')],
-  ['named trust boundary', elementIn(validModel, 'element-perimeter')],
+export const namedElements: readonly (readonly [string, Element])[] = [
+  ['named process', elementOf(newProcess('process-named', 'Studio'))],
+  ['named trust boundary', heldElement(validModel, 'element-perimeter')],
   [
     'store whose name starts with a vowel',
-    { ...sampleElement(storeElement), name: 'Entrepôt de commandes' },
+    {
+      ...elementOf(sampleElement(storeElement)),
+      name: 'Entrepôt de commandes',
+    },
   ],
 ];
 

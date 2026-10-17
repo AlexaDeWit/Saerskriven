@@ -110,6 +110,22 @@ const operationFailures: ByTag<OperationFailure> = {
     elementId: elementId('element-api'),
     diagramId: diagramId('diagram-main'),
   }),
+  ElementAlreadyOnDiagram: OperationFailure.ElementAlreadyOnDiagram({
+    elementId: elementId('element-api'),
+    diagramId: diagramId('diagram-main'),
+  }),
+  LastPlacement: OperationFailure.LastPlacement({
+    elementId: elementId('element-api'),
+    diagramId: diagramId('diagram-main'),
+  }),
+  InvalidPlacement: OperationFailure.InvalidPlacement({
+    elementId: elementId('element-api'),
+    diagramId: diagramId('diagram-main'),
+  }),
+  ElementOnSeveralDiagrams: OperationFailure.ElementOnSeveralDiagrams({
+    elementId: elementId('element-api'),
+    diagramIds: [diagramId('diagram-main'), diagramId('diagram-second')],
+  }),
   UnknownThreat: OperationFailure.UnknownThreat({
     threatId: threatId('threat-missing'),
   }),
@@ -145,6 +161,11 @@ const operationFailures: ByTag<OperationFailure> = {
   InvalidFlowEndpoint: OperationFailure.InvalidFlowEndpoint({
     side: 'source',
     reference: elementId('element-missing'),
+  }),
+  FlowEndNotAway: OperationFailure.FlowEndNotAway({
+    elementId: elementId('element-order-flow'),
+    diagramId: diagramId('diagram-main'),
+    side: 'source',
   }),
   NotResizable: OperationFailure.NotResizable({
     elementId: elementId('element-curve'),

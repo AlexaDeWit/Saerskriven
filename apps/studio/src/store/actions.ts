@@ -23,6 +23,7 @@ import type {
   MitigationStatus,
   Model,
   ModelMetadataChange,
+  Placement,
   Point,
   Side,
   Size,
@@ -59,6 +60,11 @@ export type Action = Data.TaggedEnum<{
     readonly element: DrawnElement;
     readonly decimals: Decimals | undefined;
   };
+  PlaceElements: {
+    readonly diagramId: DiagramId;
+    readonly placements: readonly Placement[];
+    readonly decimals: Decimals | undefined;
+  };
   InsertFragment: { readonly diagramId: DiagramId; readonly fragment: Model };
   ArrangeElements: {
     readonly diagramId: DiagramId;
@@ -86,6 +92,13 @@ export type Action = Data.TaggedEnum<{
     readonly position: Point;
     readonly decimals: Decimals | undefined;
   };
+  SetAwayEndPosition: {
+    readonly diagramId: DiagramId;
+    readonly elementId: ElementId;
+    readonly side: 'source' | 'target';
+    readonly position: Point;
+    readonly decimals: Decimals | undefined;
+  };
   ReverseFlow: { readonly elementId: ElementId };
   SetBoundaryShape: {
     readonly diagramId: DiagramId;
@@ -93,11 +106,12 @@ export type Action = Data.TaggedEnum<{
     readonly shape: BoundaryShape;
     readonly decimals: Decimals | undefined;
   };
-  RemoveElement: {
-    readonly elementId: ElementId;
+  RemoveElements: {
+    readonly elementIds: readonly ElementId[];
     readonly decimals: Decimals | undefined;
   };
-  RemoveElements: {
+  DeleteFromDiagram: {
+    readonly diagramId: DiagramId;
     readonly elementIds: readonly ElementId[];
     readonly decimals: Decimals | undefined;
   };

@@ -2,6 +2,7 @@ import { elementsById } from '@saerskriven/model';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslator } from '../messages/locale.js';
 import { useModelStore } from '../store/store.js';
+import { AlsoOn } from './also-on.js';
 import {
   ElementPropertiesEditor,
   type ElementPropertyDrafts,
@@ -97,6 +98,7 @@ export function ThreatPanel({
     <PanelFrame
       {...frame}
       heading={elementHeading(element, elementsById(elements), t)}
+      subheading={<AlsoOn elementId={element.id} />}
       tabs={{ tab, onTab: setTab, threatCount }}
     >
       <PanelTabContent tab={tab} value="threats">

@@ -5,7 +5,12 @@ export {
 } from './lib/badges.js';
 export { drawnBounds, type CanvasBounds } from './lib/bounds.js';
 export { type FlowLabelPlacement } from './lib/flow-blocks.js';
-export { boxesOverlap, boxOfPoints, type Box } from './lib/geometry.js';
+export {
+  boxesOverlap,
+  boxOfPoints,
+  shiftedBy,
+  type Box,
+} from './lib/geometry.js';
 export {
   boxElementStrokeInsets,
   ElementGlyph,
@@ -80,15 +85,22 @@ export {
 export { DiagramGlyphs } from './lib/scene.js';
 export {
   accentClassNames,
+  awayClassNames,
   canvasClassNames,
   canvasInteractionClassNames,
   renderCanvasStylesheet,
   severityToneClass,
   themedCanvasStylesheet,
   wrappedTextStyles,
+  type DrawingHolds,
   type TextStyleRule,
   type WrappedTextStyle,
 } from './lib/stylesheet.js';
+export {
+  awayEndLabels,
+  type AwayEnd,
+  type AwayEndLabel,
+} from './lib/away-ends.js';
 export {
   nodeTextPlacement,
   textPlacementCorners,

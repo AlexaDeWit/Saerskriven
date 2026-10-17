@@ -1,5 +1,6 @@
 import type { Locale } from '@saerskriven/i18n';
 import {
+  diagramsOf,
   elementsById,
   flowEndName,
   flowEnds,
@@ -441,7 +442,20 @@ function elementNames(threat: Threat, context: SectionContext): string {
     : names.join(', ');
 }
 
-function elementName(
+function elementName(id: ElementId, context: SectionContext): string {
+  const named = ownName(id, context);
+  const diagrams = diagramsOf(context.model, id);
+  return diagrams.length > 1
+    ? context.messages.t('register.element-on-diagrams', {
+        name: named,
+        diagrams: diagrams
+          .map((diagram) => headingText(diagram.title) || diagram.id)
+          .join(', '),
+      })
+    : named;
+}
+
+function ownName(
   id: ElementId,
   { elements, messages }: SectionContext,
 ): string {

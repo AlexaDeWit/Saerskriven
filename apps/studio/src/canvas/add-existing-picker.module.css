@@ -1,0 +1,101 @@
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--saer-space-2);
+  margin-block-start: var(--saer-space-2);
+  padding: var(--saer-space-3);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface-raised);
+  color: var(--saer-colour-text);
+}
+
+.heading {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 600;
+}
+
+.none {
+  margin: 0;
+}
+
+/* A long list scrolls inside the picker, so the panes under the card keep
+   their room. */
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--saer-space-2);
+  max-block-size: min(20rem, 40vh);
+  overflow-y: auto;
+}
+
+.group {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  padding: 0;
+  color: var(--saer-colour-text-muted);
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--saer-space-1);
+  margin: var(--saer-space-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--saer-space-2);
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--saer-space-2);
+}
+
+.box {
+  inline-size: 1rem;
+  block-size: 1rem;
+  margin: 0;
+  accent-color: var(--saer-colour-accent);
+}
+
+.detail {
+  color: var(--saer-colour-text-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--saer-space-2);
+}
+
+.action {
+  padding: var(--saer-space-2) var(--saer-space-3);
+  border: 1px solid var(--saer-colour-border);
+  border-radius: var(--saer-radius);
+  background: var(--saer-colour-surface);
+  color: var(--saer-colour-text);
+  font: inherit;
+}
+
+.action[aria-disabled='true'] {
+  color: var(--saer-colour-text-muted);
+}
+
+.box:focus-visible,
+.action:focus-visible {
+  outline: var(--saer-focus-ring);
+  outline-offset: var(--saer-focus-ring-offset);
+}

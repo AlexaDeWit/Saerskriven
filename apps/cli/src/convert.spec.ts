@@ -80,6 +80,15 @@ describe('convert', () => {
     );
   });
 
+  it('writes a file holding a shared element back as version 3 byte for byte, warning that earlier releases refuse it', () => {
+    const shared = testDataPath('saerskriven/shared-elements-v3.yaml');
+    expect(convert(shared, toYaml)).toEqual({
+      code: 0,
+      out: readFileSync(shared, 'utf8'),
+      err: 'warning: written as Saerskriven YAML version 3, which a release reading only versions 1 and 2 refuses.\n',
+    });
+  });
+
   it('rewrites a file in place, leaving no temporary file beside it', () => {
     const path = fixtureFile(
       directory,

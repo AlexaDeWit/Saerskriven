@@ -1,3 +1,4 @@
+import { focusAddExisting, offersExisting } from '../canvas/add-existing.js';
 import { focusSelectionControl } from '../canvas/selection-control.js';
 import { useSnap } from '../canvas/snap.js';
 import { ExternalLinkIcon } from '@radix-ui/react-icons';
@@ -210,7 +211,7 @@ function MenuPanel({
   session,
   unsaved,
 }: MenuPanelProps) {
-  const closeFocus = useCloseFocus(focusSelectionControl);
+  const closeFocus = useCloseFocus(focusOpenEditor);
   const { t } = useTranslator();
 
   return (
@@ -381,6 +382,7 @@ function EditMenu() {
   const redoable = useModelStore(canRedo);
   const nothing = useModelStore((state) => state.selection.length === 0);
   const renamable = useModelStore(renameable);
+  const addable = useModelStore(offersExisting);
 
   return (
     <DropdownMenu.Group>
@@ -406,6 +408,8 @@ function EditMenu() {
         ))}
       </Submenu>
       <MenuCommand command="rename" disabled={!renamable} />
+      <MenuCommand command="add-existing" disabled={!addable} />
+      <MenuCommand command="delete-from-model" disabled={nothing} />
     </DropdownMenu.Group>
   );
 }
@@ -453,6 +457,10 @@ function ExportMenu() {
 
 function nothingAsked(): void {
   return undefined;
+}
+
+function focusOpenEditor(): boolean {
+  return focusSelectionControl() || focusAddExisting();
 }
 
 function useAsking(

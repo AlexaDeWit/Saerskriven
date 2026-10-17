@@ -94,7 +94,10 @@ its attachment to the whole model reported as not kept, and a threat on none of
 them is reported whole and not saved. It takes no width or height under 10
 either, so a smaller element is saved at 10 where it stands and the size it has
 is reported as not kept, even on a save back to the Threat Dragon file it was
-read from. Opening a
+read from. An element on several diagrams is saved as a copy on each, the first
+under its own id, each with its name, facts and threats, and reported once. A
+flow end drawn away from its element is saved as a free end, and a link to an
+element on another diagram is not kept. Opening a
 file reports too, under two headings, each shown only when it has a line.
 **Converted on opening** comes first and lists what the model holds in another
 form or place than the file had it, so it can still be found in the studio: an
@@ -312,6 +315,38 @@ Trust boundary curve, Note and Hand. A tooltip names each tool's shortcuts.
 Hand, or H, pans with the pointer, and holding Space pans for as long as it is
 held. Switching away from the window ends a held pan and keeps the current view.
 
+## Adding an existing element
+
+An element can stand on several diagrams. It is one element, with one name,
+one set of facts and one set of threats, drawn on each, so renaming it or
+changing one of its facts or threats changes it on every diagram.
+
+**Add existing element**, in the menu or E outside a form field, opens a list
+under the card of the elements and flows the diagram on screen does not draw,
+each with the diagrams it is already on. Focus moves to the first of them.
+Pick one or more with a click or Space, then press Add: they arrive at the
+centre of the view as one undo step, selected, each at the size it has on the
+first diagram that draws it, and without that diagram's accent. Picks from one
+diagram keep their layout there, and the picks of each diagram stand side by
+side. Escape or Cancel adds nothing and puts focus back where it was. The menu
+item is unavailable while the diagram on screen draws every element, and E
+then says so.
+
+The list holds every flow the diagram does not draw, and adds only the ones
+picked. An added flow takes no bends: an end whose element is on the diagram
+follows the route, and any other end is drawn away from its element, as
+[Flows](#flows) describes. A flow already on the diagram whose end was drawn
+away from an added element attaches to it.
+
+Every placement of an element on more than one diagram carries a mark: a small
+square holding a link glyph, on the top left corner of its box, or left of a
+flow's name. It steps past the corner while the element is selected, clear of
+the resize handle there. The mark is a shape in the ink of a name, so it does
+not depend on colour and survives forced colours, and no export draws it. The
+threat panel shows an **Also on** line under the element's name, naming its
+other diagrams. Each name shows that diagram with the element selected and
+focused.
+
 ## Selecting
 
 A click selects one element or flow. Shift-click, or Shift+Enter on a focused
@@ -457,6 +492,12 @@ readers announce placement instructions.
   move it five units or twenty with Shift, and drop it on an actor, process or
   store to attach it there. Delete or Backspace on it leaves the end where it
   is and says so: select the flow itself to delete it.
+- An end attached to an element on another diagram is drawn away from it, at
+  a point of its own, in a dashed frame naming the element. Drag it or press
+  an arrow key to move it, and it stays attached. The endpoint editor names
+  that element as on another diagram, and Free point frees the end. Adding
+  that element to this diagram with
+  [Add existing element](#adding-an-existing-element) attaches the end to it.
 
 The local bend, point and Close actions use icons with names in hover and
 keyboard-focus tooltips. Auto keeps the end attached and releases its pinned side. The endpoint editor
@@ -642,6 +683,16 @@ the whole model stays. The notice counts the flows detached, the links dropped
 from the threats that stay, and the threats removed, so a threat that goes is
 reported once. One Delete stays one undo step, whatever it took.
 
+An element can be on several diagrams. Delete on such an element takes it off
+the diagram on screen only: it keeps its threats and its other diagrams, a
+flow attached to it is drawn away from it there, and the notice names the
+diagrams it is still on. Delete on an element's only diagram removes it from
+the model, as above. **Delete from model**, in the menu or Shift+Delete,
+removes the selection from every diagram it is on. Cut takes a shared element
+off the diagram on screen too, so pasting it makes a copy. To move an element
+to another diagram, add it there with
+[Add existing element](#adding-an-existing-element), then delete it here.
+
 Every edit is one undo step: a placement, a drag, a resize, a committed field,
 a paste. Selecting, panning, zooming and switching diagrams add no undo step
 and leave the file unmodified.
@@ -666,8 +717,9 @@ middle-button drag, Hand or held Space pans.
 
 ## The threat panel
 
-The panel shows the one selected element or flow, headed by its name, on two
-tabs: **Threats**, which carries the element's threat count, and **Details**,
+The panel shows the one selected element or flow, headed by its name and, for
+an element on more than one diagram, the
+[Also on line](#adding-an-existing-element), on two tabs: **Threats**, which carries the element's threat count, and **Details**,
 which holds its description, scope and security properties. Every selection
 opens on Threats, and the arrow keys move between the tabs. With several
 selected the panel says how many and offers no fields. Focus threats shows the
@@ -838,8 +890,10 @@ and expand **Security properties**. **Not recorded** leaves a fact unknown, and
 a flag offers Yes and No. Protocol and privilege level distinguish an empty
 recorded value from Not recorded. Relationship lists (the boundaries a flow
 crosses, a boundary's contained elements and crossing flows) offer valid targets
-in the same diagram, keep their order and any repeated entry until you edit
-them, and Not recorded removes the list itself. The fields' meaning is in
+anywhere in the model, a target on another diagram with that diagram's title
+beside it, keep their order and any repeated entry until you edit them, and
+Not recorded removes the list itself. Naming an element of another
+diagram moves a Saerskriven YAML file to version 3. The fields' meaning is in
 [the format](saerskriven-yaml.md#security-facts).
 
 ## The threat register
@@ -912,6 +966,8 @@ outside one, and none works while focus is inside an open menu or list.
 | Copy, Cut, Paste, Duplicate            | Mod+C, Mod+X, Mod+V, Mod+D                   | Keyboard only       |
 | Select all                             | Mod+A                                        | Keyboard only       |
 | Delete selection                       | Delete or Backspace                          | Trash control       |
+| Delete from model                      | Shift+Delete or Shift+Backspace              | Menu                |
+| Add existing element                   | E                                            | Menu                |
 | Rename selection                       | F2, or Enter with one selected               | Menu                |
 | Position and size                      | Shift+P                                      | Keyboard only       |
 | Change flow source, Change flow target | Shift+S, Shift+T                             | Reconnect flow card |
@@ -951,7 +1007,9 @@ panel until the register closes.
 
 Every element and flow is a tab stop whose accessible name comes from the
 model: its name, its kind, what its badge says, and each flag its threats
-raise. A flow also names the elements it runs between. The inline name field is
+raise. A flow also names the elements it runs between, and an end drawn away
+from its element as on another diagram. An element on more than one diagram
+ends by naming the others ("also on Payments"). The inline name field is
 named "Name of" the element it renames. Selection is a dashed frame and a
 heavier line, and focus is a separate ring, so neither depends on colour and
 both survive forced colours. The diagram follows the system contrast theme,
@@ -1017,9 +1075,9 @@ navigation keys do not.
   threats, and an assumption through its threats or the model panel's Details.
   The model's explicit record removal has no control.
 - In Safari, record rows in view move when another tab adds a record above them.
-- Link existing and Attach existing have no search or filter, and neither the
-  threat list nor the threat register has a filter, a search, or an order but
-  the one above.
+- Link existing, Attach existing and Add existing element have no search or
+  filter, and neither the threat list nor the threat register has a filter, a
+  search, or an order but the one above.
 - A threat's id and number cannot be edited.
 - A custom methodology cannot be created in the studio. A threat that arrived
   with one shows it and can be moved to a listed category.

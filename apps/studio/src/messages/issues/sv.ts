@@ -53,7 +53,7 @@ export const issuesSv = catalogue(issueMessages)('sv')({
   'placement-element-unknown':
     'diagrammet placerar ”{id}”, som inte namnger något element i modellen',
   'duplicate-placement':
-    'elementet ”{id}” placeras en andra gång, och ett element ritas en gång, i ett diagram',
+    'elementet ”{id}” placeras en andra gång i samma diagram, och ett element ritas högst en gång i varje diagram',
   'placement-geometry-mismatch':
     'placeringen av ”{id}” bär inte den geometri som dess slag tar',
   'element-unplaced': 'elementet ”{id}” är inte placerat i något diagram',
@@ -70,14 +70,17 @@ export const issuesSv = catalogue(issueMessages)('sv')({
   'flow-endpoint-self':
     'flödet namnger sitt eget id ”{id}”, och ett flöde kan inte fästa vid sig självt',
   'flow-endpoint-foreign': 'elementet ”{id}” finns inte i flödets eget diagram',
+  'flow-end-position-missing':
+    'elementet ”{id}” finns inte i det här diagrammet, och änden saknar position här',
+  'flow-end-position-held':
+    'änden är fäst vid ”{id}”, som det här diagrammet placerar, och kan därför inte ha någon position här',
   'unknown-element-reference': 'inget element i modellen bär id:t ”{id}”',
   'unknown-threat-reference': 'inget hot i modellen bär id:t ”{id}”',
-  'related-element-unknown':
-    '”{id}” namnger inget annat element i elementets eget diagram',
-  'related-boundary-unknown':
-    '”{id}” namnger ingen förtroendegräns i elementets eget diagram',
-  'related-flow-unknown':
-    '”{id}” namnger inget flöde i elementets eget diagram',
+  'related-element-unknown': '”{id}” namnger inget annat element i modellen',
+  'related-boundary-unknown': '”{id}” namnger ingen förtroendegräns i modellen',
+  'related-flow-unknown': '”{id}” namnger inget flöde i modellen',
+  'related-off-diagram':
+    '”{id}” finns i ett annat diagram, och den här filen kopplar bara samman element i ett och samma diagram',
   'issue-flood': 'filen bär fler problem än en tolkning kan räkna upp',
   'schema-threw': 'tolkningen stannade innan den kunde säga vad som är fel',
 });

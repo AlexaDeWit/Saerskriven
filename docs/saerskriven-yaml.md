@@ -76,18 +76,39 @@ attaches to (`kind: attached` and `element`) or `kind: free`. A placement holds
 `element`, the id of the element it draws, an optional `accent`, and the
 element's geometry on that diagram, which its keys tell apart:
 
-| Element kind                | Placement geometry                                                                          |
-| --------------------------- | ------------------------------------------------------------------------------------------- |
-| Actor, process, store, Note | `position` and `size`                                                                       |
-| Trust boundary              | `shape`, a box or a curve as in version 2                                                   |
-| Flow                        | `waypoints`, and a `source` and a `target`, each a pinned `side` or a free end's `position` |
+| Element kind                | Placement geometry                                                                        |
+| --------------------------- | ----------------------------------------------------------------------------------------- |
+| Actor, process, store, Note | `position` and `size`                                                                     |
+| Trust boundary              | `shape`, a box or a curve as in version 2                                                 |
+| Flow                        | `waypoints`, and a `source` and a `target`, each a pinned `side` or a `position`, or `{}` |
 
 An end attached to an element placed on the same diagram holds no `position`,
-and its `side` pins it where one is given, as in version 2. A free end holds
-its `position` and no `side`. A diagram places an element at most once, and
-every element is placed at least once. This release still refuses a file that
-places one element on two diagrams or draws a flow end away from its element,
-so every version 3 file it reads is one version 2 also holds.
+and its `side` pins it where one is given, as in version 2, or `{}` leaves the
+side to the renderer. A free end holds its `position` and no `side`, and so
+does an end [drawn away](#shared-elements) from its element.
+
+### Shared elements
+
+An element of any kind, a Note and a trust boundary too, can be placed on
+several diagrams, and each placement holds that diagram's geometry and accent.
+A diagram places an element at most once, and every element is placed at
+least once. Its name, details, security facts, Note text and threats are the
+element's, so they are the same on every diagram it is on.
+
+A flow can be placed on a diagram that does not place one of the elements its
+ends attach to. That end is drawn away from its element: its placement holds
+the `position` it is drawn at, and the drawing labels it with the element's
+name. Placing the element on that diagram attaches the end there, and taking
+it off draws the end away again at the element's anchor. An end whose element
+the diagram places holds no `position`, and the read fails on one that does.
+Which element an end attaches to is the flow's, on every diagram.
+
+`containedElements`, `crossingFlows` and `trustBoundaryIds` name elements
+anywhere in the model, and a drawing of one diagram shows the members that
+diagram places. A version 1 or 2 file keeps each list inside the diagram
+drawing its element, as such a file always has, so every version 1 or 2 file
+reads as it did, and a list reaches another diagram only through an edit,
+which moves the file to version 3.
 
 ### Why a new version
 
@@ -323,9 +344,11 @@ flows. List order and repeated entries survive conversion. An absent list means
 unrecorded relationships. An empty list explicitly records none. The model does
 not infer these assertions from geometry or add reciprocal assertions.
 
-Each reference must resolve inside its element's diagram. `trustBoundaryIds`
-targets trust boundaries, `crossingFlows` targets flows, and `containedElements`
-targets another element. Invalid relationships refuse the read with a field path.
+Each reference must name an element of the model, and in a version 1 or 2
+file an element of its own element's diagram ([Shared elements](#shared-elements)).
+`trustBoundaryIds` targets trust boundaries, `crossingFlows` targets flows,
+and `containedElements` targets another element. Invalid relationships refuse
+the read with a field path.
 
 Deleting an element also removes its entries from these lists. A previously
 present list can become empty, while an absent list stays absent. Moving, resizing,

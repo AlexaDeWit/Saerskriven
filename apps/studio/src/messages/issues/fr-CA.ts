@@ -58,7 +58,7 @@ export const issuesFrCA = catalogue(issueMessages)('fr-CA')({
   'placement-element-unknown':
     'le diagramme place « {id} », qui ne nomme aucun élément du modèle',
   'duplicate-placement':
-    'l’élément « {id} » est placé une deuxième fois, et un élément se dessine une seule fois, sur un seul diagramme',
+    'l’élément « {id} » est placé une deuxième fois sur un même diagramme, et un élément se dessine au plus une fois sur chaque diagramme',
   'placement-geometry-mismatch':
     'le placement de « {id} » ne porte pas la géométrie que prend son genre',
   'element-unplaced': 'l’élément « {id} » n’est placé sur aucun diagramme',
@@ -76,16 +76,20 @@ export const issuesFrCA = catalogue(issueMessages)('fr-CA')({
     'le flux nomme son propre identifiant « {id} », et un flux ne peut pas s’ancrer à lui-même',
   'flow-endpoint-foreign':
     'l’élément « {id} » ne se trouve pas dans le diagramme du flux',
+  'flow-end-position-missing':
+    'l’élément « {id} » ne se trouve pas sur ce diagramme, et l’extrémité n’y a pas de position',
+  'flow-end-position-held':
+    'l’extrémité est rattachée à « {id} », que ce diagramme place, et ne peut donc pas y avoir de position',
   'unknown-element-reference':
     'aucun élément du modèle ne porte l’identifiant « {id} »',
   'unknown-threat-reference':
     'aucune menace du modèle ne porte l’identifiant « {id} »',
-  'related-element-unknown':
-    '« {id} » ne nomme aucun autre élément du diagramme de l’élément',
+  'related-element-unknown': '« {id} » ne nomme aucun autre élément du modèle',
   'related-boundary-unknown':
-    '« {id} » ne nomme aucune frontière de confiance du diagramme de l’élément',
-  'related-flow-unknown':
-    '« {id} » ne nomme aucun flux du diagramme de l’élément',
+    '« {id} » ne nomme aucune frontière de confiance du modèle',
+  'related-flow-unknown': '« {id} » ne nomme aucun flux du modèle',
+  'related-off-diagram':
+    '« {id} » se trouve sur un autre diagramme, et ce fichier ne relie que les éléments d’un même diagramme',
   'issue-flood':
     'le fichier porte plus de problèmes qu’une analyse ne peut en énumérer',
   'schema-threw':

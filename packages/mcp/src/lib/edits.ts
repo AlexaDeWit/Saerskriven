@@ -14,6 +14,7 @@ import {
   elementIdSchema,
   modelMetadataChangeSchema,
   moveElement,
+  placeElement,
   pointSchema,
   reconnectFlow,
   removeDiagram,
@@ -32,10 +33,9 @@ import {
   setElementProperties,
   sideSchema,
   sizeSchema,
+  unplaceElement,
   waypointsSchema,
-  type Accent,
   type DiagramId,
-  type ElementId,
   type Model,
   type RecordReference,
   type Threat,
@@ -47,6 +47,8 @@ import {
   addedElementSchema,
   consistentPropertyEdit,
   editedProperties,
+  placementEditSchema,
+  placementFor,
   propertyEditSchema,
 } from './element-edits.js';
 import { flowEndSchema } from './element-rows.js';
@@ -70,6 +72,16 @@ const diagramEditSchema = z.object({
   diagram: diagramIdSchema.describe('The id of the diagram.'),
 });
 
+const onDiagramSchema = z.object({
+  diagram: diagramIdSchema
+    .optional()
+    .describe(
+      'The diagram whose drawing the edit changes. Needed only for an element on more than one diagram, which the edit refuses without it.',
+    ),
+});
+
+const drawnEditSchema = elementEditSchema.extend(onDiagramSchema.shape);
+
 /**
  * `add_*` and `replace_*` edits take whole records. Every other edit changes
  * only what it names. The threat, mitigation and assumption variants are
@@ -91,15 +103,20 @@ export const modelEditSchema = z.discriminatedUnion('op', [
         'Unset fields must belong to the element kind and cannot also have a value.',
     }),
   elementEditSchema.extend({ op: z.literal('remove_element') }),
+  placementEditSchema.extend({ op: z.literal('place_element') }),
   elementEditSchema.extend({
+    op: z.literal('unplace_element'),
+    diagram: diagramIdSchema.describe('The diagram to take the element off.'),
+  }),
+  drawnEditSchema.extend({
     op: z.literal('move_element'),
     offset: pointSchema.describe('How far to translate the element.'),
   }),
-  elementEditSchema.extend({
+  drawnEditSchema.extend({
     op: z.literal('resize_element'),
     size: sizeSchema,
   }),
-  elementEditSchema.extend({
+  drawnEditSchema.extend({
     op: z.literal('set_boundary_shape'),
     shape: boundaryShapeSchema.describe(
       'A box with its position and size, or a curve through at least two points, replacing the shape the trust boundary has whichever of the two it is.',
@@ -116,7 +133,7 @@ export const modelEditSchema = z.discriminatedUnion('op', [
   elementEditSchema
     .extend(elementDetailsChangeSchema.shape)
     .extend({ op: z.literal('set_element_details') }),
-  z.object({
+  onDiagramSchema.extend({
     op: z.literal('set_accent'),
     elements: z
       .array(elementIdSchema)
@@ -128,7 +145,7 @@ export const modelEditSchema = z.discriminatedUnion('op', [
         'The accent key every named element takes, `s1` to `s4` strong or `l1` to `l4` light, or "none" to clear theirs.',
       ),
   }),
-  elementEditSchema.extend({
+  drawnEditSchema.extend({
     op: z.literal('set_flow_waypoints'),
     waypoints: waypointsSchema,
   }),
@@ -140,8 +157,11 @@ export const modelEditSchema = z.discriminatedUnion('op', [
         'Whether data moves both ways along the flow. The flow keeps its id, so the threats attached to it stay attached.',
       ),
   }),
-  elementEditSchema.extend({
+  drawnEditSchema.extend({
     op: z.literal('reconnect_flow'),
+    diagram: onDiagramSchema.shape.diagram.describe(
+      'The diagram whose drawing `anchor` pins the end on, which has to place `endpoint`. Needed only for a flow on more than one diagram, which the edit refuses without it.',
+    ),
     side: flowEndSchema,
     endpoint: elementIdSchema.describe(
       'The actor, process or store the end moves to.',
@@ -152,7 +172,7 @@ export const modelEditSchema = z.discriminatedUnion('op', [
         'The side of the endpoint the flow fastens to. Left out, the renderer chooses.',
       ),
   }),
-  elementEditSchema.extend({
+  drawnEditSchema.extend({
     op: z.literal('set_flow_end_position'),
     side: flowEndSchema,
     position: pointSchema.describe(
@@ -277,16 +297,24 @@ function applyEdit(
       return setElementProperties(model, edit.element, editedProperties(edit));
     case 'remove_element':
       return removeElement(model, edit.element);
+    case 'place_element':
+      return placeElement(
+        model,
+        edit.diagram,
+        placementFor(edit, placementIndex(model, edit.diagram)),
+      );
+    case 'unplace_element':
+      return unplaceElement(model, edit.diagram, edit.element);
     case 'move_element':
-      return onItsDiagram(model, edit.element, (diagram) =>
+      return onItsDiagram(model, edit, (diagram) =>
         moveElement(model, diagram, edit.element, edit.offset),
       );
     case 'resize_element':
-      return onItsDiagram(model, edit.element, (diagram) =>
+      return onItsDiagram(model, edit, (diagram) =>
         resizeElement(model, diagram, edit.element, edit.size),
       );
     case 'set_boundary_shape':
-      return onItsDiagram(model, edit.element, (diagram) =>
+      return onItsDiagram(model, edit, (diagram) =>
         setBoundaryShape(model, diagram, edit.element, edit.shape),
       );
     case 'rename_element':
@@ -296,19 +324,15 @@ function applyEdit(
     case 'set_element_details':
       return setElementDetails(model, edit.element, edit);
     case 'set_accent':
-      return accented(
-        model,
-        edit.elements,
-        edit.accent === noAccent ? undefined : edit.accent,
-      );
+      return accented(model, edit);
     case 'set_flow_waypoints':
-      return onItsDiagram(model, edit.element, (diagram) =>
+      return onItsDiagram(model, edit, (diagram) =>
         setFlowWaypoints(model, diagram, edit.element, edit.waypoints),
       );
     case 'set_flow_direction':
       return setFlowDirection(model, edit.element, edit.bidirectional);
     case 'reconnect_flow':
-      return onItsDiagram(model, edit.element, (diagram) =>
+      return onItsDiagram(model, edit, (diagram) =>
         reconnectFlow(
           model,
           diagram,
@@ -319,7 +343,7 @@ function applyEdit(
         ),
       );
     case 'set_flow_end_position':
-      return onItsDiagram(model, edit.element, (diagram) =>
+      return onItsDiagram(model, edit, (diagram) =>
         setFlowEndPosition(
           model,
           diagram,
@@ -352,25 +376,37 @@ function placementIndex(model: Model, diagramId: string): number {
 
 function onItsDiagram(
   model: Model,
-  elementId: ElementId,
+  { element: elementId, diagram: named }: z.infer<typeof drawnEditSchema>,
   edit: (diagramId: DiagramId) => Either.Either<Model, OperationFailure>,
 ): Either.Either<Model, OperationFailure> {
-  const [diagram] = diagramsOf(model, elementId);
-  return diagram === undefined
-    ? Either.left(OperationFailure.UnknownElement({ elementId }))
-    : edit(diagram.id);
+  if (named !== undefined) {
+    return edit(named);
+  }
+  const diagrams = diagramsOf(model, elementId);
+  const [diagram] = diagrams;
+  if (diagram === undefined) {
+    return Either.left(OperationFailure.UnknownElement({ elementId }));
+  }
+  return diagrams.length === 1
+    ? edit(diagram.id)
+    : Either.left(
+        OperationFailure.ElementOnSeveralDiagrams({
+          elementId,
+          diagramIds: diagrams.map(({ id }) => id),
+        }),
+      );
 }
 
 function accented(
   model: Model,
-  elementIds: readonly ElementId[],
-  accent: Accent | undefined,
+  edit: Extract<ModelEdit, { op: 'set_accent' }>,
 ): Either.Either<Model, OperationFailure> {
-  return elementIds.reduce<Either.Either<Model, OperationFailure>>(
-    (outcome, elementId) =>
+  const accent = edit.accent === noAccent ? undefined : edit.accent;
+  return edit.elements.reduce<Either.Either<Model, OperationFailure>>(
+    (outcome, element) =>
       Either.flatMap(outcome, (current) =>
-        onItsDiagram(current, elementId, (diagram) =>
-          setAccent(current, diagram, [elementId], accent),
+        onItsDiagram(current, { element, diagram: edit.diagram }, (diagram) =>
+          setAccent(current, diagram, [element], accent),
         ),
       ),
     Either.right(model),

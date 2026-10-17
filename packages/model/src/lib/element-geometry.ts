@@ -16,8 +16,8 @@ import type { BoundaryShape } from './placements.js';
 const origin: Point = { x: 0, y: 0 };
 
 /**
- * Translates element geometry while attached endpoints retain their
- * references, each point it moves stored at `decimals`.
+ * Translates element geometry while ends attached to an element the diagram
+ * places keep following it, each point it moves stored at `decimals`.
  */
 export function translatedElement(
   element: DrawnElement,
@@ -31,8 +31,8 @@ export function translatedElement(
 
 /**
  * `element` with the whole of its geometry stored at `decimals`: every
- * position, free end, waypoint and size. `element` itself where no count is
- * named.
+ * position, end drawn at a position, waypoint and size. `element` itself
+ * where no count is named.
  */
 export function storedElement(
   element: DrawnElement,
@@ -70,11 +70,11 @@ export function storedShape(
 
 /**
  * The point a flow freed from `element` keeps: a node's or a box's centre, a
- * curve's first waypoint, or a flow's first bend or free end.
+ * curve's first waypoint, or a flow's first bend or end drawn at a position.
  */
 export function anchorPoint(element: DrawnElement): Point {
   if (element.kind === 'flow') {
-    return element.waypoints.at(0) ?? freeEndpointPosition(element) ?? origin;
+    return element.waypoints.at(0) ?? positionedEndPoint(element) ?? origin;
   }
   if (element.kind === 'trust-boundary') {
     return element.shape.kind === 'box'
@@ -101,12 +101,12 @@ export function resized(
 }
 
 /**
- * Whether an element holds the same geometry after a move or a resize as
- * before it, number for number: positions, sizes, free ends, bends and curve
- * points. Sound only for an element and that same element after such an
- * edit, which changes no kind, attachment or shape: the numbers are compared
- * in order with nothing saying which is which, so two elements of different
- * shapes can hold the same list.
+ * Whether an element holds the same geometry after a move or a resize as before
+ * it, number for number: positions, sizes, ends drawn at a position, bends and
+ * curve points. Sound only for an element and that same element after such an
+ * edit, which changes no kind, attachment or shape: the numbers are compared in
+ * order with nothing saying which is which, so two elements of different shapes
+ * can hold the same list.
  */
 export function sameGeometry(left: DrawnElement, right: DrawnElement): boolean {
   return sameItems(numbersOf(left), numbersOf(right));
@@ -120,7 +120,7 @@ export function samePoint(left: Point, right: Point): boolean {
 function numbersOf(element: DrawnElement): number[] {
   if (element.kind === 'flow') {
     return [element.source, element.target]
-      .flatMap((end) => (end.kind === 'free' ? [end.position] : []))
+      .flatMap((end) => (end.kind === 'attached' ? [] : [end.position]))
       .concat(element.waypoints)
       .flatMap(({ x, y }) => [x, y]);
   }
@@ -168,9 +168,9 @@ function endpointAt(
   endpoint: DrawnFlowEndpoint,
   at: (point: Point) => Point,
 ): DrawnFlowEndpoint {
-  return endpoint.kind === 'free'
-    ? { ...endpoint, position: at(endpoint.position) }
-    : endpoint;
+  return endpoint.kind === 'attached'
+    ? endpoint
+    : { ...endpoint, position: at(endpoint.position) };
 }
 
 function centreOf(position: Point, size: Size): Point {
@@ -180,10 +180,10 @@ function centreOf(position: Point, size: Size): Point {
   };
 }
 
-function freeEndpointPosition(flow: DrawnFlow): Point | undefined {
+function positionedEndPoint(flow: DrawnFlow): Point | undefined {
   return [flow.source, flow.target]
     .flatMap((endpoint) =>
-      endpoint.kind === 'free' ? [endpoint.position] : [],
+      endpoint.kind === 'attached' ? [] : [endpoint.position],
     )
     .at(0);
 }

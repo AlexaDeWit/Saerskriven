@@ -82,8 +82,11 @@
           },
           "{workspaceRoot}/test-data/every-glyph.model.json",
           "{workspaceRoot}/test-data/two-diagrams.model.json",
+          "{workspaceRoot}/test-data/accents.model.json",
           "{workspaceRoot}/test-data/render/every-glyph.*",
           "{workspaceRoot}/test-data/render/two-diagrams*",
+          "{workspaceRoot}/test-data/render/accents.*",
+          "{workspaceRoot}/test-data/render/shared-elements-overview.*",
           {
             "env": "SAERSKRIVEN_RESVG_WASM"
           },

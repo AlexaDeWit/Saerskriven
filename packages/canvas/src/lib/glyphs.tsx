@@ -1,5 +1,6 @@
 import { accentParts, type Accent, type Size } from '@saerskriven/model';
 import type { CSSProperties, ReactElement, SVGProps } from 'react';
+import { awayEndLabels } from './away-ends.js';
 import { badgeAnchor, ThreatBadgeGlyph, type BadgeMarks } from './badges.js';
 import { edgePoints } from './flow-anchors.js';
 import type { Box } from './geometry.js';
@@ -11,6 +12,7 @@ import { arrowheadPath, polylinePath, smoothPath, translate } from './paths.js';
 import {
   accentClassNames,
   accentGroupClasses,
+  awayClassNames,
   canvasClassNames,
 } from './stylesheet.js';
 import { nodeTextPlacement } from './text-placement.js';
@@ -69,10 +71,10 @@ export function BoxElementGlyph({
 }
 
 /**
- * Uses node coordinates, with the text and badge optionally drawn in separate layers.
- * An out-of-scope note adds a frame outside its box. An accented note draws a
- * bar down the inside of its left edge, and a strong one tints its whole box
- * behind the bar.
+ * Uses node coordinates, with the text and badge optionally drawn in separate
+ * layers. An out-of-scope note adds a frame outside its box. An accented note
+ * draws a bar down the inside of its left edge, and a strong one tints its
+ * whole box behind the bar.
  */
 export function ElementGlyph({
   badgeVisible = true,
@@ -115,7 +117,12 @@ export function PlacedElementGlyph({
   );
 }
 
-/** Draws the block after the line so its backing covers the line. */
+/**
+ * Draws the block after the line so its backing covers the line. An end
+ * drawn away from its element hangs a dashed frame naming that element, drawn
+ * apart from the flow's own scope and accent, since the frame stands for the
+ * element.
+ */
 export function FlowGlyph({
   blockVisible = true,
   edge,
@@ -128,7 +135,8 @@ export function FlowGlyph({
   readonly textVisible?: boolean;
 }): ReactElement {
   const points = edgePoints(edge);
-  return (
+  const away = awayEndLabels(edge);
+  const flow = (
     <g className={groupClass(edge.outOfScope, edge.accent)}>
       <path
         className={shapeClass(canvasClassNames.flow)}
@@ -146,6 +154,21 @@ export function FlowGlyph({
       ) : null}
       {blockVisible ? flowBlockGlyph({ edge, marks, textVisible }) : null}
     </g>
+  );
+  return away.length === 0 ? (
+    flow
+  ) : (
+    <>
+      {flow}
+      <g className={canvasClassNames.element}>
+        {away.map((label) => (
+          <g key={label.side}>
+            {rectOfBox(awayClassNames.frame, label.frame)}
+            {textVisible ? <WrappedText {...label.name} /> : null}
+          </g>
+        ))}
+      </g>
+    </>
   );
 }
 

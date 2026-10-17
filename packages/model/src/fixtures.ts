@@ -11,6 +11,7 @@ import {
   placementOn,
 } from './lib/drawing.js';
 import type { DrawnElement, DrawnFlow } from './lib/drawn-elements.js';
+import type { Element, Flow } from './lib/elements.js';
 import {
   emptyRegisterFixture,
   threatRegisterFixture,
@@ -33,6 +34,7 @@ import { parseDrawnModel } from './lib/parse-drawn.js';
 import type { Placement } from './lib/placements.js';
 import { issueLine, parseIssueText } from './lib/parse-issue.js';
 import { parseModel, type Model, type ParseFailure } from './lib/parse.js';
+import { sharedModelInput } from './lib/shared.fixtures.js';
 import type { Threat } from './lib/threats.js';
 
 export {
@@ -58,6 +60,7 @@ export {
   securityModelFixture,
   securityPropertyFixtures,
 } from './lib/security.fixtures.js';
+export { sharedModelInput } from './lib/shared.fixtures.js';
 
 /** Parses a spec's literal string into a branded element id. */
 export const elementId = (value: string): ElementId =>
@@ -89,7 +92,7 @@ export function parsedFixture(input: ModelInput): Model {
  * `parseDrawnModel`. A broken one throws with its path-bearing issues.
  */
 export function drawnFixture(input: DrawnModelInput): Model {
-  return fixtureOf(parseDrawnModel(input));
+  return fixtureOf(parseDrawnModel(input, 'diagram'));
 }
 
 /** The model a parse produced, throwing with its path-bearing issues where it refused. */
@@ -111,6 +114,9 @@ export const registerModel: Model = drawnFixture(threatRegisterFixture);
 
 /** {@link emptyRegisterFixture}, parsed. */
 export const emptyRegisterModel: Model = drawnFixture(emptyRegisterFixture);
+
+/** {@link sharedModelInput}, parsed: two diagrams sharing elements. */
+export const sharedModel: Model = parsedFixture(sharedModelInput);
 
 /**
  * Each methodology with a closed category list, beside that list, read from
@@ -237,6 +243,22 @@ export const drawnAt = (
 };
 
 /**
+ * The element under the id as the diagram of id `diagram` draws it, and
+ * undefined where the model holds no such diagram or it does not place the
+ * element.
+ */
+export const drawnOn = (
+  model: Model,
+  diagram: string,
+  id: string,
+): DrawnElement | undefined => {
+  const held = model.diagrams.find(({ id: own }) => own === diagram);
+  return held === undefined
+    ? undefined
+    : drawnElementOn(model, held, elementId(id));
+};
+
+/**
  * Every element the model's diagrams draw, as they draw them, in diagram
  * order: empty where there is no model.
  */
@@ -333,6 +355,24 @@ export const placementIn = (model: Model, id: string): Placement => {
     throw new Error(`Element ${id} is placed on no diagram.`);
   }
   return placement;
+};
+
+/** The element under the id as the model holds it, throwing where it holds none. */
+export const heldElement = (model: Model, id: string): Element => {
+  const element = model.elements.find((candidate) => candidate.id === id);
+  if (!element) {
+    throw new Error(`Element ${id} is missing from the model.`);
+  }
+  return element;
+};
+
+/** The flow under the id as the model holds it, throwing where it holds no such flow. */
+export const heldFlow = (model: Model, id: string): Flow => {
+  const element = heldElement(model, id);
+  if (element.kind !== 'flow') {
+    throw new Error(`Element ${id} is not a flow.`);
+  }
+  return element;
 };
 
 /** The flow under the id as it is drawn, throwing where the element is missing or no flow. */

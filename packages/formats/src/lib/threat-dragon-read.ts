@@ -87,7 +87,7 @@ function mapDocument(
 ): Either.Either<ReadResult<typeof threatDragonWireSchema>, ReadFailure> {
   return Either.flatMap(parseWire(threatDragonWireSchema, given), (wire) => {
     const mapping = toMapping(wire);
-    return Either.map(modelFrom(mapping.input), (model) => ({
+    return Either.map(modelFrom(mapping.input, 'diagram'), (model) => ({
       model,
       source: wire,
       divergences: [

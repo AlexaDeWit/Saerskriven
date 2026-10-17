@@ -6,7 +6,7 @@ import {
   type GestureInput,
   type NodeBox,
 } from '@saerskriven/canvas';
-import type { Flow, Point, Side } from '@saerskriven/model';
+import type { DrawnFlow, Point, Side } from '@saerskriven/model';
 import { useReactFlow } from '@xyflow/react';
 import { useEffect, useEffectEvent, useState, type RefObject } from 'react';
 import { keyboardOwner } from '../commands/binding.js';
@@ -376,7 +376,7 @@ function flowEndKey(
       ? 'target'
       : 'source';
   const endpoint = bends.flow?.[end];
-  if (endpoint?.kind === 'free') {
+  if (endpoint !== undefined && endpoint.kind !== 'attached') {
     const point = nudgedPoint(
       endpoint.position,
       event,
@@ -486,7 +486,7 @@ function draggedTarget(
 }
 
 function landing(
-  flow: Flow,
+  flow: DrawnFlow,
   nodes: readonly CanvasNode[],
   held: HeldEnd,
   point: Point,
@@ -510,8 +510,7 @@ function landing(
   }
   const other = flow[end === 'source' ? 'target' : 'source'];
   const attachable =
-    isFlowEnd(under) &&
-    (other.kind !== 'attached' || other.element !== under.id);
+    isFlowEnd(under) && (other.kind === 'free' || other.element !== under.id);
   return attachable ? { kind: 'attach', end, element: under.id } : undefined;
 }
 

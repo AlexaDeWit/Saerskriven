@@ -1,4 +1,9 @@
-import { assumptionId, drawnAt, redrawn } from '@saerskriven/model/fixtures';
+import {
+  assumptionId,
+  drawnAt,
+  heldElement,
+  redrawn,
+} from '@saerskriven/model/fixtures';
 import {
   elementsById,
   type ElementId,
@@ -157,8 +162,8 @@ describe('ThreatSummary', () => {
         attachableElements(flowModel, { ...threat, elements: [] }, t)[0].text
           .label,
       ).toBe(attachments[0].label);
-      const drawn = drawnAt(flowModel);
-      expect(elementHeading(drawn[0], elementsById(drawn), t)).toBe(
+      const first = heldElement(flowModel, drawnAt(flowModel)[0].id);
+      expect(elementHeading(first, elementsById(flowModel.elements), t)).toBe(
         attachments[0].label,
       );
     },

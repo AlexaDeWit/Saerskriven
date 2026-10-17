@@ -55,6 +55,14 @@ export const canvasClassNames = {
   toneFlag: 'saer-diagram-tone-flag',
 } as const satisfies Record<string, DiagramClassName>;
 
+/**
+ * The class of the frame a flow end drawn away from its element hangs, which
+ * the headless sheet styles only where a drawing holds one.
+ */
+export const awayClassNames = {
+  frame: 'saer-diagram-away-frame',
+} as const satisfies Record<string, DiagramClassName>;
+
 /** Names for interactive layers that the mounting canvas styles. */
 export const canvasInteractionClassNames = {
   badgeLayer: 'saer-diagram-badge-layer',
@@ -273,6 +281,16 @@ const sheetFrom = (
 }
 `;
 
+const awaySheetFrom = (
+  colour: (role: keyof Palette) => string,
+): string => `.${awayClassNames.frame} {
+  fill: ${colour('surfaceCanvas')};
+  stroke: ${colour('textSecondary')};
+  stroke-width: ${strokeWidths.outline};
+  stroke-dasharray: 4 3;
+}
+`;
+
 const strong = `.${accentClassNames.strong}`;
 
 const strongOutOfScope = `.${canvasClassNames.outOfScope}${strong}`;
@@ -343,7 +361,7 @@ ${outOfScopeNoteFrame} {
  * Under forced colours an accent draws no slot colour and no tint, and a
  * strong one keeps its weight. A note's bar is drawn in the text colour.
  */
-export const themedCanvasStylesheet = `${sheetFrom(paletteProperty)}${accentSheetFrom(paletteProperty)}
+export const themedCanvasStylesheet = `${sheetFrom(paletteProperty)}${accentSheetFrom(paletteProperty)}${awaySheetFrom(paletteProperty)}
 @media (forced-colors: active) {
   .${canvasClassNames.shape} {
     fill: Canvas;
@@ -366,6 +384,10 @@ export const themedCanvasStylesheet = `${sheetFrom(paletteProperty)}${accentShee
   }
   .${canvasClassNames.flowBacking} {
     fill: Canvas;
+  }
+  .${awayClassNames.frame} {
+    fill: Canvas;
+    stroke: CanvasText;
   }
   .${canvasClassNames.outOfScope} .${canvasClassNames.shape},
   ${outOfScopeNoteFrame} {
@@ -407,17 +429,24 @@ ${slotRules(
 }
 `;
 
+/** What a drawing holds that the headless sheet styles only where it is drawn. */
+export type DrawingHolds = {
+  readonly accent?: boolean;
+  readonly awayEnd?: boolean;
+};
+
 /**
  * Resolves headless drawing colours, font family, and badge appearance. The
- * accent rules are written only where `accented` says the drawing holds an
- * accent, so a drawing without one gets the sheet it got before accents
+ * accent rules are written only where `holds` says the drawing holds an accent,
+ * and the frame of a flow end drawn away from its element only where it holds
+ * one, so a drawing holding neither gets the sheet it got before either
  * existed. They draw the light palette's slot colours, which the theme has no
  * key for, and each tint is its slot mixed into the theme's element colour, so
  * a theme of light text on dark elements keeps a name readable on a tint.
  */
 export function renderCanvasStylesheet(
   theme: RenderTheme = defaultRenderTheme,
-  accented = false,
+  holds: DrawingHolds = {},
 ): string {
   const palette: Palette = {
     ...lightPalette,
@@ -455,7 +484,10 @@ export function renderCanvasStylesheet(
   );
   return [
     sheetFrom((role) => palette[role], JSON.stringify(theme.fonts.body)),
-    ...(accented ? [accentSheetFrom((role) => palette[role])] : []),
+    ...(holds.accent === true
+      ? [accentSheetFrom((role) => palette[role])]
+      : []),
+    ...(holds.awayEnd === true ? [awaySheetFrom((role) => palette[role])] : []),
     ...badges,
   ].join('\n');
 }

@@ -85,6 +85,16 @@ export const canvasSettled = async (
   );
 };
 
+/** Presses Zoom out until the view is at `zoom` or below, waiting for each step to settle. */
+export const zoomOutTo = async (page: Page, zoom: number): Promise<void> => {
+  const zoomOut = page.getByRole('button', { name: 'Zoom out', exact: true });
+  for (let step = 0; step < 10 && (await viewportZoom(page)) > zoom; step++) {
+    await zoomOut.click();
+    await canvasSettled(page);
+  }
+  expect(await viewportZoom(page)).toBeLessThanOrEqual(zoom);
+};
+
 /** Whether two boxes share any area. Boxes that only touch do not. */
 export const boxesOverlap = (one: Box, other: Box): boolean =>
   one.x < other.x + other.width &&

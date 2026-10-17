@@ -19,6 +19,7 @@ import {
   type Point,
   type Box,
 } from './canvas.fixtures.js';
+import { sharedModelInput } from '@saerskriven/model/fixtures';
 import {
   beforeCanvas,
   closeThreats,
@@ -26,6 +27,7 @@ import {
   nodeNamed,
   openEveryGlyph,
   openMenu,
+  openModelDocument,
   selectByKeyboard,
   tabTo,
   threatPanel,
@@ -423,6 +425,20 @@ for (const state of states) {
     await capture(page, state);
   });
 }
+
+test('forced colours draw the mark of an element on several diagrams in system colours', async ({
+  page,
+}) => {
+  await page.emulateMedia({ forcedColors: 'active' });
+  await openModelDocument(page, sharedModelInput);
+  const colours = await systemColours(page);
+  const mark = nodeNamed(page, /^Payments API, process/u).locator(
+    '[data-shared-mark] rect',
+  );
+
+  await expect(mark).toHaveCSS('fill', colours.Canvas);
+  await expect(mark).toHaveCSS('stroke', colours.CanvasText);
+});
 
 test('the hidden grid still snaps a moved element', async ({ page }) => {
   await page.emulateMedia({ forcedColors: 'active' });

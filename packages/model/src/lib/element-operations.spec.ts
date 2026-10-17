@@ -317,7 +317,7 @@ describe('addElement', () => {
         { id: 'third', title: 'Third', elements: [boundary] },
       ],
     };
-    expect(Either.isLeft(parseDrawnModel(invalid))).toBe(true);
+    expect(Either.isLeft(parseDrawnModel(invalid, 'diagram'))).toBe(true);
   });
 });
 

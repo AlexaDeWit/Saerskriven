@@ -34,7 +34,10 @@ only notice of it, and `renderUnplacedWarning(unplaced, locale)`
 [`register-tree.ts`](src/lib/register-tree.ts) builds the register as one
 mdast tree, and states what the register promises: stable threat anchors,
 records on their threats, the model's assumptions in one section, prose kept
-as Markdown under `deepestProse`, and no label left blank.
+as Markdown under `deepestProse`, and no label left blank. An element placed
+on more than one diagram is followed by those diagrams' titles in a threat's
+Elements field, and a model with no shared element writes the register it
+always did.
 [`markdown-register.ts`](src/lib/markdown-register.ts):
 `renderRegister(model, locale, options)` serializes that tree. With
 `includeDiagrams: true`, it adds Mermaid diagrams and structural notes before

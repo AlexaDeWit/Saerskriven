@@ -1,6 +1,12 @@
 import { Either } from 'effect';
-import { drawnFixture, elementId, elementIn, flowIn } from '../fixtures.js';
-import { drawnElements } from './drawing.js';
+import {
+  drawnFixture,
+  elementId,
+  elementIn,
+  flowIn,
+  heldElement,
+  heldFlow,
+} from '../fixtures.js';
 import { reconnectFlow, setFlowDirection } from './flow-operations.js';
 import { validModelFixture } from './model.fixtures.js';
 import { modelOf } from './operations.fixtures.js';
@@ -100,16 +106,13 @@ describe('chosenDiagram', () => {
 describe('flowEnds', () => {
   const orderFlow = elementId('element-order-flow');
   const endsIn = (held: Model) =>
-    flowEnds(
-      flowIn(held, orderFlow),
-      elementsById(drawnElements(held, held.diagrams[0])),
-    );
+    flowEnds(heldFlow(held, orderFlow), elementsById(held.elements));
 
   it('gives the element an attached end is on and a free end as free', () => {
     expect(endsIn(model)).toEqual({
       source: {
         kind: 'element',
-        element: elementIn(model, 'element-customer'),
+        element: heldElement(model, 'element-customer'),
       },
       target: { kind: 'free' },
       bidirectional: false,
@@ -130,15 +133,15 @@ describe('flowEnds', () => {
     expect(endsIn(both)).toEqual({
       source: {
         kind: 'element',
-        element: elementIn(model, 'element-customer'),
+        element: heldElement(model, 'element-customer'),
       },
-      target: { kind: 'element', element: elementIn(model, 'element-db') },
+      target: { kind: 'element', element: heldElement(model, 'element-db') },
       bidirectional: true,
     });
   });
 
   it('gives the id of an attached element the lookup does not hold', () => {
-    expect(flowEnds(flowIn(model, orderFlow), new Map()).source).toEqual({
+    expect(flowEnds(heldFlow(model, orderFlow), new Map()).source).toEqual({
       kind: 'missing',
       element: elementId('element-customer'),
     });
@@ -146,7 +149,7 @@ describe('flowEnds', () => {
 });
 
 describe('flowEndName', () => {
-  const customer = elementIn(model, 'element-customer');
+  const customer = heldElement(model, 'element-customer');
 
   it.each([
     [

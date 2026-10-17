@@ -21,19 +21,27 @@ them. A placement names an element and holds what that diagram draws it with:
 an optional `accent`, and the geometry the element's kind takes, `position` and
 `size` for an actor, a process, a store or a note, `shape` for a trust
 boundary, and for a flow its `waypoints` and, for each end, the `side` an
-attached end is pinned to or the `position` of a free end. A placement has no
+attached end is pinned to or the `position` it is drawn at. A placement has no
 id of its own: its diagram and its element name it.
 
-`parseModel` holds every element to exactly one placement, on one diagram,
-whose geometry fits its kind. A flow end attaches only to an element its own
-diagram places, and a boundary's and a flow's relationship lists name
-elements of that diagram. Every model it accepts is one a version 2
-[native file](../../docs/saerskriven-yaml.md) holds.
+One element can stand on several diagrams. `parseModel` holds every element
+to at least one placement and at most one on each diagram, each with the
+geometry its kind takes. A flow end attached to an element its diagram places
+holds no `position`. One attached to an element the diagram does not place is
+drawn away from it, at the `position` its placement holds, and a free end
+holds a `position` too. A boundary's and a flow's relationship lists name
+elements anywhere in the model, and a reader of one diagram shows the members
+that diagram places. `parseModel` and `parseDrawnModel` take a
+`RelationshipScope`: `model`, or `diagram`, which keeps each list inside the
+diagram drawing its element. Each format's read names the scope it keeps, so a
+version 1 or 2 file and an import read as they did.
 
 A reader of a diagram takes its elements as it draws them: `drawnElements`
 gives a diagram's elements in draw order, each a `DrawnElement`, the
 element's facts with that diagram's accent and geometry inline, the shape a
-version 2 file writes a diagram's elements in. `drawnElementOn`
+version 2 file writes a diagram's elements in. A drawn flow end is `attached`,
+`free`, or `away`: attached to an element the diagram does not place, and
+drawn at a position. `drawnElementOn`
 gives one of them, `placementOn` an element's placement on a diagram, and
 `diagramsOf` the diagrams that place an element. `drawnElement` joins an
 element to a placement, and `elementOf` and `placementOf` split a drawn
@@ -140,13 +148,29 @@ unchanged. The canvas package's `svgNumber` writes through the first.
 An operation that writes an element's geometry or accent takes the id of the
 diagram it writes on, and changes that diagram's placement alone:
 `moveElement`, `resizeElement`, `setBoundaryShape`, `setFlowWaypoints`,
-`setFlowEndPosition`, `reconnectFlow`, which also moves the end to the element
-it names, and `setAccent`. One naming an element the diagram does not place
-refuses with `ElementNotOnDiagram`. `addElement` adds the element and its
-first placement, on the diagram it names. `removeElement` removes the element
+`setFlowEndPosition` and `setAccent`. One naming an element the diagram does
+not place refuses with `ElementNotOnDiagram`. A name, details, security
+facts, a note's text and threats belong to the element, so an edit of them
+shows on every diagram it is on. Which element a flow end reaches is the
+flow's too: `reconnectFlow` moves the end on every diagram, drawing it away
+where a diagram does not place the new element, and `setFlowEndPosition`
+frees an attached end, or one drawn away, on every diagram, each keeping the
+point it was drawn at there. `setAwayEndPosition` moves an end drawn away and
+keeps the attachment, refusing any other end with `FlowEndNotAway`.
+`reverseFlow` swaps the ends of the flow and reverses its bends on every diagram
+that draws it.
+
+`addElement` adds the element and its first placement, on the diagram it
+names. `placeElement` places an element the model holds on one more diagram,
+refusing one already there (`ElementAlreadyOnDiagram`) and geometry or flow
+ends the diagram cannot draw (`InvalidPlacement`). A flow end that diagram
+drew away from the element attaches to it there. `unplaceElement` takes a
+placement off one diagram, drawing each flow end attached to the element away
+at its anchor there, and refuses the element's last placement with
+`LastPlacement`, since that takes `removeElement`. Neither culls a threat:
+threats name elements, not placements. `removeElement` removes the element
 and its placements, and frees each flow end attached to it at its anchor on
-that flow's diagram. `reverseFlow` swaps the ends of the flow and reverses its
-bends on every diagram that draws it.
+each diagram drawing that flow.
 
 A diagram's threats are the ones referencing an element drawn on it, which
 `threatsOnDiagrams` reads for one diagram or several. A threat attached to no
@@ -286,10 +310,11 @@ fast-check generator of `parseDrawnModel` input, `parsedFixture` and
 `parseDrawnModel` and throw where it stops parsing, since that is a broken
 suite rather than a case under test, `committedModel`, which reads a model
 under `test-data`, and `committedDiagrams`, the diagrams the canvas and render
-suites draw from those files. `elementIn`, `drawnAt` and `drawnAcross` read
-elements as their diagrams draw them, `placementIn` an element's placement,
-and `redrawn` and `drawnOnto` build a model from drawn elements without a
-parse. The subpath resolves to source and stays out of the
+suites draw from those files. `sharedModel` is a model of two diagrams sharing
+elements, with a flow end drawn away from its element. `elementIn`, `drawnAt`
+and `drawnAcross` read elements as their diagrams draw them, `placementIn` an
+element's placement, and `redrawn` and `drawnOnto` build a model from drawn
+elements without a parse. The subpath resolves to source and stays out of the
 library build. Who may import it is a workspace rule, stated in
 [`CODING.md`](../../CODING.md#tests).
 

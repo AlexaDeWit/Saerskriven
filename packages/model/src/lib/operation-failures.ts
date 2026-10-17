@@ -36,6 +36,22 @@ export type OperationFailure = Data.TaggedEnum<{
     readonly elementId: ElementId;
     readonly diagramId: DiagramId;
   };
+  ElementAlreadyOnDiagram: {
+    readonly elementId: ElementId;
+    readonly diagramId: DiagramId;
+  };
+  LastPlacement: {
+    readonly elementId: ElementId;
+    readonly diagramId: DiagramId;
+  };
+  InvalidPlacement: {
+    readonly elementId: ElementId;
+    readonly diagramId: DiagramId;
+  };
+  ElementOnSeveralDiagrams: {
+    readonly elementId: ElementId;
+    readonly diagramIds: readonly DiagramId[];
+  };
   UnknownThreat: { readonly threatId: ThreatId };
   UnknownMitigation: { readonly mitigationId: MitigationId };
   UnknownAssumption: { readonly assumptionId: AssumptionId };
@@ -53,6 +69,11 @@ export type OperationFailure = Data.TaggedEnum<{
   InvalidFlowEndpoint: {
     readonly side: 'source' | 'target';
     readonly reference: ElementId;
+  };
+  FlowEndNotAway: {
+    readonly elementId: ElementId;
+    readonly diagramId: DiagramId;
+    readonly side: 'source' | 'target';
   };
   NotResizable: { readonly elementId: ElementId };
   NotTextElement: { readonly elementId: ElementId };

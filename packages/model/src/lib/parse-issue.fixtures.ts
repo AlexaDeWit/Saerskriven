@@ -46,11 +46,17 @@ export const parseIssueSamples: readonly ParseIssueDetail[] = [
   },
   { code: 'flow-endpoint-self', parameters: { id: 'element-self-flow' } },
   { code: 'flow-endpoint-foreign', parameters: { id: 'element-elsewhere' } },
+  {
+    code: 'flow-end-position-missing',
+    parameters: { id: 'element-unplaced' },
+  },
+  { code: 'flow-end-position-held', parameters: { id: 'element-placed' } },
   { code: 'unknown-element-reference', parameters: { id: 'element-ghost' } },
   { code: 'unknown-threat-reference', parameters: { id: 'threat-ghost' } },
   { code: 'related-element-unknown', parameters: { id: 'element-unrelated' } },
   { code: 'related-boundary-unknown', parameters: { id: 'element-unbounded' } },
   { code: 'related-flow-unknown', parameters: { id: 'element-unflowed' } },
+  { code: 'related-off-diagram', parameters: { id: 'element-elsewhere' } },
   { code: 'issue-flood' },
   { code: 'schema-threw', parameters: { reason: 'TypeError: defect' } },
 ];
