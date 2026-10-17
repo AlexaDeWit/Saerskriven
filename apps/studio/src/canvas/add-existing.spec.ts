@@ -1,6 +1,7 @@
 import {
   addDiagram,
   diagramsOf,
+  setBoundaryShape,
   type ElementId,
   type Model,
   type Placement,
@@ -121,6 +122,30 @@ describe('where Add existing element places what is picked', () => {
         kind: 'box',
         position: { x: 380, y: 430 },
         size: { width: 240, height: 140 },
+      },
+    });
+  });
+
+  it('takes a trust boundary curve whole, every point moved by the one offset that centres it', () => {
+    const arch = [
+      { x: 380, y: 280 },
+      { x: 500, y: 140 },
+      { x: 620, y: 280 },
+    ];
+    const curved = Either.getOrThrow(
+      setBoundaryShape(withThird, overview, zone, {
+        kind: 'curve',
+        waypoints: arch,
+      }),
+    );
+
+    expect(
+      placementOf(existingPlacements(curved, third, [zone], centre), zone),
+    ).toEqual({
+      element: zone,
+      shape: {
+        kind: 'curve',
+        waypoints: arch.map(({ x, y }) => ({ x, y: y + 290 })),
       },
     });
   });

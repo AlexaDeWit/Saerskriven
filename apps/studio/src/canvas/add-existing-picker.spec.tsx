@@ -118,6 +118,39 @@ describe('the Add existing element picker', () => {
     expect(placedOn(cardVault)).toEqual(['payments']);
   });
 
+  it('moves focus back into the open picker on the command key rather than opening a second', async () => {
+    const user = userEvent.setup();
+    mounted();
+    act(openAddExisting);
+    screen.getByRole('button', { name: 'Before' }).focus();
+
+    await user.keyboard('e');
+
+    expect(screen.getAllByRole('region')).toHaveLength(1);
+    expect(document.activeElement).toBe(
+      screen.getByRole('checkbox', { name: 'Card vault' }),
+    );
+  });
+
+  it('hands focus to the canvas on Escape where what opened the picker is gone', async () => {
+    const user = userEvent.setup();
+    mounted();
+    const canvas = document.createElement('div');
+    canvas.className = 'react-flow';
+    canvas.tabIndex = -1;
+    const opener = document.createElement('button');
+    document.body.append(canvas, opener);
+    opener.focus();
+    act(openAddExisting);
+    opener.remove();
+
+    await user.keyboard('{Escape}');
+
+    expect(picker()).toBeNull();
+    expect(document.activeElement).toBe(canvas);
+    canvas.remove();
+  });
+
   it('adds nothing while nothing is picked, and keeps Add on the Tab path saying why', async () => {
     const user = userEvent.setup();
     mounted();
