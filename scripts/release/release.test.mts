@@ -166,16 +166,32 @@ void describe('release preparation', () => {
   });
 });
 
-void test('the Nx target passes the version only through the environment', () => {
-  const injection = spawnSync('pnpm', ['nx', 'run', 'release-tools:prepare'], {
-    cwd: workspaceRoot,
-    encoding: 'utf8',
-    env: {
-      ...process.env,
-      NX_DAEMON: 'false',
-      RELEASE_VERSION: 'not-a-version; exit 0',
+const prepareThroughNx = (
+  releaseVersion: string,
+  extraArgs: readonly string[] = [],
+) =>
+  spawnSync(
+    'pnpm',
+    [
+      'nx',
+      'run',
+      'release-tools:prepare',
+      '--output-style=static',
+      ...extraArgs,
+    ],
+    {
+      cwd: workspaceRoot,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        NX_DAEMON: 'false',
+        RELEASE_VERSION: releaseVersion,
+      },
     },
-  });
+  );
+
+void test('the Nx target passes the version only through the environment', () => {
+  const injection = prepareThroughNx('not-a-version; exit 0');
   assert.notEqual(injection.status, 0);
   assert.match(
     `${injection.stdout}${injection.stderr}`,
@@ -184,19 +200,7 @@ void test('the Nx target passes the version only through the environment', () =>
 });
 
 void test('the Nx target does not forward shell arguments', () => {
-  const injection = spawnSync(
-    'pnpm',
-    ['nx', 'run', 'release-tools:prepare', '--args=; exit 0'],
-    {
-      cwd: workspaceRoot,
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        NX_DAEMON: 'false',
-        RELEASE_VERSION: 'not-a-version',
-      },
-    },
-  );
+  const injection = prepareThroughNx('not-a-version', ['--args=; exit 0']);
   assert.notEqual(injection.status, 0);
   assert.match(
     `${injection.stdout}${injection.stderr}`,

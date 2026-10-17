@@ -28,7 +28,7 @@ no source is marked unconfirmed here rather than asserted.
   `menace`, feminine, sv `hot`, neuter), a mitigation status the mitigation (fr
   `mesure`, feminine, sv `åtgärd`, common gender), and an assumption status the
   assumption (fr `hypothèse`, feminine, sv `antagande`, neuter). `Risque
-accepté` and `Accepterad risk` are noun phrases and agree with `risque` and
+  accepté` and `Accepterad risk` are noun phrases and agree with `risque` and
   `risk`.
 - **Methodology names stay as written.** `STRIDE`, `LINDDUN`, `CIA`,
   `CIA-DIE` and `PLOT4ai` are the model's stored identifiers, and a register
@@ -78,10 +78,10 @@ earlier wording stands.
   appeared in one studio section only.
 - **out of scope:** an element marked out of scope needs no threat analysis,
   and its reason says why. [Threat Dragon's French][td-fr] writes `hors du
-domaine visé` and `raison de l'exclusion du domaine visé`. The studio kept
+  domaine visé` and `raison de l'exclusion du domaine visé`. The studio kept
   `hors périmètre` and `utanför omfattningen`, which its divergence notices
   already used. The French reason follows Threat Dragon's pattern, `raison de
-l’exclusion du périmètre`, and the Swedish one gives the clause a subject,
+  l’exclusion du périmètre`, and the Swedish one gives the clause a subject,
   `skäl till att objektet är utanför omfattningen`, with `objekt` as the
   studio's Swedish word for an element.
 
@@ -189,7 +189,7 @@ l’exclusion du périmètre`, and the Swedish one gives the clause a subject,
   `falsification`, and `altération` is the word for the damage rather than
   the attack.
 - **Information disclosure:** Microsoft writes the plural `divulgation
-d'informations`. Threat Dragon's French writes the singular. The plural is
+  d'informations`. Threat Dragon's French writes the singular. The plural is
   kept, since a disclosure rarely concerns one item.
 - **Denial of service:** Lund gives "Denial of Service attack
   (överbelastningsattack, tillgänglighetsattack)". [Advania][advania] glosses
@@ -398,7 +398,7 @@ Also checked, with nothing to cite:
   City chapter titles talks "modélisation des menaces", which matches the
   catalogues. [OWASP Threat Dragon][td-fr] ships a French locale, cited above
   for STRIDE, and no Swedish one. Its French LINDDUN labels (`Capacité de
-liaison`, `Identifiabilité`, `Détectabilité`, `Inconscience`) follow the
+  liaison`, `Identifiabilité`, `Détectabilité`, `Inconscience`) follow the
   older LINDDUN names this model does not use, and its status labels are
   partly untranslated, so it is not cited for either.
 
