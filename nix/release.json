@@ -1,18 +1,18 @@
 {
-  "version": "0.10.0",
+  "version": "0.11.0",
   "binaryName": "saer",
   "assets": {
     "x86_64-linux": {
       "target": "x86_64-unknown-linux-gnu",
-      "hash": "b1752021bac404568ee5d82f662134af5e087bb54f9673db3f3459a674808f34"
+      "hash": "032d908ff447e72d3ae800d84f5ae6fedbfba3721d37f2fb389ef48adb065cb6"
     },
     "aarch64-linux": {
       "target": "aarch64-unknown-linux-gnu",
-      "hash": "e39a4c92f731282c95ef4ff7a24ab8c97451fa1273bf650b94340597113330b6"
+      "hash": "b3e70e36b0234156e3850c4767d6dec32299fd7c5c9c3f03f3ad7ebabce08c50"
     },
     "aarch64-darwin": {
       "target": "aarch64-apple-darwin",
-      "hash": "8d1951dbb8683ff00a63ba29ba809144ddaf90f4cef9badf7707aea3d658f41a"
+      "hash": "5b5102437c80013f0b93a1531727dac82e12bb4fffcae34853d83f748c198e96"
     }
   }
 }
