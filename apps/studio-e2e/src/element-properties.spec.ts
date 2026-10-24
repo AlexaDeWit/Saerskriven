@@ -265,11 +265,16 @@ test('shows recorded and absent states at wide and narrow widths with accessible
   await target.focus();
   await page.keyboard.press('Enter');
   await expect(
-    page.getByRole('option', { name: 'Shop network', exact: true }),
+    page
+      .getByRole('option')
+      .filter({ has: page.getByText('Shop network', { exact: true }) }),
   ).toHaveCount(0);
-  const dispatch = page.getByRole('option', { name: 'Dispatch', exact: true });
+  const dispatch = page.getByRole('option', {
+    name: 'Dispatch Shipping an order',
+    exact: true,
+  });
   await expect(dispatch).toHaveCount(1);
-  await expect(dispatch).toHaveAccessibleDescription('Shipping an order');
+  await expect(dispatch).toHaveAccessibleName('Dispatch Shipping an order');
   await audit(
     page,
     'showing a relationship listbox at phone width',

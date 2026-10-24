@@ -28,7 +28,7 @@ test('the threat attached to nothing is offered first, and attaching it is one u
   await trigger.scrollIntoViewIfNeeded();
   await trigger.click();
   await expect(page.getByRole('option').first()).toHaveAccessibleName(
-    unattached,
+    `${unattached} threat 11, Severity: Low, Status: Open, attached to no element`,
   );
 
   await page.getByRole('option').first().click();

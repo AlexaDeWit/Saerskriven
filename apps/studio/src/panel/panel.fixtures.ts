@@ -16,14 +16,16 @@ import { ThreatEditor, type ThreatEditorProps } from './threat-editor.js';
  */
 export const editorTimeout = 30_000;
 
-/** Chooses a labelled option through the shared listbox control. */
+/** Chooses an exact visible label through the shared listbox control. */
 export const chooseFrom = async (
   field: string,
   option: string,
 ): Promise<void> => {
   const user = userEvent.setup();
   await user.click(screen.getByRole('combobox', { name: field }));
-  await user.click(screen.getByRole('option', { name: option }));
+  await user.click(
+    screen.getByText(option, { selector: '[data-option-label]', exact: true }),
+  );
 };
 
 /** Text containing a character the model refuses. */
