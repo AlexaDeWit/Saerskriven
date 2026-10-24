@@ -49,10 +49,6 @@ import {
   type ReadModelFile,
 } from './workspace.js';
 
-/**
- * What `saer_edit` takes: the file, the handle it was read at, the batch, and
- * whether to drop what this version cannot read.
- */
 export const editArgumentsSchema = revisionArgumentSchema.extend({
   edits: z
     .array(modelEditSchema)
@@ -68,10 +64,8 @@ export const editArgumentsSchema = revisionArgumentSchema.extend({
     ),
 });
 
-/** What `saer_edit` takes. */
 export type EditArguments = z.infer<typeof editArgumentsSchema>;
 
-/** What `saer_edit` answers with. */
 export const editResultSchema = writeReportSchema.extend({
   applied: z.int().positive(),
   culled: z
@@ -101,13 +95,11 @@ export const editResultSchema = writeReportSchema.extend({
     ),
 });
 
-/** What `saer_edit` answers with. */
 export type EditResult = z.infer<typeof editResultSchema>;
 
-/** What `saer_edit` tells a client it is for. */
 export const editDescription = [
-  'Apply a batch of edits to one Saerskriven threat model file and save the file in the format it is already in. A Saerskriven YAML file is written as version 2, whichever version it was read from, while version 2 holds the model, and as version 3 once it holds what version 2 cannot: an element on more than one diagram, a flow end drawn away from its element, or a relationship list naming an element of another diagram. A release that reads only versions 1 and 2 refuses a version 3 file whole, and `movedToVersion3` in the result says when a batch moved a file read as version 1 or 2 there.',
-  'The edits are applied in order to one parsed model, and the file is written once at the end. The first edit the model refuses stops the batch: nothing is written, the file stays byte for byte as it was, and the result names the index that was refused and what the model said about it. The batch is the unit of change rather than the edit.',
+  'Apply an ordered edit batch and save in the existing format. A Saerskriven YAML file is written as version 2, whichever version it was read from, while version 2 holds the model, and as version 3 once it holds what version 2 cannot: an element on more than one diagram, a flow end drawn away from its element, or a relationship list naming an element of another diagram. A release that reads only versions 1 and 2 refuses a version 3 file whole, and `movedToVersion3` in the result says when a batch moved a file read as version 1 or 2 there.',
+  'Edits run on one parsed model with one final write. Any refused edit stops the batch without changing file bytes. The error names its index and reason.',
   `A batch that would take the file past ${readBoundPhrase}, is refused the same way, so make a smaller change rather than retrying it.`,
   `Each edit is an object carrying \`op\` and that op's own fields. The ops are ${editOps.join(', ')}.`,
   '`add_element` creates an element with its first placement, last on the diagram it names, and accepts the optional security facts and declared boundary relationships of its element kind. It refuses an empty name, or one of white space alone, on every kind but a flow, as `rename_element` does, and a flow end `reconnect_flow` would refuse. On a flow, `""` or white space alone leaves the flow unlabelled, stored as an empty name. `set_element_properties` patches those security facts and relationships and nothing else: it takes the element id and a `properties` object with the element kind and the fields to change, and has no variant for a text note, which carries neither. Omitted fields stay unchanged. Its optional `unset` list names fields to clear back to not recorded. False, empty text and empty lists are recorded values. A field cannot be set and unset in the same edit.',
@@ -117,24 +109,17 @@ export const editDescription = [
   '`merge_elements` merges `element` into `into`, two elements of one kind that stand for the same thing, such as the copies a model made of an element for each diagram before one element could be on several. `into` keeps its id, name, details and security facts, and the model no longer holds `element`, whose own are dropped. Each boundary relationship list of `into` takes the ids of the same list of `element` after its own, once each and never naming `into`, so a copied boundary keeps the members of every diagram. Every other threat, flow end and relationship list naming `element` names `into` instead, once each. Each drawing of `element` becomes a drawing of `into`, with its geometry and accent, except on a diagram that already draws `into`, where it is dropped and the flows there attached to `element` attach to `into`. Nothing is culled. It refuses one id given as both, two kinds, a flow joining the two, and two flows that do not join the same two elements in the same direction, since a flow has the same ends on every diagram: merge the elements at their ends first. The result names under `merged`, for each merge, the diagrams its drawing moved on and was dropped on, and the threats and flows that moved. A merge that leaves `into` on more than one diagram moves a version 2 file to version 3.',
   "`remove_element` deletes the element from the model and from every diagram it is on, and culls the threats it was the last attachment of, so use `unplace_element` to take an element off one diagram and keep it on the others. It keeps the flows attached to the element and frees each attached end at the removed element's anchor on each diagram: the centre of an actor, process, store, text note or box boundary, the first point of a curve boundary, or a removed flow's first bend, else its first free end, else the canvas origin. `move_element` translates by `offset`, relative to where the element is, and an attached flow end stays on its element. `resize_element` sets the size of an actor, process, store, text note or box boundary, and refuses a flow or a curve boundary. `set_boundary_shape` replaces a trust boundary's shape with a box or a curve, either way round, and keeps its declared relationships, so no element moves in or out of it. `set_flow_waypoints` replaces a flow's bends whole. `reconnect_flow` attaches one end to an actor, process or store of the diagram the edit changes, never to the element its other end is attached to. The end reaches that element on every diagram the flow is on, and `anchor` pins it on the diagram the edit changes alone: another diagram that places the element leaves the side to the renderer, and one that does not draws the end away from it, where the end was drawn before. `set_flow_end_position` frees one end at a canvas position, or moves an end already free. An end attached to an element, on it or drawn away from it, is freed on every diagram the flow is on: at `position` on the diagram the edit changes, and where it was drawn on every other. `reverse_flow` swaps a flow's two ends, each with its pinned side or position, and reverses its bends, so it runs the other way along the same route. `remove_diagram` removes only an empty diagram, so empty it first: take an element also on another diagram off it with `unplace_element`, and remove the others with `remove_element`.",
   "No edit reorders the elements of a diagram or the diagrams of a model, or changes an element's kind or the id of anything the model holds.",
-  'Pass `revision` as the handle the last read of this file returned. A file that changed before this call is refused rather than overwritten, and the answer to that refusal is to read the file again and reconsider the edit against what the file now holds. The file is hashed again immediately before it is replaced, so a change that landed while this call was working is refused there instead of overwritten. That check is not a lock: a save landing between it and the replacement is still overwritten with neither side told, so read the file in the same turn you edit it, and expect to lose an edit where somebody is working in the same file from another tool.',
+  'Pass the latest read `revision`. A changed file is refused: read again and reconsider the edit. The file is hashed again immediately before replacement. This is not a lock: a concurrent save between that check and replacement is overwritten without notice. Read in the same turn you edit. Concurrent tools can lose edits.',
   'A mitigation is added on at least one threat, and an assumption on at least one threat or applying to the model. `link_mitigation`, `unlink_mitigation`, `link_assumption` and `unlink_assumption` take the record id and a threat id. `link_assumption_to_model` and `unlink_assumption_from_model` take the assumption id. `set_mitigation_status` and `set_assumption_status` change the status and nothing else, and never change a threat status. `add_assumption` starts an assumption `unconfirmed` and not applying to the model where those fields are left out. `replace_assumption` takes the whole record, `appliesToModel` included.',
   "`set_threat_details` changes any of a threat's `title` and `description`, `set_mitigation_details` any of a mitigation's `title` and `prose`, and `set_assumption_details` an assumption's `prose`. Each takes the record id, a field left out keeps its value, and every other field and link of the record is kept. `replace_threat`, `replace_mitigation` and `replace_assumption` take the whole record, so use the details ops to change one text.",
   "A mitigation's references are its threat links. An assumption's references are its threat links and its model link. An edit that takes a record's last reference away (removing the threat that was its last reference, unlinking it, unlinking an assumption from the model where it links no threat, or a replace that leaves it none) removes the record in the same edit. The result names under `culled`, once each, every record the file held before the batch that an edit of the batch culled, even where a later edit adds it back. A record removed by `remove_mitigation` or `remove_assumption` is not named there, and neither is one the batch itself added.",
   "A threat applies to the elements it attaches to, to the model as a whole (`appliesToModel`), or to both, and those are its references. `link_threat_to_model` and `unlink_threat_from_model` take the threat id. `add_threat` starts a threat not applying to the model where that field is left out, and `replace_threat` takes the whole record, `appliesToModel` included. An edit that takes a threat's last reference away (`detach_threat`, `remove_element` on the element that was its last, `unlink_threat_from_model` where it attaches to no element, or a `replace_threat` that leaves it none) removes the threat in the same edit, with the cascade `remove_threat` carries. A threat that applies to the model stays when its last attachment goes, a threat the file already held with no reference stays, and no read ever culls one. The result names culled threats under `culledThreats` on the same terms as `culled`, a threat removed by `remove_threat` not among them.",
-  'A threat carries no number: the model issues one when a threat is added and holds it when the threat is replaced, so no edit renumbers a threat, and no two threats hold one number.',
+  'Do not supply threat numbers. The model assigns unique numbers on add and keeps them on replacement.',
   'A file holding what this version of saer cannot read, a key the wire schema does not declare or an accent value the model has no key for, both of which a read reports as divergences, is refused and nothing is written, since the write would drop them. The refusal names each one, a key by its path and an accent by its element: upgrade saer to keep them, or pass `dropUndeclared: true` to write the file without them, and the result names each one it dropped under `dropped`.',
-  'Use this on a model that exists. Start a new one with saer_create and convert a foreign file with saer_import. What the file format cannot hold comes back in the divergences of the result rather than as a refusal, so read them after a write to a Threat Dragon file.',
+  'Requires an existing model. Use saer_create for a new one or saer_import for a foreign file. Review result divergences after writing Threat Dragon: unsupported model data is reported there, without refusing the write.',
 ].join(' ');
 
-/**
- * The batch applied and the file written, or the lines saying why nothing
- * was written. The file is read, checked against the revision the call
- * quoted and for keys the write would drop, and edited in memory, so every
- * refusal down to the write happens before anything reaches the disk. The
- * write checks the handle once more against the file itself, and what that
- * leaves open is on {@link replacedFile}.
- */
+/** Validate the revision and batch, then check the revision again before replacement. */
 export function editModel(
   workspace: ModelWorkspace,
   args: EditArguments,

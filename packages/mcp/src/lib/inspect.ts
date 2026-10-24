@@ -29,17 +29,14 @@ import {
 import { renderAssumption } from './record-rows.js';
 import type { ModelWorkspace } from './workspace.js';
 
-/** What `saer_inspect` tells a client it is for. */
 export const inspectDescription = [
-  'Read one Saerskriven threat model file and report what it holds: the file format detected from its content, the model metadata (title, owner, description and contributors), the assumptions that apply to the model as a whole (including one that also links threats), one line per diagram with its element and threat counts, the totals over the whole model, among them how many elements are on more than one diagram and so counted on each, and every place the file and the model do not correspond exactly.',
-  'It lists no mitigation, and no assumption but those: saer_search_records finds every record, a record linked to nothing included.',
-  'Call this first on a model you have not read in this session. The `revision` it returns is the handle an edit has to quote back, so a tool that writes will ask you for a fresh one.',
+  'Read model metadata, model-wide assumptions, diagram summaries, totals, shared-element counts and format divergences.',
+  'Call first for an unread model. Quote its fresh `revision` in writes.',
+  'Use saer_search_records for all mitigations and assumptions, including unlinked records.',
   defaultedFileSentence,
-  'With no default and no `file`, the result lists the model files under the root instead of reading one, and carries no `revision`.',
-  'This tool never writes.',
+  'Without a default or `file`, list candidate files under the root with no revision. Read-only.',
 ].join(' ');
 
-/** What `saer_inspect` takes. */
 export type InspectArguments = z.infer<typeof fileArgumentSchema>;
 
 const diagramSummarySchema = z.object({
@@ -82,18 +79,12 @@ const candidatesSchema = z.object({
   truncated: z.boolean(),
 });
 
-/**
- * What `saer_inspect` answers with: the root, and the model it read or the
- * candidate files where the call named none. The union is nested so the
- * advertised JSON Schema has an object at its root, as structured content
- * requires.
- */
+/** Nest the result union to keep the advertised JSON Schema root an object. */
 export const inspectResultSchema = z.object({
   root: z.string(),
   result: z.discriminatedUnion('kind', [inspectedSchema, candidatesSchema]),
 });
 
-/** What `saer_inspect` answers with. */
 export type InspectResult = z.infer<typeof inspectResultSchema>;
 
 /**

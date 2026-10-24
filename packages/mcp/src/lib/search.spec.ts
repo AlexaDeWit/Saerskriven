@@ -93,21 +93,21 @@ describe('the counts a text result opens with', () => {
 
   it('names the next offset and the narrowing arguments for a cut page', () => {
     expect(rendered(undefined, 'concise')).toEqual([
-      'matches: 60, of which this result carries 50 from offset 0',
-      'The listing stopped at its limit, so it is not the whole answer. Repeat the call with `offset` 50 for the next page. Narrow it with `status`, `query`.',
+      'matches: 60, returned: 50, offset: 0',
+      'Truncated. Use `offset` 50 for the next page. Narrow it with `status`, `query`.',
     ]);
   });
 
   it('offers the concise form to a detailed page that was cut', () => {
     expect(rendered(20, 'detailed')).toEqual([
-      'matches: 60, of which this result carries 20 from offset 20',
-      'The listing stopped at its limit, so it is not the whole answer. Repeat the call with `offset` 40 for the next page. Narrow it with `status`, `query`, or ask for the concise form.',
+      'matches: 60, returned: 20, offset: 20',
+      'Truncated. Use `offset` 40 for the next page. Narrow it with `status`, `query`, or ask for the concise form.',
     ]);
   });
 
   it('says where the last page starts, and names no next page', () => {
     expect(rendered(50, 'concise')).toEqual([
-      'matches: 60, of which this result carries 10 from offset 50',
+      'matches: 60, returned: 10, offset: 50',
     ]);
   });
 });

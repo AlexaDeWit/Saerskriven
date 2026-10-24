@@ -35,7 +35,6 @@ import {
 } from './threat-rows.js';
 import type { ModelWorkspace } from './workspace.js';
 
-/** What `saer_search_threats` takes. */
 export const searchThreatsArgumentsSchema = searchArgumentsSchema.extend({
   status: threatStatusSchema
     .optional()
@@ -67,38 +66,29 @@ export const searchThreatsArgumentsSchema = searchArgumentsSchema.extend({
     ),
 });
 
-/** What `saer_search_threats` takes. */
 export type SearchThreatsArguments = z.infer<
   typeof searchThreatsArgumentsSchema
 >;
 
-/** What `saer_search_threats` answers with. */
 export const searchThreatsResultSchema = readingSchema.extend({
   counts: searchCountsSchema,
   response_format: responseFormatSchema,
   threats: z.array(threatDetailSchema),
 });
 
-/** What `saer_search_threats` answers with. */
 export type SearchThreatsResult = z.infer<typeof searchThreatsResultSchema>;
 
-/** What `saer_search_threats` tells a client it is for. */
 export const searchThreatsDescription = [
-  'Find the threats recorded in one Saerskriven threat model. Each match carries the threat number and id, its title, where it stands, how bad it is, its category, the ids of the elements it attaches to, whether it applies to the model as a whole (`appliesToModel`), and its flags. The order is the register order the model holds them in.',
-  flagsDescription,
-  'Use this to find the threats of one element, of one diagram, of one category, of one severity, or of one status, and to get the number of a threat you mean to read in full. Use saer_get_threat for one whole record with its mitigations and assumptions, and saer_coverage for what the model has not analyzed at all.',
+  'Find recorded threats in register order: number, id, title, status, severity, category, element ids, model-wide applicability and flags.',
   defaultedFileSentence,
-  '`status`, `severity`, `category`, `diagram` and `element` each keep only the threats matching them. `query` is text looked for, without case, in the title, the description, and the title and prose of each mitigation linked to the threat.',
-  '`response_format` is `concise` by default and carries no record text. `detailed` adds the description and the linked mitigation and assumption records of each threat, which is the bulk of a register, so filter before asking for it.',
-  '`offset` skips that many matches, for the next page of a listing cut at its limit, which names the offset to pass.',
-  'This tool never writes. No edit renumbers a threat, and no two threats hold one number, so a number read here stays the handle for that threat as long as the model holds that threat.',
+  flagsDescription,
+  'Use saer_get_threat for a complete threat with linked records, or saer_coverage for analysis gaps.',
+  'Filters combine: `status`, `severity`, `category`, `diagram` and `element`. `query` searches threat title and description plus linked mitigation titles and prose.',
+  '`concise` omits record prose. `detailed` adds threat descriptions and linked mitigations and assumptions. Filter before requesting details.',
+  'Read-only. Threat numbers remain unique and stable while their threats exist.',
 ].join(' ');
 
-/**
- * The threats matching a search, or the lines saying why there are none to
- * search. Every filter is a conjunction, so a call naming a status and a
- * severity matches the threats carrying both.
- */
+/** Apply all filters together without changing register order. */
 export function searchThreats(
   workspace: ModelWorkspace,
   args: SearchThreatsArguments,

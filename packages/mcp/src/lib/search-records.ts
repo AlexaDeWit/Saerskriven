@@ -39,7 +39,6 @@ const recordKinds = [
   'assumption',
 ] as const satisfies readonly RecordReference['kind'][];
 
-/** What `saer_search_records` takes. */
 export const searchRecordsArgumentsSchema = searchArgumentsSchema.extend({
   kind: z
     .enum(recordKinds)
@@ -76,38 +75,28 @@ export const searchRecordsArgumentsSchema = searchArgumentsSchema.extend({
     ),
 });
 
-/** What `saer_search_records` takes. */
 export type SearchRecordsArguments = z.infer<
   typeof searchRecordsArgumentsSchema
 >;
 
-/** What `saer_search_records` answers with. */
 export const searchRecordsResultSchema = readingSchema.extend({
   counts: searchCountsSchema,
   response_format: responseFormatSchema,
   records: z.array(recordRowSchema),
 });
 
-/** What `saer_search_records` answers with. */
 export type SearchRecordsResult = z.infer<typeof searchRecordsResultSchema>;
 
-/** What `saer_search_records` tells a client it is for. */
 export const searchRecordsDescription = [
-  'Find the mitigation and assumption records of one Saerskriven threat model, a record linked to nothing included. Each match carries the record kind and id, its status, the ids of the threats it links, the title of a mitigation or the prose of an assumption, whether an assumption applies to the model (`appliesToModel`), and `unlinked`, derived on every read and true where the record is linked to nothing. The order is every mitigation in register order, then every assumption.',
-  "A mitigation's links are its threat links. An assumption's are its threat links and, where `appliesToModel` is true, its model link. A record linked to nothing has none of these. A file can hold one, and no other tool shows one. An edit that takes a record's last link away removes the record rather than leaving it linked to nothing.",
-  'Use this to find the records of one threat, of one status or of one kind, to find the records linked to nothing, and to get the id of a record you mean to edit. Use saer_get_threat for one threat with its records, and saer_inspect for the assumptions that apply to the model beside its metadata.',
+  'Find mitigations and assumptions, including unlinked records. Returns kind, id, status, linked threat ids, mitigation title or assumption prose, model applicability and derived `unlinked`.',
   defaultedFileSentence,
-  '`kind`, `id`, `status`, `threat` and `unlinked` each keep only the records matching them. `query` is text looked for, without case, in the title and the prose of each record.',
-  '`response_format` is `concise` by default and carries no mitigation prose. `detailed` adds the prose of each mitigation, and an assumption row is the same in both.',
-  '`offset` skips that many matches, for the next page of a listing cut at its limit, which names the offset to pass.',
-  'This tool never writes.',
+  'Order: mitigations, then assumptions, each in register order. An assumption linked to the model is not unlinked. Removing the last link through an edit deletes the record.',
+  'Use record ids for edits, saer_get_threat for one threat and its records, or saer_inspect for model-wide assumptions.',
+  'Filters combine: `kind`, `id`, `status`, `threat` and `unlinked`. `query` searches record titles and prose.',
+  '`concise` omits mitigation prose. `detailed` adds it. Assumption rows are identical in both formats. Read-only.',
 ].join(' ');
 
-/**
- * The records matching a search, or the lines saying why there are none to
- * search. Every filter is a conjunction, so a call naming a threat and a
- * status matches the records linked to that threat in that status.
- */
+/** Apply all filters together, including unlinked records. */
 export function searchRecords(
   workspace: ModelWorkspace,
   args: SearchRecordsArguments,
