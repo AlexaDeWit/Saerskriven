@@ -1,4 +1,4 @@
-import { gridSpacing } from '@saerskriven/canvas';
+import { layoutDiagram, gridSpacing } from '@saerskriven/canvas';
 import { saerskrivenYamlCodec, withinTextLimit } from '@saerskriven/formats';
 import {
   elementIdsAcross,
@@ -8,6 +8,7 @@ import {
   remapFragment,
   selectionFragment,
   type Model,
+  type Point,
   type SelectionFragmentFailure,
 } from '@saerskriven/model';
 import { Data, Effect, Either } from 'effect';
@@ -30,8 +31,6 @@ import {
 } from './edits.js';
 
 const marker = '# Saerskriven selection v1\n';
-let lastPaste = '';
-let pasteCount = 0;
 
 type ClipboardFailure = Data.TaggedEnum<{
   NothingSelected: {};
@@ -92,11 +91,7 @@ export async function copySelected(cut = false): Promise<void> {
   }
 }
 
-/**
- * Duplicates through the same copy rules without changing the system
- * clipboard. Its report counts no link of a threat the duplicate is attached
- * to in place of copying it, since that threat keeps them all.
- */
+/** Duplicates without changing the clipboard or copying threats already held in the model. */
 export function duplicateSelected(): void {
   const state = modelStore.getState();
   const copy = selectedCopy(state, state.present);
@@ -105,13 +100,15 @@ export function duplicateSelected(): void {
     return;
   }
   const { report } = copy.right;
-  insertCopy(copy.right.fragment, gridSpacing, (t) =>
+  insertCopy(copy.right.fragment, { x: gridSpacing, y: gridSpacing }, (t) =>
     sentences(t('canvas.duplicated'), copyReport(t, report)),
   );
 }
 
 /** Reads a bounded native selection from the system clipboard before one atomic insert. */
-export async function pasteSelected(): Promise<void> {
+export async function pasteSelected(
+  centre: () => Point = () => ({ x: 0, y: 0 }),
+): Promise<void> {
   const state = modelStore.getState();
   const read = await Effect.runPromise(
     Effect.either(
@@ -146,18 +143,24 @@ export async function pasteSelected(): Promise<void> {
     announce((t) => t('canvas.paste-invalid'));
     return;
   }
-  const count = text === lastPaste ? pasteCount + 1 : 1;
-  if (
-    insertCopy(parsed.right.model, gridSpacing * count, (t) =>
-      t('canvas.pasted'),
-    )
-  ) {
-    lastPaste = text;
-    pasteCount = count;
+  const fragment = parsed.right.model;
+  const diagram = fragment.diagrams[0];
+  if (diagram === undefined) {
+    return;
   }
+  const bounds = layoutDiagram(diagram, fragment).bounds;
+  const at = centre();
+  insertCopy(
+    fragment,
+    {
+      x: at.x - bounds.x - bounds.width / 2,
+      y: at.y - bounds.y - bounds.height / 2,
+    },
+    (t) => t('canvas.pasted'),
+  );
 }
 
-function insertCopy(fragment: Model, distance: number, said: Said): boolean {
+function insertCopy(fragment: Model, offset: Point, said: Said): boolean {
   const state = modelStore.getState();
   const diagramId = activeDiagramId(state);
   if (diagramId === undefined) {
@@ -167,7 +170,7 @@ function insertCopy(fragment: Model, distance: number, said: Said): boolean {
   const remapped = remapFragment(
     fragment,
     generateElementId(),
-    { x: distance, y: distance },
+    offset,
     state.present,
     commandDecimals,
   );

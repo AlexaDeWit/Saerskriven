@@ -82,7 +82,7 @@ const command = <const Id extends string>({
 
 const editCommand = <const Id extends string>(
   entry: Pick<Built<Id>, 'id' | 'label' | 'shortcuts'> & {
-    readonly run: () => void;
+    readonly run: Built<Id>['run'];
   },
 ): Built<Id> =>
   command({
@@ -272,8 +272,8 @@ export const commandTable = {
     id: 'paste',
     label: 'commands.label-paste',
     shortcuts: [mod('v')],
-    run: () => {
-      void pasteSelected();
+    run: (surface) => {
+      void pasteSelected(() => surface.view.centre());
     },
   }),
   duplicate: editCommand({

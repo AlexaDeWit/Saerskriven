@@ -19,6 +19,14 @@ export function useViewCommands(panelCover = 0, cardBottom = 0): ViewCommands {
 
   return useMemo(
     () => ({
+      centre: () => {
+        const area = fitArea({ width, height }, panelCover, cardBottom);
+        const viewport = flow.getViewport();
+        return {
+          x: (area.left + area.width / 2 - viewport.x) / viewport.zoom,
+          y: (area.top + area.height / 2 - viewport.y) / viewport.zoom,
+        };
+      },
       resetZoom: () => {
         void flow.zoomTo(1);
       },

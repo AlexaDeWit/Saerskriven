@@ -28,6 +28,7 @@ export const unmountedSurface: CommandSurface = {
   },
   reference: { toggle: nothing },
   view: {
+    centre: () => ({ x: 0, y: 0 }),
     zoomIn: nothing,
     zoomOut: nothing,
     fitToView: nothing,
