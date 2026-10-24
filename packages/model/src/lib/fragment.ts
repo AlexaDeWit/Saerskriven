@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { linkAssumption } from './assumption-operations.js';
 import type { Assumption } from './assumptions.js';
 import {
@@ -59,10 +59,10 @@ export function selectionFragment(
   model: Model,
   diagramId: DiagramId,
   selection: readonly ElementId[],
-): Either.Either<Model, SelectionFragmentFailure> {
-  return Either.flatMap(locatedDiagram(model, diagramId), (diagram) => {
+): Result.Result<Model, SelectionFragmentFailure> {
+  return Result.flatMap(locatedDiagram(model, diagramId), (diagram) => {
     const drawn = drawnElements(model, diagram);
-    return Either.flatMap(closedSelection(drawn, selection), (included) => {
+    return Result.flatMap(closedSelection(drawn, selection), (included) => {
       const copied = drawn.filter((element) => included.has(element.id));
       const byId = elementsById(model.elements);
       const elements = copied.flatMap((element) => {
@@ -108,7 +108,7 @@ export function remapFragment(
   offset: Point,
   target: Model,
   decimals?: Decimals,
-): Either.Either<Model, RemapFragmentFailure> {
+): Result.Result<Model, RemapFragmentFailure> {
   const renamed = (id: string) => prefix + ':' + id;
   const heldMitigation = identicalIn(target.mitigations, sameMitigation);
   const heldAssumption = identicalIn(target.assumptions, sameAssumption);
@@ -166,13 +166,13 @@ export function insertFragment(
   model: Model,
   diagramId: DiagramId,
   fragment: Model,
-): Either.Either<Model, InsertFragmentFailure> {
+): Result.Result<Model, InsertFragmentFailure> {
   const target = diagramIndexOf(model, diagramId);
-  if (Either.isLeft(target)) {
-    return Either.left(target.left);
+  if (Result.isFailure(target)) {
+    return Result.fail(target.failure);
   }
   if (fragment.elements.length === 0) {
-    return Either.right(model);
+    return Result.succeed(model);
   }
   const placements = fragment.diagrams.flatMap((diagram) => diagram.placements);
   const { threats, mitigations, assumptions } = pastedRegister(model, fragment);
@@ -186,7 +186,7 @@ export function insertFragment(
         : diagram,
     ),
   };
-  return Either.flatMap(
+  return Result.flatMap(
     linkedRecords(graph, mitigations.linked, assumptions.linked),
     (withLinks) =>
       checkedFragment({
@@ -276,10 +276,10 @@ function linkedRecords(
   graph: Model,
   mitigations: readonly Mitigation[],
   assumptions: readonly Assumption[],
-): Either.Either<Model, InsertFragmentFailure> {
+): Result.Result<Model, InsertFragmentFailure> {
   const links: ((
     current: Model,
-  ) => Either.Either<Model, InsertFragmentFailure>)[] = [
+  ) => Result.Result<Model, InsertFragmentFailure>)[] = [
     ...mitigations.flatMap(({ id, threats }) =>
       threats.map(
         (threatId) => (current: Model) => linkMitigation(current, id, threatId),
@@ -291,22 +291,22 @@ function linkedRecords(
       ),
     ),
   ];
-  return links.reduce<Either.Either<Model, InsertFragmentFailure>>(
-    (result, link) => Either.flatMap(result, link),
-    Either.right(graph),
+  return links.reduce<Result.Result<Model, InsertFragmentFailure>>(
+    (result, link) => Result.flatMap(result, link),
+    Result.succeed(graph),
   );
 }
 
 function closedSelection(
   elements: readonly DrawnElement[],
   selection: readonly ElementId[],
-): Either.Either<Set<ElementId>, UnknownElementFailure> {
+): Result.Result<Set<ElementId>, UnknownElementFailure> {
   const known = elementsById(elements);
   const included = new Set(selection);
   for (const id of included) {
     const element = known.get(id);
     if (element === undefined) {
-      return Either.left(OperationFailure.UnknownElement({ elementId: id }));
+      return Result.fail(OperationFailure.UnknownElement({ elementId: id }));
     }
     if (element.kind === 'flow') {
       for (const end of [element.source, element.target]) {
@@ -327,7 +327,7 @@ function closedSelection(
       included.add(element.id);
     }
   }
-  return Either.right(included);
+  return Result.succeed(included);
 }
 
 function freedOutside(element: Element, kept: ReadonlySet<string>): Element {
@@ -474,8 +474,8 @@ function sameCategory(held: ThreatCategory, copy: ThreatCategory): boolean {
 
 function checkedFragment(
   input: unknown,
-): Either.Either<Model, RemapFragmentFailure> {
-  return Either.mapLeft(parseModel(input), ({ issues }) =>
+): Result.Result<Model, RemapFragmentFailure> {
+  return Result.mapError(parseModel(input), ({ issues }) =>
     OperationFailure.InvalidFragment({ issues }),
   );
 }

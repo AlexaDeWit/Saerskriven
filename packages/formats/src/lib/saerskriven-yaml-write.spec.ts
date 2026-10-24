@@ -27,7 +27,7 @@ import {
   validModel,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { parse } from 'yaml';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 import { canonicalOrder } from './canonical-order.js';
@@ -44,7 +44,7 @@ import { isRecord } from './records.js';
 
 const parseDocument: (text: string) => unknown = parse;
 
-const featureComplete = Either.getOrThrow(
+const featureComplete = Result.getOrThrow(
   readSaerskrivenYaml(featureCompleteYaml),
 ).model;
 
@@ -361,7 +361,7 @@ describe('a Saerskriven YAML write of an assumption that applies to the model', 
     const result = writeSaerskrivenYaml(model(threats));
     expect(result.divergences).toEqual([]);
     expect(
-      Either.getOrThrow(readSaerskrivenYaml(result.output)).model.assumptions,
+      Result.getOrThrow(readSaerskrivenYaml(result.output)).model.assumptions,
     ).toEqual(model(threats).assumptions);
   });
 });
@@ -370,7 +370,7 @@ describe('a Saerskriven YAML write of accents', () => {
   const api = elementId('element-api');
   const flow = elementId('element-order-flow');
   const plain = writeSaerskrivenYaml(validModel).output;
-  const accented = Either.getOrThrow(
+  const accented = Result.getOrThrow(
     setAccent(validModel, validModel.diagrams[0].id, [api, flow], 's2'),
   );
   const result = writeSaerskrivenYaml(accented);
@@ -403,7 +403,7 @@ describe('a Saerskriven YAML write of accents', () => {
   it("states a note's key after its scope fields, as on any other kind", () => {
     const note = elementId('note-hours');
     const output = writeSaerskrivenYaml(
-      Either.getOrThrow(
+      Result.getOrThrow(
         setAccent(
           featureComplete,
           featureComplete.diagrams[0].id,
@@ -423,21 +423,21 @@ describe('a Saerskriven YAML write of accents', () => {
   });
 
   it('writes a model whose accents were cleared as it wrote the model before any was set', () => {
-    const cleared = Either.getOrThrow(
+    const cleared = Result.getOrThrow(
       setAccent(accented, accented.diagrams[0].id, [api, flow], undefined),
     );
     expect(writeSaerskrivenYaml(cleared).output).toBe(plain);
   });
 
   it('reads back as the model it wrote', () => {
-    expect(Either.getOrThrow(readSaerskrivenYaml(result.output)).model).toEqual(
+    expect(Result.getOrThrow(readSaerskrivenYaml(result.output)).model).toEqual(
       accented,
     );
   });
 });
 
 describe('a Saerskriven YAML write of a flow left unlabelled', () => {
-  const unlabelled = Either.getOrThrow(
+  const unlabelled = Result.getOrThrow(
     renameElement(validModel, elementId('element-order-flow'), ''),
   );
   const result = writeSaerskrivenYaml(unlabelled);
@@ -455,7 +455,7 @@ describe('a Saerskriven YAML write of a flow left unlabelled', () => {
 
   it('reads back unlabelled, reporting nothing', () => {
     expect(result.divergences).toEqual([]);
-    expect(Either.getOrThrow(readSaerskrivenYaml(result.output)).model).toEqual(
+    expect(Result.getOrThrow(readSaerskrivenYaml(result.output)).model).toEqual(
       unlabelled,
     );
   });
@@ -482,7 +482,7 @@ describe('a Saerskriven YAML write of a model holding a minted id', () => {
   });
 
   it('reads the id back', () => {
-    expect(Either.getOrThrow(readSaerskrivenYaml(result.output)).model).toEqual(
+    expect(Result.getOrThrow(readSaerskrivenYaml(result.output)).model).toEqual(
       model,
     );
   });

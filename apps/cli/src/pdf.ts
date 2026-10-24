@@ -2,7 +2,7 @@ import {
   compilePdf as compileTypst,
   PdfFailure,
 } from '@saerskriven/render/pdf';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { wasmAssets, type WasmAssets } from './assets.js';
 
 const wasmModule = 'typst_ts_web_compiler_bg.wasm';
@@ -14,19 +14,19 @@ const wasmModule = 'typst_ts_web_compiler_bg.wasm';
 export function compilePdf(
   source: string,
   assets: string,
-): Promise<Either.Either<Uint8Array, string>> {
-  return Either.match(wasmAssets(assets, wasmModule), {
-    onLeft: (reason) =>
-      Promise.resolve(Either.left(`cannot compile the PDF: ${reason}`)),
-    onRight: (found) => typeset(source, found),
+): Promise<Result.Result<Uint8Array, string>> {
+  return Result.match(wasmAssets(assets, wasmModule), {
+    onFailure: (reason) =>
+      Promise.resolve(Result.fail(`cannot compile the PDF: ${reason}`)),
+    onSuccess: (found) => typeset(source, found),
   });
 }
 
 async function typeset(
   source: string,
   assets: WasmAssets,
-): Promise<Either.Either<Uint8Array, string>> {
-  return Either.mapLeft(await compileTypst(source, assets), reported);
+): Promise<Result.Result<Uint8Array, string>> {
+  return Result.mapError(await compileTypst(source, assets), reported);
 }
 
 function reported(failure: PdfFailure): string {

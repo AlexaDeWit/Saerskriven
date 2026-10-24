@@ -1,12 +1,12 @@
 import { reasonOf } from '@saerskriven/mcp';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { runCli, writeOutcome } from './cli.js';
 import { lines, type CommandOutput } from './outcome.js';
 
 const wrote =
   (stream: NodeJS.WriteStream) =>
-  (output: CommandOutput): Either.Either<void, string> =>
-    Either.try({
+  (output: CommandOutput): Result.Result<void, string> =>
+    Result.try({
       try: () => {
         stream.write(output);
       },

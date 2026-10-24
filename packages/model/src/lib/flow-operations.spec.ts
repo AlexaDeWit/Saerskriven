@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   attached,
   boxAt,
@@ -176,7 +176,7 @@ describe('reconnectFlow', () => {
     expect(after.threats).toBe(validModel.threats);
     expect(
       reconnectFlow(after, mainDiagram, id, 'target', elementId('element-db')),
-    ).toEqual(Either.right(after));
+    ).toEqual(Result.succeed(after));
   });
 
   it.each([
@@ -208,7 +208,7 @@ describe('reconnectFlow', () => {
       elementId('missing'),
     ];
     const reconnects = (end: string) =>
-      Either.isRight(
+      Result.isSuccess(
         reconnectFlow(
           drawn,
           mainDiagram,
@@ -218,7 +218,7 @@ describe('reconnectFlow', () => {
         ),
       );
     const adds = (end: string) =>
-      Either.isRight(
+      Result.isSuccess(
         addElement(
           drawn,
           mainDiagram,

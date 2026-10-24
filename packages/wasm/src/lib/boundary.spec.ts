@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   answeringPastMemory,
   growingAPage,
@@ -14,7 +14,7 @@ const absent = 'the module exports no test calls';
 const started = async (
   body: readonly number[],
 ): Promise<BoundaryModule<'run'>> =>
-  Either.getOrThrow(
+  Result.getOrThrow(
     await instantiated(
       moduleWhoseEveryCall([...boundaryCalls, 'run'], body),
       ['run'],
@@ -27,7 +27,7 @@ const bytes = new TextEncoder().encode('Saerskriven');
 describe('a module instantiated on the boundary', () => {
   it('is refused where the bytes are not a module', async () => {
     expect(
-      Either.isLeft(
+      Result.isFailure(
         await instantiated(new Uint8Array([1, 2, 3]), ['run'], absent),
       ),
     ).toBe(true);
@@ -45,7 +45,7 @@ describe('a module instantiated on the boundary', () => {
           ['run'],
           absent,
         ),
-      ).toEqual(Either.left(absent));
+      ).toEqual(Result.fail(absent));
     },
   );
 
@@ -68,9 +68,9 @@ describe('a module instantiated on the boundary', () => {
       .mockRejectedValueOnce(new Error('the compile was refused'));
     try {
       expect(await instantiated(wasm, ['run'], absent)).toEqual(
-        Either.left('the compile was refused'),
+        Result.fail('the compile was refused'),
       );
-      expect(Either.isRight(await instantiated(wasm, ['run'], absent))).toBe(
+      expect(Result.isSuccess(await instantiated(wasm, ['run'], absent))).toBe(
         true,
       );
     } finally {
@@ -82,7 +82,7 @@ describe('a module instantiated on the boundary', () => {
 describe('a call through the boundary', () => {
   it('writes into memory the input call grew, and copies the output from memory the later calls grew', async () => {
     const module = await started(growingAPage);
-    const answer = Either.getOrThrow(
+    const answer = Result.getOrThrow(
       answered(module, bytes, () => module.run()),
     );
     expect(answer.value).toBe(65_536);
@@ -91,14 +91,14 @@ describe('a call through the boundary', () => {
 
   it('reports a module that trapped, rather than throwing out of the call', async () => {
     const module = await started(trapping);
-    expect(Either.isLeft(answered(module, bytes, () => module.run()))).toBe(
+    expect(Result.isFailure(answered(module, bytes, () => module.run()))).toBe(
       true,
     );
   });
 
   it('reports a module that answers an address past its own memory', async () => {
     const module = await started(answeringPastMemory);
-    expect(Either.isLeft(answered(module, bytes, () => module.run()))).toBe(
+    expect(Result.isFailure(answered(module, bytes, () => module.run()))).toBe(
       true,
     );
   });

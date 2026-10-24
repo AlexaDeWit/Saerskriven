@@ -6,7 +6,7 @@ import {
   repositoryRoot,
   sharedModel,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -49,7 +49,7 @@ export const featureCompleteFile =
  * argument reads.
  */
 export function featureCompleteWorkspace(): ModelWorkspace {
-  return Either.getOrThrow(
+  return Result.getOrThrow(
     openWorkspace({ root: repositoryRoot, file: featureCompleteFile }),
   );
 }
@@ -62,7 +62,7 @@ export const twoDiagramsFile = 'test-data/saerskriven/two-diagrams.yaml';
 
 /** A workspace over the checkout with the two-diagram model as its default. */
 export function twoDiagramsWorkspace(): ModelWorkspace {
-  return Either.getOrThrow(
+  return Result.getOrThrow(
     openWorkspace({ root: repositoryRoot, file: twoDiagramsFile }),
   );
 }
@@ -82,7 +82,7 @@ export function sharedTree(): ModelWorkspace {
 
 /** A workspace over the checkout carrying no default model. */
 export function rootWorkspace(): ModelWorkspace {
-  return Either.getOrThrow(openWorkspace({ root: repositoryRoot }));
+  return Result.getOrThrow(openWorkspace({ root: repositoryRoot }));
 }
 
 /**
@@ -95,7 +95,7 @@ export function unreadableTree(): ModelWorkspace {
   writeFileSync(join(root, unclaimedFile), unclaimedYaml);
   writeFileSync(join(root, invalidFile), invalidYaml);
   writeFileSync(join(root, pastBoundFile), pastBoundYaml);
-  return Either.getOrThrow(openWorkspace({ root }));
+  return Result.getOrThrow(openWorkspace({ root }));
 }
 
 /**
@@ -108,19 +108,21 @@ export function drawableTree(): ModelWorkspace {
 
 /** What a tool refused, as the lines it refused with. */
 export function refusalOf<Answer>(
-  outcome: Either.Either<Answer, readonly string[]>,
+  outcome: Result.Result<Answer, readonly string[]>,
 ): readonly string[] {
-  return Either.isLeft(outcome) ? outcome.left : ['the call was not refused'];
+  return Result.isFailure(outcome)
+    ? outcome.failure
+    : ['the call was not refused'];
 }
 
 /** What a tool answered, or a throw naming the refusal it answered with. */
 export function answerOf<Answer>(
-  outcome: Either.Either<Answer, readonly string[]>,
+  outcome: Result.Result<Answer, readonly string[]>,
 ): Answer {
-  if (Either.isLeft(outcome)) {
-    throw new Error(outcome.left.join('\n'));
+  if (Result.isFailure(outcome)) {
+    throw new Error(outcome.failure.join('\n'));
   }
-  return outcome.right;
+  return outcome.success;
 }
 
 const everyRecordModel: Model = parsedFixture({
@@ -286,7 +288,7 @@ export const forgedPathSegment = 'model\u001b[31m\u0007.yaml';
 export function forgedPathTree(): ModelWorkspace {
   const root = mkdtempSync(join(tmpdir(), 'saerskriven-mcp-path-'));
   writeFileSync(join(root, forgedPathSegment), smallYaml);
-  return Either.getOrThrow(openWorkspace({ root, file: forgedPathSegment }));
+  return Result.getOrThrow(openWorkspace({ root, file: forgedPathSegment }));
 }
 
 /**
@@ -380,5 +382,5 @@ export function unplacedTree(): ModelWorkspace {
 export function treeHolding(yaml: string): ModelWorkspace {
   const root = mkdtempSync(join(tmpdir(), 'saerskriven-mcp-model-'));
   writeFileSync(join(root, 'model.yaml'), yaml);
-  return Either.getOrThrow(openWorkspace({ root, file: 'model.yaml' }));
+  return Result.getOrThrow(openWorkspace({ root, file: 'model.yaml' }));
 }

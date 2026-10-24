@@ -22,7 +22,7 @@ import {
   renderUnplacedWarning,
   type ThemeRead,
 } from '@saerskriven/render';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { runtimeAssets } from './assets.js';
 import { writeFile } from './files.js';
@@ -75,9 +75,9 @@ export function render(
   options: RenderOptions,
   assets: string = runtimeAssets,
 ): Promise<CommandOutcome> {
-  return Either.match(chosenLocale(options.lang), {
-    onLeft: (message) => Promise.resolve(usageError(message)),
-    onRight: (locale) => withLocale(file, options, assets, locale),
+  return Result.match(chosenLocale(options.lang), {
+    onFailure: (message) => Promise.resolve(usageError(message)),
+    onSuccess: (locale) => withLocale(file, options, assets, locale),
   });
 }
 
@@ -87,9 +87,9 @@ function withLocale(
   assets: string,
   locale: Locale,
 ): Promise<CommandOutcome> {
-  return Either.match(readModel(file), {
-    onLeft: (outcome) => Promise.resolve(outcome),
-    onRight: async (read) => {
+  return Result.match(readModel(file), {
+    onFailure: (outcome) => Promise.resolve(outcome),
+    onSuccess: async (read) => {
       const selected = commandTheme(
         options.theme,
         options.format,
@@ -114,14 +114,14 @@ function withLocale(
   });
 }
 
-function chosenLocale(lang: string | undefined): Either.Either<Locale, string> {
+function chosenLocale(lang: string | undefined): Result.Result<Locale, string> {
   if (lang === undefined) {
-    return Either.right(defaultLocale);
+    return Result.succeed(defaultLocale);
   }
   const locale = supportedLocale(lang);
   return locale === undefined
-    ? Either.left(refusedLanguage(lang))
-    : Either.right(locale);
+    ? Result.fail(refusedLanguage(lang))
+    : Result.succeed(locale);
 }
 
 function refusedLanguage(lang: string): string {
@@ -227,9 +227,9 @@ async function compiled(
   showThreatLabels?: boolean,
 ): Promise<CommandOutcome> {
   const source = renderTypst(model, locale, theme, { showThreatLabels });
-  return Either.match(await compilePdf(source.typst, assets), {
-    onLeft: (reason) => usageError(lines(`error: ${reason}`)),
-    onRight: (pdf) => written(out, pdf, unplacedWarning(source.unplaced)),
+  return Result.match(await compilePdf(source.typst, assets), {
+    onFailure: (reason) => usageError(lines(`error: ${reason}`)),
+    onSuccess: (pdf) => written(out, pdf, unplacedWarning(source.unplaced)),
   });
 }
 
@@ -241,9 +241,9 @@ function drawing(
   theme: RenderTheme,
   locale: Locale,
 ): Promise<CommandOutcome> {
-  return Either.match(chosenDiagram(model.diagrams, options.diagram), {
-    onLeft: (failure) => Promise.resolve(usageError(refusedChoice(failure))),
-    onRight: (diagram) =>
+  return Result.match(chosenDiagram(model.diagrams, options.diagram), {
+    onFailure: (failure) => Promise.resolve(usageError(refusedChoice(failure))),
+    onSuccess: (diagram) =>
       drawn(
         diagram,
         model,
@@ -297,11 +297,11 @@ async function raster(
   locale: Locale,
   showThreatLabels?: boolean,
 ): Promise<CommandOutcome> {
-  return Either.match(
+  return Result.match(
     await drawPng(diagram, model, assets, locale, theme, showThreatLabels),
     {
-      onLeft: (reason) => usageError(lines(`error: ${reason}`)),
-      onRight: (image) =>
+      onFailure: (reason) => usageError(lines(`error: ${reason}`)),
+      onSuccess: (image) =>
         written(out, image.png, unplacedWarning(image.unplaced)),
     },
   );
@@ -317,7 +317,7 @@ function written(
   warning: string,
 ): CommandOutcome {
   return delivered(out, content, warning, (path, bytes) =>
-    Either.mapLeft(writeFile(path, bytes), (reason) => [`error: ${reason}`]),
+    Result.mapError(writeFile(path, bytes), (reason) => [`error: ${reason}`]),
   );
 }
 

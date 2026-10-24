@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { Assumption, AssumptionStatus } from './assumptions.js';
 import type { AssumptionId, ThreatId } from './ids.js';
 import type { OperationFailure } from './operation-failures.js';
@@ -55,7 +55,7 @@ export type AssumptionModelLinkFailure = UnknownAssumptionFailure;
 export function addAssumption(
   model: Model,
   assumption: Assumption,
-): Either.Either<Model, AddAssumptionFailure> {
+): Result.Result<Model, AddAssumptionFailure> {
   return addedRecord(model, assumptionRegister, assumption);
 }
 
@@ -67,7 +67,7 @@ export function addAssumption(
 export function replaceAssumption(
   model: Model,
   assumption: Assumption,
-): Either.Either<Model, ReplaceAssumptionFailure> {
+): Result.Result<Model, ReplaceAssumptionFailure> {
   return replacedRecord(model, assumptionRegister, assumption);
 }
 
@@ -78,7 +78,7 @@ export function replaceAssumption(
 export function removeAssumption(
   model: Model,
   assumptionId: AssumptionId,
-): Either.Either<Model, RemoveAssumptionFailure> {
+): Result.Result<Model, RemoveAssumptionFailure> {
   return removedRecord(model, assumptionRegister, assumptionId);
 }
 
@@ -90,7 +90,7 @@ export function linkAssumption(
   model: Model,
   assumptionId: AssumptionId,
   threatId: ThreatId,
-): Either.Either<Model, AssumptionLinkFailure> {
+): Result.Result<Model, AssumptionLinkFailure> {
   return relinkedRecord(
     model,
     assumptionRegister,
@@ -109,7 +109,7 @@ export function unlinkAssumption(
   model: Model,
   assumptionId: AssumptionId,
   threatId: ThreatId,
-): Either.Either<Model, AssumptionLinkFailure> {
+): Result.Result<Model, AssumptionLinkFailure> {
   return relinkedRecord(
     model,
     assumptionRegister,
@@ -127,7 +127,7 @@ export function setAssumptionStatus(
   model: Model,
   assumptionId: AssumptionId,
   status: AssumptionStatus,
-): Either.Either<Model, SetAssumptionStatusFailure> {
+): Result.Result<Model, SetAssumptionStatusFailure> {
   return withRecordStatus(model, assumptionRegister, assumptionId, status);
 }
 
@@ -138,7 +138,7 @@ export function setAssumptionStatus(
 export function linkAssumptionToModel(
   model: Model,
   assumptionId: AssumptionId,
-): Either.Either<Model, AssumptionModelLinkFailure> {
+): Result.Result<Model, AssumptionModelLinkFailure> {
   return withModelLink(model, assumptionId, true);
 }
 
@@ -150,7 +150,7 @@ export function linkAssumptionToModel(
 export function unlinkAssumptionFromModel(
   model: Model,
   assumptionId: AssumptionId,
-): Either.Either<Model, AssumptionModelLinkFailure> {
+): Result.Result<Model, AssumptionModelLinkFailure> {
   return withModelLink(model, assumptionId, false);
 }
 
@@ -158,9 +158,9 @@ function withModelLink(
   model: Model,
   assumptionId: AssumptionId,
   appliesToModel: boolean,
-): Either.Either<Model, AssumptionModelLinkFailure> {
+): Result.Result<Model, AssumptionModelLinkFailure> {
   return editedRecord(model, assumptionRegister, assumptionId, (held) =>
-    Either.right(
+    Result.succeed(
       held.appliesToModel === appliesToModel
         ? held
         : { ...held, appliesToModel },

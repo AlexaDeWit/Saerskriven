@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { renderTypst } from './lib/typst-document.js';
 import { compilePdf, PdfFailure } from './pdf.js';
 import {
@@ -10,14 +10,14 @@ import {
 const assets = typstAssets(false);
 
 const refusalOf = (
-  outcome: Either.Either<Uint8Array, PdfFailure>,
+  outcome: Result.Result<Uint8Array, PdfFailure>,
 ): PdfFailure | undefined =>
-  Either.isLeft(outcome) ? outcome.left : undefined;
+  Result.isFailure(outcome) ? outcome.failure : undefined;
 
 describe('Typst source compiled to a PDF', () => {
   it('compiles the bytes it is handed and reads no file', async () => {
     const drawing = '#set page(paper: "a4")\n#rect(width: 10pt, height: 10pt)';
-    const pdf = Either.getOrThrow(await compilePdf(drawing, assets));
+    const pdf = Result.getOrThrow(await compilePdf(drawing, assets));
     expect(Buffer.from(pdf.subarray(0, 5)).toString('latin1')).toBe('%PDF-');
   });
 
@@ -58,7 +58,7 @@ describe('a localized document compiled to a PDF', () => {
     locale: 'en-CA' | (typeof translatedLocales)[number],
   ): Promise<Buffer> =>
     Buffer.from(
-      Either.getOrThrow(
+      Result.getOrThrow(
         await compilePdf(
           renderTypst(twoDiagramsModel, locale).typst,
           withFonts,

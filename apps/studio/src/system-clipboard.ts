@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { reasonOf } from './reason.js';
 
 /**
@@ -11,12 +11,12 @@ import { reasonOf } from './reason.js';
  */
 export async function writeClipboard(
   text: string | Promise<string | undefined>,
-): Promise<Either.Either<void, string>> {
+): Promise<Result.Result<void, string>> {
   try {
     await written(text);
-    return Either.right(undefined);
+    return Result.succeed(undefined);
   } catch (cause) {
-    return Either.left(reasonOf(cause));
+    return Result.fail(reasonOf(cause));
   }
 }
 

@@ -1,6 +1,6 @@
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { isDirty } from '../store/selectors.js';
 import { initialState } from '../store/state.js';
 import { modelStore } from '../store/store.js';
@@ -54,9 +54,9 @@ it('opens an OTM file through the fallback picker as a new model, and Save write
     expect(bridge.writes).toHaveLength(1);
   });
   expect(bridge.writes[0].name).toBe('example.yaml');
-  expect(Either.isRight(saerskrivenYamlCodec.read(bridge.writes[0].text))).toBe(
-    true,
-  );
+  expect(
+    Result.isSuccess(saerskrivenYamlCodec.read(bridge.writes[0].text)),
+  ).toBe(true);
   expect(isDirty(modelStore.getState())).toBe(false);
 });
 

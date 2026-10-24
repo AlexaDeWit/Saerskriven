@@ -9,7 +9,7 @@ import {
   shareLinkLimit,
   writeShareLink,
 } from '@saerskriven/formats/share-link';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { defaultedFileSentence, fileArgumentSchema } from './path-arguments.js';
 import { prefaced } from './preface.js';
@@ -27,9 +27,8 @@ import type { ModelWorkspace } from './workspace.js';
  * Where a share link gets the brotli module it is compressed with, found by
  * the host process.
  */
-export type BrotliModule = () => Either.Either<Uint8Array, string>;
+export type BrotliModule = () => Result.Result<Uint8Array, string>;
 
-/** What `saer_share_link` takes. */
 export type ShareLinkArguments = z.infer<typeof fileArgumentSchema>;
 
 /**
@@ -46,7 +45,6 @@ export const shareLinkResultSchema = readingSchema.extend({
   divergences: z.array(divergenceSchema),
 });
 
-/** What `saer_share_link` answers with. */
 export type ShareLinkResult = z.infer<typeof shareLinkResultSchema>;
 
 /**
@@ -55,7 +53,6 @@ export type ShareLinkResult = z.infer<typeof shareLinkResultSchema>;
  */
 export type SharedLink = WithBlocks<ShareLinkResult>;
 
-/** What `saer_share_link` tells a client it is for. */
 export const shareLinkDescription = [
   `Write one Saerskriven threat model as a share link: an address on the hosted studio, ${hostedStudioUrl}, that opens the model in a browser with nothing installed.`,
   'The link carries the whole model, every element, threat, mitigation and assumption in it, and anyone who sees the link can read all of it. Nothing can take a link back once it is sent, since the model travels in the link itself, and a chat, a ticket, an email or a browser history keeps it for as long as it keeps anything. Call this only when the person you are working for asks for a link, and hand the link to them rather than posting it anywhere they did not name.',
@@ -74,17 +71,17 @@ export async function shareLink(
   workspace: ModelWorkspace,
   brotli: BrotliModule,
   args: ShareLinkArguments,
-): Promise<Either.Either<SharedLink, readonly string[]>> {
+): Promise<Result.Result<SharedLink, readonly string[]>> {
   const reading = readNamed(workspace, args.file);
-  if (Either.isLeft(reading)) {
-    return Either.left(reading.left);
+  if (Result.isFailure(reading)) {
+    return Result.fail(reading.failure);
   }
   const module = brotli();
-  return Either.isLeft(module)
-    ? Either.left([
-        `This install cannot write a share link: ${escapedForTerminal(module.left)}.`,
+  return Result.isFailure(module)
+    ? Result.fail([
+        `This install cannot write a share link: ${escapedForTerminal(module.failure)}.`,
       ])
-    : linked(reading.right, module.right);
+    : linked(reading.success, module.success);
 }
 
 /**
@@ -103,12 +100,12 @@ export function renderShareLink(result: ShareLinkResult): readonly string[] {
 async function linked(
   reading: ModelReading,
   wasm: Uint8Array,
-): Promise<Either.Either<SharedLink, readonly string[]>> {
-  return Either.mapBoth(
+): Promise<Result.Result<SharedLink, readonly string[]>> {
+  return Result.mapBoth(
     await writeShareLink(reading.model, hostedStudioUrl, wasm),
     {
-      onLeft: renderShareLinkWriteFailure,
-      onRight: (link): SharedLink => ({
+      onFailure: renderShareLinkWriteFailure,
+      onSuccess: (link): SharedLink => ({
         answer: {
           ...reportedReading(reading),
           length: link.length,

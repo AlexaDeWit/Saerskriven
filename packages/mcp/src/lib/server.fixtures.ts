@@ -1,6 +1,6 @@
 import { InMemoryTransport } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   connectedClient,
   type Era,
@@ -31,14 +31,14 @@ type SessionRequest = {
  * host with where the module was never built.
  */
 export const noRasterizer: RasterizerAssets = () =>
-  Either.left('this fixture carries no rasterizer module');
+  Result.fail('this fixture carries no rasterizer module');
 
 /**
  * A brotli module an install does not have, which is what a share link
  * answers a host with where the module was never built.
  */
 export const noBrotli: BrotliModule = () =>
-  Either.left('this fixture carries no brotli module');
+  Result.fail('this fixture carries no brotli module');
 
 /**
  * A session over a linked in-memory pair against a server confined to
@@ -56,14 +56,14 @@ export async function session(request: SessionRequest): Promise<McpSession> {
     file: request.file,
     reach: request.reach,
   });
-  if (Either.isLeft(workspace)) {
-    throw new Error(renderWorkspaceFailure(workspace.left).join('\n'));
+  if (Result.isFailure(workspace)) {
+    throw new Error(renderWorkspaceFailure(workspace.failure).join('\n'));
   }
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   const handle = serveStdio(
     () =>
       createSaerskrivenServer({
-        workspace: workspace.right,
+        workspace: workspace.success,
         version: '0.0.0-spec',
         rasterizer: request.rasterizer ?? noRasterizer,
         brotli: request.brotli ?? noBrotli,

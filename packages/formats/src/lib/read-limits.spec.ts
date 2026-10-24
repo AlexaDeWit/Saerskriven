@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { parse } from 'yaml';
 import type { ReadFailure } from './codec.js';
 import {
@@ -16,7 +16,7 @@ import {
 } from './read-limits.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 
-type Read = (text: string) => Either.Either<unknown, ReadFailure>;
+type Read = (text: string) => Result.Result<unknown, ReadFailure>;
 
 const nestedBy = (steps: number): string =>
   `${'['.repeat(steps + 1)}${']'.repeat(steps + 1)}`;
@@ -129,17 +129,17 @@ const fixtures: readonly {
 
 function refusalOf(read: Read, text: string): string {
   const result = read(text);
-  if (Either.isRight(result)) {
+  if (Result.isSuccess(result)) {
     return 'accepted';
   }
-  return result.left._tag === 'ExceededReadLimit'
-    ? result.left.limit
-    : result.left._tag;
+  return result.failure._tag === 'ExceededReadLimit'
+    ? result.failure.limit
+    : result.failure._tag;
 }
 
 function failureOf(read: Read, text: string): ReadFailure | undefined {
   const result = read(text);
-  return Either.isLeft(result) ? result.left : undefined;
+  return Result.isFailure(result) ? result.failure : undefined;
 }
 
 describe('the read limits against the files the repository vendors', () => {
@@ -262,7 +262,7 @@ describe('the nesting bound', () => {
     loop['r'] = loop;
     expect(
       failureOf(
-        (text) => parseWithinLimits(text, () => Either.right(loop)),
+        (text) => parseWithinLimits(text, () => Result.succeed(loop)),
         '{}',
       ),
     ).toEqual({

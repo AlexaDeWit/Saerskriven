@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { promptProseOf } from '../fixtures.js';
 import { dataNotInstructions } from './preface.js';
 import { PromptFailure, promptMessages } from './prompt-result.js';
@@ -29,7 +29,7 @@ const section = (data: readonly string[], heading: string) => {
 
 describe('what stride_pass renders', () => {
   it('renders on a Threat Dragon file for an element named by its name', () => {
-    const pass = Either.getOrThrow(
+    const pass = Result.getOrThrow(
       stridePass(dragon, { element: 'Booking service' }),
     );
     const [data, brief] = promptProseOf(promptMessages(pass)).prose;
@@ -39,11 +39,11 @@ describe('what stride_pass renders', () => {
   });
 
   it('renders on a native file, alike by id and by name', () => {
-    const byId = Either.getOrThrow(
+    const byId = Result.getOrThrow(
       stridePass(twoDiagrams, { element: 'el-web-shop' }),
     );
     expect(
-      Either.getOrThrow(stridePass(twoDiagrams, { element: 'Web shop' })),
+      Result.getOrThrow(stridePass(twoDiagrams, { element: 'Web shop' })),
     ).toEqual(byId);
     expect({
       element: section(byId.data, 'element:'),
@@ -64,10 +64,10 @@ describe('what stride_pass renders', () => {
   });
 
   it('asks the questions of the kind, and the brief carries nothing from the model', () => {
-    const store = Either.getOrThrow(
+    const store = Result.getOrThrow(
       stridePass(twoDiagrams, { element: 'el-ledger' }),
     );
-    const flow = Either.getOrThrow(
+    const flow = Result.getOrThrow(
       stridePass(twoDiagrams, { element: 'el-record' }),
     );
     expect(store.brief).toEqual(strideBrief('store'));
@@ -81,7 +81,7 @@ describe('what stride_pass renders', () => {
 
 describe('a stride_pass over an element on more than one diagram', () => {
   it('names it by its name alone and lays out its flows and stores on every diagram', () => {
-    const pass = Either.getOrThrow(
+    const pass = Result.getOrThrow(
       stridePass(sharedTree(), { element: 'Payments API' }),
     );
     expect({
@@ -99,7 +99,7 @@ describe('a stride_pass over an element on more than one diagram', () => {
 describe('why stride_pass has no prompt', () => {
   it('fails on an element the model does not hold', () => {
     expect(stridePass(dragon, { element: 'Nothing' })).toEqual(
-      Either.left(PromptFailure.NoSuchElement()),
+      Result.fail(PromptFailure.NoSuchElement()),
     );
   });
 
@@ -108,19 +108,19 @@ describe('why stride_pass has no prompt', () => {
       twoDiagramsYaml().replace('name: Order ledger', 'name: Web shop'),
     );
     expect(stridePass(shared, { element: 'Web shop' })).toEqual(
-      Either.left(PromptFailure.SharedName()),
+      Result.fail(PromptFailure.SharedName()),
     );
   });
 
   it('fails on a trust boundary', () => {
     expect(stridePass(twoDiagrams, { element: 'el-shop-network' })).toEqual(
-      Either.left(PromptFailure.UncoveredKind()),
+      Result.fail(PromptFailure.UncoveredKind()),
     );
   });
 
   it('fails with no model on a file outside the root', () => {
     expect(
       stridePass(rootWorkspace(), { file: '../outside.yaml', element: 'x' }),
-    ).toEqual(Either.left(PromptFailure.NoModel()));
+    ).toEqual(Result.fail(PromptFailure.NoModel()));
   });
 });

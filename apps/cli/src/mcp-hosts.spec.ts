@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { join } from 'node:path';
 import {
   declared,
@@ -21,7 +21,7 @@ import {
 } from './mcp-hosts.js';
 
 const entryOf = (host: HostName, file?: string): string =>
-  Either.getOrThrow(
+  Result.getOrThrow(
     entryText(
       hostRegistrations[host],
       'entry',
@@ -33,7 +33,7 @@ const parsedEntry = (host: HostName, text: string): unknown =>
   parsedAs(hostRegistrations[host].syntax, text);
 
 const fileOf = (host: HostName, platform: HostPlatform = 'other') =>
-  Either.getOrThrow(
+  Result.getOrThrow(
     hostFile(host, 'user', installedIn('/home/alexa', platform)),
   );
 
@@ -124,7 +124,7 @@ describe('where a host reads its registration', () => {
 
   it('resolves a project file under the directory the invocation ran in', () => {
     expect(hostFile('cursor', 'project', installedIn('/work'))).toEqual(
-      Either.right({
+      Result.succeed({
         kind: 'file',
         file: join('.cursor', 'mcp.json'),
         path: join('/work', '.cursor', 'mcp.json'),
@@ -134,7 +134,7 @@ describe('where a host reads its registration', () => {
 
   it('refuses a user-level file where no home directory is named', () => {
     expect(hostFile('cursor', 'user', homelessIn('/work'))).toEqual(
-      Either.left(InstallFailure.NoHome({ host: 'cursor' })),
+      Result.fail(InstallFailure.NoHome({ host: 'cursor' })),
     );
     expect(
       renderInstallFailure(InstallFailure.NoHome({ host: 'cursor' })),
@@ -147,7 +147,7 @@ describe('where a host reads its registration', () => {
   it('says claude-desktop commits nothing, and what to pass instead', () => {
     const refusal = hostFile('claude-desktop', 'project', installedIn('/work'));
     expect(refusal).toEqual(
-      Either.left(InstallFailure.NoProjectForm({ host: 'claude-desktop' })),
+      Result.fail(InstallFailure.NoProjectForm({ host: 'claude-desktop' })),
     );
     expect(
       renderInstallFailure(

@@ -1,6 +1,6 @@
 import { withinTextBytes } from '@saerskriven/formats';
 import { reasonOf, type WriteTarget } from '@saerskriven/mcp';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   existsSync,
   lstatSync,
@@ -11,8 +11,8 @@ import {
 } from 'node:fs';
 
 /** A file as UTF-8 text, or a sentence naming the path and the system's reason. */
-export function readTextFile(path: string): Either.Either<string, string> {
-  return Either.try({
+export function readTextFile(path: string): Result.Result<string, string> {
+  return Result.try({
     try: () => readFileSync(path, 'utf8'),
     catch: (error) => `cannot read ${path}: ${reasonOf(error)}`,
   });
@@ -26,11 +26,11 @@ export function readTextFile(path: string): Either.Either<string, string> {
 export function withinReadBound<Failure>(
   path: string,
   refusal: (observed: number) => Failure,
-): Either.Either<void, Failure> {
+): Result.Result<void, Failure> {
   const size = sizeOf(path);
   return size === undefined || withinTextBytes(size)
-    ? Either.right(undefined)
-    : Either.left(refusal(size));
+    ? Result.succeed(undefined)
+    : Result.fail(refusal(size));
 }
 
 /**
@@ -40,8 +40,8 @@ export function withinReadBound<Failure>(
 export function writeFile(
   path: string,
   content: string | Uint8Array,
-): Either.Either<void, string> {
-  return Either.try({
+): Result.Result<void, string> {
+  return Result.try({
     try: () => {
       writeFileSync(path, content);
     },
@@ -57,8 +57,8 @@ export function writeFile(
 export function resolved(target: WriteTarget): WriteTarget {
   return {
     file: target.file,
-    path: Either.getOrElse(
-      Either.try(() => realpathSync(target.path)),
+    path: Result.getOrElse(
+      Result.try(() => realpathSync(target.path)),
       () => target.path,
     ),
   };
@@ -66,8 +66,8 @@ export function resolved(target: WriteTarget): WriteTarget {
 
 /** Whether the path is a symbolic link naming nothing that exists. */
 export function danglingLink(path: string): boolean {
-  return Either.getOrElse(
-    Either.try(() => lstatSync(path).isSymbolicLink() && !existsSync(path)),
+  return Result.getOrElse(
+    Result.try(() => lstatSync(path).isSymbolicLink() && !existsSync(path)),
     () => false,
   );
 }
@@ -78,8 +78,8 @@ export function danglingLink(path: string): boolean {
  * measured names no file.
  */
 export function sameFile(first: string, second: string): boolean {
-  return Either.getOrElse(
-    Either.try(() => {
+  return Result.getOrElse(
+    Result.try(() => {
       const one = statSync(first);
       const other = statSync(second);
       return one.dev === other.dev && one.ino === other.ino;
@@ -89,5 +89,5 @@ export function sameFile(first: string, second: string): boolean {
 }
 
 function sizeOf(path: string): number | undefined {
-  return Either.getOrUndefined(Either.try(() => statSync(path).size));
+  return Result.getOrUndefined(Result.try(() => statSync(path).size));
 }

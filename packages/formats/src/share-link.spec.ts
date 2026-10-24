@@ -4,7 +4,7 @@ import {
   drawnFixture,
   sharedModel,
 } from '@saerskriven/model/fixtures';
-import { Either, Option } from 'effect';
+import { Result, Option } from 'effect';
 import { readFileSync } from 'node:fs';
 import { brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
 import { brotliUnbuilt, brotliWasm } from './fixtures.js';
@@ -68,7 +68,7 @@ const densityCeilings: Readonly<Record<string, number>> = {
 };
 
 const linkOf = async (model: Model, base = hostedStudioUrl): Promise<string> =>
-  Either.getOrThrow(await writeShareLink(model, base, brotliWasm()));
+  Result.getOrThrow(await writeShareLink(model, base, brotliWasm()));
 
 const fragmentOf = (link: string): string => new URL(link).hash;
 
@@ -79,9 +79,9 @@ const savedText = (model: Model): string =>
   saerskrivenYamlCodec.write(model).output;
 
 const malformedMessage = (
-  outcome: Either.Either<unknown, ShareLinkFailure | ReadFailure>,
+  outcome: Result.Result<unknown, ShareLinkFailure | ReadFailure>,
 ): string | undefined => {
-  const refusal = Option.getOrUndefined(Either.getLeft(outcome));
+  const refusal = Option.getOrUndefined(Result.getFailure(outcome));
   return ShareLinkFailure.$is('Malformed')(refusal)
     ? refusal.message
     : undefined;
@@ -157,7 +157,7 @@ describe('a fragment refused before anything is decoded', () => {
     'refuses %j as no share link',
     async (fragment) => {
       expect(await readShareLink(fragment, noModule)).toEqual(
-        Either.left(ShareLinkFailure.NotAShareLink()),
+        Result.fail(ShareLinkFailure.NotAShareLink()),
       );
     },
   );
@@ -166,7 +166,7 @@ describe('a fragment refused before anything is decoded', () => {
     'refuses encoding %j, which it does not decode, naming it',
     async (prefix) => {
       expect(await readShareLink(`#share=${prefix}.G2QA`, noModule)).toEqual(
-        Either.left(ShareLinkFailure.UnknownEncoding({ prefix })),
+        Result.fail(ShareLinkFailure.UnknownEncoding({ prefix })),
       );
     },
   );
@@ -190,7 +190,7 @@ describe('a fragment refused before anything is decoded', () => {
   it('refuses a fragment past the limit as too long', async () => {
     const fragment = `${marker}${'ж'.repeat(4 * shareLinkLimit)}`;
     expect(await readShareLink(fragment, noModule)).toEqual(
-      Either.left(
+      Result.fail(
         ShareLinkFailure.TooLong({
           length: fragment.length,
           limit: shareLinkLimit,
@@ -212,7 +212,7 @@ describe('a module that will not do the work', () => {
   it('reports a module that would not start, writing', async () => {
     expect(
       Option.getOrUndefined(
-        Either.getLeft(
+        Result.getFailure(
           await writeShareLink(featureComplete, hostedStudioUrl, notAModule),
         ),
       )?._tag,
@@ -222,7 +222,7 @@ describe('a module that will not do the work', () => {
   it('reports a module that would not start, reading', async () => {
     expect(
       Option.getOrUndefined(
-        Either.getLeft(await readShareLink(`${marker}G2QA`, notAModule)),
+        Result.getFailure(await readShareLink(`${marker}G2QA`, notAModule)),
       )?._tag,
     ).toBe('Unusable');
   });
@@ -237,7 +237,7 @@ describe.skipIf(brotliUnbuilt)('every fixture as a link', () => {
       const density =
         payloadOf(link).length / Buffer.byteLength(savedText(model));
       expect(density).toBeLessThanOrEqual(densityCeilings[name] ?? 0);
-      const read = Either.getOrThrow(
+      const read = Result.getOrThrow(
         await readShareLink(fragmentOf(link), brotliWasm()),
       );
       expect(read.divergences).toEqual([]);
@@ -259,7 +259,7 @@ describe.skipIf(brotliUnbuilt)('every fixture as a link', () => {
         'utf8',
       ),
     ).toBe(sharedElementsYaml);
-    const read = Either.getOrThrow(
+    const read = Result.getOrThrow(
       await readShareLink(fragmentOf(link), brotliWasm()),
     );
     expect(read.model).toEqual(sharedModel);
@@ -282,7 +282,7 @@ describe.skipIf(brotliUnbuilt)(
       const link = await linkOf(model);
       expect(link.length).toBeGreaterThan(400_000);
       expect(
-        Either.getOrThrow(await readShareLink(fragmentOf(link), brotliWasm()))
+        Result.getOrThrow(await readShareLink(fragmentOf(link), brotliWasm()))
           .model,
       ).toEqual(model);
     });
@@ -299,7 +299,7 @@ describe('a model past the read bound', () => {
       },
     };
     const refusal = Option.getOrUndefined(
-      Either.getLeft(await writeShareLink(model, hostedStudioUrl, noModule)),
+      Result.getFailure(await writeShareLink(model, hostedStudioUrl, noModule)),
     );
     expect(refusal?._tag).toBe('PastReadBound');
     expect(
@@ -315,7 +315,7 @@ describe.skipIf(brotliUnbuilt)('the limit', () => {
     const padded = `${hostedStudioUrl}${'x'.repeat(shareLinkLimit - hostedStudioUrl.length - fragment.length)}`;
     expect(await linkOf(model, padded)).toHaveLength(shareLinkLimit);
     expect(await writeShareLink(model, `${padded}x`, brotliWasm())).toEqual(
-      Either.left(
+      Result.fail(
         ShareLinkFailure.TooLong({
           length: shareLinkLimit + 1,
           limit: shareLinkLimit,
@@ -327,7 +327,7 @@ describe.skipIf(brotliUnbuilt)('the limit', () => {
 
 describe.skipIf(brotliUnbuilt)('a link read on the path a file takes', () => {
   it('reads a link holding the file v0.2.1 wrote as the model it describes, migrated to version 3', async () => {
-    const read = Either.getOrThrow(
+    const read = Result.getOrThrow(
       await readShareLink(holding(readFileSync(frozenV021Path)), brotliWasm()),
     );
     expect(read.source.formatVersion).toBe(3);
@@ -384,7 +384,7 @@ describe.skipIf(brotliUnbuilt)('a link that was cut off or changed', () => {
   it('refuses a stream that inflates to bytes that are not UTF-8 as malformed text', async () => {
     expect(
       Option.getOrUndefined(
-        Either.getLeft(
+        Result.getFailure(
           await readShareLink(
             holding(new Uint8Array([0x66, 0xff, 0xfe])),
             brotliWasm(),
@@ -401,7 +401,7 @@ describe.skipIf(brotliUnbuilt)('a link that was cut off or changed', () => {
         brotliWasm(),
       ),
     ).toEqual(
-      Either.left(
+      Result.fail(
         exceededReadLimit('maxTextBytes', readLimits.maxTextBytes + 1),
       ),
     );

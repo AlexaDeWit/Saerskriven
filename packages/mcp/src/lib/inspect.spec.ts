@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { inspect, renderInspection } from './inspect.js';
 import {
   everyRecordTree,
@@ -13,12 +13,12 @@ import { openWorkspace } from './workspace.js';
 
 const tree = workspaceTree();
 
-const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
+const workspace = Result.getOrThrow(openWorkspace({ root: tree.root }));
 
 const rendered = (file?: string): readonly string[] =>
-  Either.match(inspect(workspace, { file }), {
-    onLeft: (refusal) => refusal,
-    onRight: renderInspection,
+  Result.match(inspect(workspace, { file }), {
+    onFailure: (refusal) => refusal,
+    onSuccess: renderInspection,
   });
 
 describe('what an inspection reads as', () => {
@@ -46,20 +46,20 @@ describe('what an inspection reads as', () => {
   });
 
   it('reads the default file where a call names none', () => {
-    const withDefault = Either.getOrThrow(
+    const withDefault = Result.getOrThrow(
       openWorkspace({ root: tree.root, file: 'small.yaml' }),
     );
     expect(
-      Either.map(
+      Result.map(
         inspect(withDefault, {}),
         (inspection) => inspection.result.kind,
       ),
-    ).toEqual(Either.right('inspected'));
+    ).toEqual(Result.succeed('inspected'));
   });
 });
 
 describe('an inspection of a model sharing elements between diagrams', () => {
-  const inspection = Either.getOrThrow(inspect(sharedTree(), {}));
+  const inspection = Result.getOrThrow(inspect(sharedTree(), {}));
   const { result } = inspection;
 
   it('counts the elements on more than one diagram, so the counts of the diagrams add up', () => {
@@ -89,7 +89,7 @@ describe('an inspection of a model sharing elements between diagrams', () => {
 describe('the metadata an inspection names', () => {
   it('names the description and every contributor after the owner', () => {
     const lines = renderInspection(
-      Either.getOrThrow(inspect(everyRecordTree(), {})),
+      Result.getOrThrow(inspect(everyRecordTree(), {})),
     );
     const owner = lines.indexOf('owner: Alexandra de Wit');
     expect(lines.slice(owner + 1, owner + 3)).toEqual([
@@ -100,7 +100,7 @@ describe('the metadata an inspection names', () => {
 });
 
 describe('the assumptions an inspection lists', () => {
-  const scoped = Either.getOrThrow(inspect(recordLinksTree(), {}));
+  const scoped = Result.getOrThrow(inspect(recordLinksTree(), {}));
 
   it('lists every assumption that applies to the model, and none that does not', () => {
     expect(
@@ -126,14 +126,14 @@ describe('the assumptions an inspection lists', () => {
 
 describe('an inspection of a diagram whose id carries a line feed', () => {
   it('forges no line in its text', () => {
-    const inspection = Either.getOrThrow(inspect(forgedIdsTree(), {}));
+    const inspection = Result.getOrThrow(inspect(forgedIdsTree(), {}));
     expect(forgedLinesIn(renderInspection(inspection))).toEqual([]);
   });
 });
 
 describe('an inspection of a file whose path carries a control character', () => {
   it('escapes it in the file: line', () => {
-    const inspection = Either.getOrThrow(inspect(forgedPathTree(), {}));
+    const inspection = Result.getOrThrow(inspect(forgedPathTree(), {}));
     expect(renderInspection(inspection)[0]).toEqual(
       'file: model\\u001b[31m\\u0007.yaml',
     );

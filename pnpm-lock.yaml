@@ -97,7 +97,7 @@ catalogs:
       specifier: ^15.0.0
       version: 15.0.0
     effect:
-      specifier: ^4.0.0
+      specifier: ^4.0.5
       version: 4.0.5
     esbuild:
       specifier: ^0.28.0

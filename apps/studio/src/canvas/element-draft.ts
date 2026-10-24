@@ -5,7 +5,7 @@ import type {
   Model,
   OperationFailure,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { useMemo, useState } from 'react';
 import type { Said } from '../messages/said.js';
 import type { Action } from '../store/actions.js';
@@ -33,7 +33,7 @@ export type ElementEdit<Subject extends DrawnElement, Target extends object> = {
     diagramId: DiagramId,
     subject: Subject,
     target: Target,
-  ) => Either.Either<Model, OperationFailure>;
+  ) => Result.Result<Model, OperationFailure>;
   readonly action: (
     diagramId: DiagramId,
     subject: Subject,
@@ -90,8 +90,8 @@ export function useElementDraft<
     [edit, state.present, draft],
   );
   const present =
-    outcome !== undefined && Either.isRight(outcome)
-      ? outcome.right
+    outcome !== undefined && Result.isSuccess(outcome)
+      ? outcome.success
       : state.present;
 
   return {

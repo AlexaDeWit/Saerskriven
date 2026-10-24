@@ -6,7 +6,7 @@ import {
 } from '@saerskriven/formats/share-link';
 import type { Model } from '@saerskriven/model';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { brotliCompressSync } from 'node:zlib';
 import { StrictMode } from 'react';
 import { AssetFailure } from '../asset-failure.js';
@@ -50,7 +50,7 @@ const shared: Model = {
 };
 
 const asRead = (model: Model): Model =>
-  Either.getOrThrow(
+  Result.getOrThrow(
     saerskrivenYamlCodec.read(saerskrivenYamlCodec.write(model).output),
   ).model;
 
@@ -133,15 +133,15 @@ describe.skipIf(brotliUnbuilt)('a shared link arriving', () => {
 
   it('lands the later of two pasted links when the earlier finishes reading last', async () => {
     const reads = [
-      deferred<Either.Either<Uint8Array, AssetFailure>>(),
-      deferred<Either.Either<Uint8Array, AssetFailure>>(),
+      deferred<Result.Result<Uint8Array, AssetFailure>>(),
+      deferred<Result.Result<Uint8Array, AssetFailure>>(),
     ];
     let calls = 0;
     const result = session({
       module: () => {
         const read = reads[calls];
         calls += 1;
-        return read?.promise ?? Promise.resolve(Either.right(brotliWasm()));
+        return read?.promise ?? Promise.resolve(Result.succeed(brotliWasm()));
       },
       copy: writeClipboard,
     });
@@ -153,13 +153,13 @@ describe.skipIf(brotliUnbuilt)('a shared link arriving', () => {
 
     paste(earlier);
     paste(later);
-    reads[1]?.resolve(Either.right(brotliWasm()));
+    reads[1]?.resolve(Result.succeed(brotliWasm()));
     await waitFor(() => {
       expect(held().present.metadata.title).toBe('Later link');
     }, settled);
     const landed = held().present;
     await act(async () => {
-      reads[0]?.resolve(Either.right(brotliWasm()));
+      reads[0]?.resolve(Result.succeed(brotliWasm()));
       await reads[0]?.promise;
       await new Promise((resolve) => setTimeout(resolve, 200));
     });
@@ -346,7 +346,7 @@ describe.skipIf(brotliUnbuilt)('a refused link', () => {
     visit(await fragmentOf(shared));
     const unavailable = AssetFailure.Unavailable({ reason: 'offline' });
 
-    session(specLinks(() => Promise.resolve(Either.left(unavailable))).links);
+    session(specLinks(() => Promise.resolve(Result.fail(unavailable))).links);
 
     await waitFor(() => {
       expect(linkFailure()).toEqual(
@@ -387,13 +387,13 @@ describe.skipIf(brotliUnbuilt)('Share', () => {
     ).toBe(true);
     expect(notice).toEqual(ShareNotice.Shared({ length: link.length }));
     expect(
-      Either.getOrThrow(await readLink(new URL(link).hash, links)).model,
+      Result.getOrThrow(await readLink(new URL(link).hash, links)).model,
     ).toEqual(asRead(sampleModel));
   });
 
   it('asks for the clipboard write as Share runs, before the link is written, so the press that ran it holds for the write', async () => {
     recordingClipboard();
-    const module = deferred<Either.Either<Uint8Array, AssetFailure>>();
+    const module = deferred<Result.Result<Uint8Array, AssetFailure>>();
     const copy = vi.fn<ShareLinks['copy']>(writeClipboard);
     const result = session({ module: () => module.promise, copy });
 
@@ -402,7 +402,7 @@ describe.skipIf(brotliUnbuilt)('Share', () => {
     });
 
     expect(copy).toHaveBeenCalledTimes(1);
-    module.resolve(Either.right(brotliWasm()));
+    module.resolve(Result.succeed(brotliWasm()));
     await waitFor(() => {
       expect(result.current.shareNotice?._tag).toBe('Shared');
     }, settled);
@@ -448,7 +448,7 @@ describe.skipIf(brotliUnbuilt)('Share', () => {
     });
 
     const notice = await shareNotice(
-      session(specLinks(() => Promise.resolve(Either.left(answered))).links),
+      session(specLinks(() => Promise.resolve(Result.fail(answered))).links),
     );
 
     expect(notice).toEqual(

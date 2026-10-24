@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type {
   CommandResult,
   ReleaseFailure,
@@ -112,17 +112,18 @@ export const fakeRunner = (
 
 /** Require a successful release result. */
 export const right = <Value,>(
-  outcome: Either.Either<Value, ReleaseFailure>,
+  outcome: Result.Result<Value, ReleaseFailure>,
 ): Value => {
-  assert.equal(Either.isRight(outcome), true, JSON.stringify(outcome));
-  if (Either.isLeft(outcome)) throw new Error(JSON.stringify(outcome.left));
-  return outcome.right;
+  assert.equal(Result.isSuccess(outcome), true, JSON.stringify(outcome));
+  if (Result.isFailure(outcome))
+    throw new Error(JSON.stringify(outcome.failure));
+  return outcome.success;
 };
 
 /** Require a release failure and return its plain data. */
 export const leftText = <Value,>(
-  outcome: Either.Either<Value, ReleaseFailure>,
+  outcome: Result.Result<Value, ReleaseFailure>,
 ): string => {
-  assert.equal(Either.isLeft(outcome), true, JSON.stringify(outcome));
-  return Either.isLeft(outcome) ? JSON.stringify(outcome.left) : '';
+  assert.equal(Result.isFailure(outcome), true, JSON.stringify(outcome));
+  return Result.isFailure(outcome) ? JSON.stringify(outcome.failure) : '';
 };

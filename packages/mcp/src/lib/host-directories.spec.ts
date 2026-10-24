@@ -2,7 +2,7 @@ import {
   ProtocolError,
   isInputRequiredResult,
 } from '@modelcontextprotocol/client';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   existsSync,
   readFileSync,
@@ -147,7 +147,7 @@ describe('the workspace one call runs against', () => {
   const tree = hostTree();
   const outside = join(tree.listed, modelFile);
   const opened = (reach: Reach) =>
-    Either.getOrThrow(openWorkspace({ root: tree.launch, reach }));
+    Result.getOrThrow(openWorkspace({ root: tree.launch, reach }));
   const following = opened('host');
   const asking: HostTurn = { declaresRoots: true, responses: undefined };
   const answered: HostTurn = {
@@ -158,20 +158,20 @@ describe('the workspace one call runs against', () => {
   it('is the workspace as opened where every path stays under the root, whatever the request carries', () => {
     expect(
       workspaceForCall(following, [insideFile, undefined], answered),
-    ).toEqual(Either.right(following));
+    ).toEqual(Result.succeed(following));
   });
 
   it('is a round of one roots/list request where a path leaves the root and nothing was answered', () => {
     expect(
-      Either.getOrUndefined(
-        Either.flip(workspaceForCall(following, [insideFile, outside], asking)),
+      Result.getOrUndefined(
+        Result.flip(workspaceForCall(following, [insideFile, outside], asking)),
       )?.inputRequests,
     ).toEqual({ [rootsRequestKey]: { method: 'roots/list' } });
   });
 
   it('carries the directories a retried request answers with, and asks no second time', () => {
     expect(workspaceForCall(following, [outside], answered)).toEqual(
-      Either.right({
+      Result.succeed({
         ...following,
         host: HostDirectories.Listed({ directories: [tree.listed] }),
       }),
@@ -185,7 +185,7 @@ describe('the workspace one call runs against', () => {
         responses: {},
       }),
     ).toEqual(
-      Either.right({ ...following, host: HostDirectories.Unanswered() }),
+      Result.succeed({ ...following, host: HostDirectories.Unanswered() }),
     );
   });
 
@@ -196,7 +196,7 @@ describe('the workspace one call runs against', () => {
         responses: answered.responses,
       }),
     ).toEqual(
-      Either.right({ ...following, host: HostDirectories.Undeclared() }),
+      Result.succeed({ ...following, host: HostDirectories.Undeclared() }),
     );
   });
 
@@ -206,7 +206,7 @@ describe('the workspace one call runs against', () => {
       [asking, answered].map((turn) =>
         workspaceForCall(pinned, [outside], turn),
       ),
-    ).toEqual([Either.right(pinned), Either.right(pinned)]);
+    ).toEqual([Result.succeed(pinned), Result.succeed(pinned)]);
   });
 });
 

@@ -21,7 +21,7 @@ import {
   type OverwriteFailure,
 } from '@saerskriven/mcp';
 import type { Model } from '@saerskriven/model';
-import { Either, pipe } from 'effect';
+import { Result, pipe } from 'effect';
 import { z } from 'zod';
 import { danglingLink, resolved, sameFile } from './files.js';
 import { describeDivergences, readConvertible } from './input.js';
@@ -64,22 +64,22 @@ const projections = {
  * release reading only versions 1 and 2 refuses, is warned of there too.
  */
 export function convert(file: string, options: ConvertOptions): CommandOutcome {
-  return Either.match(
+  return Result.match(
     pipe(
       readConvertible(file),
-      Either.flatMap((read) =>
-        Either.map(rewritable(file, read, options), () => read),
+      Result.flatMap((read) =>
+        Result.map(rewritable(file, read, options), () => read),
       ),
-      Either.flatMap((read) =>
-        Either.map(droppable(file, read, options), (dropped) => ({
+      Result.flatMap((read) =>
+        Result.map(droppable(file, read, options), (dropped) => ({
           read,
           dropped,
         })),
       ),
     ),
     {
-      onLeft: (outcome) => outcome,
-      onRight: (dropping) => converted(dropping, options),
+      onFailure: (outcome) => outcome,
+      onSuccess: (dropping) => converted(dropping, options),
     },
   );
 }
@@ -95,29 +95,29 @@ function rewritable(
   file: string,
   read: ConvertedRead,
   options: ConvertOptions,
-): Either.Either<void, CommandOutcome> {
+): Result.Result<void, CommandOutcome> {
   return read.format !== options.to && inPlace(file, options)
-    ? Either.left(
+    ? Result.fail(
         usageError(
           lines(
             `error: --out names the file being converted, which only a conversion to its own format (${read.format}) may write over.`,
           ),
         ),
       )
-    : Either.right(undefined);
+    : Result.succeed(undefined);
 }
 
 function droppable(
   file: string,
   read: ConvertedRead,
   options: ConvertOptions,
-): Either.Either<readonly Divergence[], CommandOutcome> {
+): Result.Result<readonly Divergence[], CommandOutcome> {
   const dropped = inPlace(file, options)
     ? read.divergences.filter(unreadByThisVersion)
     : [];
   return dropped.length === 0 || options.dropUndeclared === true
-    ? Either.right(dropped)
-    : Either.left(
+    ? Result.succeed(dropped)
+    : Result.fail(
         invalidInput(
           lines(
             `error: ${escapedForTerminal(file)} holds what this version of saer cannot read, which rewriting it would drop, so nothing was written:`,
@@ -176,12 +176,12 @@ function writtenAs(read: ConvertedRead, to: FormatName): WriteResult {
 function replaced(
   path: string,
   text: string,
-): Either.Either<string, readonly string[]> {
+): Result.Result<string, readonly string[]> {
   return danglingLink(path)
-    ? Either.left([
+    ? Result.fail([
         `error: ${escapedForTerminal(path)} is a symbolic link to a file that is not there, so nothing was written.`,
       ])
-    : Either.mapLeft(
+    : Result.mapError(
         overwrittenFile(resolved({ file: path, path }), text),
         refusedWrite,
       );

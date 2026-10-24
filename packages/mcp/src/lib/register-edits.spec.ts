@@ -12,7 +12,7 @@ import {
   threatId,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { applyEdits, modelEditSchema } from './edits.js';
 import type { RegisterEdit } from './register-edits.js';
 
@@ -82,7 +82,7 @@ describe('the details edits', () => {
     '$held.op changes the $fields of its record and keeps the rest of the model',
     ({ held, change }) => {
       expect(applyDetails(held, change)).toEqual(
-        Either.right({
+        Result.succeed({
           model: {
             ...registerModel,
             [held.key]: registerModel[held.key].map((record) =>
@@ -127,7 +127,7 @@ describe('the details edits', () => {
     'refuses $held.op on a record the model does not hold',
     ({ held, change, failure }) => {
       expect(applyDetails(held, change)).toEqual(
-        Either.left({ index: 0, failure }),
+        Result.fail({ index: 0, failure }),
       );
     },
   );
@@ -180,17 +180,17 @@ describe('the details edits', () => {
         modelEditSchema.parse(replace),
       ]);
       expect(applyDetails(held, {})).toEqual(replaced);
-      expect(Either.getOrUndefined(replaced)?.model).toEqual(registerModel);
+      expect(Result.getOrUndefined(replaced)?.model).toEqual(registerModel);
     },
   );
 });
 
 const applying = (model: typeof registerModel, edit: unknown) =>
-  Either.getOrThrow(applyEdits(model, [modelEditSchema.parse(edit)]));
+  Result.getOrThrow(applyEdits(model, [modelEditSchema.parse(edit)]));
 
 describe('a threat edit and the model link', () => {
   const spoofShopper = threatId('threat-spoof-shopper');
-  const modelWide = Either.getOrThrow(
+  const modelWide = Result.getOrThrow(
     linkThreatToModel(registerModel, spoofShopper),
   );
   const [plain] = registerModel.threats.filter(({ id }) => id === spoofShopper);
@@ -279,7 +279,7 @@ describe('a threat edit and the model link', () => {
   it('both refuse a threat the model does not hold', () => {
     for (const op of ['link_threat_to_model', 'unlink_threat_from_model']) {
       expect(
-        Either.isLeft(
+        Result.isFailure(
           applyEdits(registerModel, [
             modelEditSchema.parse({ op, threat: 'threat-missing' }),
           ]),
@@ -291,7 +291,7 @@ describe('a threat edit and the model link', () => {
 
 describe('replace_assumption', () => {
   const managedDb = assumptionId('assumption-managed-db');
-  const modelWide = Either.getOrThrow(
+  const modelWide = Result.getOrThrow(
     linkAssumptionToModel(
       drawnFixture({
         ...validModelFixture,
@@ -304,7 +304,7 @@ describe('replace_assumption', () => {
     ),
   );
   const replacing = (appliesToModel: boolean) =>
-    Either.getOrThrow(
+    Result.getOrThrow(
       applyEdits(modelWide, [
         {
           op: 'replace_assumption',

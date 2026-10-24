@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { elementId, softHyphen, validModel } from '../fixtures.js';
 import {
   addDiagram,
@@ -122,7 +122,7 @@ describe('removeDiagram', () => {
     expect(next.mitigations).toEqual([]);
     expect(next.assumptions).toEqual([]);
     expect(next.lastIssuedThreatNumber).toBe(validModel.lastIssuedThreatNumber);
-    expect(Either.isRight(parseModel(next))).toBe(true);
+    expect(Result.isSuccess(parseModel(next))).toBe(true);
   });
 });
 

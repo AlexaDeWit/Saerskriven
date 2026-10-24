@@ -9,7 +9,7 @@ import {
   type DetectionFailure,
   type ReadFailure,
 } from '@saerskriven/formats';
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import { readFileSync, realpathSync, statSync, type Stats } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { revisionOf } from './revision.js';
@@ -118,8 +118,8 @@ export type WorkspaceRequest = {
  */
 export function openWorkspace(
   request: WorkspaceRequest,
-): Either.Either<ModelWorkspace, WorkspaceFailure> {
-  return Either.flatMap(rootOf(request.root), (root) =>
+): Result.Result<ModelWorkspace, WorkspaceFailure> {
+  return Result.flatMap(rootOf(request.root), (root) =>
     defaulting(
       {
         root,
@@ -143,13 +143,13 @@ export function openWorkspace(
 export function confined(
   workspace: ModelWorkspace,
   requested: string,
-): Either.Either<string, WorkspaceFailure> {
+): Result.Result<string, WorkspaceFailure> {
   const resolved = realPathOf(resolve(workspace.root, requested));
   return permittedDirectories(workspace).some((directory) =>
     holds(directory, resolved),
   )
-    ? Either.right(resolved)
-    : Either.left(
+    ? Result.succeed(resolved)
+    : Result.fail(
         WorkspaceFailure.OutsideRoot({
           requested,
           resolved,
@@ -188,10 +188,10 @@ export function namedModel(
 export function readTextFile(
   workspace: ModelWorkspace,
   requested: string,
-): Either.Either<ReadTextFile, WorkspaceFailure> {
-  return Either.flatMap(confined(workspace, requested), (path) =>
-    Either.flatMap(readableFile(path, requested), () =>
-      Either.map(bytesOf(path, requested), (bytes) => ({
+): Result.Result<ReadTextFile, WorkspaceFailure> {
+  return Result.flatMap(confined(workspace, requested), (path) =>
+    Result.flatMap(readableFile(path, requested), () =>
+      Result.map(bytesOf(path, requested), (bytes) => ({
         path,
         bytes,
         text: Buffer.from(bytes).toString('utf8'),
@@ -207,12 +207,12 @@ export function readTextFile(
 export function readModelFile(
   workspace: ModelWorkspace,
   requested: string,
-): Either.Either<ReadModelFile, WorkspaceFailure> {
-  return Either.flatMap(readTextFile(workspace, requested), (file) =>
-    Either.mapBoth(readAnyFormat(file.text), {
-      onLeft: (failure) =>
+): Result.Result<ReadModelFile, WorkspaceFailure> {
+  return Result.flatMap(readTextFile(workspace, requested), (file) =>
+    Result.mapBoth(readAnyFormat(file.text), {
+      onFailure: (failure) =>
         WorkspaceFailure.Unread({ path: requested, failure }),
-      onRight: (read) => ({
+      onSuccess: (read) => ({
         path: file.path,
         revision: revisionOf(file.bytes),
         read,
@@ -270,8 +270,8 @@ export function reasonOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function rootOf(root: string): Either.Either<string, WorkspaceFailure> {
-  return Either.try({
+function rootOf(root: string): Result.Result<string, WorkspaceFailure> {
+  return Result.try({
     try: () => realpathSync(resolve(root)),
     catch: (error) =>
       WorkspaceFailure.NoRoot({ root, reason: reasonOf(error) }),
@@ -281,10 +281,10 @@ function rootOf(root: string): Either.Either<string, WorkspaceFailure> {
 function defaulting(
   empty: ModelWorkspace,
   file: string | undefined,
-): Either.Either<ModelWorkspace, WorkspaceFailure> {
+): Result.Result<ModelWorkspace, WorkspaceFailure> {
   return file === undefined
-    ? Either.right(empty)
-    : Either.map(confined(empty, file), (defaultFile): ModelWorkspace => ({
+    ? Result.succeed(empty)
+    : Result.map(confined(empty, file), (defaultFile): ModelWorkspace => ({
         ...empty,
         defaultFile,
       }));
@@ -338,8 +338,8 @@ function realPathOf(path: string): string {
   const below: string[] = [];
   let current = path;
   for (;;) {
-    const resolved = Either.getOrUndefined(
-      Either.try(() => realpathSync(current)),
+    const resolved = Result.getOrUndefined(
+      Result.try(() => realpathSync(current)),
     );
     if (resolved !== undefined) {
       return join(resolved, ...below);
@@ -356,11 +356,11 @@ function realPathOf(path: string): string {
 function readableFile(
   path: string,
   requested: string,
-): Either.Either<void, WorkspaceFailure> {
-  return Either.flatMap(statted(path, requested), (stats) =>
+): Result.Result<void, WorkspaceFailure> {
+  return Result.flatMap(statted(path, requested), (stats) =>
     stats.isFile()
       ? withinSizeBound(stats.size, requested)
-      : Either.left(
+      : Result.fail(
           WorkspaceFailure.Unreadable({
             path: requested,
             reason: 'it is not a regular file',
@@ -372,8 +372,8 @@ function readableFile(
 function statted(
   path: string,
   requested: string,
-): Either.Either<Stats, WorkspaceFailure> {
-  return Either.try({
+): Result.Result<Stats, WorkspaceFailure> {
+  return Result.try({
     try: () => statSync(path),
     catch: (error) =>
       WorkspaceFailure.Unreadable({
@@ -386,10 +386,10 @@ function statted(
 function withinSizeBound(
   size: number,
   requested: string,
-): Either.Either<void, WorkspaceFailure> {
+): Result.Result<void, WorkspaceFailure> {
   return withinTextBytes(size)
-    ? Either.right(undefined)
-    : Either.left(
+    ? Result.succeed(undefined)
+    : Result.fail(
         WorkspaceFailure.Unread({
           path: requested,
           failure: exceededReadLimit('maxTextBytes', size),
@@ -400,8 +400,8 @@ function withinSizeBound(
 function bytesOf(
   path: string,
   requested: string,
-): Either.Either<Uint8Array, WorkspaceFailure> {
-  return Either.try({
+): Result.Result<Uint8Array, WorkspaceFailure> {
+  return Result.try({
     try: () => readFileSync(path),
     catch: (error) =>
       WorkspaceFailure.Unreadable({

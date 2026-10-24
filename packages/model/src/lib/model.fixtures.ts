@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { DrawnModelInput, ModelInput } from './model.js';
 import { parseDrawnModel } from './parse-drawn.js';
 import type { ParseIssue } from './parse-issue.js';
@@ -11,7 +11,7 @@ import { parseModel, type Model, type ParseFailure } from './parse.js';
  */
 export function seededModel(
   mutate: (draft: typeof validModelFixture) => void,
-): Either.Either<Model, ParseFailure> {
+): Result.Result<Model, ParseFailure> {
   const draft = structuredClone(validModelFixture);
   mutate(draft);
   return parseDrawnModel(draft, 'diagram');
@@ -24,9 +24,9 @@ export function seededModel(
  */
 export function seededPlacedModel(
   mutate: (draft: ModelInput) => void,
-): Either.Either<Model, ParseFailure> {
+): Result.Result<Model, ParseFailure> {
   const draft: ModelInput = structuredClone(
-    Either.getOrThrow(parseDrawnModel(validModelFixture, 'diagram')),
+    Result.getOrThrow(parseDrawnModel(validModelFixture, 'diagram')),
   );
   mutate(draft);
   return parseModel(draft);
@@ -49,9 +49,9 @@ export function unnamedWithLoopedFlow(draft: typeof validModelFixture): void {
 
 /** The issues a parse reported, empty where it reported none. */
 export function issuesOf(
-  result: Either.Either<Model, ParseFailure>,
+  result: Result.Result<Model, ParseFailure>,
 ): readonly ParseIssue[] {
-  return Either.isLeft(result) ? result.left.issues : [];
+  return Result.isFailure(result) ? result.failure.issues : [];
 }
 
 /**

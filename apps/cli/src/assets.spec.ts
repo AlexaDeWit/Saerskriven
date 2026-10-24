@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { runtimeAssets, wasmAssets, wasmModule } from './assets.js';
 import { fakeAssets, scratchDirectory } from './cli.fixtures.js';
 import { resvgWasmFile } from './png.js';
@@ -32,25 +32,27 @@ describe('the assets a single executable reads', () => {
     executable.embedded.set('assets/a.ttf', 'face a');
     executable.embedded.set('elsewhere/c.ttf', 'not an asset of ours');
     expect(
-      Either.map(wasmAssets(runtimeAssets, 'embedded.wasm'), (assets) => ({
+      Result.map(wasmAssets(runtimeAssets, 'embedded.wasm'), (assets) => ({
         wasm: textOf(assets.wasm),
         fonts: assets.fonts.map(textOf),
       })),
     ).toEqual(
-      Either.right({ wasm: 'embedded module', fonts: ['face a', 'face b'] }),
+      Result.succeed({ wasm: 'embedded module', fonts: ['face a', 'face b'] }),
     );
   });
 
   it('refuses a module the executable does not embed', () => {
-    expect(Either.isLeft(wasmModule(runtimeAssets, 'absent.wasm'))).toBe(true);
+    expect(Result.isFailure(wasmModule(runtimeAssets, 'absent.wasm'))).toBe(
+      true,
+    );
   });
 
   it('still come from disk for any other directory', () => {
     const directory = fakeAssets(scratchDirectory('assets'), ['on-disk.ttf']);
     expect(
-      Either.map(wasmAssets(directory, resvgWasmFile), (assets) =>
+      Result.map(wasmAssets(directory, resvgWasmFile), (assets) =>
         assets.fonts.map(textOf),
       ),
-    ).toEqual(Either.right(['face:on-disk.ttf']));
+    ).toEqual(Result.succeed(['face:on-disk.ttf']));
   });
 });

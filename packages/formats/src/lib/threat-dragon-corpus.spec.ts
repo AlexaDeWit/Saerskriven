@@ -1,7 +1,7 @@
 import { diagramIdSchema, inNumberOrder, type Model } from '@saerskriven/model';
 import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { divergenceDetailText } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
 import { indexById } from './threat-dragon-document.js';
@@ -21,11 +21,11 @@ const readings = corpusTexts.map((file) => ({
   result: readThreatDragon(file.text),
 }));
 
-const refused = readings.filter((reading) => Either.isLeft(reading.result));
+const refused = readings.filter((reading) => Result.isFailure(reading.result));
 
 const diverged = readings.flatMap((reading) =>
-  Either.isRight(reading.result)
-    ? reading.result.right.divergences.map(
+  Result.isSuccess(reading.result)
+    ? reading.result.success.divergences.map(
         (divergence) =>
           `${reading.name}: ${divergenceDetailText(divergence.detail)} (${divergence.reason})`,
       )
@@ -33,7 +33,7 @@ const diverged = readings.flatMap((reading) =>
 );
 
 const roundTrip = (file: { name: string; text: string }) => {
-  const read = Either.getOrThrowWith(
+  const read = Result.getOrThrowWith(
     readThreatDragon(file.text),
     () => new Error(`The corpus file ${file.name} no longer reads.`),
   );
@@ -46,7 +46,7 @@ const roundTrip = (file: { name: string; text: string }) => {
     written,
     before: JSON.parse(file.text) as unknown,
     after: JSON.parse(written.output) as unknown,
-    document: Either.getOrThrowWith(
+    document: Result.getOrThrowWith(
       reread,
       () => new Error(`The write of ${file.name} no longer reads back.`),
     ).source,
@@ -203,7 +203,7 @@ describe('writing every vendored file back onto its own document', () => {
   it.each(roundTrips)(
     'reads $name back as the model it was written from',
     ({ model, reread }) => {
-      expect(Either.isRight(reread) && reread.right.model).toEqual(model);
+      expect(Result.isSuccess(reread) && reread.success.model).toEqual(model);
     },
   );
 

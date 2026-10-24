@@ -30,7 +30,7 @@ import type {
   SaerskrivenYamlV3Placement,
   SaerskrivenYamlV3Threat,
 } from '@saerskriven/wire-saerskriven-yaml-v3';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { parseWire, ReadFailure, type ReadResult } from './codec.js';
 import type { Divergence } from './divergence.js';
@@ -89,8 +89,8 @@ export type SaerskrivenYamlRead = ReadResult<
  */
 export function readSaerskrivenYaml(
   text: string,
-): Either.Either<SaerskrivenYamlRead, ReadFailure> {
-  return Either.flatMap(parseYaml(text), mapDocument);
+): Result.Result<SaerskrivenYamlRead, ReadFailure> {
+  return Result.flatMap(parseYaml(text), mapDocument);
 }
 
 /**
@@ -99,27 +99,27 @@ export function readSaerskrivenYaml(
  */
 export function readSaerskrivenYamlDocument(
   document: SaerskrivenYamlVersionedDocument,
-): Either.Either<Model, ReadFailure> {
+): Result.Result<Model, ReadFailure> {
   return modelOf(document, currentSaerskrivenYaml(document).document);
 }
 
 function mapDocument(
   given: unknown,
-): Either.Either<SaerskrivenYamlRead, ReadFailure> {
+): Result.Result<SaerskrivenYamlRead, ReadFailure> {
   const later = laterVersionSchema.safeParse(given);
   if (later.success) {
-    return Either.left(
+    return Result.fail(
       ReadFailure.LaterFormatVersion({
         stated: later.data.formatVersion,
         read: saerskrivenYamlVersionsRead,
       }),
     );
   }
-  return Either.flatMap(
+  return Result.flatMap(
     parseWire(saerskrivenYamlVersionsSchema, given),
     (wire) => {
       const current = currentSaerskrivenYaml(wire);
-      return Either.map(modelOf(wire, current.document), (model) => ({
+      return Result.map(modelOf(wire, current.document), (model) => ({
         model,
         source: current.document,
         divergences: [
@@ -140,8 +140,8 @@ const laterVersionSchema = z.object({
 function modelOf(
   stated: SaerskrivenYamlVersionedDocument,
   current: SaerskrivenYamlV3Document,
-): Either.Either<Model, ReadFailure> {
-  return Either.mapLeft(
+): Result.Result<Model, ReadFailure> {
+  return Result.mapError(
     parseModel(
       toModelInput(current),
       stated.formatVersion === 3 ? 'model' : version2RelationshipScope,

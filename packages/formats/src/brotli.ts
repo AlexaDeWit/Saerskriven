@@ -7,7 +7,7 @@ import {
   type Answered,
   type BoundaryModule,
 } from '@saerskriven/wasm';
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 
 /**
  * Why a compression or a decompression produced no bytes: `_tag`
@@ -53,10 +53,10 @@ type Codec = BoundaryModule<(typeof calls)[number]>;
 export async function compressBrotli(
   bytes: Uint8Array,
   wasm: Uint8Array,
-): Promise<Either.Either<Uint8Array, BrotliFailure>> {
+): Promise<Result.Result<Uint8Array, BrotliFailure>> {
   const started = await instantiatedCodec(wasm);
-  return Either.flatMap(started, (module) =>
-    Either.map(
+  return Result.flatMap(started, (module) =>
+    Result.map(
       run(module, bytes, () => module.compress()),
       (answer) => answer.output,
     ),
@@ -80,17 +80,17 @@ export async function decompressBrotli(
   bytes: Uint8Array,
   wasm: Uint8Array,
   maximum: number,
-): Promise<Either.Either<Uint8Array, BrotliFailure>> {
+): Promise<Result.Result<Uint8Array, BrotliFailure>> {
   if (!isUnsigned(maximum)) {
-    return Either.left(
+    return Result.fail(
       BrotliFailure.Unusable({
         sentence: `a maximum of ${maximum} is not a byte count from 0 to ${mostUnsigned}`,
       }),
     );
   }
   const started = await instantiatedCodec(wasm);
-  return Either.flatMap(started, (module) =>
-    Either.flatMap(
+  return Result.flatMap(started, (module) =>
+    Result.flatMap(
       run(module, bytes, () => module.decompress(maximum)),
       (answer) => decoded(answer, maximum),
     ),
@@ -99,8 +99,8 @@ export async function decompressBrotli(
 
 async function instantiatedCodec(
   wasm: Uint8Array,
-): Promise<Either.Either<Codec, BrotliFailure>> {
-  return Either.mapLeft(
+): Promise<Result.Result<Codec, BrotliFailure>> {
+  return Result.mapError(
     await instantiated(wasm, calls, 'the module exports no brotli codec'),
     unusable,
   );
@@ -110,18 +110,18 @@ function run(
   module: Codec,
   bytes: Uint8Array,
   call: () => number,
-): Either.Either<Answered<number>, BrotliFailure> {
-  return Either.mapLeft(answered(module, bytes, call), unusable);
+): Result.Result<Answered<number>, BrotliFailure> {
+  return Result.mapError(answered(module, bytes, call), unusable);
 }
 
 function decoded(
   answer: Answered<number>,
   maximum: number,
-): Either.Either<Uint8Array, BrotliFailure> {
+): Result.Result<Uint8Array, BrotliFailure> {
   if (answer.value === written) {
-    return Either.right(answer.output);
+    return Result.succeed(answer.output);
   }
-  return Either.left(
+  return Result.fail(
     answer.value === pastMaximum
       ? BrotliFailure.PastMaximum({ maximum })
       : BrotliFailure.Malformed(),

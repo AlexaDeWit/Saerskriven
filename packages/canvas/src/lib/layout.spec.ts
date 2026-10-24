@@ -1,5 +1,5 @@
 import { setAccent, type Model, type Point } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   attached,
   curveBoundary,
@@ -298,7 +298,7 @@ describe('layoutDiagram, an accent', () => {
   });
 
   it('is paint alone: the diagram lays out as it does with every accent cleared, every flow name where it was', () => {
-    const cleared = Either.getOrThrow(
+    const cleared = Result.getOrThrow(
       setAccent(
         accentsModel,
         accentsModel.diagrams[0].id,

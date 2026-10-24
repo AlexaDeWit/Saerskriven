@@ -1,5 +1,5 @@
 import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { recordingClipboard } from './canvas/canvas.fixtures.js';
 import { deferred } from './files/files.fixtures.js';
 import { writeClipboard } from './system-clipboard.js';
@@ -47,7 +47,7 @@ describe('the system clipboard', () => {
   it('writes a text it holds now', async () => {
     const clipboard = recordingClipboard();
 
-    expect(await writeClipboard('model')).toEqual(Either.right(undefined));
+    expect(await writeClipboard('model')).toEqual(Result.succeed(undefined));
     expect(clipboard.text()).toBe('model');
   });
 
@@ -59,7 +59,7 @@ describe('the system clipboard', () => {
 
     expect(clipboard.write).toHaveBeenCalledTimes(1);
     link.resolve(shared);
-    expect(await written).toEqual(Either.right(undefined));
+    expect(await written).toEqual(Result.succeed(undefined));
     expect(await clipboard.text()).toBe(shared);
   });
 
@@ -67,7 +67,7 @@ describe('the system clipboard', () => {
     const clipboard = recordingClipboard();
 
     expect(await writeClipboard(Promise.resolve('link'))).toEqual(
-      Either.right(undefined),
+      Result.succeed(undefined),
     );
     expect(clipboard.text()).toBe('link');
   });
@@ -88,7 +88,7 @@ describe('the system clipboard', () => {
     );
 
     expect(await writeClipboard('model')).toEqual(
-      Either.left(
+      Result.fail(
         'Clipboard write was blocked due to lack of user activation.',
       ),
     );

@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { extensionOf, resultPath, type ModelWorkspace } from './workspace.js';
@@ -49,8 +49,8 @@ const modelExtensions = new Set(['.json', '.yaml', '.yml']);
 const skippedDirectories = new Set(['node_modules']);
 
 function entriesOf(directory: string) {
-  return Either.getOrElse(
-    Either.try(() => readdirSync(directory, { withFileTypes: true })),
+  return Result.getOrElse(
+    Result.try(() => readdirSync(directory, { withFileTypes: true })),
     () => [],
   ).filter(
     (entry) =>

@@ -12,7 +12,7 @@ import {
   validModel,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   answerOf,
   everyRecordTree,
@@ -223,7 +223,7 @@ describe('what a detailed element row carries per kind', () => {
 describe('the row of a flow left unlabelled', () => {
   const unlabelled = treeHolding(
     saerskrivenYamlCodec.write(
-      Either.getOrThrow(
+      Result.getOrThrow(
         renameElement(validModel, elementId('element-order-flow'), ''),
       ),
     ).output,
@@ -274,7 +274,7 @@ describe('the row of a flow left unlabelled', () => {
   it('names an end drawn away from its element by that element', () => {
     const away = treeHolding(
       saerskrivenYamlCodec.write(
-        Either.getOrThrow(renameElement(sharedModel, elementId('charge'), '')),
+        Result.getOrThrow(renameElement(sharedModel, elementId('charge'), '')),
       ).output,
     );
     const [row] = answerOf(
@@ -299,7 +299,7 @@ describe('the row of a flow left unlabelled', () => {
 describe('the accent of an element row', () => {
   const accented = treeHolding(
     saerskrivenYamlCodec.write(
-      Either.getOrThrow(
+      Result.getOrThrow(
         setAccent(
           validModel,
           validModel.diagrams[0].id,

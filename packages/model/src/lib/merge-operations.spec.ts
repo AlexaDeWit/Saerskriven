@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   copiesModel,
   diagramId,
@@ -187,7 +187,7 @@ describe('mergeElements', () => {
 
   it('keeps the security facts of the element kept and drops those of the merged one', () => {
     const facts = modelOf(
-      Either.flatMap(
+      Result.flatMap(
         setElementProperties(copiesModel, stock, {
           kind: 'store',
           isEncrypted: true,
@@ -283,7 +283,7 @@ describe('mergeElements', () => {
 
     it('never name the kept element, though either list did', () => {
       const listing = modelOf(
-        Either.flatMap(
+        Result.flatMap(
           setElementProperties(copiesModel, backend, {
             kind: 'trust-boundary',
             containedElements: [api, stock, backendCopy],
@@ -317,14 +317,14 @@ describe('mergeElements', () => {
 
   describe('two flows', () => {
     const audited = modelOf(
-      Either.flatMap(
+      Result.flatMap(
         addElement(
           copiesModel,
           storefront,
           audit('audit', 'orders-api', false),
         ),
         (model) =>
-          Either.flatMap(
+          Result.flatMap(
             addElement(
               model,
               fulfilment,
@@ -356,7 +356,7 @@ describe('mergeElements', () => {
   it('keeps a flow end drawn away from the merged element away from the kept one, on a diagram placing neither', () => {
     const third = diagramId('audit');
     const away = modelOf(
-      Either.flatMap(
+      Result.flatMap(
         addDiagram(copiesModel, { id: third, title: 'Audit' }),
         (model) =>
           placeElement(model, third, {
@@ -448,7 +448,7 @@ describe('mergeElements', () => {
     expect(
       errorOf(mergeElements(reversed, reserveCopy, reserve)),
     ).toMatchObject({ _tag: 'MergeFlowEndsDiffer' });
-    expect(Either.isRight(mergeElements(ended, reserveCopy, reserve))).toBe(
+    expect(Result.isSuccess(mergeElements(ended, reserveCopy, reserve))).toBe(
       true,
     );
   });

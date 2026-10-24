@@ -4,7 +4,7 @@ import {
   floodingEntryCount,
 } from '@saerskriven/model/fixtures';
 import { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { parse } from 'yaml';
 import { floodTimeout } from './codec.fixtures.js';
 import { readAnyFormat } from './detect.js';
@@ -24,7 +24,7 @@ const saerskrivenYamlFlood = `{"formatVersion":2,"diagrams":[{"elements":[{"kind
 
 const floodedReads: readonly {
   readonly format: string;
-  readonly read: (text: string) => Either.Either<unknown, unknown>;
+  readonly read: (text: string) => Result.Result<unknown, unknown>;
   readonly text: string;
 }[] = [
   {
@@ -60,11 +60,11 @@ const floodedReads: readonly {
 ];
 
 const refusalOf = (
-  read: (text: string) => Either.Either<unknown, unknown>,
+  read: (text: string) => Result.Result<unknown, unknown>,
   text: string,
 ): unknown => {
   const result = read(text);
-  return Either.isLeft(result) && result.left;
+  return Result.isFailure(result) && result.failure;
 };
 
 describe(

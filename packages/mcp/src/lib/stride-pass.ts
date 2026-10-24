@@ -5,7 +5,7 @@ import {
   type Element,
   type StrideCategory,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import {
   elementDetail,
@@ -28,7 +28,6 @@ import {
 import { renderThreat, threatRow } from './threat-rows.js';
 import type { ModelWorkspace } from './workspace.js';
 
-/** What `stride_pass` takes. */
 export const stridePassArgumentsSchema = fileArgumentSchema.extend({
   element: z
     .string()
@@ -37,10 +36,8 @@ export const stridePassArgumentsSchema = fileArgumentSchema.extend({
     ),
 });
 
-/** What `stride_pass` takes. */
 export type StridePassArguments = z.infer<typeof stridePassArgumentsSchema>;
 
-/** What `stride_pass` tells a client it is for. */
 export const stridePassDescription =
   'Run a STRIDE pass over one element of a Saerskriven threat model: the questions that apply to its kind, with its flows, the stores those flows reach and the threats already recorded against it.';
 
@@ -93,14 +90,14 @@ const questions: Readonly<Record<StrideName, string>> = {
 export function stridePass(
   workspace: ModelWorkspace,
   args: StridePassArguments,
-): Either.Either<PromptParts, PromptFailure> {
-  const read = Either.mapLeft(readNamed(workspace, args.file), () =>
+): Result.Result<PromptParts, PromptFailure> {
+  const read = Result.mapError(readNamed(workspace, args.file), () =>
     PromptFailure.NoModel(),
   );
-  return Either.flatMap(read, (reading) => {
+  return Result.flatMap(read, (reading) => {
     const placed = elementsOnDiagrams(reading.model, reading.model.diagrams);
-    return Either.flatMap(namedElement(placed, args.element), (chosen) =>
-      Either.map(analyzedKind(chosen.element), (kind) => ({
+    return Result.flatMap(namedElement(placed, args.element), (chosen) =>
+      Result.map(analyzedKind(chosen.element), (kind) => ({
         data: passData(reading, chosen, placed),
         brief: strideBrief(kind),
       })),
@@ -149,17 +146,17 @@ function passData(
 function namedElement(
   placed: readonly ElementOnDiagram[],
   named: string,
-): Either.Either<ElementOnDiagram, PromptFailure> {
+): Result.Result<ElementOnDiagram, PromptFailure> {
   const byId = placed.find((one) => one.element.id === named);
   if (byId !== undefined) {
-    return Either.right(byId);
+    return Result.succeed(byId);
   }
   const byName = placed.filter((one) => one.element.name === named);
   const [only] = byName;
   if (only !== undefined && byName.length === 1) {
-    return Either.right(only);
+    return Result.succeed(only);
   }
-  return Either.left(
+  return Result.fail(
     byName.length === 0
       ? PromptFailure.NoSuchElement()
       : PromptFailure.SharedName(),
@@ -168,10 +165,10 @@ function namedElement(
 
 function analyzedKind(
   element: DrawnElement,
-): Either.Either<AnalyzedKind, PromptFailure> {
+): Result.Result<AnalyzedKind, PromptFailure> {
   return element.kind === 'trust-boundary' || element.kind === 'text'
-    ? Either.left(PromptFailure.UncoveredKind())
-    : Either.right(element.kind);
+    ? Result.fail(PromptFailure.UncoveredKind())
+    : Result.succeed(element.kind);
 }
 
 function flowsOf(

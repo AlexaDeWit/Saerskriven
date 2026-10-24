@@ -1,6 +1,6 @@
 import { parseModel, type Model } from '@saerskriven/model';
 import { sharedModel } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
 import {
   featureCompleteYaml,
@@ -30,7 +30,7 @@ describe('a flow end drawn away from its element', () => {
   const drawnAway = withFlowDrawnAway(readOrThrow(featureCompleteYaml).model);
 
   it('is a model the parse accepts, which reads back from its write as itself', () => {
-    expect(Either.isRight(parseModel(drawnAway))).toBe(true);
+    expect(Result.isSuccess(parseModel(drawnAway))).toBe(true);
     const text = written(drawnAway);
     expect(text).toMatch(/^formatVersion: 3$/mu);
     expect(readOrThrow(text).model).toEqual(drawnAway);
@@ -53,7 +53,7 @@ describe('a relationship to an element on another diagram', () => {
     );
     expect(text).not.toBe(featureCompleteYaml);
     const read = saerskrivenYamlCodec.read(text);
-    expect(Either.isLeft(read) ? read.left : undefined).toMatchObject({
+    expect(Result.isFailure(read) ? read.failure : undefined).toMatchObject({
       _tag: 'InvalidModel',
       issues: [
         {

@@ -17,7 +17,7 @@ import {
   type PngImage,
 } from '@saerskriven/render/png';
 import type { ResvgAssets } from '@saerskriven/render/resvg';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AssetFailure } from '../asset-failure.js';
 import { activeLocale, activeTranslator } from '../messages/locale.js';
@@ -87,9 +87,9 @@ type ExportCommands = {
 
 /** The asset loaders and projections the PDF and PNG exports run, which a spec replaces. */
 export type RenderExports = {
-  readonly pdfAssets: () => Promise<Either.Either<PdfAssets, AssetFailure>>;
+  readonly pdfAssets: () => Promise<Result.Result<PdfAssets, AssetFailure>>;
   readonly compile: typeof compilePdf;
-  readonly pngAssets: () => Promise<Either.Either<ResvgAssets, AssetFailure>>;
+  readonly pngAssets: () => Promise<Result.Result<ResvgAssets, AssetFailure>>;
   readonly draw: typeof renderPng;
 };
 
@@ -145,7 +145,7 @@ export function useExportCommands(
       file: ExportFile,
       make: (
         state: State,
-      ) => Promise<Either.Either<Produced, ExportNotice> | undefined>,
+      ) => Promise<Result.Result<Produced, ExportNotice> | undefined>,
     ): void => {
       const run = async (): Promise<void> => {
         setNotice(undefined);
@@ -154,16 +154,16 @@ export function useExportCommands(
         if (made === undefined) {
           return;
         }
-        if (Either.isLeft(made)) {
-          setNotice(made.left);
+        if (Result.isFailure(made)) {
+          setNotice(made.failure);
           return;
         }
         await place(
           state.file,
           file,
-          made.right.content,
-          made.right.unplaced,
-          made.right.diagramTitle,
+          made.success.content,
+          made.success.unplaced,
+          made.success.diagramTitle,
         );
       };
       void run();
@@ -248,41 +248,44 @@ async function compiled(
   state: State,
   locale: Locale,
   renders: RenderExports,
-): Promise<Either.Either<Produced, ExportNotice>> {
+): Promise<Result.Result<Produced, ExportNotice>> {
   const projection = renderTypst(state.present, locale);
   const assets = await renders.pdfAssets();
-  if (Either.isLeft(assets)) {
-    return Either.left(assetNotice(assets.left, 'compiler'));
+  if (Result.isFailure(assets)) {
+    return Result.fail(assetNotice(assets.failure, 'compiler'));
   }
-  return Either.mapBoth(await renders.compile(projection.typst, assets.right), {
-    onLeft: compileNotice,
-    onRight: (pdf) => ({
-      content: new Uint8Array(pdf),
-      unplaced: projection.unplaced,
-    }),
-  });
+  return Result.mapBoth(
+    await renders.compile(projection.typst, assets.success),
+    {
+      onFailure: compileNotice,
+      onSuccess: (pdf) => ({
+        content: new Uint8Array(pdf),
+        unplaced: projection.unplaced,
+      }),
+    },
+  );
 }
 
 async function drawn(
   state: State,
   locale: Locale,
   renders: RenderExports,
-): Promise<Either.Either<Produced, ExportNotice> | undefined> {
+): Promise<Result.Result<Produced, ExportNotice> | undefined> {
   const diagram = activeDiagram(state);
   if (diagram === undefined) {
     return undefined;
   }
   const assets = await renders.pngAssets();
-  if (Either.isLeft(assets)) {
-    return Either.left(assetNotice(assets.left, 'rasterizer'));
+  if (Result.isFailure(assets)) {
+    return Result.fail(assetNotice(assets.failure, 'rasterizer'));
   }
-  return Either.mapBoth(
+  return Result.mapBoth(
     await renders.draw(diagram, state.present, locale, {
-      assets: assets.right,
+      assets: assets.success,
     }),
     {
-      onLeft: rasterNotice,
-      onRight: (image: PngImage) => ({
+      onFailure: rasterNotice,
+      onSuccess: (image: PngImage) => ({
         content: image.png,
         unplaced: image.unplaced,
         diagramTitle: fileTitleOf(state, diagram),

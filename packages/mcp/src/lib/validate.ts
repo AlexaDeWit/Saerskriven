@@ -3,7 +3,7 @@ import {
   hasDiverged,
   renderDivergences,
 } from '@saerskriven/formats';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { defaultedFileSentence, fileArgumentSchema } from './path-arguments.js';
 import {
@@ -14,19 +14,15 @@ import {
 } from './reading.js';
 import type { ModelWorkspace } from './workspace.js';
 
-/** What `saer_validate` takes. */
 export type ValidateArguments = z.infer<typeof fileArgumentSchema>;
 
-/** What `saer_validate` answers with. */
 export const validateResultSchema = readingSchema.extend({
   diverged: z.boolean(),
   divergences: z.array(divergenceSchema),
 });
 
-/** What `saer_validate` answers with. */
 export type ValidateResult = z.infer<typeof validateResultSchema>;
 
-/** What `saer_validate` tells a client it is for. */
 export const validateDescription = [
   'Check whether one file reads as a Saerskriven threat model, and report every place the file and the model do not correspond exactly. The file name is never consulted: the content decides which format claims it, so a model saved under any extension reads.',
   'Call this on a file you did not write, before you work from it, and after an edit by another tool to confirm the file still reads. Use saer_inspect where you also want what the model holds, since this tool reports only whether the file reads and what it lost on the way.',
@@ -39,8 +35,8 @@ export const validateDescription = [
 export function validate(
   workspace: ModelWorkspace,
   args: ValidateArguments,
-): Either.Either<ValidateResult, readonly string[]> {
-  return Either.map(readNamed(workspace, args.file), (reading) => ({
+): Result.Result<ValidateResult, readonly string[]> {
+  return Result.map(readNamed(workspace, args.file), (reading) => ({
     ...reportedReading(reading),
     diverged: hasDiverged(reading.divergences),
     divergences: [...reading.divergences],

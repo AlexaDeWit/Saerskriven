@@ -9,7 +9,7 @@ import {
 } from '@saerskriven/formats/share-link';
 import { inNumberOrder } from '@saerskriven/model';
 import { incompressibleModel, validModel } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { CallToolResult } from '@modelcontextprotocol/server';
 import { occurrencesIn, shareLinkOf } from '../fixtures.js';
 import { brokenBrotli, builtBrotli } from './brotli.fixtures.js';
@@ -56,7 +56,7 @@ describe('what saer_share_link tells a client', () => {
 
 describe('what saer_share_link refuses', () => {
   it('names the reason where this install carries no brotli module', async () => {
-    const missing = Either.getOrThrow(Either.flip(noBrotli()));
+    const missing = Result.getOrThrow(Result.flip(noBrotli()));
     const refused = refusalOf(await shareLink(workspace, noBrotli, {}));
     expect(refused[0]).toContain('cannot write a share link');
     expect(refused[0]).toContain(missing);
@@ -70,7 +70,7 @@ describe('what saer_share_link refuses', () => {
   });
 
   it('refuses a file outside the root before it asks for the module', async () => {
-    const confined = Either.getOrThrow(
+    const confined = Result.getOrThrow(
       openWorkspace({ root: workspaceTree().root }),
     );
     expect(
@@ -94,7 +94,7 @@ describe.skipIf(brotliUnbuilt)('what saer_share_link writes', () => {
     const shared = answerOf(await shareLink(workspace, builtBrotli, {}));
     const link = linkIn(shared);
     expect(link.startsWith(`${hostedStudioUrl}#share=1.`)).toBe(true);
-    const read = Either.getOrThrow(
+    const read = Result.getOrThrow(
       await readShareLink(new URL(link).hash, brotliWasm()),
     );
     expect(read.model).toEqual({

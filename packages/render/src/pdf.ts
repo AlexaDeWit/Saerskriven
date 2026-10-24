@@ -1,5 +1,5 @@
 import { promisePerBytes } from '@saerskriven/wasm';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { PdfFailure } from './pdf-failures.js';
 
 export { PdfFailure } from './pdf-failures.js';
@@ -46,7 +46,7 @@ export type PdfAssets = {
 export async function compilePdf(
   source: string,
   assets: PdfAssets,
-): Promise<Either.Either<Uint8Array, PdfFailure>> {
+): Promise<Result.Result<Uint8Array, PdfFailure>> {
   try {
     const compiler = await compilerWith(assets);
     try {
@@ -58,13 +58,13 @@ export async function compilePdf(
         noDiagnostics,
       );
       return artifact instanceof Uint8Array
-        ? Either.right(artifact)
-        : Either.left(PdfFailure.NoDocument());
+        ? Result.succeed(artifact)
+        : Result.fail(PdfFailure.NoDocument());
     } finally {
       compiler.free();
     }
   } catch (error) {
-    return Either.left(PdfFailure.Refused({ sentences: refusalOf(error) }));
+    return Result.fail(PdfFailure.Refused({ sentences: refusalOf(error) }));
   }
 }
 

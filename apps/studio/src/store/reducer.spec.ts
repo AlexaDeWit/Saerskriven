@@ -18,7 +18,7 @@ import {
   softHyphen,
   threatId,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { Action } from './actions.js';
 import { reduce } from './reducer.js';
 import { activeDiagramId, drawnElementById } from './selectors.js';
@@ -57,7 +57,7 @@ const recordedStart = initialState(recordedModel);
 const [heldMitigation] = recordedModel.mitigations;
 const [heldAssumption] = recordedModel.assumptions;
 const noteElement = elementId('note-editable');
-const noteModel = Either.getOrThrow(
+const noteModel = Result.getOrThrow(
   addElement(sampleModel, mainDiagram, newNote(noteElement, 'Draft note')),
 );
 const noteStart = initialState(noteModel);

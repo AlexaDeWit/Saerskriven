@@ -11,7 +11,7 @@ import {
   withBundledFonts,
   type ThemeRead,
 } from '@saerskriven/render';
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import { readTextFile, withinReadBound } from './files.js';
 import { lines } from './outcome.js';
 
@@ -27,16 +27,16 @@ export const ThemeFileFailure = Data.taggedEnum<ThemeFileFailure>();
 /** Reads bounded YAML overrides with LF, CRLF, or CR line endings. */
 export function readThemeFile(
   path: string,
-): Either.Either<ThemeRead, ThemeFileFailure> {
-  return Either.flatMap(
+): Result.Result<ThemeRead, ThemeFileFailure> {
+  return Result.flatMap(
     withinReadBound(path, (observed) =>
       ThemeFileFailure.Unusable({
         failure: exceededReadLimit('maxTextBytes', observed),
       }),
     ),
     () =>
-      Either.flatMap(
-        Either.mapLeft(readTextFile(path), (message) =>
+      Result.flatMap(
+        Result.mapError(readTextFile(path), (message) =>
           ThemeFileFailure.Unreadable({ message }),
         ),
         themeText,
@@ -53,9 +53,9 @@ export function commandTheme(
   const read =
     path === undefined
       ? { theme: defaultRenderTheme, diagnostics: [] }
-      : Either.match(readThemeFile(path), {
-          onRight: (value) => value,
-          onLeft: (failure): ThemeRead => ({
+      : Result.match(readThemeFile(path), {
+          onSuccess: (value) => value,
+          onFailure: (failure): ThemeRead => ({
             theme: defaultRenderTheme,
             diagnostics: [
               {
@@ -101,9 +101,9 @@ export function themeWarnings(
       );
 }
 
-function themeText(text: string): Either.Either<ThemeRead, ThemeFileFailure> {
-  return Either.map(
-    Either.mapLeft(parseYaml(text), (failure) =>
+function themeText(text: string): Result.Result<ThemeRead, ThemeFileFailure> {
+  return Result.map(
+    Result.mapError(parseYaml(text), (failure) =>
       ThemeFileFailure.Unusable({ failure }),
     ),
     (value) => readThemeOverrides(holdsOnlyComments(text) ? {} : value),

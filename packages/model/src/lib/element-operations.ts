@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   diagramIndexOf,
   emptyNameFailure,
@@ -116,12 +116,12 @@ export function addElement(
   diagramId: DiagramId,
   element: DrawnElement,
   decimals?: Decimals,
-): Either.Either<Model, AddElementFailure> {
-  return Either.flatMap(
+): Result.Result<Model, AddElementFailure> {
+  return Result.flatMap(
     diagramIndexOf(model, diagramId),
-    (diagramIndex): Either.Either<Model, AddElementFailure> => {
+    (diagramIndex): Result.Result<Model, AddElementFailure> => {
       if (model.elements.some(({ id }) => id === element.id)) {
-        return Either.left(
+        return Result.fail(
           OperationFailure.DuplicateElementId({ elementId: element.id }),
         );
       }
@@ -132,10 +132,10 @@ export function addElement(
         flowEndpointFailure(model, facts, model.diagrams[diagramIndex]) ??
         invalidRelationships(facts, known);
       if (failure !== undefined) {
-        return Either.left(failure);
+        return Result.fail(failure);
       }
       const stored = withStoredName(storedElement(element, decimals));
-      return Either.right(
+      return Result.succeed(
         withDiagram(
           { ...model, elements: [...model.elements, elementOf(stored)] },
           diagramIndex,
@@ -161,8 +161,8 @@ export function removeElement(
   model: Model,
   elementId: ElementId,
   decimals?: Decimals,
-): Either.Either<Model, RemoveElementFailure> {
-  return Either.map(locatedElement(model, elementId), () => {
+): Result.Result<Model, RemoveElementFailure> {
+  return Result.map(locatedElement(model, elementId), () => {
     const retained = new Set<string>(model.elements.map(({ id }) => id));
     retained.delete(elementId);
     const trimmed = withPlacedEnds(
@@ -211,8 +211,8 @@ export function moveElement(
   elementId: ElementId,
   offset: Point,
   decimals?: Decimals,
-): Either.Either<Model, MoveElementFailure> {
-  return Either.map(
+): Result.Result<Model, MoveElementFailure> {
+  return Result.map(
     locatedDrawn(model, diagramId, elementId),
     ({ diagramIndex, drawn }) => {
       const moved = translatedElement(drawn, offset, decimals);
@@ -236,15 +236,15 @@ export function resizeElement(
   elementId: ElementId,
   size: Size,
   decimals?: Decimals,
-): Either.Either<Model, ResizeElementFailure> {
-  return Either.flatMap(
+): Result.Result<Model, ResizeElementFailure> {
+  return Result.flatMap(
     locatedDrawn(model, diagramId, elementId),
-    ({ diagramIndex, drawn }): Either.Either<Model, ResizeElementFailure> => {
+    ({ diagramIndex, drawn }): Result.Result<Model, ResizeElementFailure> => {
       const next = resized(drawn, storedSize(size, decimals));
       if (next === undefined) {
-        return Either.left(OperationFailure.NotResizable({ elementId }));
+        return Result.fail(OperationFailure.NotResizable({ elementId }));
       }
-      return Either.right(
+      return Result.succeed(
         sameGeometry(drawn, next)
           ? model
           : withPlacement(model, diagramIndex, placementOf(next)),
@@ -263,17 +263,17 @@ export function renameElement(
   model: Model,
   elementId: ElementId,
   name: string,
-): Either.Either<Model, RenameElementFailure> {
-  return Either.flatMap(
+): Result.Result<Model, RenameElementFailure> {
+  return Result.flatMap(
     locatedElement(model, elementId),
-    (located): Either.Either<Model, RenameElementFailure> => {
+    (located): Result.Result<Model, RenameElementFailure> => {
       const renamed = withStoredName({ ...located.element, name });
       const refusal =
         emptyNameFailure(renamed) ?? refusedCharacter(elementId, name);
       if (refusal !== undefined) {
-        return Either.left(refusal);
+        return Result.fail(refusal);
       }
-      return Either.right(
+      return Result.succeed(
         renamed.name === located.element.name
           ? model
           : withElement(model, renamed),
@@ -287,22 +287,22 @@ export function editNote(
   model: Model,
   elementId: ElementId,
   text: string,
-): Either.Either<Model, EditNoteFailure> {
-  return Either.flatMap(
+): Result.Result<Model, EditNoteFailure> {
+  return Result.flatMap(
     locatedElement(model, elementId),
-    (located): Either.Either<Model, EditNoteFailure> => {
+    (located): Result.Result<Model, EditNoteFailure> => {
       if (located.element.kind !== 'text') {
-        return Either.left(OperationFailure.NotTextElement({ elementId }));
+        return Result.fail(OperationFailure.NotTextElement({ elementId }));
       }
       const refusal = refusedCharacter(elementId, text);
       return refusal === undefined
-        ? Either.right(
+        ? Result.succeed(
             withElement(model, {
               ...located.element,
               text,
             }),
           )
-        : Either.left(refusal);
+        : Result.fail(refusal);
     },
   );
 }
@@ -318,15 +318,15 @@ export function setElementDetails(
   model: Model,
   elementId: ElementId,
   change: ElementDetailsChange,
-): Either.Either<Model, SetElementDetailsFailure> {
-  return Either.flatMap(
+): Result.Result<Model, SetElementDetailsFailure> {
+  return Result.flatMap(
     locatedElement(model, elementId),
-    (located): Either.Either<Model, SetElementDetailsFailure> => {
+    (located): Result.Result<Model, SetElementDetailsFailure> => {
       const refusal =
         refusedCharacter(elementId, change.description ?? '') ??
         refusedCharacter(elementId, change.reasonOutOfScope ?? '');
       if (refusal !== undefined) {
-        return Either.left(refusal);
+        return Result.fail(refusal);
       }
       const held = located.element;
       const next = {
@@ -335,7 +335,7 @@ export function setElementDetails(
         outOfScope: change.outOfScope ?? held.outOfScope,
         reasonOutOfScope: change.reasonOutOfScope ?? held.reasonOutOfScope,
       };
-      return Either.right(
+      return Result.succeed(
         next.description === held.description &&
           next.outOfScope === held.outOfScope &&
           next.reasonOutOfScope === held.reasonOutOfScope
@@ -358,15 +358,15 @@ export function setAccent(
   diagramId: DiagramId,
   elementIds: readonly ElementId[],
   accent: Accent | undefined,
-): Either.Either<Model, SetAccentFailure> {
+): Result.Result<Model, SetAccentFailure> {
   return [...new Set(elementIds)].reduce<
-    Either.Either<Model, SetAccentFailure>
+    Result.Result<Model, SetAccentFailure>
   >(
     (outcome, elementId) =>
-      Either.flatMap(outcome, (current) =>
+      Result.flatMap(outcome, (current) =>
         withAccentOn(current, diagramId, elementId, accent),
       ),
-    Either.right(model),
+    Result.succeed(model),
   );
 }
 
@@ -380,13 +380,13 @@ export function setElementProperties(
   model: Model,
   elementId: ElementId,
   properties: ElementProperties,
-): Either.Either<Model, SetElementPropertiesFailure> {
-  return Either.flatMap(
+): Result.Result<Model, SetElementPropertiesFailure> {
+  return Result.flatMap(
     locatedElement(model, elementId),
-    (located): Either.Either<Model, SetElementPropertiesFailure> => {
+    (located): Result.Result<Model, SetElementPropertiesFailure> => {
       const patch = elementPropertiesSchema.safeParse(properties);
       if (!patch.success) {
-        return Either.left(
+        return Result.fail(
           OperationFailure.InvalidElementProperties({
             elementId,
             issues: toParseIssues(patch.error.issues, properties),
@@ -394,7 +394,7 @@ export function setElementProperties(
         );
       }
       if (patch.data.kind !== located.element.kind) {
-        return Either.left(
+        return Result.fail(
           OperationFailure.InvalidElementProperties({
             elementId,
             issues: [
@@ -404,12 +404,12 @@ export function setElementProperties(
         );
       }
       if (!patchChanges(located.element, patch.data)) {
-        return Either.right(model);
+        return Result.succeed(model);
       }
       const patched = patchedElement(located.element, patch.data);
       const next = elementSchema.safeParse(patched);
       if (!next.success) {
-        return Either.left(
+        return Result.fail(
           OperationFailure.InvalidElementProperties({
             elementId,
             issues: toParseIssues(next.error.issues, patched),
@@ -421,8 +421,8 @@ export function setElementProperties(
         elementsById(model.elements),
       );
       return failure === undefined
-        ? Either.right(withElement(model, next.data))
-        : Either.left(failure);
+        ? Result.succeed(withElement(model, next.data))
+        : Result.fail(failure);
     },
   );
 }
@@ -432,8 +432,8 @@ function withAccentOn(
   diagramId: DiagramId,
   elementId: ElementId,
   accent: Accent | undefined,
-): Either.Either<Model, SetAccentFailure> {
-  return Either.map(
+): Result.Result<Model, SetAccentFailure> {
+  return Result.map(
     locatedDrawn(model, diagramId, elementId),
     ({ diagramIndex, drawn }) =>
       drawn.accent === accent

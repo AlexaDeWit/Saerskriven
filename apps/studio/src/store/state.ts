@@ -13,7 +13,7 @@ import {
   type DrawnModelInput,
   type OperationFailure,
 } from '@saerskriven/model';
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import type { AssetFailure } from '../asset-failure.js';
 import type { RecoveryProblem } from './recovery-storage.js';
 
@@ -181,7 +181,7 @@ const placeholderDocument = {
 } satisfies DrawnModelInput;
 
 /** The editable model shown before a file or recovery snapshot opens. */
-export const placeholderModel: Model = Either.getOrElse(
+export const placeholderModel: Model = Result.getOrElse(
   parseDrawnModel(placeholderDocument, 'diagram'),
   () => emptyModel,
 );

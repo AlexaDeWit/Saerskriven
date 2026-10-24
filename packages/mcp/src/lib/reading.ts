@@ -8,7 +8,7 @@ import {
   type FormatName,
 } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import {
   namedModel,
@@ -56,13 +56,13 @@ export type Reading = z.infer<typeof readingSchema>;
 export function readNamed(
   workspace: ModelWorkspace,
   file: string | undefined,
-): Either.Either<ModelReading, readonly string[]> {
+): Result.Result<ModelReading, readonly string[]> {
   const named = namedModel(workspace, file);
   return named === undefined
-    ? Either.left(unnamed(workspace))
-    : Either.mapBoth(readModelFile(named.workspace, named.file), {
-        onLeft: renderWorkspaceFailure,
-        onRight: (read) => ({
+    ? Result.fail(unnamed(workspace))
+    : Result.mapBoth(readModelFile(named.workspace, named.file), {
+        onFailure: renderWorkspaceFailure,
+        onSuccess: (read) => ({
           file: resultPath(workspace, read.path),
           format: read.read.format,
           revision: read.revision,

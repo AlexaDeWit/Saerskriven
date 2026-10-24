@@ -1,6 +1,6 @@
 import { readAnyFormat } from '@saerskriven/formats';
 import { softHyphen } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createArgumentsSchema, createModel } from './create.js';
@@ -11,7 +11,7 @@ import { refusalOf } from './read-tools.fixtures.js';
 
 const created = (root: string, args: Record<string, unknown>) =>
   createModel(
-    Either.getOrThrow(openWorkspace({ root })),
+    Result.getOrThrow(openWorkspace({ root })),
     createArgumentsSchema.parse(args),
   );
 
@@ -23,7 +23,7 @@ describe('starting a model', () => {
       title: 'Payments',
       owner: 'Alexandra de Wit',
     });
-    expect(Either.getOrUndefined(answer)).toEqual({
+    expect(Result.getOrUndefined(answer)).toEqual({
       file: 'new-model.yaml',
       format: 'saerskriven-yaml',
       savesAsVersion: 2,
@@ -38,7 +38,7 @@ describe('starting a model', () => {
     const read = readAnyFormat(
       readFileSync(join(tree.root, 'new-model.yaml'), 'utf8'),
     );
-    expect(Either.getOrUndefined(read)?.model).toEqual(
+    expect(Result.getOrUndefined(read)?.model).toEqual(
       expect.objectContaining({
         metadata: {
           title: 'Payments',
@@ -67,7 +67,7 @@ describe('starting a model', () => {
     const read = readAnyFormat(
       readFileSync(join(tree.root, 'new-model.yaml'), 'utf8'),
     );
-    expect(Either.getOrUndefined(read)?.model.metadata).toEqual(metadata);
+    expect(Result.getOrUndefined(read)?.model.metadata).toEqual(metadata);
   });
 
   it.each([

@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pngMagic } from '../fixtures.js';
@@ -56,7 +56,7 @@ describe('what saer_render_diagram refuses', () => {
   });
 
   it('words what the rasterizer refused where the module will not start', async () => {
-    const missing = Either.getOrThrow(Either.flip(noRasterizer()));
+    const missing = Result.getOrThrow(Result.flip(noRasterizer()));
     const refused = refusalOf(
       await renderDiagram(drawable, brokenRasterizer, {}),
     ).join('\n');

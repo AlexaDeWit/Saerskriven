@@ -133,16 +133,10 @@ catalog:
   # commander tokenizes argv and a zod schema is the one gate on what a
   # command needs (issue #33).
   commander: ^15.0.0
-  effect: ^4.0.0
+  effect: ^4.0.5
   esbuild: ^0.28.0
   eslint: ^10.0.0
-  # Declared here rather than reached through effect, which depends on it:
-  # the version the property tests run against is ours to pin. The tree
-  # carries two copies, because effect depends on `fast-check: ^3.23.1` and
-  # so holds the 3.x line in place until effect itself moves. The duplicate
-  # is effect's dependency rather than a choice open here, and the 4.x line
-  # is where fixes land. 4.x exports no default, so the property tests import
-  # the namespace.
+  # Property tests import fast-check directly, so the workspace pins it.
   fast-check: ^4.0.0
   jiti: 2.7.0
   jsdom: ^30.0.0

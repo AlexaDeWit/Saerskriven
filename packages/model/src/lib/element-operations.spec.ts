@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import * as fc from 'fast-check';
 import {
   boxAt,
@@ -75,7 +75,7 @@ const movedAtOneDecimal = (id: string): DrawnElement =>
   );
 
 const readWith = (...added: readonly DrawnElement[]): Model =>
-  Either.getOrThrow(
+  Result.getOrThrow(
     seededModel((draft) => {
       draft.diagrams[0].elements.push(...added);
     }),
@@ -305,7 +305,7 @@ describe('addElement', () => {
       ],
     });
     expect(
-      Either.isLeft(addElement(outside, diagramId('other'), boundary)),
+      Result.isFailure(addElement(outside, diagramId('other'), boundary)),
     ).toBe(true);
     const invalid = {
       ...securityModelFixture,
@@ -317,7 +317,7 @@ describe('addElement', () => {
         { id: 'third', title: 'Third', elements: [boundary] },
       ],
     };
-    expect(Either.isLeft(parseDrawnModel(invalid, 'diagram'))).toBe(true);
+    expect(Result.isFailure(parseDrawnModel(invalid, 'diagram'))).toBe(true);
   });
 });
 
@@ -336,7 +336,7 @@ describe('removeElement', () => {
       kind: 'free',
       position: { x: 120, y: 160 },
     });
-    expect(Either.isRight(parseModel(next))).toBe(true);
+    expect(Result.isSuccess(parseModel(next))).toBe(true);
   });
 
   it('detaches the removed element from threat links', () => {
@@ -431,7 +431,7 @@ describe('removeElement', () => {
     expect(flowIn(withoutBoundary, 'element-order-flow')).toMatchObject({
       trustBoundaryIds: [],
     });
-    expect(Either.isRight(parseModel(withoutBoundary))).toBe(true);
+    expect(Result.isSuccess(parseModel(withoutBoundary))).toBe(true);
     const legacy = modelOf(
       removeElement(validModel, elementId('element-perimeter')),
     );
@@ -496,7 +496,7 @@ describe('removeElement', () => {
       kind: 'free',
       position: { x: 0, y: 0 },
     });
-    expect(Either.isRight(parseModel(next))).toBe(true);
+    expect(Result.isSuccess(parseModel(next))).toBe(true);
   });
 
   it('fails on an unknown element', () => {
@@ -964,7 +964,7 @@ describe('renameElement', () => {
       renameElement(validModel, elementId('element-order-flow'), ''),
     );
     expect(
-      Either.getOrThrow(
+      Result.getOrThrow(
         renameElement(unlabelled, elementId('element-order-flow'), ' \t'),
       ),
     ).toBe(unlabelled);

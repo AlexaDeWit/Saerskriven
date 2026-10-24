@@ -1,5 +1,5 @@
 import { deepestProse, renderTypst } from '@saerskriven/render';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { testDataPath } from '@saerskriven/model/fixtures';
 import { copyFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -24,7 +24,7 @@ const deepProseFile = fixtureFile(
 );
 
 const hostileSource = renderTypst(
-  Either.getOrThrow(readModel(hostileFile)).model,
+  Result.getOrThrow(readModel(hostileFile)).model,
   'en-CA',
 ).typst;
 
@@ -38,10 +38,10 @@ const document = (body: string): string =>
 
 const compiled = (source: string) => compilePdf(source, builtAssets);
 
-const refusal = (outcome: Either.Either<Uint8Array, string>): string =>
-  Either.match(outcome, {
-    onLeft: (reason) => reason,
-    onRight: () => 'the compile succeeded',
+const refusal = (outcome: Result.Result<Uint8Array, string>): string =>
+  Result.match(outcome, {
+    onFailure: (reason) => reason,
+    onSuccess: () => 'the compile succeeded',
   });
 
 describe('Typst source compiled to a PDF', () => {
@@ -49,8 +49,8 @@ describe('Typst source compiled to a PDF', () => {
     'gives the same bytes twice for one source, carrying no date',
     async () => {
       const source = document('#"twice"');
-      const first = Either.getOrThrow(await compiled(source));
-      const second = Either.getOrThrow(await compiled(source));
+      const first = Result.getOrThrow(await compiled(source));
+      const second = Result.getOrThrow(await compiled(source));
       expect(Buffer.from(first).toString('latin1')).not.toContain(
         'CreationDate',
       );
@@ -73,13 +73,13 @@ describe('Typst source compiled to a PDF', () => {
     'compiles the deepest prose the register admits',
     async () => {
       const source = renderTypst(
-        Either.getOrThrow(readModel(deepProseFile)).model,
+        Result.getOrThrow(readModel(deepProseFile)).model,
         'en-CA',
       ).typst;
       expect(source.split('#quote(block: true)[').length - 1).toBe(
         deepestProse - 2,
       );
-      expect(pageCount(Either.getOrThrow(await compiled(source)))).toBe(1);
+      expect(pageCount(Result.getOrThrow(await compiled(source)))).toBe(1);
     },
     compileTimeout,
   );
@@ -106,7 +106,7 @@ describe('an install with the module and no font face', () => {
         join(builtAssets, 'LiberationSans-Regular.ttf'),
         join(bareDirectory, 'LiberationSans-Regular.ttf'),
       );
-      const pdf = Either.getOrThrow(
+      const pdf = Result.getOrThrow(
         await compilePdf(document('#"a document"'), bareDirectory),
       );
       expect(Buffer.from(pdf.subarray(0, 5)).toString('latin1')).toBe('%PDF-');
@@ -149,7 +149,7 @@ describe('the hostile fixture', () => {
   it(
     'carries every injection attempt into the PDF as text, on the pages its two threats need',
     async () => {
-      const pdf = Either.getOrThrow(await compiled(hostileSource));
+      const pdf = Result.getOrThrow(await compiled(hostileSource));
       expect(pageCount(pdf)).toBe(2);
       expect(outlineTitles(pdf)).toEqual([
         'Diagram #read("/etc/passwd") <script>alert(1)</script>',

@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   drawnFixture,
   elementId,
@@ -68,15 +68,15 @@ describe('chosenDiagram', () => {
   const [main, second] = model.diagrams;
 
   it('chooses the only diagram when no name is given', () => {
-    expect(chosenDiagram([main], undefined)).toEqual(Either.right(main));
+    expect(chosenDiagram([main], undefined)).toEqual(Result.succeed(main));
   });
 
   it('refuses to choose without a name among no diagram or several', () => {
     expect(chosenDiagram([], undefined)).toEqual(
-      Either.left(DiagramChoiceFailure.NoDiagram()),
+      Result.fail(DiagramChoiceFailure.NoDiagram()),
     );
     expect(chosenDiagram(model.diagrams, undefined)).toEqual(
-      Either.left(
+      Result.fail(
         DiagramChoiceFailure.SeveralDiagrams({ diagrams: model.diagrams }),
       ),
     );
@@ -84,16 +84,16 @@ describe('chosenDiagram', () => {
 
   it('chooses the first diagram a name selects', () => {
     expect(chosenDiagram(model.diagrams, 'diagram-second')).toEqual(
-      Either.right(second),
+      Result.succeed(second),
     );
     expect(chosenDiagram(model.diagrams, 'Main data flow')).toEqual(
-      Either.right(main),
+      Result.succeed(main),
     );
   });
 
   it('refuses a name that selects no diagram, carrying the diagrams', () => {
     expect(chosenDiagram(model.diagrams, 'Main data')).toEqual(
-      Either.left(
+      Result.fail(
         DiagramChoiceFailure.NoDiagramNamed({
           name: 'Main data',
           diagrams: model.diagrams,

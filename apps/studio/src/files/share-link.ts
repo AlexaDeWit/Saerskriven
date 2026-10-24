@@ -6,7 +6,7 @@ import {
   type ShareLinkFailure,
 } from '@saerskriven/formats/share-link';
 import type { Model } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AssetFailure } from '../asset-failure.js';
 import { Action } from '../store/actions.js';
@@ -24,10 +24,10 @@ import { ShareNotice } from './share-notice.js';
  * still being written, and nothing where writing it fails.
  */
 export type ShareLinks = {
-  readonly module: () => Promise<Either.Either<Uint8Array, AssetFailure>>;
+  readonly module: () => Promise<Result.Result<Uint8Array, AssetFailure>>;
   readonly copy: (
     text: Promise<string | undefined>,
-  ) => Promise<Either.Either<void, string>>;
+  ) => Promise<Result.Result<void, string>>;
 };
 
 /** The module loader and the clipboard the browser application uses. */
@@ -56,15 +56,15 @@ export async function shareModel(
 ): Promise<ShareNotice> {
   const encoded = encodedLink(model, base, links);
   const copied = links.copy(
-    encoded.then((link) => Either.getOrUndefined(link)),
+    encoded.then((link) => Result.getOrUndefined(link)),
   );
   const link = await encoded;
-  if (Either.isLeft(link)) {
-    return ShareNotice.Refused({ failure: link.left });
+  if (Result.isFailure(link)) {
+    return ShareNotice.Refused({ failure: link.failure });
   }
-  return Either.match(await copied, {
-    onLeft: (reason) => ShareNotice.ClipboardRefused({ reason }),
-    onRight: () => ShareNotice.Shared({ length: link.right.length }),
+  return Result.match(await copied, {
+    onFailure: (reason) => ShareNotice.ClipboardRefused({ reason }),
+    onSuccess: () => ShareNotice.Shared({ length: link.success.length }),
   });
 }
 
@@ -72,14 +72,14 @@ export async function shareModel(
 export async function readLink(
   fragment: string,
   links: ShareLinks,
-): Promise<Either.Either<LinkRead, LinkFailure>> {
+): Promise<Result.Result<LinkRead, LinkFailure>> {
   const module = await links.module();
-  if (Either.isLeft(module)) {
-    return Either.left(LinkFailure.Module({ failure: module.left }));
+  if (Result.isFailure(module)) {
+    return Result.fail(LinkFailure.Module({ failure: module.failure }));
   }
-  return Either.mapBoth(await readShareLink(fragment, module.right), {
-    onLeft: linkFailureOf,
-    onRight: ({ model, divergences }) => ({ model, divergences }),
+  return Result.mapBoth(await readShareLink(fragment, module.success), {
+    onFailure: linkFailureOf,
+    onSuccess: ({ model, divergences }) => ({ model, divergences }),
   });
 }
 
@@ -147,18 +147,18 @@ export function useShareLink(
     if (reading.current !== fragment) {
       return;
     }
-    if (Either.isLeft(read)) {
+    if (Result.isFailure(read)) {
       finish(fragment);
-      dispatch(Action.LinkRefused({ failure: read.left }));
+      dispatch(Action.LinkRefused({ failure: read.failure }));
       return;
     }
     if (holdsUnsavedWork(modelStore.getState())) {
-      question.current = { fragment, read: read.right };
+      question.current = { fragment, read: read.success };
       setAsking(true);
       return;
     }
     finish(fragment);
-    land(read.right);
+    land(read.success);
   }, [finish, land, links]);
 
   useEffect(() => {
@@ -225,13 +225,13 @@ async function encodedLink(
   model: Model,
   base: string,
   links: ShareLinks,
-): Promise<Either.Either<string, LinkFailure>> {
+): Promise<Result.Result<string, LinkFailure>> {
   const module = await links.module();
-  if (Either.isLeft(module)) {
-    return Either.left(LinkFailure.Module({ failure: module.left }));
+  if (Result.isFailure(module)) {
+    return Result.fail(LinkFailure.Module({ failure: module.failure }));
   }
-  return Either.mapLeft(
-    await writeShareLink(model, base, module.right),
+  return Result.mapError(
+    await writeShareLink(model, base, module.success),
     (failure) => LinkFailure.Codec({ failure }),
   );
 }

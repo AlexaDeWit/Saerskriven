@@ -12,7 +12,7 @@ import {
   threatId,
   validModelFixture,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { EditInput } from './edit.fixtures.js';
 import {
   applyEdits,
@@ -224,8 +224,8 @@ describe('what a refused edit reads as', () => {
 const batchOn = (
   model: Model,
   edits: readonly EditInput[],
-): Either.Either<AppliedBatch, RefusedEdit['failure']> =>
-  Either.mapLeft(
+): Result.Result<AppliedBatch, RefusedEdit['failure']> =>
+  Result.mapError(
     applyEdits(
       model,
       edits.map((edit) => modelEditSchema.parse(edit)),
@@ -234,7 +234,7 @@ const batchOn = (
   );
 
 const modelAfter = (model: Model, edits: readonly EditInput[]): Model =>
-  Either.getOrThrow(batchOn(model, edits)).model;
+  Result.getOrThrow(batchOn(model, edits)).model;
 
 const overview = 'overview';
 
@@ -288,7 +288,7 @@ describe('an edit of an element drawn on more than one diagram', () => {
     'is refused without a diagram where it changes geometry or an accent, naming the diagrams ($op)',
     (edit) => {
       expect(batchOn(sharedModel, [edit])).toMatchObject({
-        left: {
+        failure: {
           _tag: 'ElementOnSeveralDiagrams',
           diagramIds: ['overview', 'payments'],
         },
@@ -411,7 +411,7 @@ describe('an edit of an element drawn on more than one diagram', () => {
         },
       ]),
     ).toMatchObject({
-      left: { _tag: 'ElementNotOnDiagram', diagramId: 'overview' },
+      failure: { _tag: 'ElementNotOnDiagram', diagramId: 'overview' },
     });
   });
 
@@ -427,7 +427,7 @@ describe('an edit of an element drawn on more than one diagram', () => {
   });
 
   it('takes the element off every diagram on remove_element, culling the threat it was the last attachment of', () => {
-    const removed = Either.getOrThrow(
+    const removed = Result.getOrThrow(
       batchOn(sharedModel, [{ op: 'remove_element', element: 'payments-api' }]),
     );
     expect(
@@ -573,13 +573,15 @@ describe('what place_element does', () => {
       tag: 'UnknownElement',
     },
   ])('refuses $name', ({ edit, tag }) => {
-    expect(batchOn(sharedModel, [edit])).toMatchObject({ left: { _tag: tag } });
+    expect(batchOn(sharedModel, [edit])).toMatchObject({
+      failure: { _tag: tag },
+    });
   });
 });
 
 describe('what unplace_element does', () => {
   it('takes an element off one diagram, keeps it on the other with its threats, and culls nothing', () => {
-    const unplaced = Either.getOrThrow(
+    const unplaced = Result.getOrThrow(
       batchOn(sharedModel, [
         { op: 'unplace_element', element: 'payments-api', diagram: 'payments' },
       ]),
@@ -602,9 +604,9 @@ describe('what unplace_element does', () => {
     const refused = batchOn(sharedModel, [
       { op: 'unplace_element', element: 'card-vault', diagram: 'payments' },
     ]);
-    expect(refused).toMatchObject({ left: { _tag: 'LastPlacement' } });
+    expect(refused).toMatchObject({ failure: { _tag: 'LastPlacement' } });
     expect(
-      Either.isLeft(refused) ? refusalOf(refused.left) : undefined,
+      Result.isFailure(refused) ? refusalOf(refused.failure) : undefined,
     ).toContain('remove_element');
   });
 });
@@ -639,9 +641,9 @@ describe('a refusal of an edit another op does', () => {
     },
   ])('points $name', ({ edit, tag, pointsTo }) => {
     const refused = batchOn(sharedModel, [edit]);
-    expect(refused).toMatchObject({ left: { _tag: tag } });
+    expect(refused).toMatchObject({ failure: { _tag: tag } });
     expect(
-      Either.isLeft(refused) ? refusalOf(refused.left) : undefined,
+      Result.isFailure(refused) ? refusalOf(refused.failure) : undefined,
     ).toContain(pointsTo);
   });
 });
@@ -709,13 +711,15 @@ describe('a diagram an edit names by its exact title', () => {
       },
     ]);
     expect(refused).toMatchObject({
-      left: {
+      failure: {
         _tag: 'AmbiguousDiagram',
         name: 'High level',
         diagramIds: ['overview', 'payments'],
       },
     });
-    const refusal = Either.isLeft(refused) ? refusalOf(refused.left, 1) : '';
+    const refusal = Result.isFailure(refused)
+      ? refusalOf(refused.failure, 1)
+      : '';
     expect(refusal).toContain('"overview"');
     expect(refusal).toContain('"payments"');
   });
@@ -748,23 +752,23 @@ describe('a diagram an edit names by its exact title', () => {
       { op: 'remove_diagram', diagram: 'Nothing' },
     ]);
     expect(refused).toMatchObject({
-      left: { _tag: 'UnknownDiagram', diagramId: 'Nothing' },
+      failure: { _tag: 'UnknownDiagram', diagramId: 'Nothing' },
     });
     expect(
-      Either.isLeft(refused) ? refusalOf(refused.left) : undefined,
+      Result.isFailure(refused) ? refusalOf(refused.failure) : undefined,
     ).toContain('saer_inspect');
   });
 });
 
 const mergeRefusal = (edit: EditInput): string =>
-  Either.match(batchOn(copiesModel, [edit]), {
-    onLeft: (failure) => refusalOf(failure),
-    onRight: () => '',
+  Result.match(batchOn(copiesModel, [edit]), {
+    onFailure: (failure) => refusalOf(failure),
+    onSuccess: () => '',
   });
 
 describe('what merge_elements does', () => {
   it('merges a copy into the element kept, reporting what moved and what was dropped', () => {
-    const merged = Either.getOrThrow(
+    const merged = Result.getOrThrow(
       batchOn(copiesModel, [
         {
           op: 'merge_elements',
@@ -812,7 +816,7 @@ describe('what merge_elements does', () => {
   });
 
   it('reports the diagram where it dropped the drawing of an element the kept one shares', () => {
-    const merged = Either.getOrThrow(
+    const merged = Result.getOrThrow(
       batchOn(copiesModel, [
         {
           op: 'place_element',
@@ -867,7 +871,7 @@ describe('what merge_elements does', () => {
     },
   ])('refuses $name', ({ edit, tag }) => {
     expect(batchOn(copiesModel, [edit])).toMatchObject({
-      left: { _tag: tag },
+      failure: { _tag: tag },
     });
   });
 
@@ -898,7 +902,7 @@ describe('the records a batch culls more than once', () => {
       mitigation: tls,
       threat: tamper,
     } as const;
-    const applied = Either.getOrThrow(
+    const applied = Result.getOrThrow(
       applyEdits(drawnFixture(validModelFixture), [
         unlinking,
         {

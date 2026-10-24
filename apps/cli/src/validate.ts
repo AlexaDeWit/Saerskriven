@@ -2,7 +2,7 @@ import {
   writtenSaerskrivenYamlVersion,
   type DetectedRead,
 } from '@saerskriven/formats';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { describeDivergences, readModel } from './input.js';
 import { lines, succeeded, type CommandOutcome } from './outcome.js';
 
@@ -14,9 +14,9 @@ import { lines, succeeded, type CommandOutcome } from './outcome.js';
  * one saved as `.yaml`.
  */
 export function validate(file: string): CommandOutcome {
-  return Either.match(readModel(file), {
-    onLeft: (outcome) => outcome,
-    onRight: (read) =>
+  return Result.match(readModel(file), {
+    onFailure: (outcome) => outcome,
+    onSuccess: (read) =>
       succeeded(lines(summaryOf(read)), describeDivergences(read.divergences)),
   });
 }

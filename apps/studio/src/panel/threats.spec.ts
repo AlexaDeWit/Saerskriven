@@ -19,7 +19,7 @@ import {
   sharedModel,
   threatId,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   canvasModel,
   probeFlow,
@@ -64,7 +64,7 @@ const selecting = (selection: State['selection']): State => ({
   selection,
 });
 
-const mitigated: Model = Either.getOrElse(
+const mitigated: Model = Result.getOrElse(
   replaceThreat(sampleModel, { ...sampleThreat, status: 'mitigated' }),
   () => sampleModel,
 );
@@ -133,7 +133,7 @@ const sampleElements = elementsById(sampleModel.elements);
 
 const unlabelled = (model: Model, ...flows: readonly ElementId[]): Model =>
   flows.reduce(
-    (held, flow) => Either.getOrThrow(renameElement(held, flow, '')),
+    (held, flow) => Result.getOrThrow(renameElement(held, flow, '')),
     model,
   );
 
@@ -177,7 +177,7 @@ describe('elementLabel', () => {
   });
 
   it('names a flow left unlabelled between its ends where it runs both ways', () => {
-    const both = Either.getOrThrow(
+    const both = Result.getOrThrow(
       setFlowDirection(unlabelledCanvas, requestFlow, true),
     );
     expect(labelIn(both, requestFlow)).toBe('Flow between Reader and Studio');
@@ -190,7 +190,7 @@ describe('elementLabel', () => {
   });
 
   it('follows an end to the element it moves to', () => {
-    const moved = Either.getOrThrow(
+    const moved = Result.getOrThrow(
       reconnectFlow(
         unlabelledCanvas,
         mainDiagram,
@@ -307,7 +307,7 @@ describe('the element lists of a threat', () => {
   });
 
   it('detach a flow left unlabelled under its numbered label where only normalization tells it from a name', () => {
-    const lookalike = Either.getOrThrow(
+    const lookalike = Result.getOrThrow(
       renameElement(unlabelledCanvas, probeFlow, 'Flow from Reader to Studio '),
     );
     expect(
@@ -340,8 +340,8 @@ describe('the element lists of a threat', () => {
   });
 
   it('tell apart two flows left unlabelled between the same ends by their ids', () => {
-    const twin = Either.getOrThrow(
-      Either.flatMap(
+    const twin = Result.getOrThrow(
+      Result.flatMap(
         reconnectFlow(
           unlabelledCanvas,
           mainDiagram,

@@ -10,7 +10,7 @@ import {
 } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { parseReleaseVersion } from './release.mts';
 import {
@@ -72,8 +72,8 @@ const fetchAssetHash = (
   tag: string,
   commit: string,
   path: string,
-): Either.Either<string, ReleaseFailure> =>
-  Either.gen(function* () {
+): Result.Result<string, ReleaseFailure> =>
+  Result.gen(function* () {
     yield* runChecked(
       run,
       'gh',
@@ -118,8 +118,8 @@ const preparePin = (
   input: string | undefined,
   run: RunCommand,
   directory: string,
-): Either.Either<string, ReleaseFailure> =>
-  Either.gen(function* () {
+): Result.Result<string, ReleaseFailure> =>
+  Result.gen(function* () {
     const { version, tag } = yield* parseReleaseVersion(input);
     const text = yield* attempt(manifestPath, () =>
       readFileSync(join(cwd, manifestPath), 'utf8'),
@@ -188,8 +188,8 @@ export const updateNixRelease = ({
   cwd,
   input,
   run = runProcess,
-}: UpdateOptions): Either.Either<string, ReleaseFailure> =>
-  Either.gen(function* () {
+}: UpdateOptions): Result.Result<string, ReleaseFailure> =>
+  Result.gen(function* () {
     yield* parseReleaseVersion(input);
     const directory = yield* attempt(manifestPath, () =>
       mkdtempSync(join(cwd, 'nix', '.release-')),
@@ -214,12 +214,12 @@ if (
       : refuse(
           'usage: RELEASE_VERSION=vX.Y.Z pnpm nx run release-tools:update-nix',
         );
-  Either.match(outcome, {
-    onLeft: (failure) => {
+  Result.match(outcome, {
+    onFailure: (failure) => {
       process.stderr.write(`release: ${describeFailure(failure)}\n`);
       process.exitCode = 1;
     },
-    onRight: (message) => {
+    onSuccess: (message) => {
       process.stdout.write(`release: ${message}\n`);
     },
   });

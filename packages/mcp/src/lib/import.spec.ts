@@ -1,6 +1,6 @@
 import { readAnyFormat } from '@saerskriven/formats';
 import { testDataPath } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { copyFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -19,12 +19,15 @@ import { forgedPathSegment, refusalOf } from './read-tools.fixtures.js';
 
 const converted = (root: string, file: string, target: string) =>
   importIntoModel(
-    Either.getOrThrow(openWorkspace({ root })),
+    Result.getOrThrow(openWorkspace({ root })),
     importArgumentsSchema.parse({ file, target }),
   );
 
 const linesOf = (answer: ReturnType<typeof converted>): readonly string[] =>
-  Either.match(answer, { onLeft: (lines) => lines, onRight: renderImport });
+  Result.match(answer, {
+    onFailure: (lines) => lines,
+    onSuccess: renderImport,
+  });
 
 describe('converting a foreign model', () => {
   it('writes the native format, names the format it read, carries what it could not take over, and reads as text lines', () => {
@@ -34,23 +37,23 @@ describe('converting a foreign model', () => {
       readFileSync(join(tree.root, 'converted.yaml'), 'utf8'),
     );
     expect({
-      file: Either.getOrUndefined(answer)?.file,
-      format: Either.getOrUndefined(answer)?.format,
-      source: Either.getOrUndefined(answer)?.source,
-      written: Either.getOrUndefined(written)?.format,
+      file: Result.getOrUndefined(answer)?.file,
+      format: Result.getOrUndefined(answer)?.format,
+      source: Result.getOrUndefined(answer)?.source,
+      written: Result.getOrUndefined(written)?.format,
     }).toEqual({
       file: 'converted.yaml',
       format: 'saerskriven-yaml',
       source: { file: otmFile, format: 'otm' },
       written: 'saerskriven-yaml',
     });
-    expect(Either.getOrUndefined(answer)?.divergences.length).toBeGreaterThan(
+    expect(Result.getOrUndefined(answer)?.divergences.length).toBeGreaterThan(
       0,
     );
     expect(
-      Either.match(answer, {
-        onLeft: (lines) => lines,
-        onRight: renderImport,
+      Result.match(answer, {
+        onFailure: (lines) => lines,
+        onSuccess: renderImport,
       })[0],
     ).toEqual(`converted: ${otmFile} (otm)`);
   });
@@ -62,7 +65,7 @@ describe('converting a foreign model', () => {
       join(tree.root, 'multi-diagram.json'),
     );
     const answer = converted(tree.root, 'multi-diagram.json', 'converted.yaml');
-    expect(Either.getOrUndefined(answer)).toMatchObject({
+    expect(Result.getOrUndefined(answer)).toMatchObject({
       movedToVersion3: true,
       savesAsVersion: 3,
     });
@@ -74,7 +77,7 @@ describe('converting a foreign model', () => {
   it('says nothing of version 3 where version 2 holds the model', () => {
     const tree = editableTree();
     const answer = converted(tree.root, otmFile, 'converted.yaml');
-    expect(Either.getOrUndefined(answer)).toMatchObject({
+    expect(Result.getOrUndefined(answer)).toMatchObject({
       movedToVersion3: false,
       savesAsVersion: 2,
     });
@@ -86,7 +89,7 @@ describe('converting a foreign model', () => {
   it('reads TM-BOM as well, and says which it read', () => {
     const tree = editableTree();
     const answer = converted(tree.root, tmbomFile, 'converted.yaml');
-    expect(Either.getOrUndefined(answer)?.source.format).toEqual('tmbom');
+    expect(Result.getOrUndefined(answer)?.source.format).toEqual('tmbom');
   });
 
   it('refuses a target already holding a file, leaving its bytes alone', () => {
@@ -112,9 +115,9 @@ describe('converting a foreign model', () => {
       'converted-forged.yaml',
     );
     expect(
-      Either.match(answer, {
-        onLeft: (lines) => lines,
-        onRight: renderImport,
+      Result.match(answer, {
+        onFailure: (lines) => lines,
+        onSuccess: renderImport,
       })[0],
     ).toEqual('converted: model\\u001b[31m\\u0007.yaml (otm)');
   });

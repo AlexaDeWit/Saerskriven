@@ -4,7 +4,7 @@ import {
   threatCountByElement,
   type Model,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import {
   elementDetail,
@@ -79,8 +79,8 @@ export const searchElementsDescription = [
 export function searchElements(
   workspace: ModelWorkspace,
   args: SearchElementsArguments,
-): Either.Either<SearchElementsResult, readonly string[]> {
-  return Either.flatMap(readNamed(workspace, args.file), (reading) =>
+): Result.Result<SearchElementsResult, readonly string[]> {
+  return Result.flatMap(readNamed(workspace, args.file), (reading) =>
     found(reading, args),
   );
 }
@@ -102,8 +102,8 @@ const narrowing = ['`element`', '`diagram`', '`kind`', '`query`'];
 function found(
   reading: ModelReading,
   args: SearchElementsArguments,
-): Either.Either<SearchElementsResult, readonly string[]> {
-  return Either.map(
+): Result.Result<SearchElementsResult, readonly string[]> {
+  return Result.map(
     searched(reading.model, args),
     (placed): SearchElementsResult => {
       const limited = limitedRows(placed, args);
@@ -123,8 +123,8 @@ function found(
 function searched(
   model: Model,
   args: SearchElementsArguments,
-): Either.Either<readonly ElementOnDiagram[], readonly string[]> {
-  return Either.map(diagramsOf(model, args.diagram), (diagrams) =>
+): Result.Result<readonly ElementOnDiagram[], readonly string[]> {
+  return Result.map(diagramsOf(model, args.diagram), (diagrams) =>
     elementsOnDiagrams(model, diagrams).filter((placed) => keeps(placed, args)),
   );
 }

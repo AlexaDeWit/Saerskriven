@@ -44,7 +44,7 @@ import {
   type RecordReference,
   type Threat,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import {
   addedElement,
@@ -285,19 +285,19 @@ export type AppliedBatch = {
 export function applyEdits(
   model: Model,
   edits: readonly ModelEdit[],
-): Either.Either<AppliedBatch, RefusedEdit> {
+): Result.Result<AppliedBatch, RefusedEdit> {
   const heldRecords = new Set([
     ...model.mitigations.map(({ id }) => recordKey({ kind: 'mitigation', id })),
     ...model.assumptions.map(({ id }) => recordKey({ kind: 'assumption', id })),
   ]);
   const heldThreats = new Set<string>(model.threats.map(({ id }) => id));
-  return Either.map(
-    edits.reduce<Either.Either<AppliedBatch, RefusedEdit>>(
+  return Result.map(
+    edits.reduce<Result.Result<AppliedBatch, RefusedEdit>>(
       (carried, edit, index) =>
-        Either.flatMap(carried, (batch) =>
-          Either.mapBoth(applyEdit(batch.model, edit), {
-            onLeft: (failure) => ({ index, failure }),
-            onRight: (next) => ({
+        Result.flatMap(carried, (batch) =>
+          Result.mapBoth(applyEdit(batch.model, edit), {
+            onFailure: (failure) => ({ index, failure }),
+            onSuccess: (next) => ({
               model: next,
               culled: [
                 ...batch.culled,
@@ -318,7 +318,7 @@ export function applyEdits(
             }),
           }),
         ),
-      Either.right({ model, culled: [], culledThreats: [], merged: [] }),
+      Result.succeed({ model, culled: [], culledThreats: [], merged: [] }),
     ),
     (batch) => ({
       model: batch.model,
@@ -344,8 +344,8 @@ export function renderRefusedEdit(refused: RefusedEdit): readonly string[] {
 function applyEdit(
   model: Model,
   edit: ModelEdit,
-): Either.Either<Model, OperationFailure | EditFailure> {
-  return Either.flatMap(onDiagramNamed(model, edit), (named) =>
+): Result.Result<Model, OperationFailure | EditFailure> {
+  return Result.flatMap(onDiagramNamed(model, edit), (named) =>
     edited(model, named),
   );
 }
@@ -353,7 +353,7 @@ function applyEdit(
 function edited(
   model: Model,
   edit: ModelEdit,
-): Either.Either<Model, OperationFailure> {
+): Result.Result<Model, OperationFailure> {
   if (isRegisterEdit(edit)) {
     return applyRegisterEdit(model, edit);
   }
@@ -445,18 +445,18 @@ function onDiagramNamed<
     readonly op: string;
     readonly diagram?: DiagramId | undefined;
   },
->(model: Model, edit: Edit): Either.Either<Edit, EditFailure> {
+>(model: Model, edit: Edit): Result.Result<Edit, EditFailure> {
   if (edit.op === 'add_diagram' || edit.diagram === undefined) {
-    return Either.right(edit);
+    return Result.succeed(edit);
   }
   const named = diagramsNamed(model.diagrams, edit.diagram);
   const [first] = named;
   if (first === undefined) {
-    return Either.right(edit);
+    return Result.succeed(edit);
   }
   return first.id === edit.diagram || named.length === 1
-    ? Either.right({ ...edit, diagram: first.id })
-    : Either.left(
+    ? Result.succeed({ ...edit, diagram: first.id })
+    : Result.fail(
         EditFailure.AmbiguousDiagram({
           name: edit.diagram,
           diagramIds: named.map(({ id }) => id),
@@ -474,19 +474,19 @@ function placementIndex(model: Model, diagramId: string): number {
 function onItsDiagram(
   model: Model,
   { element: elementId, diagram: named }: z.infer<typeof drawnEditSchema>,
-  edit: (diagramId: DiagramId) => Either.Either<Model, OperationFailure>,
-): Either.Either<Model, OperationFailure> {
+  edit: (diagramId: DiagramId) => Result.Result<Model, OperationFailure>,
+): Result.Result<Model, OperationFailure> {
   if (named !== undefined) {
     return edit(named);
   }
   const diagrams = diagramsOf(model, elementId);
   const [diagram] = diagrams;
   if (diagram === undefined) {
-    return Either.left(OperationFailure.UnknownElement({ elementId }));
+    return Result.fail(OperationFailure.UnknownElement({ elementId }));
   }
   return diagrams.length === 1
     ? edit(diagram.id)
-    : Either.left(
+    : Result.fail(
         OperationFailure.ElementOnSeveralDiagrams({
           elementId,
           diagramIds: diagrams.map(({ id }) => id),
@@ -497,16 +497,16 @@ function onItsDiagram(
 function accented(
   model: Model,
   edit: Extract<ModelEdit, { op: 'set_accent' }>,
-): Either.Either<Model, OperationFailure> {
+): Result.Result<Model, OperationFailure> {
   const accent = edit.accent === noAccent ? undefined : edit.accent;
-  return edit.elements.reduce<Either.Either<Model, OperationFailure>>(
+  return edit.elements.reduce<Result.Result<Model, OperationFailure>>(
     (outcome, element) =>
-      Either.flatMap(outcome, (current) =>
+      Result.flatMap(outcome, (current) =>
         onItsDiagram(current, { element, diagram: edit.diagram }, (diagram) =>
           setAccent(current, diagram, [element], accent),
         ),
       ),
-    Either.right(model),
+    Result.succeed(model),
   );
 }
 

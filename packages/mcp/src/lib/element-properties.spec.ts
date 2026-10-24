@@ -9,7 +9,7 @@ import {
   drawnFixture,
   securityModelFixture,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   mkdtempSync,
   readFileSync,
@@ -43,7 +43,7 @@ for (const { format, codec } of [
     let revision: string;
     const bytes = () => readFileSync(join(root, file));
     const readDisk = () =>
-      Either.getOrThrow(readAnyFormat(bytes().toString('utf8'))).model;
+      Result.getOrThrow(readAnyFormat(bytes().toString('utf8'))).model;
     const edit = async (edits: readonly unknown[]) => {
       const result = await connected.client.callTool({
         name: 'saer_edit',

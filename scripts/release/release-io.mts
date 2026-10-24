@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import { z } from 'zod';
 
 type JsonReader<Output> = Readonly<{ schema: z.ZodType<Output> }>;
@@ -45,14 +45,14 @@ export const describeFailure = (failure: ReleaseFailure): string =>
   });
 
 /** Return a release refusal without throwing. */
-export const refuse = (reason: string): Either.Either<never, ReleaseFailure> =>
-  Either.left(ReleaseFailure.Refused({ reason }));
+export const refuse = (reason: string): Result.Result<never, ReleaseFailure> =>
+  Result.fail(ReleaseFailure.Refused({ reason }));
 
 const invalidData = (
   source: string,
   cause: unknown,
-): Either.Either<never, ReleaseFailure> =>
-  Either.left(
+): Result.Result<never, ReleaseFailure> =>
+  Result.fail(
     ReleaseFailure.InvalidData({ issues: [reasonOf(cause)], source }),
   );
 
@@ -60,8 +60,8 @@ const invalidData = (
 export const attempt = <Value,>(
   source: string,
   read: () => Value,
-): Either.Either<Value, ReleaseFailure> =>
-  Either.try({
+): Result.Result<Value, ReleaseFailure> =>
+  Result.try({
     try: read,
     catch: (cause) =>
       ReleaseFailure.InvalidData({ issues: [reasonOf(cause)], source }),
@@ -71,9 +71,9 @@ export const attempt = <Value,>(
 export const attemptPromise = async <Value,>(
   source: string,
   read: () => Promise<Value>,
-): Promise<Either.Either<Value, ReleaseFailure>> => {
+): Promise<Result.Result<Value, ReleaseFailure>> => {
   try {
-    return Either.right(await read());
+    return Result.succeed(await read());
   } catch (cause: unknown) {
     return invalidData(source, cause);
   }
@@ -90,14 +90,14 @@ export const parseJson = <Output,>(
   reader: JsonReader<Output>,
   text: string,
   source: string,
-): Either.Either<Output, ReleaseFailure> =>
-  Either.flatMap(
+): Result.Result<Output, ReleaseFailure> =>
+  Result.flatMap(
     attempt(source, () => JSON.parse(text) as unknown),
     (value) => {
       const parsed = reader.schema.safeParse(value);
       return parsed.success
-        ? Either.right(parsed.data)
-        : Either.left(
+        ? Result.succeed(parsed.data)
+        : Result.fail(
             ReleaseFailure.InvalidData({
               issues: zodIssues(parsed.error.issues),
               source,
@@ -134,9 +134,9 @@ export const requireStatus = (
   allowed: number[],
   command: string,
   args: string[],
-): Either.Either<CommandResult, ReleaseFailure> => {
+): Result.Result<CommandResult, ReleaseFailure> => {
   if (result.error) {
-    return Either.left(
+    return Result.fail(
       ReleaseFailure.CommandFailed({
         command: commandName(command, args),
         reason: result.error.message,
@@ -144,8 +144,8 @@ export const requireStatus = (
     );
   }
   return result.status !== null && allowed.includes(result.status)
-    ? Either.right(result)
-    : Either.left(
+    ? Result.succeed(result)
+    : Result.fail(
         ReleaseFailure.CommandFailed({
           command: commandName(command, args),
           reason:
@@ -160,8 +160,8 @@ export const outputOf = (
   command: string,
   args: string[],
   cwd: string,
-): Either.Either<string, ReleaseFailure> =>
-  Either.map(
+): Result.Result<string, ReleaseFailure> =>
+  Result.map(
     requireStatus(run(command, args, { cwd }), [0], command, args),
     ({ stdout }) => stdout,
   );
@@ -172,8 +172,8 @@ export const runChecked = (
   command: string,
   args: string[],
   cwd: string,
-): Either.Either<void, ReleaseFailure> =>
-  Either.map(
+): Result.Result<void, ReleaseFailure> =>
+  Result.map(
     requireStatus(
       run(command, args, { cwd, inherit: true }),
       [0],
@@ -189,7 +189,7 @@ export const githubJson = <Output,>(
   endpoint: string,
   cwd: string,
   reader: JsonReader<Output>,
-): Either.Either<Output, ReleaseFailure> =>
-  Either.flatMap(outputOf(run, 'gh', ['api', endpoint], cwd), (text) =>
+): Result.Result<Output, ReleaseFailure> =>
+  Result.flatMap(outputOf(run, 'gh', ['api', endpoint], cwd), (text) =>
     parseJson(reader, text, `GitHub ${endpoint}`),
   );

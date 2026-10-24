@@ -14,7 +14,7 @@ import {
   type Diagram,
   type Model,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { candidateFiles } from './candidates.js';
 import { defaultedFileSentence, fileArgumentSchema } from './path-arguments.js';
@@ -94,10 +94,10 @@ export type InspectResult = z.infer<typeof inspectResultSchema>;
 export function inspect(
   workspace: ModelWorkspace,
   { file }: InspectArguments,
-): Either.Either<InspectResult, readonly string[]> {
+): Result.Result<InspectResult, readonly string[]> {
   return file === undefined && workspace.defaultFile === undefined
-    ? Either.right({ root: workspace.root, result: candidates(workspace) })
-    : Either.map(readNamed(workspace, file), (reading) => ({
+    ? Result.succeed({ root: workspace.root, result: candidates(workspace) })
+    : Result.map(readNamed(workspace, file), (reading) => ({
         root: workspace.root,
         result: inspected(reading),
       }));

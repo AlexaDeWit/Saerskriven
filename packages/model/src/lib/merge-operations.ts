@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { locatedElement, type UnknownElementFailure } from './diagram-edits.js';
 import { diagramsOf, placementOn } from './drawing.js';
 import type { Element, Flow, FlowEndpoint } from './elements.js';
@@ -57,18 +57,18 @@ export function mergeElements(
   model: Model,
   elementId: ElementId,
   intoId: ElementId,
-): Either.Either<Model, MergeElementsFailure> {
+): Result.Result<Model, MergeElementsFailure> {
   if (elementId === intoId) {
-    return Either.left(OperationFailure.MergeIntoItself({ elementId }));
+    return Result.fail(OperationFailure.MergeIntoItself({ elementId }));
   }
-  return Either.flatMap(locatedElement(model, elementId), ({ element }) =>
-    Either.flatMap(
+  return Result.flatMap(locatedElement(model, elementId), ({ element }) =>
+    Result.flatMap(
       locatedElement(model, intoId),
-      ({ element: into }): Either.Either<Model, MergeElementsFailure> => {
+      ({ element: into }): Result.Result<Model, MergeElementsFailure> => {
         const refusal = mergeRefusal(model, element, into);
         return refusal === undefined
-          ? Either.right(merged(model, element, intoId))
-          : Either.left(refusal);
+          ? Result.succeed(merged(model, element, intoId))
+          : Result.fail(refusal);
       },
     ),
   );

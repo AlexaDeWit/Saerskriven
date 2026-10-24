@@ -13,7 +13,7 @@ A `Codec` ([`codec.ts`](src/lib/codec.ts)) is one interface over two paths.
 `write` merges the model onto that document when given it, so what the model
 does not describe stays as the file had it, and projects the model into the
 format's canonical form when given none. A read that fails returns a
-`ReadFailure` in an Effect `Either`, and `renderReadFailure`
+`ReadFailure` in an Effect `Result`, and `renderReadFailure`
 ([`read-failure.ts`](src/lib/read-failure.ts)) words it for a person.
 
 Two codecs are registered:

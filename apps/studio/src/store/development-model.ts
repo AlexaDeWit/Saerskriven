@@ -1,5 +1,5 @@
 import { parseModel, type Model } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 
 declare global {
   interface Window {
@@ -17,5 +17,5 @@ export function developmentModel(): Model | undefined {
     : undefined;
   return injected === undefined
     ? undefined
-    : Either.getOrUndefined(parseModel(injected));
+    : Result.getOrUndefined(parseModel(injected));
 }

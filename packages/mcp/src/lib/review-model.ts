@@ -1,5 +1,5 @@
 import { renderRegister } from '@saerskriven/render';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { z } from 'zod';
 import { coverageOf, renderCoverage } from './coverage.js';
 import { fileArgumentSchema } from './path-arguments.js';
@@ -17,10 +17,8 @@ import type { ModelWorkspace } from './workspace.js';
  */
 export const reviewModelArgumentsSchema = fileArgumentSchema.prefault({});
 
-/** What `review_model` takes. */
 export type ReviewModelArguments = z.infer<typeof reviewModelArgumentsSchema>;
 
-/** What `review_model` tells a client it is for. */
 export const reviewModelDescription =
   'Review a Saerskriven threat model: its coverage summary and its whole register, with a brief asking for gaps, open threats and records that do not hold together.';
 
@@ -45,10 +43,10 @@ export const reviewBrief: readonly string[] = [
 export function reviewModel(
   workspace: ModelWorkspace,
   args: ReviewModelArguments,
-): Either.Either<PromptParts, PromptFailure> {
-  return Either.mapBoth(readNamed(workspace, args.file), {
-    onLeft: () => PromptFailure.NoModel(),
-    onRight: (reading) => ({
+): Result.Result<PromptParts, PromptFailure> {
+  return Result.mapBoth(readNamed(workspace, args.file), {
+    onFailure: () => PromptFailure.NoModel(),
+    onSuccess: (reading) => ({
       data: [
         ...renderCoverage(coverageOf(reading)),
         'register:',

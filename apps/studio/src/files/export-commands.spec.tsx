@@ -9,7 +9,7 @@ import { renderRegister, renderSvg, renderTypst } from '@saerskriven/render';
 import { PdfFailure } from '@saerskriven/render/pdf';
 import { drawingFace, ResvgFailure } from '@saerskriven/render/png';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { activeTranslator, chooseLanguage } from '../messages/locale.js';
 import { Action } from '../store/actions.js';
 import { initialState, FileLifecycle } from '../store/state.js';
@@ -46,7 +46,7 @@ const session = (bridge: SpecBridge, renders = specRenders()) =>
   renderHook(() => useExportCommands(bridge, renders)).result;
 
 const unavailable = () =>
-  Promise.resolve(Either.left(AssetFailure.Unavailable({ reason: 'offline' })));
+  Promise.resolve(Result.fail(AssetFailure.Unavailable({ reason: 'offline' })));
 
 const headlineOf = async (
   run: (commands: ReturnType<typeof useExportCommands>['commands']) => void,
@@ -201,11 +201,11 @@ describe('the studio exports', () => {
       chooseLanguage(locale);
       const bridge = specBridge();
       const compile = vi.fn<RenderExports['compile']>(() =>
-        Promise.resolve(Either.right(new Uint8Array([37, 80, 68, 70]))),
+        Promise.resolve(Result.succeed(new Uint8Array([37, 80, 68, 70]))),
       );
       const draw = vi.fn<RenderExports['draw']>(() =>
         Promise.resolve(
-          Either.right({
+          Result.succeed({
             png: pngSignature,
             width: 2,
             height: 1,
@@ -258,7 +258,12 @@ describe('the studio exports', () => {
     const bridge = specBridge();
     const draw = vi.fn<RenderExports['draw']>(() =>
       Promise.resolve(
-        Either.right({ png: pngSignature, width: 2, height: 1, unplaced: [] }),
+        Result.succeed({
+          png: pngSignature,
+          width: 2,
+          height: 1,
+          unplaced: [],
+        }),
       ),
     );
     const result = session(bridge, specRenders({ draw }));
@@ -296,7 +301,7 @@ describe('the studio exports', () => {
     const bridge = specBridge();
     const bytes = new Uint8Array([37, 80, 68, 70, 45]);
     const compile = vi.fn<RenderExports['compile']>(() =>
-      Promise.resolve(Either.right(bytes)),
+      Promise.resolve(Result.succeed(bytes)),
     );
     const result = session(bridge, specRenders({ compile }));
 
@@ -322,7 +327,7 @@ describe('the studio exports', () => {
     const bridge = specBridge();
     const draw = vi.fn<RenderExports['draw']>(() =>
       Promise.resolve(
-        Either.right({
+        Result.succeed({
           png: pngSignature,
           width: 2,
           height: 1,
@@ -358,7 +363,7 @@ describe('the studio exports', () => {
       const bridge = specBridge();
       const result = session(
         bridge,
-        specRenders({ draw: () => Promise.resolve(Either.left(failure)) }),
+        specRenders({ draw: () => Promise.resolve(Result.fail(failure)) }),
       );
 
       act(() => {
@@ -384,7 +389,7 @@ describe('the studio exports', () => {
         draw,
         pngAssets: () =>
           Promise.resolve(
-            Either.left(AssetFailure.FaceMissing({ face: drawingFace })),
+            Result.fail(AssetFailure.FaceMissing({ face: drawingFace })),
           ),
       }),
     );
@@ -465,7 +470,7 @@ describe('the studio exports', () => {
       specRenders({
         compile: () =>
           Promise.resolve(
-            Either.left(
+            Result.fail(
               PdfFailure.Refused({ sentences: ['unknown function: nope'] }),
             ),
           ),
@@ -494,7 +499,7 @@ describe('the studio exports', () => {
         compile,
         pdfAssets: () =>
           Promise.resolve(
-            Either.left(AssetFailure.Unavailable({ reason: 'offline' })),
+            Result.fail(AssetFailure.Unavailable({ reason: 'offline' })),
           ),
       }),
     );
@@ -516,7 +521,7 @@ describe('the studio exports', () => {
     const result = session(
       bridge,
       specRenders({
-        compile: () => Promise.resolve(Either.left(PdfFailure.NoDocument())),
+        compile: () => Promise.resolve(Result.fail(PdfFailure.NoDocument())),
       }),
     );
 
@@ -540,7 +545,7 @@ describe('the studio exports', () => {
         specRenders({
           compile: () =>
             Promise.resolve(
-              Either.left(PdfFailure.Refused({ sentences: ['offline'] })),
+              Result.fail(PdfFailure.Refused({ sentences: ['offline'] })),
             ),
         }),
       ),
@@ -549,7 +554,7 @@ describe('the studio exports', () => {
           commands.pdf();
         },
         specRenders({
-          compile: () => Promise.resolve(Either.left(PdfFailure.NoDocument())),
+          compile: () => Promise.resolve(Result.fail(PdfFailure.NoDocument())),
         }),
       ),
       await headlineOf(
@@ -571,7 +576,7 @@ describe('the studio exports', () => {
         specRenders({
           draw: () =>
             Promise.resolve(
-              Either.left(ResvgFailure.Refused({ sentence: 'offline' })),
+              Result.fail(ResvgFailure.Refused({ sentence: 'offline' })),
             ),
         }),
       ),

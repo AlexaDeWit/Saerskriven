@@ -12,7 +12,7 @@ import {
   elementId,
   sharedModel,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
 import { mainDiagram, sampleModel } from '../store/store.fixtures.js';
@@ -35,7 +35,7 @@ const fraudCheck = elementId('fraud-check');
 const score = elementId('score');
 const zone = elementId('payments-zone');
 
-const withThird: Model = Either.getOrThrow(
+const withThird: Model = Result.getOrThrow(
   addDiagram(sharedModel, { id: third, title: 'Third' }),
 );
 
@@ -126,7 +126,7 @@ describe('where Add existing element places what is picked', () => {
       { x: 500, y: 140 },
       { x: 620, y: 280 },
     ];
-    const curved = Either.getOrThrow(
+    const curved = Result.getOrThrow(
       setBoundaryShape(withThird, overview, zone, {
         kind: 'curve',
         waypoints: arch,

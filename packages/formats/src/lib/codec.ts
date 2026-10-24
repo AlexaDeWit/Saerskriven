@@ -8,7 +8,7 @@ import {
   type RelationshipScope,
   type SchemaParser,
 } from '@saerskriven/model';
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import type { z } from 'zod';
 import type { Divergence } from './divergence.js';
 import {
@@ -36,7 +36,7 @@ import type { ReadLimit } from './read-limits.js';
  * with a file, so merging onto a document some other read produced is the
  * caller's mistake to avoid.
  *
- * `write` returns no `Either`: what the format cannot hold is a divergence
+ * `write` returns no `Result`: what the format cannot hold is a divergence
  * rather than a failure, so a caller asking what a save would cost calls
  * `write` and discards the output.
  *
@@ -52,7 +52,7 @@ export interface Codec<
 > {
   readonly wire: WireSchema;
   readonly keepsNarrowed: boolean;
-  read(text: string): Either.Either<Read, ReadFailure>;
+  read(text: string): Result.Result<Read, ReadFailure>;
   write(model: Model, source?: z.infer<WireSchema>): WriteResult;
 }
 
@@ -115,8 +115,8 @@ export const ReadFailure = Data.taggedEnum<ReadFailure>();
 export function parseWire<Wire>(
   schema: SchemaParser<Wire>,
   given: unknown,
-): Either.Either<Wire, ReadFailure> {
-  return Either.mapLeft(
+): Result.Result<Wire, ReadFailure> {
+  return Result.mapError(
     boundedParse(schema, given, importIssueDetailSchema),
     (failure) =>
       ReadFailure.InvalidWireDocument({ issues: schemaFailureIssues(failure) }),
@@ -131,8 +131,8 @@ export function parseWire<Wire>(
 export function modelFrom(
   input: unknown,
   scope: RelationshipScope,
-): Either.Either<Model, ReadFailure> {
-  return Either.mapLeft(parseDrawnModel(input, scope), (failure) =>
+): Result.Result<Model, ReadFailure> {
+  return Result.mapError(parseDrawnModel(input, scope), (failure) =>
     ReadFailure.InvalidModel({ issues: failure.issues }),
   );
 }
@@ -145,8 +145,8 @@ export function modelFrom(
  */
 export function placedModelFrom(
   input: unknown,
-): Either.Either<Model, ReadFailure> {
-  return Either.mapLeft(parseModel(input), (failure) =>
+): Result.Result<Model, ReadFailure> {
+  return Result.mapError(parseModel(input), (failure) =>
     ReadFailure.InvalidModel({ issues: failure.issues }),
   );
 }

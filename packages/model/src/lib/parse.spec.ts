@@ -1,4 +1,4 @@
-import { Either, Option } from 'effect';
+import { Result, Option } from 'effect';
 import { z } from 'zod';
 import { sharedModelInput, validModel } from '../fixtures.js';
 import { drawnElements } from './drawing.js';
@@ -95,11 +95,11 @@ const twinRoute: PlacementInput = {
 
 describe('parseModel', () => {
   it('parses the model a drawn read gives it into an equal model', () => {
-    expect(Either.getOrNull(parseModel(validModel))).toEqual(validModel);
+    expect(Result.getOrNull(parseModel(validModel))).toEqual(validModel);
   });
 
   it('strips a key no schema declares rather than refusing the model', () => {
-    expect(Either.getOrNull(parseModel(plantEverywhere(validModel)))).toEqual(
+    expect(Result.getOrNull(parseModel(plantEverywhere(validModel)))).toEqual(
       validModel,
     );
   });
@@ -399,7 +399,7 @@ describe('parseModel', () => {
 
 describe('parseDrawnModel', () => {
   it('moves each element to the root and leaves its placement on its diagram, in order', () => {
-    const parsed = Either.getOrThrow(
+    const parsed = Result.getOrThrow(
       parseDrawnModel(validModelFixture, 'diagram'),
     );
     expect(drawnElements(parsed, parsed.diagrams[0])).toEqual(
@@ -412,7 +412,7 @@ describe('parseDrawnModel', () => {
   });
 
   it('keeps a mitigation and an assumption linked to no threat', () => {
-    const unlinked = Either.getOrNull(
+    const unlinked = Result.getOrNull(
       seededModel((draft) => {
         draft.mitigations = draft.mitigations?.map((mitigation) => ({
           ...mitigation,
@@ -438,15 +438,15 @@ describe('parseDrawnModel', () => {
 
   it('strips a key no schema declares rather than refusing the model', () => {
     expect(
-      Either.getOrNull(
+      Result.getOrNull(
         parseDrawnModel(plantEverywhere(validModelFixture), 'diagram'),
       ),
-    ).toEqual(Either.getOrNull(parseDrawnModel(validModelFixture, 'diagram')));
+    ).toEqual(Result.getOrNull(parseDrawnModel(validModelFixture, 'diagram')));
   });
 
   it('reports violations as plain tagged data that survives a JSON round trip', () => {
     const failure = Option.getOrUndefined(
-      Either.getLeft(
+      Result.getFailure(
         parseDrawnModel(
           { ...validModelFixture, metadata: 'Saerskriven' },
           'diagram',
@@ -817,7 +817,7 @@ describe('boundedParse', () => {
       const parsed = boundedParse(throwing(error), {});
 
       expect(
-        Either.isLeft(parsed) && schemaFailureIssues(parsed.left),
+        Result.isFailure(parsed) && schemaFailureIssues(parsed.failure),
       ).toMatchObject([{ path: [], detail: { code } }]);
     },
   );
@@ -830,9 +830,9 @@ describe('boundedParse', () => {
       z.object({ code: z.literal('caller-rule') }),
     );
 
-    expect(Either.isLeft(parsed) && schemaFailureIssues(parsed.left)).toEqual([
-      { path: [], detail: rule },
-    ]);
+    expect(
+      Result.isFailure(parsed) && schemaFailureIssues(parsed.failure),
+    ).toEqual([{ path: [], detail: rule }]);
   });
 
   it('refuses a model with more invalid entries than zod 4.6.2 gathers on V8', () => {
@@ -843,7 +843,7 @@ describe('boundedParse', () => {
 
     const parsed = parseModel(flooded);
 
-    expect(Either.isLeft(parsed) && parsed.left).toMatchObject({
+    expect(Result.isFailure(parsed) && parsed.failure).toMatchObject({
       _tag: 'InvalidModel',
       issues: [{ path: [], detail: { code: issueFloodCode } }],
     });

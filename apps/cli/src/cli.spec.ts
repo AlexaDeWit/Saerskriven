@@ -1,5 +1,5 @@
 import { testDataPath } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { runCli, writeOutcome, type CliStreams } from './cli.js';
 import { convert } from './convert.js';
 import { render, renderOptionsSchema } from './render.js';
@@ -14,8 +14,8 @@ const collecting = (failing?: 'out' | 'err') => {
   const to = (stream: 'out' | 'err') => (output: string | Uint8Array) => {
     written[stream] += String(output);
     return stream === failing
-      ? Either.left('No space left on device')
-      : Either.right(undefined);
+      ? Result.fail('No space left on device')
+      : Result.succeed(undefined);
   };
   const streams: CliStreams = { out: to('out'), err: to('err') };
   return { written, streams };

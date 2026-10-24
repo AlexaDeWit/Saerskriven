@@ -48,7 +48,7 @@ import {
   type ElementId,
   type Model,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { Action } from './actions.js';
 import { deletionsOn } from './deletion.js';
 import { activeDiagram, activeDiagramId, holdsDiagram } from './selectors.js';
@@ -146,7 +146,7 @@ export function reduce(state: State, action: Action): State {
       if (!holdsDiagram(state.present, diagramId)) {
         return edited(
           state,
-          Either.left(OperationFailure.UnknownDiagram({ diagramId })),
+          Result.fail(OperationFailure.UnknownDiagram({ diagramId })),
         );
       }
       const deletions = deletionsOn(state.present, diagramId, elementIds);
@@ -179,7 +179,7 @@ export function reduce(state: State, action: Action): State {
     ResizeElement: ({ diagramId, elementId, offset, size, decimals }) =>
       edited(
         state,
-        Either.flatMap(
+        Result.flatMap(
           moveElement(state.present, diagramId, elementId, offset, decimals),
           (moved) => resizeElement(moved, diagramId, elementId, size, decimals),
         ),
@@ -305,14 +305,14 @@ function arrivedUnsaved(model: Model, name: string): State {
 
 function edited(
   state: State,
-  outcome: Either.Either<Model, OperationFailure>,
+  outcome: Result.Result<Model, OperationFailure>,
 ): State {
-  return Either.match(outcome, {
-    onLeft: (failure) => ({
+  return Result.match(outcome, {
+    onFailure: (failure) => ({
       ...state,
       lastFailure: StudioFailure.Operation({ failure }),
     }),
-    onRight: (present) =>
+    onSuccess: (present) =>
       present === state.present
         ? state
         : {
@@ -331,7 +331,7 @@ function addedDiagram(
 ): State {
   const outcome = addDiagram(state.present, diagram);
   const next = edited(state, outcome);
-  return Either.isLeft(outcome) ? next : selectedDiagram(next, diagram.id);
+  return Result.isFailure(outcome) ? next : selectedDiagram(next, diagram.id);
 }
 
 function selectedDiagram(state: State, diagramId: DiagramId): State {
@@ -369,7 +369,7 @@ function removedElements(
   remove: (
     model: Model,
     elementId: ElementId,
-  ) => Either.Either<Model, OperationFailure>,
+  ) => Result.Result<Model, OperationFailure>,
 ): State {
   const removed = new Set(elementIds);
   if (removed.size === 0) {
@@ -377,7 +377,7 @@ function removedElements(
   }
   const outcome = editElements(state.present, [...removed], remove);
   const next = edited(state, outcome);
-  if (Either.isLeft(outcome)) {
+  if (Result.isFailure(outcome)) {
     return next;
   }
   return {
@@ -397,20 +397,20 @@ function editElements(
   edit: (
     current: Model,
     elementId: ElementId,
-  ) => Either.Either<Model, OperationFailure>,
-): Either.Either<Model, OperationFailure> {
+  ) => Result.Result<Model, OperationFailure>,
+): Result.Result<Model, OperationFailure> {
   return foldedEdits(model, [...new Set(elementIds)], edit);
 }
 
 function foldedEdits<Item>(
   model: Model,
   items: readonly Item[],
-  edit: (current: Model, item: Item) => Either.Either<Model, OperationFailure>,
-): Either.Either<Model, OperationFailure> {
-  return items.reduce<Either.Either<Model, OperationFailure>>(
+  edit: (current: Model, item: Item) => Result.Result<Model, OperationFailure>,
+): Result.Result<Model, OperationFailure> {
+  return items.reduce<Result.Result<Model, OperationFailure>>(
     (outcome, item) =>
-      Either.flatMap(outcome, (current) => edit(current, item)),
-    Either.right(model),
+      Result.flatMap(outcome, (current) => edit(current, item)),
+    Result.succeed(model),
   );
 }
 

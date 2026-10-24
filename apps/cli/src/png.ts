@@ -7,7 +7,7 @@ import {
   type PngImage,
   type ResvgFailure,
 } from '@saerskriven/render/png';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { runtimeAssets, wasmAssets, type WasmAssets } from './assets.js';
 
 /** Runtime filename shared with the build asset contract. */
@@ -16,7 +16,7 @@ export const resvgWasmFile = 'saerskriven_resvg.wasm';
 /** Loads the rasterizer and faces with the drawing fallback first. */
 export function pngAssets(
   assets: string = runtimeAssets,
-): Either.Either<WasmAssets, string> {
+): Result.Result<WasmAssets, string> {
   return wasmAssets(assets, resvgWasmFile, drawingFace);
 }
 
@@ -28,11 +28,11 @@ export function drawPng(
   locale: Locale,
   theme?: RenderTheme,
   showThreatLabels?: boolean,
-): Promise<Either.Either<PngImage, string>> {
-  return Either.match(pngAssets(assets), {
-    onLeft: (reason) =>
-      Promise.resolve(Either.left(`cannot draw the PNG: ${reason}`)),
-    onRight: (found) =>
+): Promise<Result.Result<PngImage, string>> {
+  return Result.match(pngAssets(assets), {
+    onFailure: (reason) =>
+      Promise.resolve(Result.fail(`cannot draw the PNG: ${reason}`)),
+    onSuccess: (found) =>
       rasterized(diagram, model, locale, found, theme, showThreatLabels),
   });
 }
@@ -44,8 +44,8 @@ async function rasterized(
   assets: WasmAssets,
   theme?: RenderTheme,
   showThreatLabels?: boolean,
-): Promise<Either.Either<PngImage, string>> {
-  return Either.mapLeft(
+): Promise<Result.Result<PngImage, string>> {
+  return Result.mapError(
     await renderPng(diagram, model, locale, {
       assets,
       theme,

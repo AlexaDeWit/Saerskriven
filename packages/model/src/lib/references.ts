@@ -1,4 +1,4 @@
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import type { Element, ElementKind, Flow, FlowEndpoint } from './elements.js';
 import type { ElementId, ThreatId } from './ids.js';
 import type { Diagram } from './model.js';
@@ -115,20 +115,20 @@ export const DiagramChoiceFailure = Data.taggedEnum<DiagramChoiceFailure>();
 export function chosenDiagram(
   diagrams: readonly Diagram[],
   name: string | undefined,
-): Either.Either<Diagram, DiagramChoiceFailure> {
+): Result.Result<Diagram, DiagramChoiceFailure> {
   if (name !== undefined) {
     const [found] = diagramsNamed(diagrams, name);
     return found === undefined
-      ? Either.left(DiagramChoiceFailure.NoDiagramNamed({ name, diagrams }))
-      : Either.right(found);
+      ? Result.fail(DiagramChoiceFailure.NoDiagramNamed({ name, diagrams }))
+      : Result.succeed(found);
   }
   const [only] = diagrams;
   if (only === undefined) {
-    return Either.left(DiagramChoiceFailure.NoDiagram());
+    return Result.fail(DiagramChoiceFailure.NoDiagram());
   }
   return diagrams.length === 1
-    ? Either.right(only)
-    : Either.left(DiagramChoiceFailure.SeveralDiagrams({ diagrams }));
+    ? Result.succeed(only)
+    : Result.fail(DiagramChoiceFailure.SeveralDiagrams({ diagrams }));
 }
 
 /** Ids of the elements one diagram places. */

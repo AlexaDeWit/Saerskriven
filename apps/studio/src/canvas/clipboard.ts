@@ -11,7 +11,7 @@ import {
   type Point,
   type SelectionFragmentFailure,
 } from '@saerskriven/model';
-import { Data, Effect, Either } from 'effect';
+import { Data, Effect, Result } from 'effect';
 import { sentences, type Said, type Speaker } from '../messages/said.js';
 import { Action } from '../store/actions.js';
 import { sameSelection } from '../store/selection.js';
@@ -52,15 +52,15 @@ type CopyReport = {
 export async function copySelected(cut = false): Promise<void> {
   const state = modelStore.getState();
   const copy = selectedCopy(state);
-  if (Either.isLeft(copy)) {
-    announce(refusal(copy.left));
+  if (Result.isFailure(copy)) {
+    announce(refusal(copy.failure));
     return;
   }
-  if (Either.isLeft(await writeClipboard(copy.right.text))) {
+  if (Result.isFailure(await writeClipboard(copy.success.text))) {
     announce(refusal(ClipboardFailure.WriteFailed()));
     return;
   }
-  const { report } = copy.right;
+  const { report } = copy.success;
   if (
     cut &&
     modelStore.getState().present === state.present &&
@@ -95,12 +95,12 @@ export async function copySelected(cut = false): Promise<void> {
 export function duplicateSelected(): void {
   const state = modelStore.getState();
   const copy = selectedCopy(state, state.present);
-  if (Either.isLeft(copy)) {
-    announce(refusal(copy.left));
+  if (Result.isFailure(copy)) {
+    announce(refusal(copy.failure));
     return;
   }
-  const { report } = copy.right;
-  insertCopy(copy.right.fragment, { x: gridSpacing, y: gridSpacing }, (t) =>
+  const { report } = copy.success;
+  insertCopy(copy.success.fragment, { x: gridSpacing, y: gridSpacing }, (t) =>
     sentences(t('canvas.duplicated'), copyReport(t, report)),
   );
 }
@@ -111,15 +111,15 @@ export async function pasteSelected(
 ): Promise<void> {
   const state = modelStore.getState();
   const read = await Effect.runPromise(
-    Effect.either(
+    Effect.result(
       Effect.tryPromise({
         try: () => navigator.clipboard.readText(),
         catch: () => ClipboardFailure.ReadFailed(),
       }),
     ),
   );
-  if (Either.isLeft(read)) {
-    announce(refusal(read.left));
+  if (Result.isFailure(read)) {
+    announce(refusal(read.failure));
     return;
   }
   if (
@@ -129,21 +129,21 @@ export async function pasteSelected(
     announce((t) => t('canvas.paste-document-changed'));
     return;
   }
-  const text = read.right;
+  const text = read.success;
   if (!text.startsWith(marker)) {
     announce((t) => t('canvas.paste-no-selection'));
     return;
   }
   const parsed = saerskrivenYamlCodec.read(text);
   if (
-    Either.isLeft(parsed) ||
-    parsed.right.divergences.length > 0 ||
-    parsed.right.model.diagrams.length !== 1
+    Result.isFailure(parsed) ||
+    parsed.success.divergences.length > 0 ||
+    parsed.success.model.diagrams.length !== 1
   ) {
     announce((t) => t('canvas.paste-invalid'));
     return;
   }
-  const fragment = parsed.right.model;
+  const fragment = parsed.success.model;
   const diagram = fragment.diagrams[0];
   if (diagram === undefined) {
     return;
@@ -174,20 +174,20 @@ function insertCopy(fragment: Model, offset: Point, said: Said): boolean {
     state.present,
     commandDecimals,
   );
-  if (Either.isLeft(remapped)) {
+  if (Result.isFailure(remapped)) {
     announce((t) => t('canvas.paste-remap-failed'));
     return false;
   }
   const { linked, cloned } = fragmentRecordCounts(
     state.present,
-    remapped.right,
+    remapped.success,
   );
-  const attached = fragmentHeldThreats(state.present, remapped.right).length;
-  dispatch(Action.InsertFragment({ diagramId, fragment: remapped.right }));
+  const attached = fragmentHeldThreats(state.present, remapped.success).length;
+  dispatch(Action.InsertFragment({ diagramId, fragment: remapped.success }));
   if (modelStore.getState().present === state.present) {
     return false;
   }
-  const ids = remapped.right.elements.map((element) => element.id);
+  const ids = remapped.success.elements.map((element) => element.id);
   dispatch(Action.Select({ elementIds: ids }));
   const first = ids[0];
   if (first !== undefined) {
@@ -206,7 +206,7 @@ function insertCopy(fragment: Model, offset: Point, said: Said): boolean {
 function selectedCopy(
   state: State,
   target?: Model,
-): Either.Either<
+): Result.Result<
   {
     readonly fragment: Model;
     readonly text: string;
@@ -216,18 +216,18 @@ function selectedCopy(
 > {
   const diagramId = activeDiagramId(state);
   if (diagramId === undefined || state.selection.length === 0) {
-    return Either.left(ClipboardFailure.NothingSelected());
+    return Result.fail(ClipboardFailure.NothingSelected());
   }
-  return Either.flatMap(
-    Either.mapLeft(
+  return Result.flatMap(
+    Result.mapError(
       selectionFragment(state.present, diagramId, state.selection),
       (failure) => ClipboardFailure.Unfragmentable({ failure }),
     ),
     (fragment) => {
       const text = marker + saerskrivenYamlCodec.write(fragment).output;
       const limit = withinTextLimit(text);
-      if (Either.isLeft(limit)) {
-        return Either.left(ClipboardFailure.TooLarge());
+      if (Result.isFailure(limit)) {
+        return Result.fail(ClipboardFailure.TooLarge());
       }
       const copiedIds = elementIdsAcross(fragment.diagrams);
       const held =
@@ -238,7 +238,7 @@ function selectedCopy(
         copiedIds,
         new Set(held.map((threat) => threat.id)),
       );
-      return Either.right({
+      return Result.succeed({
         fragment,
         text,
         report: {

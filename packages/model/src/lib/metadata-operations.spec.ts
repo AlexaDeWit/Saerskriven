@@ -1,10 +1,10 @@
-import { Either, Option } from 'effect';
+import { Result, Option } from 'effect';
 import { validModel } from '../fixtures.js';
 import { setModelMetadata } from './metadata-operations.js';
 
 describe('setModelMetadata', () => {
   it('replaces the named fields and keeps the others', () => {
-    const next = Either.getOrThrow(
+    const next = Result.getOrThrow(
       setModelMetadata(validModel, {
         owner: 'Jonas Lindqvist',
         contributors: ['Alexandra de Wit', 'Jonas Lindqvist'],
@@ -19,18 +19,18 @@ describe('setModelMetadata', () => {
   });
 
   it('clears a field to empty text', () => {
-    const next = Either.getOrThrow(
+    const next = Result.getOrThrow(
       setModelMetadata(validModel, { title: '', contributors: [] }),
     );
     expect(next.metadata).toMatchObject({ title: '', contributors: [] });
   });
 
   it('keeps the model where nothing differs', () => {
-    expect(Either.getOrThrow(setModelMetadata(validModel, {}))).toBe(
+    expect(Result.getOrThrow(setModelMetadata(validModel, {}))).toBe(
       validModel,
     );
     expect(
-      Either.getOrThrow(
+      Result.getOrThrow(
         setModelMetadata(validModel, { ...validModel.metadata }),
       ),
     ).toBe(validModel);
@@ -39,7 +39,7 @@ describe('setModelMetadata', () => {
   it('names the field or contributor carrying a refused character', () => {
     expect(
       Option.getOrUndefined(
-        Either.getLeft(
+        Result.getFailure(
           setModelMetadata(validModel, { description: 'ab\u0007' }),
         ),
       ),
@@ -50,7 +50,7 @@ describe('setModelMetadata', () => {
     });
     expect(
       Option.getOrUndefined(
-        Either.getLeft(
+        Result.getFailure(
           setModelMetadata(validModel, { contributors: ['Ada', '\u200bBob'] }),
         ),
       ),

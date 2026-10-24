@@ -6,7 +6,7 @@ import {
   type RecordReference,
   type ThreatId,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { defaultedFileSentence } from './path-arguments.js';
 import {
@@ -100,9 +100,9 @@ export const searchRecordsDescription = [
 export function searchRecords(
   workspace: ModelWorkspace,
   args: SearchRecordsArguments,
-): Either.Either<SearchRecordsResult, readonly string[]> {
-  return Either.flatMap(readNamed(workspace, args.file), (reading) =>
-    Either.map(candidatesFor(reading.model, args.threat), (candidates) =>
+): Result.Result<SearchRecordsResult, readonly string[]> {
+  return Result.flatMap(readNamed(workspace, args.file), (reading) =>
+    Result.map(candidatesFor(reading.model, args.threat), (candidates) =>
       found(reading, candidates, args),
     ),
   );
@@ -132,10 +132,10 @@ const narrowing = [
 function candidatesFor(
   model: Model,
   threat: string | undefined,
-): Either.Either<readonly KindedRecord[], readonly string[]> {
+): Result.Result<readonly KindedRecord[], readonly string[]> {
   return threat === undefined
-    ? Either.right(kinded(model.mitigations, model.assumptions))
-    : Either.map(threatNamed(model, threat), ({ id }) => linkedTo(model, id));
+    ? Result.succeed(kinded(model.mitigations, model.assumptions))
+    : Result.map(threatNamed(model, threat), ({ id }) => linkedTo(model, id));
 }
 
 function linkedTo(model: Model, threat: ThreatId): readonly KindedRecord[] {

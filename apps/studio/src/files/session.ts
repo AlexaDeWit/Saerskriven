@@ -10,7 +10,7 @@ import {
   type RetainedSource,
 } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { formatNames } from '../format-names.js';
 import type { StudioMessageId } from '../messages/catalogues.js';
 import {
@@ -374,9 +374,9 @@ function lossesOf(
 }
 
 function actionForText(name: string, text: string, untitled: string): Action {
-  return Either.match(readOrImport(text), {
-    onLeft: (failure) => Action.ReadFailed({ name, failure }),
-    onRight: (read) =>
+  return Result.match(readOrImport(text), {
+    onFailure: (failure) => Action.ReadFailed({ name, failure }),
+    onSuccess: (read) =>
       'codec' in read
         ? Action.Opened({
             model: read.model,

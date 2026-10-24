@@ -1,6 +1,6 @@
 import type { Model } from '@saerskriven/model';
 import type { saerskrivenYamlV3WireSchema } from '@saerskriven/wire-saerskriven-yaml-v3';
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import { BrotliFailure, compressBrotli, decompressBrotli } from './brotli.js';
 import { ReadFailure, type ReadResult } from './lib/codec.js';
 import { escapedForTerminal } from './lib/divergence.js';
@@ -83,13 +83,13 @@ export async function writeShareLink(
   model: Model,
   base: string,
   wasm: Uint8Array,
-): Promise<Either.Either<string, ShareLinkWriteFailure>> {
+): Promise<Result.Result<string, ShareLinkWriteFailure>> {
   const text = encoder.encode(saerskrivenYamlCodec.write(model).output);
   if (!withinTextBytes(text.length)) {
-    return Either.left(ShareLinkFailure.PastReadBound({ size: text.length }));
+    return Result.fail(ShareLinkFailure.PastReadBound({ size: text.length }));
   }
   const compressed = await compressBrotli(text, wasm);
-  return Either.flatMap(Either.mapLeft(compressed, uncompressed), (bytes) =>
+  return Result.flatMap(Result.mapError(compressed, uncompressed), (bytes) =>
     linkWithin(`${pageOf(base)}${marker}${encoding}.${base64url(bytes)}`),
   );
 }
@@ -136,22 +136,22 @@ export async function readShareLink(
   fragment: string,
   wasm: Uint8Array,
 ): Promise<
-  Either.Either<
+  Result.Result<
     ReadResult<typeof saerskrivenYamlV3WireSchema>,
     ShareLinkFailure | ReadFailure
   >
 > {
   const payload = payloadOf(fragment);
-  if (Either.isLeft(payload)) {
-    return Either.left(payload.left);
+  if (Result.isFailure(payload)) {
+    return Result.fail(payload.failure);
   }
   const inflated = await decompressBrotli(
-    payload.right,
+    payload.success,
     wasm,
     readLimits.maxTextBytes,
   );
-  return Either.flatMap(Either.mapLeft(inflated, undecoded), (bytes) =>
-    Either.flatMap(textOf(bytes), (text) => saerskrivenYamlCodec.read(text)),
+  return Result.flatMap(Result.mapError(inflated, undecoded), (bytes) =>
+    Result.flatMap(textOf(bytes), (text) => saerskrivenYamlCodec.read(text)),
   );
 }
 
@@ -183,25 +183,25 @@ function base64url(bytes: Uint8Array): string {
 
 function linkWithin(
   link: string,
-): Either.Either<string, ShareLinkWriteFailure> {
+): Result.Result<string, ShareLinkWriteFailure> {
   return link.length > shareLinkLimit
-    ? Either.left(
+    ? Result.fail(
         ShareLinkFailure.TooLong({
           length: link.length,
           limit: shareLinkLimit,
         }),
       )
-    : Either.right(link);
+    : Result.succeed(link);
 }
 
 function payloadOf(
   fragment: string,
-): Either.Either<Uint8Array, ShareLinkFailure> {
+): Result.Result<Uint8Array, ShareLinkFailure> {
   if (!isShareLinkFragment(fragment)) {
-    return Either.left(ShareLinkFailure.NotAShareLink());
+    return Result.fail(ShareLinkFailure.NotAShareLink());
   }
   if (fragment.length > shareLinkLimit) {
-    return Either.left(
+    return Result.fail(
       ShareLinkFailure.TooLong({
         length: fragment.length,
         limit: shareLinkLimit,
@@ -211,7 +211,7 @@ function payloadOf(
   const link = fragment.slice(marker.length);
   const dot = link.indexOf('.');
   if (dot < 1 || dot > longestEncoding || nonDigit.test(link.slice(0, dot))) {
-    return Either.left(
+    return Result.fail(
       ShareLinkFailure.Malformed({
         message:
           'The link has no encoding number before its payload, so it may have been cut off or changed on the way.',
@@ -221,19 +221,19 @@ function payloadOf(
   const prefix = link.slice(0, dot);
   return prefix === encoding
     ? bytesOf(link.slice(dot + 1))
-    : Either.left(ShareLinkFailure.UnknownEncoding({ prefix }));
+    : Result.fail(ShareLinkFailure.UnknownEncoding({ prefix }));
 }
 
-function bytesOf(payload: string): Either.Either<Uint8Array, ShareLinkFailure> {
+function bytesOf(payload: string): Result.Result<Uint8Array, ShareLinkFailure> {
   if (refusedCharacter.test(payload)) {
-    return Either.left(
+    return Result.fail(
       ShareLinkFailure.Malformed({
         message:
           'The link holds a character no share link uses, so it may have been cut off or changed on the way.',
       }),
     );
   }
-  return Either.try({
+  return Result.try({
     try: () =>
       binaryBytes(atob(payload.replaceAll('-', '+').replaceAll('_', '/'))),
     catch: () =>
@@ -265,8 +265,8 @@ function undecoded(failure: BrotliFailure): ShareLinkFailure | ReadFailure {
   });
 }
 
-function textOf(bytes: Uint8Array): Either.Either<string, ReadFailure> {
-  return Either.try({
+function textOf(bytes: Uint8Array): Result.Result<string, ReadFailure> {
+  return Result.try({
     try: () => decoder.decode(bytes),
     catch: () =>
       ReadFailure.MalformedText({

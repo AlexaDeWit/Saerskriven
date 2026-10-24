@@ -6,7 +6,7 @@ import {
   type BoundaryModule,
 } from '@saerskriven/wasm';
 import { moduleWhoseEveryCall, trapping } from '@saerskriven/wasm/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   bundledFonts,
   fontBytes,
@@ -31,12 +31,12 @@ const label = (family: string): string =>
   `<text x="4" y="30" font-size="20" font-family="${family}" fill="#000000">Saerskriven</text>`;
 
 const drawn = async (document: string, assets: ResvgAssets, longEdge: number) =>
-  Either.getOrThrow(await rasterizeSvg(document, assets, longEdge));
+  Result.getOrThrow(await rasterizeSvg(document, assets, longEdge));
 
 const refusalOf = (
-  outcome: Either.Either<unknown, ResvgFailure>,
+  outcome: Result.Result<unknown, ResvgFailure>,
 ): ResvgFailure | undefined =>
-  Either.isLeft(outcome) ? outcome.left : undefined;
+  Result.isFailure(outcome) ? outcome.failure : undefined;
 
 const rasterizerCalls = [
   'input',
@@ -57,14 +57,14 @@ const stubbed = (
 });
 
 const rendering = async (document: string) => {
-  const module = Either.getOrThrow(
+  const module = Result.getOrThrow(
     await instantiated(
       resvgWasm(),
       ['add_font', 'render', 'width', 'height'],
       'the module exports no rasterizer',
     ),
   );
-  Either.getOrThrow(
+  Result.getOrThrow(
     called(module, new TextEncoder().encode(document), () =>
       module.render(200),
     ),

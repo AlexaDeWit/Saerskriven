@@ -1,5 +1,5 @@
 import { readLimits } from '@saerskriven/formats';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   chmodSync,
   readFileSync,
@@ -37,12 +37,12 @@ const paddedTo = (root: string, bytes: number): string => {
 };
 
 const failureOf = <Value>(
-  outcome: Either.Either<Value, WriteFailure>,
+  outcome: Result.Result<Value, WriteFailure>,
 ): WriteFailure => {
-  if (Either.isRight(outcome)) {
+  if (Result.isSuccess(outcome)) {
     throw new Error('the write succeeded, and this expects a refusal');
   }
-  return outcome.left;
+  return outcome.failure;
 };
 
 describe('replacing a file', () => {
@@ -53,7 +53,7 @@ describe('replacing a file', () => {
       'formatVersion: 1\n',
       revisionIn(tree.root, modelFile),
     );
-    expect(Either.getOrUndefined(written)).toEqual(
+    expect(Result.getOrUndefined(written)).toEqual(
       revisionIn(tree.root, modelFile),
     );
   });
@@ -159,21 +159,21 @@ describe('a write past the size this server reads', () => {
       text,
       revisionIn(tree.root, modelFile),
     );
-    const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
-    expect(Either.isRight(written)).toBe(true);
+    const workspace = Result.getOrThrow(openWorkspace({ root: tree.root }));
+    expect(Result.isSuccess(written)).toBe(true);
     expect(statSync(join(tree.root, modelFile)).size).toEqual(
       readLimits.maxTextBytes,
     );
-    expect(Either.isRight(readModelFile(workspace, modelFile))).toBe(true);
+    expect(Result.isSuccess(readModelFile(workspace, modelFile))).toBe(true);
   });
 
   it('matches the read, which refuses a file one byte past it', () => {
     const tree = editableTree();
     const size = readLimits.maxTextBytes + 1;
     writeFileSync(join(tree.root, modelFile), paddedTo(tree.root, size));
-    const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
+    const workspace = Result.getOrThrow(openWorkspace({ root: tree.root }));
     expect(readModelFile(workspace, modelFile)).toMatchObject({
-      left: {
+      failure: {
         _tag: 'Unread',
         failure: { _tag: 'ExceededReadLimit', observed: size },
       },
@@ -229,7 +229,7 @@ describe('overwriting a file', () => {
     const tree = editableTree();
     writeFileSync(join(tree.root, modelFile), 'saved elsewhere\n');
     const written = overwrittenFile(target(tree.root, modelFile), 'replaced\n');
-    expect(Either.isRight(written)).toEqual(true);
+    expect(Result.isSuccess(written)).toEqual(true);
     expect(readFileSync(join(tree.root, modelFile), 'utf8')).toEqual(
       'replaced\n',
     );
@@ -265,7 +265,7 @@ describe('creating a file', () => {
       'formatVersion: 1\n',
       0o600,
     );
-    expect(Either.isRight(created)).toEqual(true);
+    expect(Result.isSuccess(created)).toEqual(true);
     expect(statSync(join(tree.root, 'fresh.yaml')).mode & 0o777).toEqual(0o600);
   });
 
@@ -291,7 +291,7 @@ describe('a codec that throws', () => {
       output: 'formatVersion: 1\n',
       divergences: [],
     }));
-    expect(Either.getOrUndefined(written)?.output).toEqual(
+    expect(Result.getOrUndefined(written)?.output).toEqual(
       'formatVersion: 1\n',
     );
   });
@@ -300,17 +300,17 @@ describe('a codec that throws', () => {
 describe('the handle a write quotes back', () => {
   it('goes on where the file still hashes to it', () => {
     const tree = editableTree();
-    const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
-    const read = Either.getOrThrow(readModelFile(workspace, modelFile));
-    expect(Either.isRight(unchangedSince(modelFile, read.revision, read))).toBe(
-      true,
-    );
+    const workspace = Result.getOrThrow(openWorkspace({ root: tree.root }));
+    const read = Result.getOrThrow(readModelFile(workspace, modelFile));
+    expect(
+      Result.isSuccess(unchangedSince(modelFile, read.revision, read)),
+    ).toBe(true);
   });
 
   it('names both handles where the file has moved on', () => {
     const tree = editableTree();
-    const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
-    const read = Either.getOrThrow(readModelFile(workspace, modelFile));
+    const workspace = Result.getOrThrow(openWorkspace({ root: tree.root }));
+    const read = Result.getOrThrow(readModelFile(workspace, modelFile));
     expect(
       renderWriteFailure(
         failureOf(unchangedSince(modelFile, staleRevision, read)),
@@ -324,8 +324,8 @@ describe('the handle a write quotes back', () => {
 
   it('escapes a forged line the quoted revision carries', () => {
     const tree = editableTree();
-    const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
-    const read = Either.getOrThrow(readModelFile(workspace, modelFile));
+    const workspace = Result.getOrThrow(openWorkspace({ root: tree.root }));
+    const read = Result.getOrThrow(readModelFile(workspace, modelFile));
     const forged = `${staleRevision}\n${forgedLine}`;
     const refused = unchangedSince(modelFile, forged, read);
     expect(forgedLinesIn(renderWriteFailure(failureOf(refused)))).toEqual([]);
@@ -335,7 +335,7 @@ describe('the handle a write quotes back', () => {
 describe('the file a call names', () => {
   it('refuses a call naming none against a server carrying no default', () => {
     const tree = editableTree();
-    const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
+    const workspace = Result.getOrThrow(openWorkspace({ root: tree.root }));
     expect(failureOf(namedFile(workspace, undefined))).toEqual(
       WriteFailure.NoFile({ root: workspace.root }),
     );

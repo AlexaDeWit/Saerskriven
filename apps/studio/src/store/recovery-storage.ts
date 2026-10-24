@@ -15,7 +15,7 @@ import {
   type DiagramId,
   type Model,
 } from '@saerskriven/model';
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import { z } from 'zod';
 import { reasonOf } from '../reason.js';
 import { studioVersion } from '../version.js';
@@ -30,11 +30,11 @@ export const recoveryStorageKey = 'saerskriven:studio:recovery';
 const documentSchema = saerskrivenYamlVersionsSchema.transform(
   (document, context): Model => {
     const model = readSaerskrivenYamlDocument(document);
-    if (Either.isLeft(model)) {
+    if (Result.isFailure(model)) {
       context.addIssue({ code: 'custom', message: 'Invalid stored model.' });
       return z.NEVER;
     }
-    return model.right;
+    return model.success;
   },
 );
 
@@ -163,14 +163,14 @@ export const RecoveryStorageFailure = Data.taggedEnum<RecoveryStorageFailure>();
 
 /** Synchronous access to the one recovery snapshot. */
 export type RecoveryStorage = {
-  readonly load: () => Either.Either<
+  readonly load: () => Result.Result<
     RecoverySnapshot | undefined,
     RecoveryStorageFailure
   >;
   readonly replace: (
     snapshot: StoredSnapshot,
-  ) => Either.Either<void, RecoveryStorageFailure>;
-  readonly clear: () => Either.Either<void, RecoveryStorageFailure>;
+  ) => Result.Result<void, RecoveryStorageFailure>;
+  readonly clear: () => Result.Result<void, RecoveryStorageFailure>;
 };
 
 type StorageBackend = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
@@ -181,13 +181,13 @@ export function localRecoveryStorage(
 ): RecoveryStorage {
   return {
     load: () =>
-      Either.flatMap(readItem(storage), (stored) =>
+      Result.flatMap(readItem(storage), (stored) =>
         stored === null
-          ? Either.right(undefined)
+          ? Result.succeed(undefined)
           : parseRecoverySnapshot(stored),
       ),
     replace: (snapshot) =>
-      Either.flatMap(encodeSnapshot(snapshot), (encoded) =>
+      Result.flatMap(encodeSnapshot(snapshot), (encoded) =>
         accessStorage(storage, (available) => {
           available.setItem(recoveryStorageKey, encoded);
         }),
@@ -225,7 +225,7 @@ const restoreMarkKey = 'saerskriven:studio:restoring';
 export function storedRestoreMark(storage: () => StorageBackend): RestoreMark {
   return {
     raised: () =>
-      Either.getOrElse(
+      Result.getOrElse(
         accessStorage(
           storage,
           (available) => available.getItem(restoreMarkKey) !== null,
@@ -273,7 +273,7 @@ function storedFile(file: FileLifecycle): FileLifecycle {
 
 function readItem(
   storage: () => StorageBackend,
-): Either.Either<string | null, RecoveryStorageFailure> {
+): Result.Result<string | null, RecoveryStorageFailure> {
   return accessStorage(storage, (available) =>
     available.getItem(recoveryStorageKey),
   );
@@ -282,8 +282,8 @@ function readItem(
 function accessStorage<Value>(
   storage: () => StorageBackend,
   use: (available: StorageBackend) => Value,
-): Either.Either<Value, RecoveryStorageFailure> {
-  return Either.try({
+): Result.Result<Value, RecoveryStorageFailure> {
+  return Result.try({
     try: () => use(storage()),
     catch: (cause) =>
       unavailable(RecoveryProblem.Thrown({ reason: reasonOf(cause) })),
@@ -296,15 +296,15 @@ function unavailable(problem: RecoveryProblem): RecoveryStorageFailure {
 
 function encodeSnapshot(
   snapshot: StoredSnapshot,
-): Either.Either<string, RecoveryStorageFailure> {
-  return Either.flatMap(
-    Either.try({
+): Result.Result<string, RecoveryStorageFailure> {
+  return Result.flatMap(
+    Result.try({
       try: () => JSON.stringify(snapshot),
       catch: (cause) =>
         unavailable(RecoveryProblem.Thrown({ reason: reasonOf(cause) })),
     }),
     (encoded) =>
-      Either.mapLeft(withinTextLimit(encoded), (failure) =>
+      Result.mapError(withinTextLimit(encoded), (failure) =>
         unavailable(readProblem(failure)),
       ),
   );
@@ -312,10 +312,10 @@ function encodeSnapshot(
 
 function parseRecoverySnapshot(
   stored: string,
-): Either.Either<RecoverySnapshot, RecoveryStorageFailure> {
-  const decoded = Either.mapLeft(
+): Result.Result<RecoverySnapshot, RecoveryStorageFailure> {
+  const decoded = Result.mapError(
     parseWithinLimits(stored, (bounded) =>
-      Either.try({
+      Result.try({
         try: () => JSON.parse(bounded) as unknown,
         catch: (cause) =>
           ReadFailure.MalformedText({ message: reasonOf(cause) }),
@@ -324,8 +324,8 @@ function parseRecoverySnapshot(
     (failure) =>
       RecoveryStorageFailure.Rejected({ problem: readProblem(failure) }),
   );
-  return Either.flatMap(decoded, (value) =>
-    Either.mapLeft(boundedParse(recoverySnapshotSchema, value), (failure) =>
+  return Result.flatMap(decoded, (value) =>
+    Result.mapError(boundedParse(recoverySnapshotSchema, value), (failure) =>
       RecoveryStorageFailure.Rejected({
         problem: SchemaFailure.$match(failure, {
           Refused: () => refusal(value),

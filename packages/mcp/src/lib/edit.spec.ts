@@ -16,7 +16,7 @@ import {
   elementId,
   testDataPath,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { unclaimedFile } from '../fixtures.js';
@@ -75,7 +75,7 @@ const perimeterCurve: BoundaryShapeInput = {
 
 const attempt = () => {
   const tree = editableTree();
-  const workspace = Either.getOrThrow(openWorkspace({ root: tree.root }));
+  const workspace = Result.getOrThrow(openWorkspace({ root: tree.root }));
   const bytes = (file: string): Buffer => readFileSync(join(tree.root, file));
   return {
     workspace,
@@ -103,9 +103,9 @@ const revisionIn = (
 ): string => revisionOf(attempted.bytes(file));
 
 const textOf = (
-  outcome: Either.Either<EditResult, readonly string[]>,
+  outcome: Result.Result<EditResult, readonly string[]>,
 ): readonly string[] =>
-  Either.match(outcome, { onLeft: (lines) => lines, onRight: renderEdit });
+  Result.match(outcome, { onFailure: (lines) => lines, onSuccess: renderEdit });
 
 describe('what a refused edit leaves on disk', () => {
   it.each<{
@@ -243,7 +243,7 @@ describe('what a refused edit leaves on disk', () => {
 });
 
 const heldModel = (attempted: ReturnType<typeof attempt>, file = modelFile) =>
-  Either.getOrUndefined(readAnyFormat(attempted.bytes(file).toString('utf8')))
+  Result.getOrUndefined(readAnyFormat(attempted.bytes(file).toString('utf8')))
     ?.model;
 
 describe('what an applied edit writes', () => {
@@ -252,7 +252,7 @@ describe('what an applied edit writes', () => {
     const quoted = revisionIn(attempted, modelFile);
     const applied = attempted.edit(modelFile, quoted, [renaming]);
     const written = revisionIn(attempted, modelFile);
-    expect(Either.getOrUndefined(applied)).toEqual({
+    expect(Result.getOrUndefined(applied)).toEqual({
       file: modelFile,
       format: 'saerskriven-yaml',
       savesAsVersion: 2,
@@ -270,11 +270,11 @@ describe('what an applied edit writes', () => {
 
   it('says in a line of the text result when a batch moved the file to version 3', () => {
     const attempted = attempt();
-    const applied = Either.getOrThrow(
+    const applied = Result.getOrThrow(
       attempted.edit(modelFile, revisionIn(attempted, modelFile), [renaming]),
     );
     const lines = renderEdit({ ...applied, movedToVersion3: true });
-    expect(lines).toHaveLength(textOf(Either.right(applied)).length + 1);
+    expect(lines).toHaveLength(textOf(Result.succeed(applied)).length + 1);
     expect(lines[1]).toMatch(
       /^format version: moved to Saerskriven YAML version 3/u,
     );
@@ -287,7 +287,7 @@ describe('what an applied edit writes', () => {
       revisionIn(attempted, modelFile),
       [placingStore],
     );
-    expect(Either.getOrUndefined(applied)).toMatchObject({
+    expect(Result.getOrUndefined(applied)).toMatchObject({
       movedToVersion3: true,
       savesAsVersion: 3,
     });
@@ -309,7 +309,7 @@ describe('what an applied edit writes', () => {
       revisionIn(attempted, modelFile),
       mergingCopy,
     );
-    expect(Either.getOrUndefined(applied)).toMatchObject({
+    expect(Result.getOrUndefined(applied)).toMatchObject({
       movedToVersion3: true,
       merged: [
         {
@@ -348,7 +348,7 @@ describe('what an applied edit writes', () => {
         placement: 'auto',
       },
     ]);
-    expect(Either.getOrUndefined(applied)?.movedToVersion3).toBe(true);
+    expect(Result.getOrUndefined(applied)?.movedToVersion3).toBe(true);
   });
 
   it('says nothing of a move for a file read as version 3, even one whose model version 2 held before the batch', () => {
@@ -365,7 +365,7 @@ describe('what an applied edit writes', () => {
         placement: 'auto',
       },
     ]);
-    expect(Either.getOrUndefined(applied)).toMatchObject({
+    expect(Result.getOrUndefined(applied)).toMatchObject({
       movedToVersion3: false,
       savesAsVersion: 3,
     });
@@ -388,7 +388,7 @@ describe('what an applied edit writes', () => {
         },
       ],
     );
-    expect(Either.getOrUndefined(unplaced)).toMatchObject({
+    expect(Result.getOrUndefined(unplaced)).toMatchObject({
       movedToVersion3: false,
       savesAsVersion: 2,
     });
@@ -432,15 +432,15 @@ describe('what an applied edit writes', () => {
       [addedMitigation(dragonThreat)],
     );
     const reread = readAnyFormat(attempted.bytes(dragonFile).toString('utf8'));
-    expect(Either.getOrUndefined(applied)?.format).toEqual('threat-dragon');
+    expect(Result.getOrUndefined(applied)?.format).toEqual('threat-dragon');
     expect(
-      Either.getOrUndefined(applied)?.divergences.map(
+      Result.getOrUndefined(applied)?.divergences.map(
         ({ subject, reason }) => ({ subject, reason }),
       ),
     ).toEqual([
       { subject: { kind: 'threat', id: dragonThreat }, reason: 'narrowed' },
     ]);
-    expect(Either.getOrUndefined(reread)?.format).toEqual('threat-dragon');
+    expect(Result.getOrUndefined(reread)?.format).toEqual('threat-dragon');
   });
 
   it.each([
@@ -459,7 +459,7 @@ describe('what an applied edit writes', () => {
         },
       ],
     );
-    expect(Either.isRight(applied)).toBe(true);
+    expect(Result.isSuccess(applied)).toBe(true);
     expect(
       drawnAcross(heldModel(attempted)).find(
         ({ id }) => id === 'element-added',
@@ -550,9 +550,9 @@ describe('what add_element refuses', () => {
         [edit],
       );
       expect(attempted.bytes(modelFile)).toEqual(before);
-      expect(Either.isLeft(refused) ? refused.left[1] : undefined).toEqual(
-        describeOperationFailure(failure),
-      );
+      expect(
+        Result.isFailure(refused) ? refused.failure[1] : undefined,
+      ).toEqual(describeOperationFailure(failure));
     },
   );
 });
@@ -572,7 +572,7 @@ describe('what a flow left unlabelled writes', () => {
       revisionIn(attempted, modelFile),
       [...added, edit],
     );
-    expect(Either.isRight(written)).toBe(true);
+    expect(Result.isSuccess(written)).toBe(true);
     expect(
       drawnAcross(heldModel(attempted)).find(
         ({ id }) => id === 'element-audit-flow',
@@ -591,7 +591,7 @@ describe('what add_assumption writes', () => {
       [addedBackups({})],
     );
     expect(attempted.bytes(modelFile)).toEqual(before);
-    expect(Either.isLeft(refused) ? refused.left[1] : undefined).toEqual(
+    expect(Result.isFailure(refused) ? refused.failure[1] : undefined).toEqual(
       describeOperationFailure(
         OperationFailure.AssumptionWithoutReference({
           assumptionId: assumptionId('assumption-backups'),
@@ -607,7 +607,7 @@ describe('what add_assumption writes', () => {
       revisionIn(attempted, modelFile),
       [addedBackups({ threats: ['threat-tamper-order'] })],
     );
-    expect(Either.getOrUndefined(applied)?.divergences).toEqual([]);
+    expect(Result.getOrUndefined(applied)?.divergences).toEqual([]);
     expect(backupsIn(attempted)).toMatchObject({
       status: 'unconfirmed',
       appliesToModel: false,
@@ -658,7 +658,7 @@ describe('a mitigation shared between threats and unlinked from both', () => {
     },
   ]);
   const readOn = (ref: string) =>
-    Either.getOrUndefined(
+    Result.getOrUndefined(
       getThreat(attempted.workspace, { file: modelFile, ref }),
     )?.mitigations.map(({ id }) => id);
   const onEither = [readOn('threat-tamper-order'), readOn('threat-replay')];
@@ -673,12 +673,12 @@ describe('a mitigation shared between threats and unlinked from both', () => {
   );
 
   it('is read on either threat once linked to the second', () => {
-    expect(Either.isRight(linked)).toBe(true);
+    expect(Result.isSuccess(linked)).toBe(true);
     expect(onEither).toEqual([['mitigation-tls'], ['mitigation-tls']]);
   });
 
   it('leaves the file and is named culled once unlinked from its last threat', () => {
-    expect(Either.getOrUndefined(unlinked)?.culled).toEqual([
+    expect(Result.getOrUndefined(unlinked)?.culled).toEqual([
       { kind: 'mitigation', id: 'mitigation-tls' },
     ]);
     expect(heldModel(attempted)?.mitigations).toEqual([]);
@@ -705,12 +705,12 @@ describe('an assumption applied to the model and unlinked', () => {
   ]);
 
   it('stays in the file and is named nowhere once its last threat link goes', () => {
-    expect(Either.getOrUndefined(applied)?.culled).toEqual([]);
+    expect(Result.getOrUndefined(applied)?.culled).toEqual([]);
     expect(kept).toMatchObject({ threats: [], appliesToModel: true });
   });
 
   it('leaves the file and is named culled once its model link goes too', () => {
-    expect(Either.getOrUndefined(taken)?.culled).toEqual([
+    expect(Result.getOrUndefined(taken)?.culled).toEqual([
       { kind: 'assumption', id: 'assumption-managed-db' },
     ]);
     expect(managedDb()).toBeUndefined();
@@ -740,16 +740,16 @@ describe('a link op naming what the model does not hold', () => {
         revisionIn(attempted, modelFile),
         [renaming, refused],
       );
-      expect(Either.isLeft(outcome) ? outcome.left[0] : undefined).toContain(
-        'index 1 was refused',
-      );
+      expect(
+        Result.isFailure(outcome) ? outcome.failure[0] : undefined,
+      ).toContain('index 1 was refused');
       expect(attempted.bytes(modelFile)).toEqual(before);
     });
   }
 });
 
 const flagsOf = (attempted: ReturnType<typeof attempt>) =>
-  Either.getOrUndefined(
+  Result.getOrUndefined(
     searchThreats(attempted.workspace, {
       file: modelFile,
       response_format: 'concise',
@@ -800,7 +800,7 @@ describe('what a status edit does to the flags a search reads', () => {
         },
       ],
     );
-    expect(Either.isRight(applied)).toBe(true);
+    expect(Result.isSuccess(applied)).toBe(true);
     expect(flagsOf(attempted)).toEqual([
       { id: 'threat-tamper-order', status: 'open', flags: [] },
     ]);
@@ -829,7 +829,7 @@ describe('the records and threats a batch culls', () => {
       revisionIn(attempted, modelFile),
       [{ op: 'remove_threat', threat: 'threat-tamper-order' }],
     );
-    expect(Either.getOrUndefined(applied)?.culled).toEqual([
+    expect(Result.getOrUndefined(applied)?.culled).toEqual([
       { kind: 'mitigation', id: 'mitigation-tls' },
       { kind: 'assumption', id: 'assumption-managed-db' },
     ]);
@@ -853,9 +853,9 @@ describe('the records and threats a batch culls', () => {
       })),
     );
     expect(
-      Either.getOrUndefined(applied)?.culledThreats.map(({ id }) => id),
+      Result.getOrUndefined(applied)?.culledThreats.map(({ id }) => id),
     ).toEqual(['threat-tamper-order']);
-    expect(Either.getOrUndefined(applied)?.culled).toEqual([
+    expect(Result.getOrUndefined(applied)?.culled).toEqual([
       { kind: 'mitigation', id: 'mitigation-tls' },
       { kind: 'assumption', id: 'assumption-managed-db' },
     ]);
@@ -879,7 +879,7 @@ describe('the records and threats a batch culls', () => {
       })),
     );
     expect(
-      Either.getOrUndefined(applied)?.culledThreats.map(({ id }) => id),
+      Result.getOrUndefined(applied)?.culledThreats.map(({ id }) => id),
     ).toEqual(['threat-tamper-order']);
   });
 
@@ -891,9 +891,9 @@ describe('the records and threats a batch culls', () => {
       [replacedTamperOrder([])],
     );
     expect(
-      Either.getOrUndefined(applied)?.culledThreats.map(({ id }) => id),
+      Result.getOrUndefined(applied)?.culledThreats.map(({ id }) => id),
     ).toEqual(['threat-tamper-order']);
-    expect(Either.getOrUndefined(applied)?.culled).toEqual([
+    expect(Result.getOrUndefined(applied)?.culled).toEqual([
       { kind: 'mitigation', id: 'mitigation-tls' },
       { kind: 'assumption', id: 'assumption-managed-db' },
     ]);
@@ -913,7 +913,7 @@ describe('the records and threats a batch culls', () => {
       revisionIn(attempted, modelFile),
       [replacedTamperOrder(['element-api'])],
     );
-    expect(Either.getOrUndefined(applied)?.culledThreats).toEqual([]);
+    expect(Result.getOrUndefined(applied)?.culledThreats).toEqual([]);
     expect(heldModel(attempted)?.threats.map(({ id }) => id)).toContain(
       'threat-tamper-order',
     );
@@ -951,7 +951,7 @@ describe('the records and threats a batch culls', () => {
         { op: 'remove_threat', threat: 'threat-tamper-order' },
       ],
     );
-    expect(Either.getOrUndefined(applied)?.culledThreats).toEqual([]);
+    expect(Result.getOrUndefined(applied)?.culledThreats).toEqual([]);
   });
 
   it('names neither an explicitly removed record nor one the batch added and culled', () => {
@@ -966,7 +966,7 @@ describe('the records and threats a batch culls', () => {
         { op: 'remove_threat', threat: 'threat-tamper-order' },
       ],
     );
-    expect(Either.getOrUndefined(applied)?.culled).toEqual([]);
+    expect(Result.getOrUndefined(applied)?.culled).toEqual([]);
   });
 });
 
@@ -983,7 +983,7 @@ const tlsOn = (threat: string): EditInput => ({
 
 const culledBy = (edits: readonly EditInput[]) => {
   const attempted = attempt();
-  return Either.getOrUndefined(
+  return Result.getOrUndefined(
     attempted.edit(modelFile, revisionIn(attempted, modelFile), edits),
   )?.culled;
 };
@@ -1049,7 +1049,7 @@ describe('what the flow direction and metadata ops write', () => {
       ]);
       expect(heldModel(attempted, file)?.metadata).toEqual(metadata);
       expect(
-        Either.getOrUndefined(applied)?.divergences.filter(
+        Result.getOrUndefined(applied)?.divergences.filter(
           (divergence) => divergence.subject.kind === 'model',
         ),
       ).toEqual([]);
@@ -1159,7 +1159,7 @@ describe('what set_accent writes', () => {
     const set = attempted.edit(modelFile, revisionIn(attempted, modelFile), [
       { op: 'set_accent', elements: named, accent: 'l2' },
     ]);
-    expect(Either.getOrUndefined(set)?.divergences).toEqual([]);
+    expect(Result.getOrUndefined(set)?.divergences).toEqual([]);
     expect(accentsOf(attempted, modelFile, named)).toEqual([
       'l2',
       'l2',
@@ -1186,7 +1186,7 @@ describe('what set_accent writes', () => {
       ],
     );
     expect(
-      Either.getOrUndefined(applied)?.divergences.filter(
+      Result.getOrUndefined(applied)?.divergences.filter(
         ({ detail }) => detail.code === 'accents-dropped',
       ),
     ).toEqual([
@@ -1206,7 +1206,7 @@ const droppedOnRereadOf = (
   attempted: ReturnType<typeof attempt>,
   file: string,
 ) =>
-  Either.getOrUndefined(
+  Result.getOrUndefined(
     readAnyFormat(attempted.bytes(file).toString('utf8')),
   )?.divergences.filter(unreadByThisVersion);
 
@@ -1268,7 +1268,7 @@ describe('what an edit does with what this version cannot read', () => {
         true,
       );
       expect(
-        Either.getOrUndefined(applied)?.dropped.map(
+        Result.getOrUndefined(applied)?.dropped.map(
           ({ detail }) => detail.code,
         ),
       ).toEqual([code]);
@@ -1301,7 +1301,7 @@ describe('what an edit does with what this version cannot read', () => {
     const applied = attempted.edit(file, revisionIn(attempted, file), [
       { op: 'set_model_metadata', title: 'Saerskriven, migrated' },
     ]);
-    expect(Either.getOrUndefined(applied)?.dropped).toEqual([]);
+    expect(Result.getOrUndefined(applied)?.dropped).toEqual([]);
     expect(
       attempted.bytes(file).toString('utf8').startsWith('formatVersion: 2\n'),
     ).toBe(true);
@@ -1319,7 +1319,7 @@ describe('what an edit does with what this version cannot read', () => {
     const applied = attempted.edit(file, revisionIn(attempted, file), [
       { op: 'set_model_metadata', title: 'Clinic booking, edited' },
     ]);
-    expect(Either.getOrUndefined(applied)?.movedToVersion3).toBe(false);
+    expect(Result.getOrUndefined(applied)?.movedToVersion3).toBe(false);
     expect(
       attempted.bytes(file).toString('utf8').startsWith('formatVersion: 2\n'),
     ).toBe(true);

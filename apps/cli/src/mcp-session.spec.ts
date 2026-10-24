@@ -40,7 +40,7 @@ import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { readAnyFormat } from '@saerskriven/formats';
 import { hostedStudioUrl } from '@saerskriven/formats/hosted-studio';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { join } from 'node:path';
 import { openSession, type SessionHost } from './mcp-session.fixtures.js';
 import {
@@ -389,7 +389,7 @@ for (const runner of runners) {
             });
             expect(changed.isError).toBeFalsy();
             const saved = readFileSync(join(root, file), 'utf8');
-            const model = Either.getOrThrow(readAnyFormat(saved)).model;
+            const model = Result.getOrThrow(readAnyFormat(saved)).model;
             const flow = model.elements.find(
               (element) => element.id === 'flow',
             );

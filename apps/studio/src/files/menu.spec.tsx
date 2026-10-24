@@ -12,7 +12,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { Action } from '../store/actions.js';
 import { elementById, isDirty } from '../store/selectors.js';
 import {
@@ -292,7 +292,7 @@ describe('what the menu offers', () => {
       specRenders({
         compile: () =>
           Promise.resolve(
-            Either.left(
+            Result.fail(
               PdfFailure.Refused({ sentences: ['unknown function: nope'] }),
             ),
           ),

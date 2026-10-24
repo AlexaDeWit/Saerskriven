@@ -16,7 +16,7 @@ import {
   type RecordReference,
   type Threat,
 } from '@saerskriven/model';
-import { Either, pipe } from 'effect';
+import { Result, pipe } from 'effect';
 import { z } from 'zod';
 import {
   applyEdits,
@@ -123,35 +123,35 @@ export const editDescription = [
 export function editModel(
   workspace: ModelWorkspace,
   args: EditArguments,
-): Either.Either<EditResult, readonly string[]> {
+): Result.Result<EditResult, readonly string[]> {
   return pipe(
     namedFile(workspace, args.file),
-    Either.mapLeft(renderWriteFailure),
-    Either.flatMap((named) =>
-      Either.mapLeft(
+    Result.mapError(renderWriteFailure),
+    Result.flatMap((named) =>
+      Result.mapError(
         readModelFile(named.workspace, named.file),
         renderWorkspaceFailure,
       ),
     ),
-    Either.flatMap((read) =>
-      Either.mapLeft(
+    Result.flatMap((read) =>
+      Result.mapError(
         unchangedSince(resultPath(workspace, read.path), args.revision, read),
         renderWriteFailure,
       ),
     ),
-    Either.flatMap((read) =>
-      Either.mapBoth(droppable(workspace, read, args.dropUndeclared), {
-        onLeft: renderWriteFailure,
-        onRight: (dropped) => ({ read, dropped }),
+    Result.flatMap((read) =>
+      Result.mapBoth(droppable(workspace, read, args.dropUndeclared), {
+        onFailure: renderWriteFailure,
+        onSuccess: (dropped) => ({ read, dropped }),
       }),
     ),
-    Either.flatMap(({ read, dropped }) =>
-      Either.mapBoth(applyEdits(read.read.model, args.edits), {
-        onLeft: renderRefusedEdit,
-        onRight: (batch) => ({ read, batch, dropped }),
+    Result.flatMap(({ read, dropped }) =>
+      Result.mapBoth(applyEdits(read.read.model, args.edits), {
+        onFailure: renderRefusedEdit,
+        onSuccess: (batch) => ({ read, batch, dropped }),
       }),
     ),
-    Either.flatMap(({ read, batch, dropped }) =>
+    Result.flatMap(({ read, batch, dropped }) =>
       saved(workspace, read, batch.model, {
         applied: args.edits.length,
         culled: [...batch.culled],
@@ -218,11 +218,11 @@ function droppable(
   workspace: ModelWorkspace,
   read: ReadModelFile,
   drop: boolean,
-): Either.Either<readonly Divergence[], WriteFailure> {
+): Result.Result<readonly Divergence[], WriteFailure> {
   const dropped = read.read.divergences.filter(unreadByThisVersion);
   return dropped.length === 0 || drop
-    ? Either.right(dropped)
-    : Either.left(
+    ? Result.succeed(dropped)
+    : Result.fail(
         WriteFailure.WouldDrop({
           file: resultPath(workspace, read.path),
           dropped,
@@ -243,12 +243,12 @@ function saved(
     | 'dropped'
     | 'movedToVersion3'
   >,
-): Either.Either<EditResult, readonly string[]> {
+): Result.Result<EditResult, readonly string[]> {
   const file = resultPath(workspace, read.path);
   return pipe(
     serialized(file, () => writeThrough(model, retainedSource(read.read))),
-    Either.flatMap((written) =>
-      Either.map(
+    Result.flatMap((written) =>
+      Result.map(
         replacedFile({ file, path: read.path }, written.output, read.revision),
         (revision): EditResult => ({
           file,
@@ -260,6 +260,6 @@ function saved(
         }),
       ),
     ),
-    Either.mapLeft(renderWriteFailure),
+    Result.mapError(renderWriteFailure),
   );
 }

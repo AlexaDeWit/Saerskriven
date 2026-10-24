@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { drawnElement, elementOf, placementOf } from './drawing.js';
 import type { DrawnElement, DrawnFlowEndpoint } from './drawn-elements.js';
 import type { Element, FlowEndpoint } from './elements.js';
@@ -41,11 +41,11 @@ export type LocatedDrawn<Held extends DrawnElement> = {
 export function locatedElement(
   model: Model,
   elementId: ElementId,
-): Either.Either<Located<Element>, UnknownElementFailure> {
+): Result.Result<Located<Element>, UnknownElementFailure> {
   const element = model.elements.find(({ id }) => id === elementId);
   return element === undefined
-    ? Either.left(OperationFailure.UnknownElement({ elementId }))
-    : Either.right({ element });
+    ? Result.fail(OperationFailure.UnknownElement({ elementId }))
+    : Result.succeed({ element });
 }
 
 /** The element `elementId` names, as the diagram `diagramId` names draws it. */
@@ -53,13 +53,13 @@ export function locatedDrawn(
   model: Model,
   diagramId: DiagramId,
   elementId: ElementId,
-): Either.Either<LocatedDrawn<DrawnElement>, UndrawnElementFailure> {
-  return Either.flatMap(diagramIndexOf(model, diagramId), (diagramIndex) =>
-    Either.flatMap(
+): Result.Result<LocatedDrawn<DrawnElement>, UndrawnElementFailure> {
+  return Result.flatMap(diagramIndexOf(model, diagramId), (diagramIndex) =>
+    Result.flatMap(
       locatedElement(model, elementId),
       ({
         element,
-      }): Either.Either<LocatedDrawn<DrawnElement>, UndrawnElementFailure> => {
+      }): Result.Result<LocatedDrawn<DrawnElement>, UndrawnElementFailure> => {
         const placement = model.diagrams[diagramIndex].placements.find(
           (candidate) => candidate.element === elementId,
         );
@@ -68,10 +68,10 @@ export function locatedDrawn(
             ? undefined
             : drawnElement(element, placement);
         return drawn === undefined
-          ? Either.left(
+          ? Result.fail(
               OperationFailure.ElementNotOnDiagram({ elementId, diagramId }),
             )
-          : Either.right({ diagramIndex, drawn });
+          : Result.succeed({ diagramIndex, drawn });
       },
     ),
   );
@@ -81,26 +81,26 @@ export function locatedDrawn(
 export function locatedDiagram(
   model: Model,
   diagramId: DiagramId,
-): Either.Either<Diagram, UnknownDiagramFailure> {
+): Result.Result<Diagram, UnknownDiagramFailure> {
   const diagram = model.diagrams.find(
     (candidate) => candidate.id === diagramId,
   );
   return diagram === undefined
-    ? Either.left(OperationFailure.UnknownDiagram({ diagramId }))
-    : Either.right(diagram);
+    ? Result.fail(OperationFailure.UnknownDiagram({ diagramId }))
+    : Result.succeed(diagram);
 }
 
 /** The index of the diagram `diagramId` names. */
 export function diagramIndexOf(
   model: Model,
   diagramId: DiagramId,
-): Either.Either<number, UnknownDiagramFailure> {
+): Result.Result<number, UnknownDiagramFailure> {
   const diagramIndex = model.diagrams.findIndex(
     (diagram) => diagram.id === diagramId,
   );
   return diagramIndex === -1
-    ? Either.left(OperationFailure.UnknownDiagram({ diagramId }))
-    : Either.right(diagramIndex);
+    ? Result.fail(OperationFailure.UnknownDiagram({ diagramId }))
+    : Result.succeed(diagramIndex);
 }
 
 /** `model` with the diagram at `diagramIndex` replaced by `update`'s result. */

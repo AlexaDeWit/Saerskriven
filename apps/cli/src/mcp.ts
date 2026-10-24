@@ -11,7 +11,7 @@ import {
   type RasterizerAssets,
   type Reach,
 } from '@saerskriven/mcp';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { Readable, Writable } from 'node:stream';
 import { z } from 'zod';
 import { runtimeAssets } from './assets.js';
@@ -78,10 +78,10 @@ export function serveMcp(
   streams: McpStreams = { input: process.stdin, output: process.stdout },
   assets: string = runtimeAssets,
 ): Promise<CommandOutcome> {
-  return Either.match(openWorkspace(options), {
-    onLeft: (failure) =>
+  return Result.match(openWorkspace(options), {
+    onFailure: (failure) =>
       Promise.resolve(usageError(lines(...renderWorkspaceFailure(failure)))),
-    onRight: (workspace) => {
+    onSuccess: (workspace) => {
       const rasterizer = rasterizerIn(assets);
       const brotli = brotliIn(assets);
       const factory: McpServerFactory = () =>

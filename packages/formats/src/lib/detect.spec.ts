@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readFileSync } from 'node:fs';
 import { ReadFailure } from './codec.js';
 import { readFailureIssues } from './codec.fixtures.js';
@@ -57,7 +57,7 @@ const refusedCell =
   '{"version":"2.6.2","summary":{"title":"Refused"},"detail":{"diagrams":[{"id":0,"title":"Level 0","diagramType":"STRIDE","cells":[{"id":"a","shape":"process","position":{"x":0,"y":0},"size":{"width":10,"height":10},"data":{"type":"tm.Process"}}]}]}}';
 
 const nativeAsJson = JSON.stringify(
-  Either.getOrThrow(saerskrivenYamlCodec.read(featureCompleteYaml)).source,
+  Result.getOrThrow(saerskrivenYamlCodec.read(featureCompleteYaml)).source,
 );
 
 const unclaimed: readonly { name: string; text: string }[] = [
@@ -80,12 +80,12 @@ const unclaimed: readonly { name: string; text: string }[] = [
 ];
 
 const opened = (text: string): DetectedRead =>
-  Either.getOrThrow(readAnyFormat(text));
+  Result.getOrThrow(readAnyFormat(text));
 
-const outcome = (text: string) => Either.merge(readAnyFormat(text));
+const outcome = (text: string) => Result.merge(readAnyFormat(text));
 
 const refusalOf = (text: string): ReadFailure => {
-  const failure = Either.getOrThrow(Either.flip(readAnyFormat(text)));
+  const failure = Result.getOrThrow(Result.flip(readAnyFormat(text)));
   if (DetectionFailure.$is('NoFormatClaimed')(failure)) {
     throw new Error(`No format claimed the text: ${failure.tried.join(', ')}`);
   }
@@ -145,7 +145,7 @@ describe('opening a text without being told its format', () => {
   it('hands back everything the codec that answered produced', () => {
     const answer = opened(featureCompleteYaml);
     expect(answer.model).toEqual(
-      Either.getOrThrow(readSaerskrivenYaml(featureCompleteYaml)).model,
+      Result.getOrThrow(readSaerskrivenYaml(featureCompleteYaml)).model,
     );
     expect(answer.divergences).toEqual([]);
   });
@@ -154,21 +154,21 @@ describe('opening a text without being told its format', () => {
 describe('a file of one format offered to the other codec', () => {
   it('is not JSON, so the Threat Dragon codec refuses the native file', () => {
     const reading = threatDragonCodec.read(featureCompleteYaml);
-    expect(Either.isLeft(reading)).toBe(true);
-    expect(Either.merge(reading)).toMatchObject({ _tag: 'MalformedText' });
+    expect(Result.isFailure(reading)).toBe(true);
+    expect(Result.merge(reading)).toMatchObject({ _tag: 'MalformedText' });
   });
 
   it('is JSON all the same, so the Threat Dragon codec refuses it by key', () => {
-    const refused = Either.getOrThrow(
-      Either.flip(threatDragonCodec.read(nativeAsJson)),
+    const refused = Result.getOrThrow(
+      Result.flip(threatDragonCodec.read(nativeAsJson)),
     );
     expect(refused).toMatchObject({ _tag: 'InvalidWireDocument' });
     expect(issuePaths(refused)).toEqual(['version', 'summary', 'detail']);
   });
 
   it('is YAML, so the Saerskriven codec refuses a Threat Dragon file at its stamp', () => {
-    const refused = Either.getOrThrow(
-      Either.flip(saerskrivenYamlCodec.read(featureCompleteText)),
+    const refused = Result.getOrThrow(
+      Result.flip(saerskrivenYamlCodec.read(featureCompleteText)),
     );
     expect(refused).toMatchObject({ _tag: 'InvalidWireDocument' });
     expect(issuePaths(refused)).toContain('formatVersion');

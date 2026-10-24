@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { createHash } from 'node:crypto';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
@@ -98,8 +98,8 @@ export function drawnFixture(input: DrawnModelInput): Model {
 }
 
 /** The model a parse produced, throwing with its path-bearing issues where it refused. */
-export function fixtureOf(parsed: Either.Either<Model, ParseFailure>): Model {
-  return Either.getOrThrowWith(
+export function fixtureOf(parsed: Result.Result<Model, ParseFailure>): Model {
+  return Result.getOrThrowWith(
     parsed,
     (failure) =>
       new Error(

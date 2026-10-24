@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import type { Assumption } from './assumptions.js';
 import {
@@ -151,24 +151,24 @@ export function addedRecord<
   model: Model,
   register: RecordRegister<Key, Failures>,
   record: RecordIn<Key>,
-): Either.Either<
+): Result.Result<
   Model,
   Failures['duplicate'] | Failures['unreferenced'] | UnknownThreatFailure
 > {
   const records: readonly RecordIn<Key>[] = model[register.key];
   if (records.some(({ id }) => id === record.id)) {
-    return Either.left(register.duplicate(record.id));
+    return Result.fail(register.duplicate(record.id));
   }
   if (!register.referenced(record)) {
-    return Either.left(register.unreferenced(record.id));
+    return Result.fail(register.unreferenced(record.id));
   }
   const unlinkable = unknownThreatIn(model.threats, record.threats);
   if (unlinkable) {
-    return Either.left(
+    return Result.fail(
       OperationFailure.UnknownThreat({ threatId: unlinkable }),
     );
   }
-  return Either.right({ ...model, [register.key]: [...records, record] });
+  return Result.succeed({ ...model, [register.key]: [...records, record] });
 }
 
 /** Drops one record. This is an explicit removal, not a cull. */
@@ -179,12 +179,12 @@ export function removedRecord<
   model: Model,
   register: RecordRegister<Key, Failures>,
   recordId: RecordIn<Key>['id'],
-): Either.Either<Model, Failures['unknown']> {
+): Result.Result<Model, Failures['unknown']> {
   const records: readonly RecordIn<Key>[] = model[register.key];
   if (!records.some(({ id }) => id === recordId)) {
-    return Either.left(register.unknown(recordId));
+    return Result.fail(register.unknown(recordId));
   }
-  return Either.right({
+  return Result.succeed({
     ...model,
     [register.key]: records.filter(({ id }) => id !== recordId),
   });
@@ -203,14 +203,14 @@ export function editedRecord<
   model: Model,
   register: RecordRegister<Key, Failures>,
   recordId: RecordIn<Key>['id'],
-  edit: (held: RecordIn<Key>) => Either.Either<RecordIn<Key>, Refused>,
-): Either.Either<Model, Failures['unknown'] | Refused> {
+  edit: (held: RecordIn<Key>) => Result.Result<RecordIn<Key>, Refused>,
+): Result.Result<Model, Failures['unknown'] | Refused> {
   const records: readonly RecordIn<Key>[] = model[register.key];
   const held = records.find(({ id }) => id === recordId);
   if (!held) {
-    return Either.left(register.unknown(recordId));
+    return Result.fail(register.unknown(recordId));
   }
-  return Either.map(edit(held), (next): Model =>
+  return Result.map(edit(held), (next): Model =>
     next === held
       ? model
       : {
@@ -236,12 +236,12 @@ export function replacedRecord<
   model: Model,
   register: RecordRegister<Key, Failures>,
   record: RecordIn<Key>,
-): Either.Either<Model, Failures['unknown'] | UnknownThreatFailure> {
+): Result.Result<Model, Failures['unknown'] | UnknownThreatFailure> {
   return editedRecord(model, register, record.id, () => {
     const unlinkable = unknownThreatIn(model.threats, record.threats);
     return unlinkable
-      ? Either.left(OperationFailure.UnknownThreat({ threatId: unlinkable }))
-      : Either.right(record);
+      ? Result.fail(OperationFailure.UnknownThreat({ threatId: unlinkable }))
+      : Result.succeed(record);
   });
 }
 
@@ -259,13 +259,13 @@ export function relinkedRecord<
   recordId: RecordIn<Key>['id'],
   threatId: ThreatId,
   relink: (threats: readonly ThreatId[], threatId: ThreatId) => ThreatId[],
-): Either.Either<Model, Failures['unknown'] | UnknownThreatFailure> {
+): Result.Result<Model, Failures['unknown'] | UnknownThreatFailure> {
   return editedRecord(model, register, recordId, (held) => {
     if (!model.threats.some(({ id }) => id === threatId)) {
-      return Either.left(OperationFailure.UnknownThreat({ threatId }));
+      return Result.fail(OperationFailure.UnknownThreat({ threatId }));
     }
     const threats = relink(held.threats, threatId);
-    return Either.right(
+    return Result.succeed(
       threats.length === held.threats.length ? held : { ...held, threats },
     );
   });
@@ -280,9 +280,9 @@ export function withRecordStatus<
   register: RecordRegister<Key, Failures>,
   recordId: RecordIn<Key>['id'],
   status: RecordIn<Key>['status'],
-): Either.Either<Model, Failures['unknown']> {
+): Result.Result<Model, Failures['unknown']> {
   return editedRecord(model, register, recordId, (held) =>
-    Either.right(held.status === status ? held : { ...held, status }),
+    Result.succeed(held.status === status ? held : { ...held, status }),
   );
 }
 

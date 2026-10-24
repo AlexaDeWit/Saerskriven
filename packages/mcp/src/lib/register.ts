@@ -1,5 +1,5 @@
 import { renderRegister } from '@saerskriven/render';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { defaultedFileSentence, fileArgumentSchema } from './path-arguments.js';
 import {
@@ -10,18 +10,14 @@ import {
 } from './reading.js';
 import type { ModelWorkspace } from './workspace.js';
 
-/** What `saer_register` takes. */
 export type RegisterArguments = z.infer<typeof fileArgumentSchema>;
 
-/** What `saer_register` answers with. */
 export const registerResultSchema = readingSchema.extend({
   markdown: z.string(),
 });
 
-/** What `saer_register` answers with. */
 export type RegisterResult = z.infer<typeof registerResultSchema>;
 
-/** What `saer_register` tells a client it is for. */
 export const registerDescription = [
   "Write the whole threat register of one Saerskriven threat model as GFM markdown: a heading carrying the model's title, an overview table of every threat, then one section listing the assumptions that apply to the model, each with its status, where the model holds any, then one section per threat in number order. A threat section lists the threat's attached elements, led by the whole model where the threat applies to it, then its category, severity, status and flags, its description, and the mitigation and assumption records linked to it, each with its status. A record shared by several threats appears in each of their sections, and an assumption that applies to the model and also links threats appears in the model's section and in each of theirs. It is the same document `saer render --format md` writes to a file.",
   'Call this when you want the register as a document, to read into a report or to hand to a reader. Do not call it to look something up: it carries the whole model, so a large register costs a great deal of context where saer_search_threats and saer_get_threat answer the same question in a fraction of it.',
@@ -38,8 +34,8 @@ export const registerDescription = [
 export function register(
   workspace: ModelWorkspace,
   args: RegisterArguments,
-): Either.Either<RegisterResult, readonly string[]> {
-  return Either.map(readNamed(workspace, args.file), (reading) => ({
+): Result.Result<RegisterResult, readonly string[]> {
+  return Result.map(readNamed(workspace, args.file), (reading) => ({
     ...reportedReading(reading),
     markdown: renderRegister(reading.model, 'en-CA'),
   }));

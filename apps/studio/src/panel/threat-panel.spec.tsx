@@ -6,7 +6,7 @@ import {
   type Threat,
   type ThreatStatus,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -385,7 +385,7 @@ describe(
     });
 
     it('names a flow left unlabelled from its ends in its heading', () => {
-      const unlabelled = Either.getOrThrow(
+      const unlabelled = Result.getOrThrow(
         renameElement(canvasModel, requestFlow, ''),
       );
       modelStore.setState(

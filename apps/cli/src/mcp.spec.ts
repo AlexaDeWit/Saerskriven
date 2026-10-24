@@ -1,5 +1,5 @@
 import { repositoryRoot } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
@@ -35,7 +35,7 @@ const disposable = (): string => fakeAssets(scratchDirectory('mcp'));
 
 const loaders: readonly [
   string,
-  (assets: string) => () => Either.Either<unknown, string>,
+  (assets: string) => () => Result.Result<unknown, string>,
 ][] = [
   ['rasterizer', rasterizerIn],
   ['brotli module', brotliIn],
@@ -47,16 +47,16 @@ describe.each(loaders)('the %s one server reads', (_what, readIn) => {
     const read = readIn(directory);
     const first = read();
     rmSync(directory, { recursive: true, force: true });
-    expect(Either.isRight(first)).toBe(true);
+    expect(Result.isSuccess(first)).toBe(true);
     expect(read()).toEqual(first);
   });
 
   it('re-reads a directory it could not read rather than holding the refusal', () => {
     const directory = scratchDirectory('mcp-bare');
     const read = readIn(directory);
-    expect(Either.isLeft(read())).toBe(true);
+    expect(Result.isFailure(read())).toBe(true);
     fakeAssets(directory);
-    expect(Either.isRight(read())).toBe(true);
+    expect(Result.isSuccess(read())).toBe(true);
   });
 });
 
