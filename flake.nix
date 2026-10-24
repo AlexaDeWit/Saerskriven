@@ -13,9 +13,31 @@
       overlays.default = final: _prev: { saerskriven = packageFor final; };
     } // flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = nixpkgs.legacyPackages.${system}.extend (_final: prev: {
+          # Remove after actionlint releases rhysd/actionlint#732.
+          actionlint = prev.actionlint.overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [
+              (prev.fetchpatch {
+                url = "https://github.com/rhysd/actionlint/compare/011a6d15e749bb3f2d771eed9c7aa0e7e3e10ee7...b02c24b743cc88a26b280339814eb4ece91c32cb.diff";
+                hash = "sha256-ssleL7s/8EDmmN8b5RNHanVfn0Imz2X2MY3wAMwDVQw=";
+              })
+            ];
+          });
+        });
+
+        # Remove this replacement after the registry publishes semgrep-rules#4042.
+        semgrepActionPinningSource =
+          "https://raw.githubusercontent.com/nopcorn/semgrep-rules/734df2ec594a19c83b0694b9cf70feb7af012258/yaml/github-actions/security/github-actions-mutable-action-tag";
 
         shellEnv = {
+          SAERSKRIVEN_SEMGREP_ACTION_RULE = pkgs.fetchurl {
+            url = "${semgrepActionPinningSource}.yaml";
+            hash = "sha256-VxpbQCJKLOcb8IJA3qE3VT9qXy9U3WthoMl0d7lGil8=";
+          };
+          SAERSKRIVEN_SEMGREP_ACTION_TEST = pkgs.fetchurl {
+            url = "${semgrepActionPinningSource}.test.yaml";
+            hash = "sha256-I7rd0RSbR4JDW+jYiiJ7Ec3Zq0bUVZD0NJ5CGE7TigY=";
+          };
           LANG = "C.UTF-8";
           LC_ALL = "C.UTF-8";
 
