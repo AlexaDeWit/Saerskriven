@@ -6,6 +6,7 @@ import {
 import type { Locale } from '@saerskriven/i18n';
 import type { Diagram, Model } from '@saerskriven/model';
 import { Either } from 'effect';
+import type { DiagramOptions } from './lib/diagram-options.js';
 import { renderSvg } from './lib/svg-document.js';
 import { rasterizeSvg, type ResvgAssets, type ResvgFailure } from './resvg.js';
 
@@ -38,7 +39,7 @@ export function ledBy<T>(
 }
 
 /** Rasterizer assets, output size, and resolved appearance. */
-export type PngOptions = {
+export type PngOptions = DiagramOptions & {
   readonly assets: ResvgAssets;
   readonly longEdge?: number;
   readonly theme?: RenderTheme;
@@ -64,7 +65,7 @@ export async function renderPng(
   options: PngOptions,
 ): Promise<Either.Either<PngImage, ResvgFailure>> {
   const theme = options.theme ?? defaultRenderTheme;
-  const drawn = renderSvg(diagram, model, locale, theme);
+  const drawn = renderSvg(diagram, model, locale, theme, options);
   const raster = await rasterizeSvg(
     drawn.svg,
     options.assets,

@@ -95,6 +95,21 @@ describe('what saer_render_diagram refuses', () => {
 });
 
 describe.skipIf(rasterizerUnbuilt)('what saer_render_diagram draws', () => {
+  it('hides threat labels on request without changing the model revision', async () => {
+    const args = { file: twoDiagramsFile, diagram: 'storefront', width: 320 };
+    const shown = answerOf(
+      await renderDiagram(rootWorkspace(), builtRasterizer, args),
+    );
+    const hidden = answerOf(
+      await renderDiagram(rootWorkspace(), builtRasterizer, {
+        ...args,
+        showThreatLabels: false,
+      }),
+    );
+    expect(hidden.blocks[0]).not.toEqual(shown.blocks[0]);
+    expect(hidden.answer.revision).toBe(shown.answer.revision);
+    expect(hidden.answer.diagram).toEqual(shown.answer.diagram);
+  });
   it('answers with the bytes of a PNG and never an SVG', async () => {
     const drawn = answerOf(await renderDiagram(drawable, builtRasterizer, {}));
     const [image] = drawn.blocks;

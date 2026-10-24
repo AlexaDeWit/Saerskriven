@@ -7,6 +7,7 @@ import {
 import type { Locale } from '@saerskriven/i18n';
 import type { Model } from '@saerskriven/model';
 import type { RootContent } from 'mdast';
+import type { DiagramOptions } from './diagram-options.js';
 import { badgeColour } from './register-badges.js';
 import { registerDocument } from './register-tree.js';
 import { renderSvg } from './svg-document.js';
@@ -28,29 +29,18 @@ export type TypstDocument = {
 };
 
 /**
- * The whole model as the source of one Typst document: every diagram on a
- * landscape page, embedded as the bytes {@link renderSvg} writes, then the
- * register, all framed in `locale`'s words. A French or Swedish source sets
- * the text language, for hyphenation and the PDF's language tag, and an
- * en-CA one leaves Typst's English default. The source references no file,
- * font, package or URL and carries no date, so a compiler with no access
- * writes the same PDF twice. It names the theme's font families without
- * carrying them, and a compiler lacking one substitutes in the drawings as
- * well as the text.
- *
- * No value out of the model is written as markup: each is a string literal
- * shown in markup position, so every `#` in the output is this package's.
- * Every mdast node type is walked, checked by the compiler. Raw HTML is
- * written as its text, and a link or image as its text with its address
- * beside it, never live.
+ * Every diagram and the full register as self-contained Typst source.
+ * Model text stays in string literals, never executable markup.
+ * The compiler supplies the fonts named by the theme.
  */
 export function renderTypst(
   model: Model,
   locale: Locale,
   theme: RenderTheme = defaultRenderTheme,
+  options: DiagramOptions = {},
 ): TypstDocument {
   const drawings = model.diagrams.map((diagram) =>
-    renderSvg(diagram, model, locale, theme),
+    renderSvg(diagram, model, locale, theme, options),
   );
   return {
     typst: [

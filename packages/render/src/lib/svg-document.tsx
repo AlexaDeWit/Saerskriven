@@ -14,6 +14,7 @@ import {
 import type { Locale } from '@saerskriven/i18n';
 import type { Diagram, Model } from '@saerskriven/model';
 import { renderToStaticMarkup } from 'react-dom/server';
+import type { DiagramOptions } from './diagram-options.js';
 import { renderTerms } from './terms.js';
 
 const margin = 8;
@@ -29,27 +30,18 @@ export type SvgDocument = {
   readonly unplaced: readonly UnplacedEndpoint[];
 };
 
-/**
- * One diagram as a standalone SVG document, drawn with the canvas primitives:
- * a `title` carrying the diagram's title, the themed background, a `style`
- * element resolving the theme to values, and the glyphs in painting order,
- * ending in a newline. Its badges letter `locale`'s marks. The viewBox is the
- * canvas's drawn bounds grown by 8 on every side. The `style` element carries
- * the accent rules only where an element or a flow of the diagram holds an
- * accent, and the rules of a flow end drawn away from its element only where
- * a flow holds one. The document references
- * nothing outside itself, and its bytes depend on the model and the locale
- * alone, painting order included. The title goes through `xmlSafeText` as the
- * glyphs' text does, since a model built in memory can carry characters its
- * parse would refuse.
- */
+/** A standalone SVG with optional threat labels and no external references. */
 export function renderSvg(
   diagram: Diagram,
   model: Model,
   locale: Locale,
   theme: RenderTheme = defaultRenderTheme,
+  options: DiagramOptions = {},
 ): SvgDocument {
-  const layout = layoutDiagram(diagram, model);
+  const layout = layoutDiagram(
+    diagram,
+    options.showThreatLabels === false ? { ...model, threats: [] } : model,
+  );
   const box = grown(layout.bounds);
   const drawn = renderToStaticMarkup(
     <svg

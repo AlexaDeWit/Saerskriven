@@ -27,11 +27,13 @@ export function drawPng(
   assets: string,
   locale: Locale,
   theme?: RenderTheme,
+  showThreatLabels?: boolean,
 ): Promise<Either.Either<PngImage, string>> {
   return Either.match(pngAssets(assets), {
     onLeft: (reason) =>
       Promise.resolve(Either.left(`cannot draw the PNG: ${reason}`)),
-    onRight: (found) => rasterized(diagram, model, locale, found, theme),
+    onRight: (found) =>
+      rasterized(diagram, model, locale, found, theme, showThreatLabels),
   });
 }
 
@@ -41,9 +43,14 @@ async function rasterized(
   locale: Locale,
   assets: WasmAssets,
   theme?: RenderTheme,
+  showThreatLabels?: boolean,
 ): Promise<Either.Either<PngImage, string>> {
   return Either.mapLeft(
-    await renderPng(diagram, model, locale, { assets, theme }),
+    await renderPng(diagram, model, locale, {
+      assets,
+      theme,
+      showThreatLabels,
+    }),
     reported,
   );
 }

@@ -51,6 +51,24 @@ const written = async (
 };
 
 describe('render', () => {
+  it('accepts the CLI opt-out and leaves threat labels enabled by default', async () => {
+    const args = [
+      'render',
+      twoDiagrams,
+      '--diagram',
+      'storefront',
+      '--format',
+      'svg',
+      '--out',
+      '-',
+    ];
+    const shown = await runCli(args);
+    const hidden = await runCli([...args, '--no-threat-labels']);
+    expect(shown.code).toBe(0);
+    expect(hidden.code).toBe(0);
+    expect(shown.out).toContain('<text class="saer-diagram-badge-mark"');
+    expect(hidden.out).not.toContain('<text class="saer-diagram-badge-mark"');
+  });
   it('includes Mermaid diagrams in Markdown files and stdout only when requested', async () => {
     const expected = golden('two-diagrams.mermaid.snapshot.md');
     const run = await written('with-diagrams.md', twoDiagrams, {

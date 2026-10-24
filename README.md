@@ -243,6 +243,8 @@ not have to name. `--format png` draws that same diagram as a picture,
 1568 pixels on its longer edge, for a reader that takes an image and not an
 SVG. `--format pdf` writes one document holding every diagram, one to a
 landscape page, then that same register, so it takes no `--diagram` either.
+`--no-threat-labels` hides threat badges in SVG, PNG and PDF diagrams.
+The threat register is unchanged. Labels remain visible by default.
 `--out -` writes to standard output, the PDF's and the PNG's bytes included.
 
 `--lang <tag>` chooses the written document's language: en-CA, fr-CA or sv,

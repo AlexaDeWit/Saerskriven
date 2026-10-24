@@ -13,6 +13,7 @@ import {
   type Model,
 } from '@saerskriven/model';
 import {
+  diagramOptionsSchema,
   renderRegister,
   registerOptionsSchema,
   markdownOptionsSchema,
@@ -39,6 +40,7 @@ import { commandTheme, themeWarnings } from './theme.js';
 
 /** Validated arguments for the render command. */
 export const renderOptionsSchema = registerOptionsSchema.extend({
+  threatLabels: diagramOptionsSchema.shape.showThreatLabels,
   theme: z.string().optional(),
   styled: z.boolean().optional(),
   includeDiagrams: markdownOptionsSchema.shape.includeDiagrams,
@@ -213,7 +215,7 @@ function document(
           '',
         ),
       )
-    : compiled(model, options.out, assets, theme, locale);
+    : compiled(model, options.out, assets, theme, locale, options.threatLabels);
 }
 
 async function compiled(
@@ -222,8 +224,9 @@ async function compiled(
   assets: string,
   theme: RenderTheme,
   locale: Locale,
+  showThreatLabels?: boolean,
 ): Promise<CommandOutcome> {
-  const source = renderTypst(model, locale, theme);
+  const source = renderTypst(model, locale, theme, { showThreatLabels });
   return Either.match(await compilePdf(source.typst, assets), {
     onLeft: (reason) => usageError(lines(`error: ${reason}`)),
     onRight: (pdf) => written(out, pdf, unplacedWarning(source.unplaced)),
@@ -241,7 +244,16 @@ function drawing(
   return Either.match(chosenDiagram(model.diagrams, options.diagram), {
     onLeft: (failure) => Promise.resolve(usageError(refusedChoice(failure))),
     onRight: (diagram) =>
-      drawn(diagram, model, format, options.out, assets, theme, locale),
+      drawn(
+        diagram,
+        model,
+        format,
+        options.out,
+        assets,
+        theme,
+        locale,
+        options.threatLabels,
+      ),
   });
 }
 
@@ -253,10 +265,13 @@ function drawn(
   assets: string,
   theme: RenderTheme,
   locale: Locale,
+  showThreatLabels?: boolean,
 ): Promise<CommandOutcome> {
   return format === 'svg'
-    ? Promise.resolve(vector(diagram, model, out, theme, locale))
-    : raster(diagram, model, out, assets, theme, locale);
+    ? Promise.resolve(
+        vector(diagram, model, out, theme, locale, showThreatLabels),
+      )
+    : raster(diagram, model, out, assets, theme, locale, showThreatLabels);
 }
 
 function vector(
@@ -265,8 +280,11 @@ function vector(
   out: string,
   theme: RenderTheme,
   locale: Locale,
+  showThreatLabels?: boolean,
 ): CommandOutcome {
-  const rendered = renderSvg(diagram, model, locale, theme);
+  const rendered = renderSvg(diagram, model, locale, theme, {
+    showThreatLabels,
+  });
   return written(out, rendered.svg, unplacedWarning(rendered.unplaced));
 }
 
@@ -277,12 +295,16 @@ async function raster(
   assets: string,
   theme: RenderTheme,
   locale: Locale,
+  showThreatLabels?: boolean,
 ): Promise<CommandOutcome> {
-  return Either.match(await drawPng(diagram, model, assets, locale, theme), {
-    onLeft: (reason) => usageError(lines(`error: ${reason}`)),
-    onRight: (image) =>
-      written(out, image.png, unplacedWarning(image.unplaced)),
-  });
+  return Either.match(
+    await drawPng(diagram, model, assets, locale, theme, showThreatLabels),
+    {
+      onLeft: (reason) => usageError(lines(`error: ${reason}`)),
+      onRight: (image) =>
+        written(out, image.png, unplacedWarning(image.unplaced)),
+    },
+  );
 }
 
 function unplacedWarning(unplaced: readonly UnplacedEndpoint[]): string {
