@@ -1,6 +1,6 @@
 import type { Threat } from '@saerskriven/model';
 import { softHyphen } from '@saerskriven/model/fixtures';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createElement } from 'react';
 import { Accordion } from 'radix-ui';
@@ -24,7 +24,10 @@ export const chooseFrom = async (
   const user = userEvent.setup();
   await user.click(screen.getByRole('combobox', { name: field }));
   await user.click(
-    screen.getByText(option, { selector: '[data-option-label]', exact: true }),
+    within(screen.getByRole('listbox')).getByText(option, {
+      selector: '[data-option-label]',
+      exact: true,
+    }),
   );
 };
 
