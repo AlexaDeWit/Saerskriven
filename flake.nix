@@ -64,13 +64,15 @@
           pkgs.gh
           pkgs.gnutar
           pkgs.bashInteractive
-          pkgs.nodejs_24
-          pkgs.pnpm
+          pkgs.nodejs_26
+          (pkgs.pnpm.override {
+            nodejs-slim = pkgs.nodejs-slim_26;
+          })
         ];
 
         # Node 26 turns the CLI bundle into a single executable application
-        # (scripts/sea-executable.sh). It is named by path and kept off PATH,
-        # where `node` stays nodejs_24, the development and test runtime.
+        # (scripts/sea-executable.sh). The slim build is named by path while
+        # development and tests use the full Node 26 package on PATH.
         packagingNode = pkgs.nodejs-slim_26;
 
         # The official Node binary each executable is built on, one entry per
@@ -86,19 +88,19 @@
         nodeRuntimePins = {
           "x86_64-unknown-linux-gnu" = {
             platform = "linux-x64";
-            hash = "sha256-22NC0269s8vXIQPQzlzMUoYg9snfcqEfTMs4S/G+9ng=";
+            hash = "sha256-YXCy1HThxib0PP863BGN+f47VzJYpPw9hQyNvGsHm70=";
           };
           "aarch64-unknown-linux-gnu" = {
             platform = "linux-arm64";
-            hash = "sha256-gaPMqDPQgDVCNrVBGkkAPbiEjuADsSLiEriAOGkvehE=";
+            hash = "sha256-QqoEkiWR7l1NvHdA1FJiGs8oUII52qUS9e6MR+4iT9s=";
           };
           "aarch64-apple-darwin" = {
             platform = "darwin-arm64";
-            hash = "sha256-m6BxpYzFDm9FTv+nDeGyyehT4smMnuZeXf02AQQfwGQ=";
+            hash = "sha256-GIML9Ej+GHxlDcKMmKqMlo7R1Att0DLAgecKOEob9mA=";
           };
           "x86_64-pc-windows-msvc" = {
             platform = "win-x64";
-            hash = "sha256-pNCl6X7wU74C3SALpYHZzPUjMFejbJs9vk8Wxs9YZIU=";
+            hash = "sha256-HGPxQX4uJtg8qansHVSFJKsTBbxyCdkOvKViV/8NhO0=";
           };
         };
 
