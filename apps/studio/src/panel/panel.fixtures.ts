@@ -1,6 +1,6 @@
 import type { Threat } from '@saerskriven/model';
 import { softHyphen } from '@saerskriven/model/fixtures';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createElement } from 'react';
 import { Accordion } from 'radix-ui';
@@ -16,14 +16,19 @@ import { ThreatEditor, type ThreatEditorProps } from './threat-editor.js';
  */
 export const editorTimeout = 30_000;
 
-/** Chooses a labelled option through the shared listbox control. */
+/** Chooses an exact visible label through the shared listbox control. */
 export const chooseFrom = async (
   field: string,
   option: string,
 ): Promise<void> => {
   const user = userEvent.setup();
   await user.click(screen.getByRole('combobox', { name: field }));
-  await user.click(screen.getByRole('option', { name: option }));
+  await user.click(
+    within(screen.getByRole('listbox')).getByText(option, {
+      selector: '[data-option-label]',
+      exact: true,
+    }),
+  );
 };
 
 /** Text containing a character the model refuses. */

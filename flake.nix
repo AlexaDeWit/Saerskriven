@@ -13,9 +13,31 @@
       overlays.default = final: _prev: { saerskriven = packageFor final; };
     } // flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        pkgs = nixpkgs.legacyPackages.${system}.extend (_final: prev: {
+          # Remove after actionlint releases rhysd/actionlint#732.
+          actionlint = prev.actionlint.overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [
+              (prev.fetchpatch {
+                url = "https://github.com/rhysd/actionlint/compare/011a6d15e749bb3f2d771eed9c7aa0e7e3e10ee7...b02c24b743cc88a26b280339814eb4ece91c32cb.diff";
+                hash = "sha256-ssleL7s/8EDmmN8b5RNHanVfn0Imz2X2MY3wAMwDVQw=";
+              })
+            ];
+          });
+        });
+
+        # Remove this replacement after the registry publishes semgrep-rules#4042.
+        semgrepActionPinningSource =
+          "https://raw.githubusercontent.com/nopcorn/semgrep-rules/734df2ec594a19c83b0694b9cf70feb7af012258/yaml/github-actions/security/github-actions-mutable-action-tag";
 
         shellEnv = {
+          SAERSKRIVEN_SEMGREP_ACTION_RULE = pkgs.fetchurl {
+            url = "${semgrepActionPinningSource}.yaml";
+            hash = "sha256-VxpbQCJKLOcb8IJA3qE3VT9qXy9U3WthoMl0d7lGil8=";
+          };
+          SAERSKRIVEN_SEMGREP_ACTION_TEST = pkgs.fetchurl {
+            url = "${semgrepActionPinningSource}.test.yaml";
+            hash = "sha256-I7rd0RSbR4JDW+jYiiJ7Ec3Zq0bUVZD0NJ5CGE7TigY=";
+          };
           LANG = "C.UTF-8";
           LC_ALL = "C.UTF-8";
 
@@ -64,13 +86,15 @@
           pkgs.gh
           pkgs.gnutar
           pkgs.bashInteractive
-          pkgs.nodejs_24
-          pkgs.pnpm
+          pkgs.nodejs_26
+          (pkgs.pnpm.override {
+            nodejs-slim = pkgs.nodejs-slim_26;
+          })
         ];
 
         # Node 26 turns the CLI bundle into a single executable application
-        # (scripts/sea-executable.sh). It is named by path and kept off PATH,
-        # where `node` stays nodejs_24, the development and test runtime.
+        # (scripts/sea-executable.sh). The slim build is named by path while
+        # development and tests use the full Node 26 package on PATH.
         packagingNode = pkgs.nodejs-slim_26;
 
         # The official Node binary each executable is built on, one entry per
@@ -86,19 +110,19 @@
         nodeRuntimePins = {
           "x86_64-unknown-linux-gnu" = {
             platform = "linux-x64";
-            hash = "sha256-22NC0269s8vXIQPQzlzMUoYg9snfcqEfTMs4S/G+9ng=";
+            hash = "sha256-YXCy1HThxib0PP863BGN+f47VzJYpPw9hQyNvGsHm70=";
           };
           "aarch64-unknown-linux-gnu" = {
             platform = "linux-arm64";
-            hash = "sha256-gaPMqDPQgDVCNrVBGkkAPbiEjuADsSLiEriAOGkvehE=";
+            hash = "sha256-QqoEkiWR7l1NvHdA1FJiGs8oUII52qUS9e6MR+4iT9s=";
           };
           "aarch64-apple-darwin" = {
             platform = "darwin-arm64";
-            hash = "sha256-m6BxpYzFDm9FTv+nDeGyyehT4smMnuZeXf02AQQfwGQ=";
+            hash = "sha256-GIML9Ej+GHxlDcKMmKqMlo7R1Att0DLAgecKOEob9mA=";
           };
           "x86_64-pc-windows-msvc" = {
             platform = "win-x64";
-            hash = "sha256-pNCl6X7wU74C3SALpYHZzPUjMFejbJs9vk8Wxs9YZIU=";
+            hash = "sha256-HGPxQX4uJtg8qansHVSFJKsTBbxyCdkOvKViV/8NhO0=";
           };
         };
 

@@ -5,12 +5,7 @@ import { CappedList } from './capped-list.js';
 import cursor from './cursor-row.module.css';
 import styles from './enum-field.module.css';
 
-/**
- * How an option reads. The accessible name is `label`, a space and `suffix`.
- * The suffix is drawn on a line of its own, so it stays visible when a long
- * label is cut short. `detail` is a line under both that describes the
- * option without naming it.
- */
+/** The visible label, suffix and detail form the option's accessible name. */
 export type OptionText = {
   readonly label: string;
   readonly suffix?: string;
@@ -46,15 +41,15 @@ function Listed({
   readonly text: OptionText;
   readonly tabStop: boolean;
 }) {
-  const detailId = useId();
+  const textId = useId();
   return (
     <Select.Item
-      aria-describedby={text.detail === undefined ? undefined : detailId}
+      aria-labelledby={textId}
       className={`${styles.item} ${cursor.row}`}
       value={value}
       tabIndex={tabStop ? 0 : -1}
     >
-      <span className={styles.body}>
+      <span className={styles.body} id={textId}>
         <Select.ItemText>
           <span className={styles.text} data-option-label>
             {text.label}
@@ -69,9 +64,12 @@ function Listed({
           )}
         </Select.ItemText>
         {text.detail !== undefined && (
-          <span className={styles.detail} data-option-detail id={detailId}>
-            {text.detail}
-          </span>
+          <>
+            {' '}
+            <span className={styles.detail} data-option-detail>
+              {text.detail}
+            </span>
+          </>
         )}
       </span>
       <Select.ItemIndicator className={styles.indicator}>
@@ -105,15 +103,7 @@ type EnumFieldProps<Value extends string> = {
   readonly ref?: RefObject<HTMLButtonElement | null>;
 };
 
-/**
- * A labelled listbox that commits one choice. `label` is the accessible name,
- * and `shownLabel` replaces the drawn label, an empty one drawing none. With
- * no `value` the trigger shows `placeholder`. `labelOf` is required, so a
- * stored value is never drawn as its own label. The overlay stays in the
- * containing landmark and is placed within the box the field scrolls in,
- * with a cue at each edge its options run on past. `ref` is handed the
- * trigger, for a caller that sends focus to the field.
- */
+/** Commits a labelled choice within the containing scroll box. An empty `shownLabel` hides the field label. */
 export function EnumField<Value extends string>({
   label,
   shownLabel,

@@ -742,7 +742,7 @@ export const addRecord = async (
   }
 };
 
-/** Chooses an option in one listbox of a panel, the threat panel unless another region is named, by pointer, and waits for the listbox to close. */
+/** Chooses an exact visible option label in a panel and waits for its listbox to close. */
 export const chooseInPanel = async (
   page: Page,
   field: string,
@@ -750,15 +750,14 @@ export const chooseInPanel = async (
   region: Locator = threatPanel(page),
 ): Promise<void> => {
   await region.getByRole('combobox', { name: field, exact: true }).click();
-  await page.getByRole('option', { name: option, exact: true }).click();
+  await page
+    .getByRole('option')
+    .filter({ has: page.getByText(option, { exact: true }) })
+    .click();
   await expect(page.getByRole('listbox')).toHaveCount(0);
 };
 
-/**
- * Whether an "Existing" combobox offers a record under `label`, read by
- * opening its listbox and putting it away again. A combobox the panel does
- * not draw offers nothing.
- */
+/** Checks an exact visible record label, then dismisses the listbox. A missing combobox offers nothing. */
 export const offeredToLink = async (
   page: Page,
   existing: Locator,
@@ -770,7 +769,8 @@ export const offeredToLink = async (
   await existing.click();
   await expect(page.getByRole('listbox')).toBeVisible();
   const found = await page
-    .getByRole('option', { name: label, exact: true })
+    .getByRole('option')
+    .filter({ has: page.getByText(label, { exact: true }) })
     .count();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('listbox')).toHaveCount(0);

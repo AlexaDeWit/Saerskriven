@@ -31,6 +31,7 @@ export const ZoomCluster = memo(function ZoomCluster() {
         <IconCommandButton
           className={styles.percentage}
           command="reset-zoom"
+          labelPrefix={shown}
           description={t('tools.current-zoom', { percent })}
         >
           <span>{shown}</span>

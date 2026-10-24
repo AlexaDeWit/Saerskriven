@@ -310,8 +310,7 @@ describe(
       );
       expect(
         screen.getByRole('option', {
-          name: 'Fraud check',
-          description: 'Payments',
+          name: 'Fraud check Payments',
         }),
       ).toBeDefined();
       expect(

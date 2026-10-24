@@ -26,6 +26,7 @@ type CommandButtonProps = {
 
 type IconCommandButtonProps = {
   readonly description?: string;
+  readonly labelPrefix?: string;
   readonly command: CommandId;
   readonly className?: string;
   readonly disabled?: boolean;
@@ -35,11 +36,7 @@ type IconCommandButtonProps = {
   readonly children: ReactNode;
 };
 
-/**
- * A control that runs one registered command. Its chord is the `title`
- * tooltip, `aria-keyshortcuts` and the accessible description. `children`
- * replaces the registry's label.
- */
+/** Runs a command with its shortcut as the tooltip and accessible description. */
 export function CommandButton({
   command,
   className,
@@ -70,13 +67,10 @@ export function CommandButton({
   );
 }
 
-/**
- * An icon control named by the registry's label, with its chord in a Radix
- * tooltip opening on `side`, and `description` read ahead of the chord. A
- * command with no chord shows its label alone and declares no shortcut.
- */
+/** Names an icon control with its visible prefix and command, and describes its shortcut. */
 export function IconCommandButton({
   description,
+  labelPrefix,
   command,
   className,
   disabled,
@@ -108,7 +102,9 @@ export function IconCommandButton({
             ? {}
             : { 'aria-describedby': descriptionId })}
           aria-keyshortcuts={keyShortcuts === '' ? undefined : keyShortcuts}
-          aria-label={label}
+          aria-label={
+            labelPrefix === undefined ? label : `${labelPrefix} ${label}`
+          }
           aria-pressed={pressed}
           className={className}
           disabled={disabled}

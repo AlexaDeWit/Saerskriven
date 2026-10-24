@@ -41,7 +41,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up toolchain
-        uses: ./.github/actions/setup-toolchain
+        uses: $/.github/actions/setup-toolchain
         with:
           install-dependencies: 'true'
 
@@ -182,7 +182,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Nix
-        uses: ./.github/actions/setup-toolchain
+        uses: $/.github/actions/setup-toolchain
         with:
           save-nix-store: 'false'
       - name: Check the installed Nix CLI on the native system
@@ -205,7 +205,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up toolchain
-        uses: ./.github/actions/setup-toolchain
+        uses: $/.github/actions/setup-toolchain
         with:
           install-dependencies: 'true'
           # Restore the shared entry, save nothing: build-test is this
@@ -251,7 +251,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up toolchain
-        uses: ./.github/actions/setup-toolchain
+        uses: $/.github/actions/setup-toolchain
         with:
           save-nix-store: 'false'
 
@@ -263,12 +263,8 @@ jobs:
           nix develop .#ci --command
           zizmor --offline --config .github/zizmor.yml .github/
 
-      # Registry rules are fetched at scan time, as accepted in #70.
       - name: Scan sources (semgrep)
-        run: >-
-          nix develop .#ci --command
-          semgrep scan --config auto --severity ERROR --severity WARNING
-          --sarif-output=semgrep.sarif --error .
+        run: nix develop .#ci --command scripts/scan-sources.sh --sarif-output=semgrep.sarif
 
       - name: Upload semgrep SARIF to code scanning
         if: always()
@@ -297,7 +293,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up toolchain
-        uses: ./.github/actions/setup-toolchain
+        uses: $/.github/actions/setup-toolchain
         with:
           install-dependencies: 'true'
           save-nix-store: 'false'
@@ -354,7 +350,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up toolchain
-        uses: ./.github/actions/setup-toolchain
+        uses: $/.github/actions/setup-toolchain
         with:
           install-dependencies: 'true'
           save-nix-store: 'false'
@@ -407,7 +403,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up toolchain
-        uses: ./.github/actions/setup-toolchain
+        uses: $/.github/actions/setup-toolchain
         with:
           install-dependencies: 'true'
           save-nix-store: 'false'
@@ -487,7 +483,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up toolchain
-        uses: ./.github/actions/setup-toolchain
+        uses: $/.github/actions/setup-toolchain
         with:
           save-nix-store: 'false'
           restore-pnpm-store: 'true'
@@ -609,7 +605,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up workspace
-        uses: ./.github/actions/setup-toolchain
+        uses: $/.github/actions/setup-toolchain
         with:
           install-dependencies: 'true'
           save-nix-store: 'false'

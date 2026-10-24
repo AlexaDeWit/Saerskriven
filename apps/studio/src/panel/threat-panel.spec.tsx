@@ -221,7 +221,12 @@ describe(
       );
 
       expect(screen.getAllByRole('option')[0]).toBe(
-        screen.getByRole('option', { name: loose.title }),
+        screen
+          .getByText(loose.title, {
+            selector: '[data-option-label]',
+            exact: true,
+          })
+          .closest('[role="option"]'),
       );
     });
 
