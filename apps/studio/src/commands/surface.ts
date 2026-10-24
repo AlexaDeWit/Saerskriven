@@ -1,3 +1,5 @@
+import type { Point } from '@saerskriven/model';
+
 /** File operations whose session guards unsaved changes before replacing the model. */
 export type FileCommands = {
   open(): void;
@@ -15,6 +17,7 @@ export type FileCommands = {
 
 /** Moving the canvas, which is React Flow's viewport rather than the model. */
 export type ViewCommands = {
+  centre(): Point;
   zoomIn(): void;
   zoomOut(): void;
   fitToView(): void;

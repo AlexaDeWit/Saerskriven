@@ -670,8 +670,8 @@ removes nothing if the model or the selection changed meanwhile. A threat the
 cut leaves on no element goes with it, and a threat that applies to the whole
 model stays. The notice counts the threats copied and how many of them went.
 
-Paste and Duplicate add the copy with new ids, offset by a grid interval each
-time. A pasted threat keeps its number when no threat in the model holds it,
+Paste adds the copy with new ids at the centre of the visible canvas.
+Duplicate adds the copy with new ids, offset by a grid interval. A pasted threat keeps its number when no threat in the model holds it,
 so pasting after a cut restores a removed threat under its own number.
 Otherwise it takes a new number, as a copy or a duplicate does while its
 original stays. A pasted mitigation or assumption identical to one the model

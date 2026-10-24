@@ -33,6 +33,7 @@ export function recordingSurface(): RecordingSurface {
       },
       reference: { toggle: note('toggleReference') },
       view: {
+        centre: () => ({ x: 0, y: 0 }),
         zoomIn: note('zoomIn'),
         zoomOut: note('zoomOut'),
         fitToView: note('fitToView'),
