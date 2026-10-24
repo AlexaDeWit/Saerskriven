@@ -37,7 +37,7 @@ jobs:
 
       # ci.yml owns cache writes. Nightly jobs only restore its entries.
       - name: Set up toolchain
-        uses: ./.github/actions/setup-toolchain
+        uses: $/.github/actions/setup-toolchain
         with:
           install-dependencies: 'true'
           save-nix-store: 'false'
@@ -93,7 +93,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up toolchain
-        uses: ./.github/actions/setup-toolchain
+        uses: $/.github/actions/setup-toolchain
         with:
           install-dependencies: 'true'
           save-nix-store: 'false'
