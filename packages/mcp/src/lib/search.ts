@@ -19,19 +19,19 @@ export const searchArgumentsSchema = fileArgumentSchema.extend({
     .string()
     .optional()
     .describe(
-      'Text to look for, compared without case as a substring of the fields listed in this tool description. Left out, every record the other filters keep is a match.',
+      'Case-insensitive substring of the fields this tool searches. Omit to match every record kept by the other filters.',
     ),
   response_format: responseFormatSchema
     .default('concise')
     .describe(
-      'How much of each match to return. `concise` is the identifying fields. `detailed` adds the whole record and carries fewer matches before the listing is cut, so narrow the search before asking for it.',
+      '`concise` returns identifying fields, at most 50 matches. `detailed` returns whole records, at most 20. Filter before requesting details.',
     ),
   offset: z
     .int()
     .nonnegative()
     .optional()
     .describe(
-      'How many matches to skip before the listing starts, counted in the order the matches come in. Left out, the listing starts at the first match. A listing cut at its limit names the offset of its next page. The server keeps no session between calls, so compare the `revision` of each page: where it changed, the file changed between the calls, and the pages can skip or repeat a match.',
+      'Matches to skip, default 0. Use `nextOffset` for the next page. Compare page revisions: a changed file can skip or repeat matches.',
     ),
 });
 
@@ -44,11 +44,7 @@ export type SearchPage = Pick<
 /** How many matches one result carries, per response format. */
 export const searchLimits = { concise: 50, detailed: 20 } as const;
 
-/**
- * What a search matched, where the result starts in that listing, and how
- * much of it the result carries. `nextOffset` is present where matches remain
- * past this page.
- */
+/** Pagination counts. `nextOffset` exists only when matches remain. */
 export const searchCountsSchema = z.object({
   matched: z.int().nonnegative(),
   offset: z.int().nonnegative(),
@@ -66,11 +62,7 @@ export type LimitedRows<Row> = {
   readonly counts: SearchCounts;
 };
 
-/**
- * The page of matches starting at the offset, or at the first match where
- * the call names none, cut to {@link searchLimits} for the response format,
- * beside the count of everything that matched.
- */
+/** Slice a page without changing match order. */
 export function limitedRows<Row>(
   matched: readonly Row[],
   page: SearchPage,
@@ -91,12 +83,7 @@ export function limitedRows<Row>(
   };
 }
 
-/**
- * What a search matched, as the lines of its text result. A page that is not
- * the whole listing says where it starts, and a cut one names the offset of
- * the next page, the `narrowing` arguments, and the concise form where the
- * search was detailed.
- */
+/** Include the next offset and narrowing filters for truncated pages. */
 export function renderCounts(
   counts: SearchCounts,
   format: ResponseFormat,
@@ -105,12 +92,12 @@ export function renderCounts(
   const matches =
     counts.offset === 0 && counts.nextOffset === undefined
       ? `matches: ${String(counts.matched)}`
-      : `matches: ${String(counts.matched)}, of which this result carries ${String(counts.returned)} from offset ${String(counts.offset)}`;
+      : `matches: ${String(counts.matched)}, returned: ${String(counts.returned)}, offset: ${String(counts.offset)}`;
   return counts.nextOffset === undefined
     ? [matches]
     : [
         matches,
-        `The listing stopped at its limit, so it is not the whole answer. Repeat the call with \`offset\` ${String(counts.nextOffset)} for the next page. Narrow it with ${narrowing.join(', ')}${format === 'detailed' ? ', or ask for the concise form' : ''}.`,
+        `Truncated. Use \`offset\` ${String(counts.nextOffset)} for the next page. Narrow it with ${narrowing.join(', ')}${format === 'detailed' ? ', or ask for the concise form' : ''}.`,
       ];
 }
 

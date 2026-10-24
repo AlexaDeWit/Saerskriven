@@ -71,20 +71,16 @@ export type SearchElementsResult = z.infer<typeof searchElementsResultSchema>;
 
 /** What `saer_search_elements` tells a client it is for. */
 export const searchElementsDescription = [
-  'Find the elements of one Saerskriven threat model: the actors, processes, stores, data flows, trust boundaries and canvas notes its diagrams are drawn from. Each match carries the element id, the diagram the row draws it from, every diagram it is on (`diagrams`), its kind, its name, whether it is out of scope (`outOfScope`), its `accent` where it holds one, and how many threats reference it.',
-  'Use this to find the id of an element you mean to read threats about or attach a threat to, and to see which parts of a model carry no analysis. Use saer_coverage instead for the whole picture of what is analyzed and what is not, and saer_search_threats to search the threats rather than the elements they hang off.',
+  'Find actors, processes, stores, flows, trust boundaries and canvas notes. Returns ids, diagram membership, kind, name, scope, optional accent and recorded threat counts.',
   defaultedFileSentence,
-  'An element on more than one diagram is one match, drawn as the first diagram the search covers draws it, so pass `diagram` for its accent and geometry on another. `diagram` keeps one diagram, named by id or exact title. `kind` keeps one element kind. `query` searches without case through element ids, names, descriptions, note text, protocol, privilege level and declared relationship ids.',
-  '`response_format` is `concise` by default. `detailed` carries the complete model element, including its description, the reason it is out of scope, geometry, flow direction, optional security facts and declared boundary relationships. Missing optional fields mean not recorded, distinct from false, empty text and empty lists. Pass `element` for an exact id lookup.',
-  '`offset` skips that many matches, for the next page of a listing cut at its limit, which names the offset to pass.',
-  'This tool never writes, and the counts it reports are of threats recorded rather than threats outstanding.',
+  'Use element ids to search threats or attach new threats. Use saer_coverage for analysis gaps.',
+  'An element shared by diagrams appears once, using the first searched diagram. Select `diagram` by id or exact title for its geometry and accent.',
+  '`query` searches ids, names, descriptions, note text, protocol, privilege level and declared relationship ids.',
+  '`concise` returns identifying fields. `detailed` adds the complete element, geometry, flow direction, scope reason, security facts and boundary relationships. Absent optional fields mean unrecorded, distinct from false, empty text and empty lists. Use `element` for an exact id.',
+  'Read-only. Threat counts include all recorded threats, regardless of status.',
 ].join(' ');
 
-/**
- * The elements matching a search, or the lines saying why there are none to
- * search. The threat count is the model's own query, so an element no threat
- * references comes back with a count of 0 rather than being left out.
- */
+/** Return matching elements, including those with no threats. */
 export function searchElements(
   workspace: ModelWorkspace,
   args: SearchElementsArguments,
