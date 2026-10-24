@@ -560,7 +560,7 @@ mitigations:
       - th-cycle
   - id: mit-failures-are-values
     title: A read fails as a value
-    prose: "`CODING.md` makes throwing not an error channel in this project. A read returns Effect's `Either` with a package-owned `ReadFailure` on the error channel, one variant per place a read stops, and `read-limits.spec.ts` asserts of every adversarial fixture that both reads come back with a failure and that neither throws."
+    prose: "`CODING.md` makes throwing not an error channel in this project. A read returns Effect's `Result` with a package-owned `ReadFailure` on the error channel, one variant per place a read stops, and `read-limits.spec.ts` asserts of every adversarial fixture that both reads come back with a failure and that neither throws."
     status: verified
     threats:
       - th-throw
@@ -670,7 +670,7 @@ mitigations:
       - th-cycle
   - id: th-throw-mitigation
     title: ""
-    prose: Throwing is not an error channel in this project's TypeScript. Every read returns `Either` with a `ReadFailure` on the error channel, and the adversarial corpus is asserted to read to a failure through both reads and to throw out of neither.
+    prose: Throwing is not an error channel in this project's TypeScript. Every read returns `Result` with a `ReadFailure` on the error channel, and the adversarial corpus is asserted to read to a failure through both reads and to throw out of neither.
     status: implemented
     threats:
       - th-throw

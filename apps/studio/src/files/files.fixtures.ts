@@ -5,7 +5,7 @@ import type { Model } from '@saerskriven/model';
 import { committedText, testDataPath } from '@saerskriven/model/fixtures';
 import { renderSvg } from '@saerskriven/render';
 import { act } from '@testing-library/react';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { statSync } from 'node:fs';
 import {
   RecoveryProblem,
@@ -51,12 +51,12 @@ export function specRenders(
 ): RenderExports {
   const assets = { wasm: new Uint8Array(), fonts: [] };
   return {
-    pdfAssets: () => Promise.resolve(Either.right(assets)),
-    compile: () => Promise.resolve(Either.right(new Uint8Array([37, 80]))),
-    pngAssets: () => Promise.resolve(Either.right(assets)),
+    pdfAssets: () => Promise.resolve(Result.succeed(assets)),
+    compile: () => Promise.resolve(Result.succeed(new Uint8Array([37, 80]))),
+    pngAssets: () => Promise.resolve(Result.succeed(assets)),
     draw: (diagram, model, locale) =>
       Promise.resolve(
-        Either.right({
+        Result.succeed({
           png: pngSignature,
           width: 2,
           height: 1,
@@ -458,7 +458,7 @@ export function specBridge(options: SpecBridgeOptions = {}): SpecBridge {
  */
 export function specLinks(
   module: ShareLinks['module'] = () =>
-    Promise.resolve(Either.right(brotliWasm())),
+    Promise.resolve(Result.succeed(brotliWasm())),
 ) {
   const loads = vi.fn<ShareLinks['module']>(module);
   const links: ShareLinks = { module: loads, copy: writeClipboard };
@@ -468,7 +468,7 @@ export function specLinks(
 /** The fragment of the link `model` shares from the page the spec is on. */
 export const fragmentOf = async (model: Model): Promise<string> =>
   new URL(
-    Either.getOrThrow(
+    Result.getOrThrow(
       await writeShareLink(model, globalThis.location.href, brotliWasm()),
     ),
   ).hash;

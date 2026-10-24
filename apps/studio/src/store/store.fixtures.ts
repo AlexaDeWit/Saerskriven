@@ -21,7 +21,7 @@ import {
   threatId,
   validModel,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   recoverySnapshot,
   recoverySnapshotSchema,
@@ -83,7 +83,7 @@ const foreignText = JSON.stringify({
 /** A Threat Dragon source carrying the document a real read retained. */
 export const foreignSource: RetainedSource = {
   format: 'threat-dragon',
-  document: Either.getOrThrowWith(
+  document: Result.getOrThrowWith(
     threatDragonCodec.read(foreignText),
     () => new Error('The Threat Dragon fixture no longer reads.'),
   ).source,

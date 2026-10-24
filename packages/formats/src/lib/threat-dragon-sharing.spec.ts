@@ -12,7 +12,7 @@ import {
 } from '@saerskriven/model/fixtures';
 import type { ThreatDragonCell } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { threatDragonJsonSchema } from './corpus.fixtures.js';
 import { cellsOf, threatsOf } from './threat-dragon-document.js';
 import {
@@ -100,8 +100,8 @@ describe('writing an element placed on several diagrams to Threat Dragon', () =>
 
   it('reports each end it frees once per diagram, naming the diagram', () => {
     const audit = diagramId('audit');
-    const audited = Either.getOrThrow(
-      Either.flatMap(
+    const audited = Result.getOrThrow(
+      Result.flatMap(
         addDiagram(sharedModel, { id: audit, title: 'Audit' }),
         (model) =>
           placeElement(model, audit, {
@@ -146,7 +146,7 @@ describe('writing an element placed on several diagrams to Threat Dragon', () =>
 
   it('reads back as one element per cell, the threats on each', () => {
     const read = threatDragonCodec.read(output);
-    const model = Either.isRight(read) ? read.right.model : undefined;
+    const model = Result.isSuccess(read) ? read.success.model : undefined;
     expect(model?.elements.map(({ id }) => id)).toEqual(
       expect.arrayContaining(['payments-api', 'payments-api-payments']),
     );
@@ -159,7 +159,7 @@ describe('writing an element placed on several diagrams to Threat Dragon', () =>
     const read = threatDragonReading(featureCompleteText);
     const [booking] = read.model.diagrams;
     const clerk = placementIn(read.model, 'actor-clerk');
-    const placed = Either.getOrThrow(
+    const placed = Result.getOrThrow(
       placeElement(read.model, booking.id, clerk),
     );
     const merged = threatDragonCodec.write(placed, read.source);

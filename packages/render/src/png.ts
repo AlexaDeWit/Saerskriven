@@ -5,7 +5,7 @@ import {
 } from '@saerskriven/canvas';
 import type { Locale } from '@saerskriven/i18n';
 import type { Diagram, Model } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { DiagramOptions } from './lib/diagram-options.js';
 import { renderSvg } from './lib/svg-document.js';
 import { rasterizeSvg, type ResvgAssets, type ResvgFailure } from './resvg.js';
@@ -28,14 +28,14 @@ export function ledBy<T>(
   named: (face: T) => string,
   leading: string,
   subject: string,
-): Either.Either<readonly T[], string> {
+): Result.Result<readonly T[], string> {
   const leads = (face: T): boolean => named(face) === leading;
   return faces.some(leads)
-    ? Either.right([
+    ? Result.succeed([
         ...faces.filter(leads),
         ...faces.filter((face) => !leads(face)),
       ])
-    : Either.left(`${subject} holds no ${leading}, which text is set in`);
+    : Result.fail(`${subject} holds no ${leading}, which text is set in`);
 }
 
 /** Rasterizer assets, output size, and resolved appearance. */
@@ -63,7 +63,7 @@ export async function renderPng(
   model: Model,
   locale: Locale,
   options: PngOptions,
-): Promise<Either.Either<PngImage, ResvgFailure>> {
+): Promise<Result.Result<PngImage, ResvgFailure>> {
   const theme = options.theme ?? defaultRenderTheme;
   const drawn = renderSvg(diagram, model, locale, theme, options);
   const raster = await rasterizeSvg(
@@ -71,7 +71,7 @@ export async function renderPng(
     options.assets,
     options.longEdge ?? defaultLongEdge,
   );
-  return Either.map(raster, (image) => ({
+  return Result.map(raster, (image) => ({
     png: image.png,
     width: image.width,
     height: image.height,

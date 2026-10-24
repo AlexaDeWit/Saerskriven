@@ -1,5 +1,5 @@
 import { renderRegister } from '@saerskriven/render';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { promptProseOf } from '../fixtures.js';
 import { coverageOf, renderCoverage } from './coverage.js';
 import { dataNotInstructions } from './preface.js';
@@ -20,7 +20,7 @@ describe('what review_model renders', () => {
   ])('renders the coverage and the register of %s', (_name, workspace) => {
     const reading = answerOf(readNamed(workspace, undefined));
     const [data, brief] = promptProseOf(
-      promptMessages(Either.getOrThrow(reviewModel(workspace, {}))),
+      promptMessages(Result.getOrThrow(reviewModel(workspace, {}))),
     ).prose;
     expect(data?.split('\n')[0]).toEqual(dataNotInstructions);
     expect(data).toContain(renderCoverage(coverageOf(reading)).join('\n'));
@@ -30,7 +30,7 @@ describe('what review_model renders', () => {
 
   it('fails with no model where there is none to review', () => {
     expect(reviewModel(rootWorkspace(), {})).toEqual(
-      Either.left(PromptFailure.NoModel()),
+      Result.fail(PromptFailure.NoModel()),
     );
   });
 });

@@ -1,7 +1,7 @@
 import type { PdfAssets } from '@saerskriven/render/pdf';
 import { drawingFace, ledBy } from '@saerskriven/render/png';
 import type { ResvgAssets } from '@saerskriven/render/resvg';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import brotliWasmUrl from 'virtual:saerskriven-brotli-wasm?url';
 import resvgWasmUrl from 'virtual:saerskriven-resvg-wasm?url';
 import { renderFaces } from 'virtual:saerskriven-render-faces';
@@ -19,7 +19,7 @@ type Face = {
   readonly bytes: Uint8Array;
 };
 
-type Loaded<Value> = () => Promise<Either.Either<Value, AssetFailure>>;
+type Loaded<Value> = () => Promise<Result.Result<Value, AssetFailure>>;
 
 const subject = 'this studio build';
 
@@ -29,9 +29,9 @@ const subject = 'this studio build';
  * {@link loadPngAssets}.
  */
 export function loadPdfAssets(): Promise<
-  Either.Either<PdfAssets, AssetFailure>
+  Result.Result<PdfAssets, AssetFailure>
 > {
-  return assembled(typstModule, (faces) => Either.right(faces));
+  return assembled(typstModule, (faces) => Result.succeed(faces));
 }
 
 /**
@@ -40,10 +40,10 @@ export function loadPdfAssets(): Promise<
  * is given, so a build without that face is refused.
  */
 export function loadPngAssets(): Promise<
-  Either.Either<ResvgAssets, AssetFailure>
+  Result.Result<ResvgAssets, AssetFailure>
 > {
   return assembled(resvgModule, (faces) =>
-    Either.mapLeft(
+    Result.mapError(
       ledBy(faces, (face) => face.name, drawingFace, subject),
       () => AssetFailure.FaceMissing({ face: drawingFace }),
     ),
@@ -61,7 +61,7 @@ export const loadBrotliModule: Loaded<Uint8Array> = once(() =>
 const faces: Loaded<readonly Face[]> = once(() =>
   firstFailureOrAll(
     renderFaces.map(async (face) =>
-      Either.map(await fetchBytes(face.url), (bytes) => ({
+      Result.map(await fetchBytes(face.url), (bytes) => ({
         name: face.name,
         bytes,
       })),
@@ -77,32 +77,32 @@ async function assembled(
   module: Loaded<Uint8Array>,
   lettered: (
     faces: readonly Face[],
-  ) => Either.Either<readonly Face[], AssetFailure>,
-): Promise<Either.Either<Assets, AssetFailure>> {
+  ) => Result.Result<readonly Face[], AssetFailure>,
+): Promise<Result.Result<Assets, AssetFailure>> {
   const [wasm, loaded] = await Promise.all([module(), faces()]);
-  if (Either.isLeft(wasm)) {
-    return Either.left(wasm.left);
+  if (Result.isFailure(wasm)) {
+    return Result.fail(wasm.failure);
   }
-  if (Either.isLeft(loaded)) {
-    return Either.left(loaded.left);
+  if (Result.isFailure(loaded)) {
+    return Result.fail(loaded.failure);
   }
-  return Either.map(lettered(loaded.right), (ordered) => ({
-    wasm: wasm.right,
+  return Result.map(lettered(loaded.success), (ordered) => ({
+    wasm: wasm.success,
     fonts: ordered.map((face) => face.bytes),
   }));
 }
 
 function firstFailureOrAll<Value>(
-  loads: readonly Promise<Either.Either<Value, AssetFailure>>[],
-): Promise<Either.Either<Value[], AssetFailure>> {
-  const firstFailure = new Promise<Either.Either<Value[], AssetFailure>>(
+  loads: readonly Promise<Result.Result<Value, AssetFailure>>[],
+): Promise<Result.Result<Value[], AssetFailure>> {
+  const firstFailure = new Promise<Result.Result<Value[], AssetFailure>>(
     (resolve) => {
       const failed = async (
-        load: Promise<Either.Either<Value, AssetFailure>>,
+        load: Promise<Result.Result<Value, AssetFailure>>,
       ): Promise<void> => {
         const outcome = await load;
-        if (Either.isLeft(outcome)) {
-          resolve(Either.left(outcome.left));
+        if (Result.isFailure(outcome)) {
+          resolve(Result.fail(outcome.failure));
         }
       };
       void Promise.all(loads.map(failed));
@@ -110,21 +110,21 @@ function firstFailureOrAll<Value>(
   );
   return Promise.race([
     firstFailure,
-    Promise.all(loads).then((outcomes) => Either.all(outcomes)),
+    Promise.all(loads).then((outcomes) => Result.all(outcomes)),
   ]);
 }
 
 function once<Value>(load: Loaded<Value>): Loaded<Value> {
   let held: Value | undefined;
-  let loading: Promise<Either.Either<Value, AssetFailure>> | undefined;
+  let loading: Promise<Result.Result<Value, AssetFailure>> | undefined;
   return async () => {
     if (held !== undefined) {
-      return Either.right(held);
+      return Result.succeed(held);
     }
     loading ??= load();
     const outcome = await loading;
-    if (Either.isRight(outcome)) {
-      held = outcome.right;
+    if (Result.isSuccess(outcome)) {
+      held = outcome.success;
     } else {
       loading = undefined;
     }
@@ -134,26 +134,26 @@ function once<Value>(load: Loaded<Value>): Loaded<Value> {
 
 async function fetchBytes(
   url: string,
-): Promise<Either.Either<Uint8Array, AssetFailure>> {
+): Promise<Result.Result<Uint8Array, AssetFailure>> {
   const response = await guarded(() => fetch(url));
-  if (Either.isLeft(response)) {
-    return Either.left(response.left);
+  if (Result.isFailure(response)) {
+    return Result.fail(response.failure);
   }
-  if (!response.right.ok) {
-    return Either.left(
-      AssetFailure.Answered({ url, status: response.right.status }),
+  if (!response.success.ok) {
+    return Result.fail(
+      AssetFailure.Answered({ url, status: response.success.status }),
     );
   }
-  const body = response.right;
+  const body = response.success;
   return guarded(async () => new Uint8Array(await body.arrayBuffer()));
 }
 
 async function guarded<Value>(
   work: () => Promise<Value>,
-): Promise<Either.Either<Value, AssetFailure>> {
+): Promise<Result.Result<Value, AssetFailure>> {
   try {
-    return Either.right(await work());
+    return Result.succeed(await work());
   } catch (cause) {
-    return Either.left(AssetFailure.Unavailable({ reason: reasonOf(cause) }));
+    return Result.fail(AssetFailure.Unavailable({ reason: reasonOf(cause) }));
   }
 }

@@ -8,7 +8,7 @@ import {
   type DivergenceDetail,
 } from '@saerskriven/formats';
 import { catalogueTemplates, templateParts } from '@saerskriven/i18n';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { codesOf, setAccent, type Model } from '@saerskriven/model';
 import {
   assumptionId,
@@ -836,7 +836,7 @@ const twoOccurrences = JSON.stringify({
 });
 
 describe('the lines a real OTM import reports', () => {
-  const read = Either.getOrThrow(importModel(twoOccurrences));
+  const read = Result.getOrThrow(importModel(twoOccurrences));
   const lines = shownLines(read.divergences, read.model);
   const threatNamed = (title: string, state: string) => {
     const threat = read.model.threats.find(
@@ -933,7 +933,7 @@ describe('the line a Threat Dragon save reports for an element under its least s
 });
 
 describe('the line a Threat Dragon save reports for accents', () => {
-  const accented = Either.getOrThrow(
+  const accented = Result.getOrThrow(
     setAccent(
       modelWith({
         elements: [

@@ -5,7 +5,7 @@ import {
   renderShareLinkWriteFailure,
   writeShareLink,
 } from '@saerskriven/formats/share-link';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { runtimeAssets, wasmModule } from './assets.js';
 import { describeDivergences, readModel } from './input.js';
 import {
@@ -21,7 +21,7 @@ import {
  */
 export function brotliModule(
   assets: string = runtimeAssets,
-): Either.Either<Uint8Array, string> {
+): Result.Result<Uint8Array, string> {
   return wasmModule(assets, brotliWasmFile);
 }
 
@@ -35,9 +35,9 @@ export function share(
   file: string,
   assets: string = runtimeAssets,
 ): Promise<CommandOutcome> {
-  return Either.match(readModel(file), {
-    onLeft: (outcome) => Promise.resolve(outcome),
-    onRight: (read) => linked(read, assets),
+  return Result.match(readModel(file), {
+    onFailure: (outcome) => Promise.resolve(outcome),
+    onSuccess: (read) => linked(read, assets),
   });
 }
 
@@ -46,15 +46,15 @@ async function linked(
   assets: string,
 ): Promise<CommandOutcome> {
   const module = brotliModule(assets);
-  if (Either.isLeft(module)) {
-    return usageError(lines(`error: cannot write the link: ${module.left}`));
+  if (Result.isFailure(module)) {
+    return usageError(lines(`error: cannot write the link: ${module.failure}`));
   }
-  return Either.match(
-    await writeShareLink(read.model, hostedStudioUrl, module.right),
+  return Result.match(
+    await writeShareLink(read.model, hostedStudioUrl, module.success),
     {
-      onLeft: (failure) =>
+      onFailure: (failure) =>
         usageError(lines(errorLine(renderShareLinkWriteFailure(failure)))),
-      onRight: (link) =>
+      onSuccess: (link) =>
         succeeded(lines(link), describeDivergences(read.divergences)),
     },
   );

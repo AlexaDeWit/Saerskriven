@@ -6,7 +6,7 @@ import {
   WriteFailure,
   type WriteTarget,
 } from '@saerskriven/mcp';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { z } from 'zod';
@@ -79,9 +79,9 @@ export function installMcp(
   options: InstallOptions,
   environment: InstallEnvironment = installEnvironment(),
 ): CommandOutcome {
-  return Either.match(reported(options, environment), {
-    onLeft: (failure) => usageError(lines(...renderInstallFailure(failure))),
-    onRight: (report) => succeeded(lines(...renderInstallReport(report)), ''),
+  return Result.match(reported(options, environment), {
+    onFailure: (failure) => usageError(lines(...renderInstallFailure(failure))),
+    onSuccess: (report) => succeeded(lines(...renderInstallReport(report)), ''),
   });
 }
 
@@ -118,12 +118,12 @@ function renderInstallReport(report: InstallReport): readonly string[] {
 function reported(
   options: InstallOptions,
   environment: InstallEnvironment,
-): Either.Either<InstallReport, InstallFailure> {
+): Result.Result<InstallReport, InstallFailure> {
   const registration = hostRegistrations[options.host];
   const scope = scopeOf(registration, options);
   const entry = hostEntry(registration, options.file);
-  return Either.flatMap(hostFile(options.host, scope, environment), (file) =>
-    Either.flatMap(entryText(registration, named(file), entry), (snippet) =>
+  return Result.flatMap(hostFile(options.host, scope, environment), (file) =>
+    Result.flatMap(entryText(registration, named(file), entry), (snippet) =>
       installed({ options, registration, scope, file, entry, snippet }),
     ),
   );
@@ -131,7 +131,7 @@ function reported(
 
 function installed(
   requested: Requested,
-): Either.Either<InstallReport, InstallFailure> {
+): Result.Result<InstallReport, InstallFailure> {
   const reporting = (status: InstallStatus): InstallReport => ({
     host: requested.options.host,
     scope: requested.scope,
@@ -140,15 +140,15 @@ function installed(
     entry: requested.snippet,
   });
   return requested.options.print === true
-    ? Either.right(reporting('shown'))
+    ? Result.succeed(reporting('shown'))
     : requested.file.kind === 'undocumented'
-      ? Either.left(
+      ? Result.fail(
           InstallFailure.Undocumented({
             host: requested.options.host,
             where: requested.file.where,
           }),
         )
-      : Either.map(
+      : Result.map(
           written(
             requested.registration,
             resolved(requested.file),
@@ -184,15 +184,15 @@ function written(
   registration: HostRegistration,
   target: WriteTarget,
   entry: HostEntry,
-): Either.Either<InstallStatus, InstallFailure> {
-  return Either.flatMap(heldFile(target), (held) =>
-    Either.flatMap(
+): Result.Result<InstallStatus, InstallFailure> {
+  return Result.flatMap(heldFile(target), (held) =>
+    Result.flatMap(
       document(registration, target.file, textOf(held), entry),
       (merged) =>
-        Either.flatMap(hostText(registration, target.file, merged), (text) =>
+        Result.flatMap(hostText(registration, target.file, merged), (text) =>
           text === textOf(held)
-            ? Either.right<InstallStatus>('unchanged')
-            : Either.map(
+            ? Result.succeed<InstallStatus>('unchanged')
+            : Result.map(
                 saved(target, text, held),
                 (): InstallStatus => 'written',
               ),
@@ -206,8 +206,8 @@ function document(
   file: string,
   held: string,
   entry: HostEntry,
-): Either.Either<HostDocument, InstallFailure> {
-  return Either.flatMap(hostDocument(registration, file, held), (parsed) =>
+): Result.Result<HostDocument, InstallFailure> {
+  return Result.flatMap(hostDocument(registration, file, held), (parsed) =>
     withRegistration(registration, file, parsed, entry),
   );
 }
@@ -218,21 +218,21 @@ function textOf(held: HeldFile): string {
 
 function heldFile(
   target: WriteTarget,
-): Either.Either<HeldFile, InstallFailure> {
+): Result.Result<HeldFile, InstallFailure> {
   return existsSync(target.path)
-    ? Either.flatMap(
+    ? Result.flatMap(
         withinReadBound(target.path, (observed) =>
           InstallFailure.TooLarge({ path: target.file, observed }),
         ),
         () => readHeld(target),
       )
-    : Either.right({ kind: 'absent' });
+    : Result.succeed({ kind: 'absent' });
 }
 
 function readHeld(
   target: WriteTarget,
-): Either.Either<HeldFile, InstallFailure> {
-  return Either.try({
+): Result.Result<HeldFile, InstallFailure> {
+  return Result.try({
     try: () => {
       const bytes = readFileSync(target.path);
       return {
@@ -253,9 +253,9 @@ function saved(
   target: WriteTarget,
   text: string,
   held: HeldFile,
-): Either.Either<string, InstallFailure> {
-  return Either.mapLeft(
-    Either.flatMap(directoryFor(target), () =>
+): Result.Result<string, InstallFailure> {
+  return Result.mapError(
+    Result.flatMap(directoryFor(target), () =>
       held.kind === 'held'
         ? replacedFile(target, text, held.revision, ownerOnly)
         : createdFile(target, text, ownerOnly),
@@ -283,8 +283,8 @@ function takenPath(target: WriteTarget): InstallFailure {
 
 const ownerOnly = 0o600;
 
-function directoryFor(target: WriteTarget): Either.Either<void, WriteFailure> {
-  return Either.try({
+function directoryFor(target: WriteTarget): Result.Result<void, WriteFailure> {
+  return Result.try({
     try: () => {
       mkdirSync(dirname(target.path), { recursive: true });
     },

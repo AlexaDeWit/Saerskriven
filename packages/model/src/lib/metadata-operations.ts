@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { sameItems } from './lists.js';
 import type { ModelMetadata, ModelMetadataChange } from './model.js';
 import { OperationFailure } from './operation-failures.js';
@@ -18,10 +18,10 @@ export type SetModelMetadataFailure = Extract<
 export function setModelMetadata(
   model: Model,
   change: ModelMetadataChange,
-): Either.Either<Model, SetModelMetadataFailure> {
+): Result.Result<Model, SetModelMetadataFailure> {
   const refusal = refusedText(change);
   if (refusal !== undefined) {
-    return Either.left(refusal);
+    return Result.fail(refusal);
   }
   const held = model.metadata;
   const next: ModelMetadata = {
@@ -30,7 +30,7 @@ export function setModelMetadata(
     description: change.description ?? held.description,
     contributors: change.contributors ?? held.contributors,
   };
-  return Either.right(
+  return Result.succeed(
     sameMetadata(held, next)
       ? model
       : {

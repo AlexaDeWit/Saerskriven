@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { pathToFileURL } from 'node:url';
 
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import {
   ReleaseFailure,
@@ -31,7 +31,7 @@ type CommonOptions = Readonly<{
   cwd: string;
   dryRun: boolean;
   input: string | undefined;
-  readVersion?: (cwd: string) => Either.Either<string, ReleaseFailure>;
+  readVersion?: (cwd: string) => Result.Result<string, ReleaseFailure>;
   run?: RunCommand;
 }>;
 
@@ -85,14 +85,14 @@ const expectedTagRules = [
 /** Parse the stable version stated by the release operator. */
 export const parseReleaseVersion = (
   input: string | undefined,
-): Either.Either<ReleaseVersion, ReleaseFailure> => {
+): Result.Result<ReleaseVersion, ReleaseFailure> => {
   const parsed = releaseVersionSchema.safeParse(input);
   return parsed.success
-    ? Either.right(parsed.data)
-    : Either.left(ReleaseFailure.InvalidVersion({ input: input ?? '' }));
+    ? Result.succeed(parsed.data)
+    : Result.fail(ReleaseFailure.InvalidVersion({ input: input ?? '' }));
 };
 
-const manifestPaths = (cwd: string): Either.Either<string[], ReleaseFailure> =>
+const manifestPaths = (cwd: string): Result.Result<string[], ReleaseFailure> =>
   attempt('workspace manifests', () => {
     const paths = ['package.json'];
     for (const parent of ['apps', 'packages']) {
@@ -111,8 +111,8 @@ const manifestPaths = (cwd: string): Either.Either<string[], ReleaseFailure> =>
 const readManifest = (
   cwd: string,
   path: string,
-): Either.Either<PackageManifest, ReleaseFailure> =>
-  Either.flatMap(
+): Result.Result<PackageManifest, ReleaseFailure> =>
+  Result.flatMap(
     attempt(path, () => readFileSync(join(cwd, path), 'utf8')),
     (text) => parseJson({ schema: packageManifestSchema }, text, path),
   );
@@ -120,8 +120,8 @@ const readManifest = (
 /** Read and compare the root and project manifest versions. */
 export const readWorkspaceVersion = (
   cwd: string,
-): Either.Either<string, ReleaseFailure> =>
-  Either.gen(function* () {
+): Result.Result<string, ReleaseFailure> =>
+  Result.gen(function* () {
     const paths = yield* manifestPaths(cwd);
     const versions: Array<readonly [string, string]> = [];
     for (const path of paths) {
@@ -144,7 +144,7 @@ export const readWorkspaceVersion = (
 
 const githubRepository = (
   remote: string,
-): Either.Either<string, ReleaseFailure> => {
+): Result.Result<string, ReleaseFailure> => {
   const prefixes = [
     'git@github.com:',
     'https://github.com/',
@@ -155,7 +155,7 @@ const githubRepository = (
     ? remote.slice(prefix.length).replace(/\.git$/u, '')
     : '';
   return /^[^/]+\/[^/]+$/u.test(repository)
-    ? Either.right(repository)
+    ? Result.succeed(repository)
     : refuse('could not read an owner/name GitHub repository from origin');
 };
 
@@ -172,8 +172,8 @@ const assertTagRules = (
   run: RunCommand,
   repository: string,
   cwd: string,
-): Either.Either<void, ReleaseFailure> =>
-  Either.gen(function* () {
+): Result.Result<void, ReleaseFailure> =>
+  Result.gen(function* () {
     const rulesets = yield* githubJson(
       run,
       `repos/${repository}/rulesets`,
@@ -215,8 +215,8 @@ const assertCiGate = (
   repository: string,
   commit: string,
   cwd: string,
-): Either.Either<string, ReleaseFailure> =>
-  Either.gen(function* () {
+): Result.Result<string, ReleaseFailure> =>
+  Result.gen(function* () {
     const checks = yield* githubJson(
       run,
       `repos/${repository}/commits/${commit}/check-runs?per_page=100`,
@@ -241,8 +241,8 @@ const assertCleanBranch = (
   run: RunCommand,
   cwd: string,
   expected: string,
-): Either.Either<void, ReleaseFailure> =>
-  Either.gen(function* () {
+): Result.Result<void, ReleaseFailure> =>
+  Result.gen(function* () {
     const status = yield* outputOf(run, 'git', ['status', '--porcelain'], cwd);
     if (status !== '') return yield* refuse('the working tree has changes');
     const branch = yield* outputOf(
@@ -263,8 +263,8 @@ export const prepareRelease = ({
   input,
   readVersion = readWorkspaceVersion,
   run = runProcess,
-}: CommonOptions): Either.Either<string, ReleaseFailure> =>
-  Either.gen(function* () {
+}: CommonOptions): Result.Result<string, ReleaseFailure> =>
+  Result.gen(function* () {
     const { tag, version } = yield* parseReleaseVersion(input);
     yield* assertCleanBranch(run, cwd, `release-${tag}`);
     if (dryRun) {
@@ -333,8 +333,8 @@ const tagPreflight = ({
   input,
   readVersion = readWorkspaceVersion,
   run = runProcess,
-}: CommonOptions): Either.Either<TagContext, ReleaseFailure> =>
-  Either.gen(function* () {
+}: CommonOptions): Result.Result<TagContext, ReleaseFailure> =>
+  Result.gen(function* () {
     const { tag, version } = yield* parseReleaseVersion(input);
     const workspaceVersion = yield* readVersion(cwd);
     if (workspaceVersion !== version) {
@@ -424,18 +424,18 @@ const removeLocalTag = (
   cwd: string,
   tag: string,
   failure: ReleaseFailure,
-): Either.Either<never, ReleaseFailure> => {
+): Result.Result<never, ReleaseFailure> => {
   const removed = requireStatus(
     run('git', ['tag', '-d', tag], { cwd }),
     [0],
     'git',
     ['tag', '-d', tag],
   );
-  return Either.isLeft(removed)
+  return Result.isFailure(removed)
     ? refuse(
         `${describeFailure(failure)}. The local tag ${tag} also could not be removed`,
       )
-    : Either.left(failure);
+    : Result.fail(failure);
 };
 
 /** Check the release commit, then sign and push its tag after confirmation. */
@@ -449,10 +449,10 @@ export const tagRelease = async ({
   write = (message: string): void => {
     process.stdout.write(message);
   },
-}: TagOptions): Promise<Either.Either<string, ReleaseFailure>> => {
+}: TagOptions): Promise<Result.Result<string, ReleaseFailure>> => {
   const context = tagPreflight({ cwd, dryRun, input, readVersion, run });
-  if (Either.isLeft(context)) return Either.left(context.left);
-  const { commit, repository, gate, subject, tag, version } = context.right;
+  if (Result.isFailure(context)) return Result.fail(context.failure);
+  const { commit, repository, gate, subject, tag, version } = context.success;
   const wrote = attempt('release plan', () => {
     write(
       `\n  tag         ${tag}\n  repository  ${repository}\n  commit      ${commit}\n` +
@@ -461,15 +461,15 @@ export const tagRelease = async ({
         '  provenance  passed\n  tag rules   enforced\n\n',
     );
   });
-  if (Either.isLeft(wrote)) return Either.left(wrote.left);
-  if (dryRun) return Either.right('DRY_RUN=1, nothing created or pushed');
+  if (Result.isFailure(wrote)) return Result.fail(wrote.failure);
+  if (dryRun) return Result.succeed('DRY_RUN=1, nothing created or pushed');
   const created = runChecked(
     run,
     'git',
     ['tag', '-s', tag, '-m', tag, commit],
     cwd,
   );
-  if (Either.isLeft(created)) return Either.left(created.left);
+  if (Result.isFailure(created)) return Result.fail(created.failure);
   let tagCreated = true;
   const cleanupOnExit = (): void => {
     if (tagCreated) {
@@ -479,30 +479,30 @@ export const tagRelease = async ({
   process.once('exit', cleanupOnExit);
   try {
     const verified = runChecked(run, 'git', ['tag', '-v', tag], cwd);
-    if (Either.isLeft(verified)) {
-      return removeLocalTag(run, cwd, tag, verified.left);
+    if (Result.isFailure(verified)) {
+      return removeLocalTag(run, cwd, tag, verified.failure);
     }
     const tagged = outputOf(run, 'git', ['rev-parse', `${tag}^{commit}`], cwd);
-    if (Either.isLeft(tagged)) {
-      return removeLocalTag(run, cwd, tag, tagged.left);
+    if (Result.isFailure(tagged)) {
+      return removeLocalTag(run, cwd, tag, tagged.failure);
     }
-    if (tagged.right !== commit) {
+    if (tagged.success !== commit) {
       return removeLocalTag(
         run,
         cwd,
         tag,
         ReleaseFailure.Refused({
-          reason: `the tag landed on ${tagged.right}, not the checked commit ${commit}`,
+          reason: `the tag landed on ${tagged.success}, not the checked commit ${commit}`,
         }),
       );
     }
     const confirmed = await attemptPromise('release confirmation', () =>
       confirm(tag),
     );
-    if (Either.isLeft(confirmed)) {
-      return removeLocalTag(run, cwd, tag, confirmed.left);
+    if (Result.isFailure(confirmed)) {
+      return removeLocalTag(run, cwd, tag, confirmed.failure);
     }
-    if (!confirmed.right) {
+    if (!confirmed.success) {
       return removeLocalTag(
         run,
         cwd,
@@ -511,11 +511,11 @@ export const tagRelease = async ({
       );
     }
     const pushed = runChecked(run, 'git', ['push', 'origin', tag], cwd);
-    if (Either.isLeft(pushed)) {
-      return removeLocalTag(run, cwd, tag, pushed.left);
+    if (Result.isFailure(pushed)) {
+      return removeLocalTag(run, cwd, tag, pushed.failure);
     }
     tagCreated = false;
-    return Either.right(
+    return Result.succeed(
       `pushed ${tag}. CI will build, attest, and publish the executables.`,
     );
   } finally {
@@ -531,7 +531,7 @@ const main = async (): Promise<void> => {
     rest.length > 0 ||
     process.env.RELEASE_VERSION === undefined;
   const outcome = invalidInvocation
-    ? Either.left(
+    ? Result.fail(
         ReleaseFailure.Refused({
           reason:
             'usage: RELEASE_VERSION=vX.Y.Z pnpm nx run release-tools:<prepare|tag>',
@@ -548,12 +548,12 @@ const main = async (): Promise<void> => {
           dryRun: process.env.DRY_RUN === '1',
           input: process.env.RELEASE_VERSION,
         });
-  Either.match(outcome, {
-    onLeft: (failure) => {
+  Result.match(outcome, {
+    onFailure: (failure) => {
       process.stderr.write(`release: ${describeFailure(failure)}\n`);
       process.exitCode = 1;
     },
-    onRight: (message) => {
+    onSuccess: (message) => {
       process.stdout.write(`release: ${message}\n`);
     },
   });

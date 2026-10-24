@@ -21,7 +21,7 @@ driver does that does not depend on the module:
 - `written` is the status a call answers when the output buffer holds what it
   wrote, and `isUnsigned` and `mostUnsigned` bound a call's 32-bit parameter.
 
-A failure on this side is a sentence on the left of an `Either`: a module that
+A failure on this side is a sentence in the failure channel of a `Result`: a module that
 does not compile or start, one missing a call, one that trapped, and one that
 answered an address past its memory. Each driver turns it into its own tagged
 failure, as `BrotliFailure.Unusable` and `ResvgFailure.Unusable` do.

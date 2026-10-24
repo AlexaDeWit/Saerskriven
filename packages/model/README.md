@@ -6,7 +6,7 @@ model metadata. `parseModel` is the parse boundary every `Model` value comes
 through: the native read and the OTM import call it, and so does
 `parseDrawnModel`, the entry point of the Threat Dragon and TM-BOM reads.
 `emptyModel` is the one model the package parses for you, where a model that
-has not been drawn starts. Fallible exports return Effect's `Either` with a
+has not been drawn starts. Fallible exports return Effect's `Result` with a
 package-owned tagged failure, and an infallible operation returns its result
 bare, on the terms [`CODING.md`](../../CODING.md#error-handling) sets. Each
 export's TSDoc states its behaviour.

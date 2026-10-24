@@ -6,7 +6,7 @@ import {
   renderReadFailure,
   writtenSaerskrivenYamlVersion,
 } from '@saerskriven/formats';
-import { Either, pipe } from 'effect';
+import { Result, pipe } from 'effect';
 import { z } from 'zod';
 import { pathReach } from './path-arguments.js';
 import {
@@ -58,18 +58,18 @@ export const importDescription = [
 export function importIntoModel(
   workspace: ModelWorkspace,
   args: ImportArguments,
-): Either.Either<ImportResult, readonly string[]> {
+): Result.Result<ImportResult, readonly string[]> {
   return pipe(
     readTextFile(workspace, args.file),
-    Either.mapLeft(renderWorkspaceFailure),
-    Either.flatMap((source) =>
-      Either.mapLeft(importModel(source.text), (failure) => [
+    Result.mapError(renderWorkspaceFailure),
+    Result.flatMap((source) =>
+      Result.mapError(importModel(source.text), (failure) => [
         `The file ${quotedForTerminal(args.file)} was not converted.`,
         ...renderReadFailure(failure),
       ]),
     ),
-    Either.flatMap((imported) =>
-      Either.map(
+    Result.flatMap((imported) =>
+      Result.map(
         createdModel(
           workspace,
           args.target,

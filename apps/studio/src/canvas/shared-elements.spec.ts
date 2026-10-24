@@ -12,7 +12,7 @@ import {
   elementId,
   sharedModel,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { inLocale } from '../messages/messages.fixtures.js';
 import { Action } from '../store/actions.js';
 import { initialState } from '../store/state.js';
@@ -135,7 +135,7 @@ describe('Delete on a selection gone stale', () => {
 
 describe('Delete from model', () => {
   it('leaves an element the diagram on screen does not place, and its threat, on a stale selection', () => {
-    const moved = Either.getOrThrow(unplaceElement(sharedModel, overview, api));
+    const moved = Result.getOrThrow(unplaceElement(sharedModel, overview, api));
     modelStore.setState(
       { ...initialState(moved), activeDiagram: overview, selection: [api] },
       true,
@@ -166,7 +166,7 @@ describe('Cut and paste of a shared element', () => {
     expect(placedOn(present(), api)).toEqual([payments]);
     expect(present().threats).toBe(sharedModel.threats);
     expect(
-      Either.getOrThrow(saerskrivenYamlCodec.read(clipboard.text())).model
+      Result.getOrThrow(saerskrivenYamlCodec.read(clipboard.text())).model
         .diagrams,
     ).toHaveLength(1);
 

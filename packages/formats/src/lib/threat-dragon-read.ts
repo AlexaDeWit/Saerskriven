@@ -16,7 +16,7 @@ import {
   type ThreatDragonEndpoint,
   type ThreatDragonThreat,
 } from '@saerskriven/wire-threat-dragon';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { modelFrom, parseWire, ReadFailure, type ReadResult } from './codec.js';
 import type { DivergenceDetail } from './divergence-detail.js';
 import type { Divergence } from './divergence.js';
@@ -63,8 +63,8 @@ import { undeclaredDivergences } from './undeclared.js';
  */
 export function readThreatDragon(
   text: string,
-): Either.Either<ReadResult<typeof threatDragonWireSchema>, ReadFailure> {
-  return Either.flatMap(parseJson(text), mapDocument);
+): Result.Result<ReadResult<typeof threatDragonWireSchema>, ReadFailure> {
+  return Result.flatMap(parseJson(text), mapDocument);
 }
 
 type ThreatEntry = {
@@ -73,9 +73,9 @@ type ThreatEntry = {
   readonly number: number;
 };
 
-function parseJson(text: string): Either.Either<unknown, ReadFailure> {
+function parseJson(text: string): Result.Result<unknown, ReadFailure> {
   return parseWithinLimits(text, (bounded) =>
-    Either.try({
+    Result.try({
       try: () => JSON.parse(bounded) as unknown,
       catch: (error) => ReadFailure.MalformedText({ message: String(error) }),
     }),
@@ -84,10 +84,10 @@ function parseJson(text: string): Either.Either<unknown, ReadFailure> {
 
 function mapDocument(
   given: unknown,
-): Either.Either<ReadResult<typeof threatDragonWireSchema>, ReadFailure> {
-  return Either.flatMap(parseWire(threatDragonWireSchema, given), (wire) => {
+): Result.Result<ReadResult<typeof threatDragonWireSchema>, ReadFailure> {
+  return Result.flatMap(parseWire(threatDragonWireSchema, given), (wire) => {
     const mapping = toMapping(wire);
-    return Either.map(modelFrom(mapping.input, 'diagram'), (model) => ({
+    return Result.map(modelFrom(mapping.input, 'diagram'), (model) => ({
       model,
       source: wire,
       divergences: [

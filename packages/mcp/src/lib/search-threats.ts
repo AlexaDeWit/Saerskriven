@@ -6,7 +6,7 @@ import {
   type Model,
   type Threat,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { defaultedFileSentence } from './path-arguments.js';
 import {
@@ -92,9 +92,9 @@ export const searchThreatsDescription = [
 export function searchThreats(
   workspace: ModelWorkspace,
   args: SearchThreatsArguments,
-): Either.Either<SearchThreatsResult, readonly string[]> {
-  return Either.flatMap(readNamed(workspace, args.file), (reading) =>
-    Either.map(threatsDrawnOn(reading.model, args.diagram), (candidates) =>
+): Result.Result<SearchThreatsResult, readonly string[]> {
+  return Result.flatMap(readNamed(workspace, args.file), (reading) =>
+    Result.map(threatsDrawnOn(reading.model, args.diagram), (candidates) =>
       found(reading, candidates, args),
     ),
   );
@@ -124,10 +124,10 @@ const narrowing = [
 function threatsDrawnOn(
   model: Model,
   diagram: string | undefined,
-): Either.Either<readonly Threat[], readonly string[]> {
+): Result.Result<readonly Threat[], readonly string[]> {
   return diagram === undefined
-    ? Either.right(model.threats)
-    : Either.map(diagramsOf(model, diagram), (diagrams) =>
+    ? Result.succeed(model.threats)
+    : Result.map(diagramsOf(model, diagram), (diagrams) =>
         threatsOnDiagrams(model, diagrams),
       );
 }

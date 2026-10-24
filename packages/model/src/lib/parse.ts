@@ -1,4 +1,4 @@
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import type { z } from 'zod';
 import { modelSchema } from './model.js';
 import {
@@ -59,9 +59,9 @@ export function boundedParse<Value, Named = never>(
   schema: SchemaParser<Value>,
   given: unknown,
   named?: SchemaParser<Named>,
-): Either.Either<Value, SchemaFailure<Named>> {
-  return Either.flatMap(
-    Either.try({
+): Result.Result<Value, SchemaFailure<Named>> {
+  return Result.flatMap(
+    Result.try({
       try: () => schema.safeParse(given),
       catch: (error) =>
         error instanceof RangeError
@@ -70,8 +70,8 @@ export function boundedParse<Value, Named = never>(
     }),
     (parsed) =>
       parsed.success
-        ? Either.right(parsed.data)
-        : Either.left(
+        ? Result.succeed(parsed.data)
+        : Result.fail(
             SchemaFailure.Refused({
               issues: toParseIssues(parsed.error.issues, given, named),
             }),
@@ -113,8 +113,10 @@ export const ParseFailure = Data.taggedEnum<ParseFailure>();
 export function parseModel(
   input: unknown,
   scope: RelationshipScope = 'model',
-): Either.Either<Model, ParseFailure> {
-  return Either.mapLeft(boundedParse(refinedSchemas[scope], input), (failure) =>
-    ParseFailure.InvalidModel({ issues: schemaFailureIssues(failure) }),
+): Result.Result<Model, ParseFailure> {
+  return Result.mapError(
+    boundedParse(refinedSchemas[scope], input),
+    (failure) =>
+      ParseFailure.InvalidModel({ issues: schemaFailureIssues(failure) }),
   );
 }

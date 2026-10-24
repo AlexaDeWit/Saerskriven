@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 
 /**
  * What the process answers with: 0 for the command doing what it was asked,
@@ -65,12 +65,12 @@ export function delivered<Content extends CommandOutput>(
   write: (
     path: string,
     content: Content,
-  ) => Either.Either<unknown, readonly string[]>,
+  ) => Result.Result<unknown, readonly string[]>,
 ): CommandOutcome {
   return out === '-'
     ? succeeded(content, warning)
-    : Either.match(write(out, content), {
-        onLeft: (refusal) => usageError(lines(...refusal)),
-        onRight: () => succeeded('', warning),
+    : Result.match(write(out, content), {
+        onFailure: (refusal) => usageError(lines(...refusal)),
+        onSuccess: () => succeeded('', warning),
       });
 }

@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { promisePerBytes } from './promise-per-bytes.js';
 
 /**
@@ -55,16 +55,16 @@ export async function instantiated<Name extends string>(
   wasm: Uint8Array,
   calls: readonly Name[],
   absent: string,
-): Promise<Either.Either<BoundaryModule<Name>, string>> {
+): Promise<Result.Result<BoundaryModule<Name>, string>> {
   try {
     const { exports } = await WebAssembly.instantiate(
       await compiled(wasm, () => WebAssembly.compile(new Uint8Array(wasm))),
     );
     return exportsEvery(exports, calls)
-      ? Either.right(exports)
-      : Either.left(absent);
+      ? Result.succeed(exports)
+      : Result.fail(absent);
   } catch (error) {
-    return Either.left(sentenceOf(error));
+    return Result.fail(sentenceOf(error));
   }
 }
 
@@ -78,8 +78,8 @@ export function called<Value>(
   module: BoundaryExports,
   bytes: Uint8Array,
   call: () => Value,
-): Either.Either<Value, string> {
-  return Either.try({
+): Result.Result<Value, string> {
+  return Result.try({
     try: () => {
       const input = module.input(bytes.length) >>> 0;
       new Uint8Array(module.memory.buffer, input, bytes.length).set(bytes);
@@ -97,7 +97,7 @@ export function answered<Value>(
   module: BoundaryExports,
   bytes: Uint8Array,
   call: () => Value,
-): Either.Either<Answered<Value>, string> {
+): Result.Result<Answered<Value>, string> {
   return called(module, bytes, () => {
     const value = call();
     const output = module.output() >>> 0;

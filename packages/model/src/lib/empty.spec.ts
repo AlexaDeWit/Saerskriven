@@ -1,10 +1,10 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { emptyModel } from './empty.js';
 import { parseModel } from './parse.js';
 
 describe('emptyModel', () => {
   it('parses, and holds nothing', () => {
-    expect(Either.isRight(parseModel(emptyModel))).toBe(true);
+    expect(Result.isSuccess(parseModel(emptyModel))).toBe(true);
     expect(emptyModel.diagrams).toEqual([]);
     expect(emptyModel.threats).toEqual([]);
     expect(emptyModel.mitigations).toEqual([]);

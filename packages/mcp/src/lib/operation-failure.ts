@@ -7,7 +7,7 @@ import {
   type Model,
   type ParseIssue,
 } from '@saerskriven/model';
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import { noDiagramNamed } from './search.js';
 
 /**
@@ -125,8 +125,8 @@ export function describeOperationFailure(failure: OperationFailure): string {
  */
 export function unappliedEdit(
   _edit: never,
-): Either.Either<Model, OperationFailure> {
-  return Either.left(
+): Result.Result<Model, OperationFailure> {
+  return Result.fail(
     OperationFailure.InvalidFragment({
       issues: [{ path: ['op'], detail: { code: 'operation-unknown' } }],
     }),

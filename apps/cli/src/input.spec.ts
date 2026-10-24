@@ -1,5 +1,5 @@
 import { readLimits } from '@saerskriven/formats';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
@@ -13,7 +13,7 @@ import { describeDivergences, readModel } from './input.js';
 
 const directory = scratchDirectory('input');
 
-const refusedModel = (err: string) => Either.left({ code: 1, out: '', err });
+const refusedModel = (err: string) => Result.fail({ code: 1, out: '', err });
 
 describe('a model file read at the edge', () => {
   afterEach(() => {

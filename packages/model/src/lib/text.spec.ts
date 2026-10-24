@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { softHyphen } from '../fixtures.js';
 import { issuesOf, seededModel, validModelFixture } from './model.fixtures.js';
 import { firstRefusedCharacter } from './text.js';
@@ -197,16 +197,16 @@ describe('the characters a model string accepts', () => {
   it.each(scripts)('carry %s through the parse unchanged', (_script, text) => {
     const result = titled(text);
     expect(issuesOf(result)).toEqual([]);
-    expect(Either.getOrNull(result)?.metadata.title).toBe(text);
+    expect(Result.getOrNull(result)?.metadata.title).toBe(text);
   });
 
   it('include the tab, line feed and carriage return prose is written with', () => {
     const text = 'Order service\nover two lines\tand a return\r';
-    expect(Either.getOrNull(titled(text))?.metadata.title).toBe(text);
+    expect(Result.getOrNull(titled(text))?.metadata.title).toBe(text);
   });
 
   it('include the empty string, so a model saves before it is described', () => {
-    expect(Either.getOrNull(titled(''))?.metadata.title).toBe('');
+    expect(Result.getOrNull(titled(''))?.metadata.title).toBe('');
   });
 });
 

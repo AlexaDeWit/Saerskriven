@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   locatedDrawn,
   withPlacement,
@@ -32,20 +32,20 @@ export function setBoundaryShape(
   elementId: ElementId,
   shape: BoundaryShape,
   decimals?: Decimals,
-): Either.Either<Model, SetBoundaryShapeFailure> {
-  return Either.flatMap(
+): Result.Result<Model, SetBoundaryShapeFailure> {
+  return Result.flatMap(
     locatedDrawn(model, diagramId, elementId),
     ({
       diagramIndex,
       drawn,
-    }): Either.Either<Model, SetBoundaryShapeFailure> => {
+    }): Result.Result<Model, SetBoundaryShapeFailure> => {
       if (drawn.kind !== 'trust-boundary') {
-        return Either.left(
+        return Result.fail(
           OperationFailure.NotTrustBoundaryElement({ elementId }),
         );
       }
       const stored = storedShape(shape, decimals);
-      return Either.right(
+      return Result.succeed(
         sameShape(drawn.shape, shape) || sameShape(drawn.shape, stored)
           ? model
           : withPlacement(

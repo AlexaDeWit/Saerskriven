@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { z } from 'zod';
 import { elementOf, placementOf } from './drawing.js';
 import { drawnModelSchema } from './model.js';
@@ -43,13 +43,15 @@ const refinedDrawnSchemas = {
 export function parseDrawnModel(
   input: unknown,
   scope: RelationshipScope,
-): Either.Either<Model, ParseFailure> {
-  return Either.flatMap(
-    Either.mapLeft(boundedParse(refinedDrawnSchemas[scope], input), (failure) =>
-      ParseFailure.InvalidModel({ issues: schemaFailureIssues(failure) }),
+): Result.Result<Model, ParseFailure> {
+  return Result.flatMap(
+    Result.mapError(
+      boundedParse(refinedDrawnSchemas[scope], input),
+      (failure) =>
+        ParseFailure.InvalidModel({ issues: schemaFailureIssues(failure) }),
     ),
     (drawn) =>
-      Either.mapLeft(parseModel(placedFrom(drawn), scope), ({ issues }) =>
+      Result.mapError(parseModel(placedFrom(drawn), scope), ({ issues }) =>
         ParseFailure.InvalidModel({
           issues: atDrawnPaths(issues, drawn.diagrams),
         }),

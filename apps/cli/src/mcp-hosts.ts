@@ -10,7 +10,7 @@ import {
   serialized,
   serverName,
 } from '@saerskriven/mcp';
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import { join, resolve } from 'node:path';
 import { parse as parseToml, stringify as stringifyToml } from 'smol-toml';
 import { z } from 'zod';
@@ -240,13 +240,13 @@ export function hostFile(
   host: HostName,
   scope: HostScope,
   environment: InstallEnvironment,
-): Either.Either<HostFile, InstallFailure> {
+): Result.Result<HostFile, InstallFailure> {
   const registration = hostRegistrations[host];
   return scope === 'user'
-    ? Either.map(locatedHome(host, environment), registration.user)
+    ? Result.map(locatedHome(host, environment), registration.user)
     : registration.project === undefined
-      ? Either.left(InstallFailure.NoProjectForm({ host }))
-      : Either.right({
+      ? Result.fail(InstallFailure.NoProjectForm({ host }))
+      : Result.succeed({
           kind: 'file',
           file: registration.project,
           path: resolve(environment.directory, registration.project),
@@ -305,11 +305,11 @@ export function hostDocument(
   registration: HostRegistration,
   path: string,
   text: string,
-): Either.Either<HostDocument, InstallFailure> {
+): Result.Result<HostDocument, InstallFailure> {
   return text.trim() === ''
-    ? Either.right({})
-    : Either.flatMap(
-        Either.try({
+    ? Result.succeed({})
+    : Result.flatMap(
+        Result.try({
           try: () =>
             registration.syntax === 'json'
               ? (JSON.parse(text) as unknown)
@@ -337,11 +337,11 @@ export function withRegistration(
   path: string,
   document: HostDocument,
   entry: HostEntry,
-): Either.Either<HostDocument, InstallFailure> {
+): Result.Result<HostDocument, InstallFailure> {
   const held = document[registration.serversKey];
-  return Either.map(
+  return Result.map(
     held === undefined
-      ? Either.right<HostDocument>({})
+      ? Result.succeed<HostDocument>({})
       : tableOf(
           held,
           path,
@@ -364,9 +364,9 @@ export function hostText(
   registration: HostRegistration,
   file: string,
   document: HostDocument,
-): Either.Either<string, InstallFailure> {
-  return Either.mapLeft(
-    Either.map(
+): Result.Result<string, InstallFailure> {
+  return Result.mapError(
+    Result.map(
       serialized(file, () =>
         registration.syntax === 'json'
           ? JSON.stringify(document, null, 2)
@@ -383,7 +383,7 @@ export function entryText(
   registration: HostRegistration,
   file: string,
   entry: HostEntry,
-): Either.Either<string, InstallFailure> {
+): Result.Result<string, InstallFailure> {
   return hostText(registration, file, {
     [registration.serversKey]: { [serverName]: entry },
   });
@@ -394,22 +394,22 @@ const registeredCommand = 'saer';
 function locatedHome(
   host: HostName,
   environment: InstallEnvironment,
-): Either.Either<UserEnvironment, InstallFailure> {
+): Result.Result<UserEnvironment, InstallFailure> {
   const home = environment.home;
   return home === undefined
-    ? Either.left(InstallFailure.NoHome({ host }))
-    : Either.right({ ...environment, home });
+    ? Result.fail(InstallFailure.NoHome({ host }))
+    : Result.succeed({ ...environment, home });
 }
 
 function tableOf(
   value: unknown,
   path: string,
   reason: string,
-): Either.Either<HostDocument, InstallFailure> {
+): Result.Result<HostDocument, InstallFailure> {
   const parsed = documentSchema.safeParse(value);
   return parsed.success
-    ? Either.right(parsed.data)
-    : Either.left(InstallFailure.Malformed({ path, reason }));
+    ? Result.succeed(parsed.data)
+    : Result.fail(InstallFailure.Malformed({ path, reason }));
 }
 
 function platformOf(platform: typeof process.platform): HostPlatform {

@@ -1,6 +1,6 @@
 import { layoutDiagram, minimumNodeExtent } from '@saerskriven/canvas';
 import { addElement } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { canvasModel } from './canvas.fixtures.js';
 import {
   centredPlacement,
@@ -178,7 +178,7 @@ describe('freshElement', () => {
       freshElement(kind, { x: 0, y: 400 }),
     );
 
-    expect(Either.isRight(added)).toBe(true);
+    expect(Result.isSuccess(added)).toBe(true);
   });
 
   it('gives a placed element its placeholder name in the active language', () => {
@@ -229,7 +229,7 @@ describe('freshFlow', () => {
 
   it('builds a flow the model accepts', () => {
     expect(
-      Either.isRight(
+      Result.isSuccess(
         addElement(
           canvasModel,
           mainDiagram,

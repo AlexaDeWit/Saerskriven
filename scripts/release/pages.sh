@@ -26,14 +26,14 @@ case "$mode" in
     run_id=${GITHUB_RUN_ID:?missing source run}
     [[ "$commit" =~ ^[0-9a-f]{40}$ && "$run_id" =~ ^[1-9][0-9]*$ ]] || exit 1
     version=$(node --input-type=module <<'JS'
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readWorkspaceVersion } from './scripts/release/release.mts';
 const result = readWorkspaceVersion(process.cwd());
-if (Either.isLeft(result)) {
-  console.error(JSON.stringify(result.left));
+if (Result.isFailure(result)) {
+  console.error(JSON.stringify(result.failure));
   process.exit(1);
 }
-process.stdout.write(result.right);
+process.stdout.write(result.success);
 JS
     )
     [[ "$tag" == "v$version" ]] || {

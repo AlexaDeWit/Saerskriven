@@ -2,7 +2,7 @@ import { escapedForTerminal, formatNameSchema } from '@saerskriven/formats';
 import { defaultLocale, locales } from '@saerskriven/i18n';
 import { reasonOf } from '@saerskriven/mcp';
 import { Command } from 'commander';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { z } from 'zod';
 import {
   convert,
@@ -54,8 +54,8 @@ type ParseState = {
 
 /** Output streams return a reason when a write fails. */
 export type CliStreams = {
-  readonly out: (output: CommandOutput) => Either.Either<void, string>;
-  readonly err: (text: string) => Either.Either<void, string>;
+  readonly out: (output: CommandOutput) => Result.Result<void, string>;
+  readonly err: (text: string) => Result.Result<void, string>;
 };
 
 /**
@@ -84,12 +84,12 @@ export function writeOutcome(
   outcome: CommandOutcome,
   streams: CliStreams,
 ): ExitCode {
-  return Either.match(streams.out(outcome.out), {
-    onLeft: (reason) => lostOutput(streams, reason),
-    onRight: () =>
-      Either.match(streams.err(outcome.err), {
-        onLeft: (): ExitCode => 2,
-        onRight: () => outcome.code,
+  return Result.match(streams.out(outcome.out), {
+    onFailure: (reason) => lostOutput(streams, reason),
+    onSuccess: () =>
+      Result.match(streams.err(outcome.err), {
+        onFailure: (): ExitCode => 2,
+        onSuccess: () => outcome.code,
       }),
   });
 }

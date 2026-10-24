@@ -3,7 +3,7 @@ import {
   defaultRenderTheme,
   severityToneClass,
 } from '@saerskriven/canvas';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { compilePdf } from '../pdf.js';
 import { badgedModel, typstAssets } from '../render.fixtures.js';
 import { renderRegister } from './markdown-register.js';
@@ -197,9 +197,9 @@ describe('themed PDF compilation', () => {
         renderTypst(badgedModel, 'en-CA', theme).typst,
         typstAssets(),
       );
-      expect(Either.isRight(result)).toBe(true);
+      expect(Result.isSuccess(result)).toBe(true);
       expect(
-        Buffer.from(Either.getOrThrow(result).subarray(0, 5)).toString(),
+        Buffer.from(Result.getOrThrow(result).subarray(0, 5)).toString(),
       ).toBe('%PDF-');
     },
   );

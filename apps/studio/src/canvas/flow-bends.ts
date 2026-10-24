@@ -12,7 +12,7 @@ import {
   type Point,
   type Side,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { Action } from '../store/actions.js';
 import { activeDiagramId } from '../store/selectors.js';
 import { dispatch, modelStore } from '../store/store.js';
@@ -104,7 +104,7 @@ function editedRoute(
   diagramId: DiagramId,
   flow: DrawnFlow,
   target: RouteTarget,
-): Either.Either<Model, OperationFailure> {
+): Result.Result<Model, OperationFailure> {
   if (target.kind === 'anchor') {
     const end = flow[target.end];
     return end.kind === 'attached'
@@ -116,7 +116,7 @@ function editedRoute(
           end.element,
           target.side,
         )
-      : Either.right(model);
+      : Result.succeed(model);
   }
   if (target.kind === 'attach') {
     return reconnectFlow(model, diagramId, flow.id, target.end, target.element);

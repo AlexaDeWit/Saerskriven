@@ -1,6 +1,6 @@
 import { readThemeOverrides } from './lib/theme.js';
 import type { Model } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { repositoryRoot } from '@saerskriven/model/fixtures';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -33,7 +33,7 @@ const named = (face: string): string => face;
 const assetsLedBy = (leading: string): ResvgAssets => ({
   wasm: resvgWasm(),
   fonts: fontBytes(
-    Either.getOrThrow(
+    Result.getOrThrow(
       ledBy(
         bundledFonts(),
         (face) => face.name,
@@ -49,7 +49,7 @@ const rasterized = async (
   longEdge?: number,
   leading = drawingFace,
 ): Promise<PngImage> =>
-  Either.getOrThrow(
+  Result.getOrThrow(
     await renderPng(model.diagrams[0], model, 'en-CA', {
       assets: assetsLedBy(leading),
       longEdge,
@@ -57,7 +57,7 @@ const rasterized = async (
   );
 
 const goldenOf = async (entry: GoldenDocument): Promise<PngImage> =>
-  Either.getOrThrow(
+  Result.getOrThrow(
     await renderPng(diagramOf(entry), entry.model, 'en-CA', {
       assets: assetsLedBy(drawingFace),
     }),
@@ -75,12 +75,12 @@ describe('the faces a rasterization is offered', () => {
   it('leads with the face the caller names, keeping the rest in order', () => {
     expect(
       ledBy(['a.ttf', drawingFace, 'b.ttf'], named, drawingFace, 'a build'),
-    ).toEqual(Either.right([drawingFace, 'a.ttf', 'b.ttf']));
+    ).toEqual(Result.succeed([drawingFace, 'a.ttf', 'b.ttf']));
   });
 
   it('refuses a caller holding no such face, naming it', () => {
     expect(ledBy(['a.ttf'], named, drawingFace, 'a build')).toEqual(
-      Either.left(`a build holds no ${drawingFace}, which text is set in`),
+      Result.fail(`a build holds no ${drawingFace}, which text is set in`),
     );
   });
 });
@@ -144,7 +144,7 @@ describe.skipIf(resvgUnbuilt)('a diagram rasterized as a PNG', () => {
         longEdge: 0.5,
       },
     );
-    expect(Either.isLeft(outcome)).toBe(true);
+    expect(Result.isFailure(outcome)).toBe(true);
   });
 });
 
@@ -155,10 +155,10 @@ describe.skipIf(resvgUnbuilt)('a diagram rasterized in another locale', () => {
       const [diagram] = everyGlyphModel.diagrams;
       const assets = assetsLedBy(drawingFace);
       const english = await rasterized(everyGlyphModel);
-      const translated = Either.getOrThrow(
+      const translated = Result.getOrThrow(
         await renderPng(diagram, everyGlyphModel, locale, { assets }),
       );
-      const drawing = Either.getOrThrow(
+      const drawing = Result.getOrThrow(
         await rasterizeSvg(
           renderSvg(diagram, everyGlyphModel, locale).svg,
           assets,
@@ -201,8 +201,8 @@ describe.skipIf(resvgUnbuilt)('the selected PNG theme', () => {
         }).theme,
       },
     );
-    const first = Either.getOrThrow(base);
-    const second = Either.getOrThrow(changed);
+    const first = Result.getOrThrow(base);
+    const second = Result.getOrThrow(changed);
     expect([second.width, second.height]).toEqual([first.width, first.height]);
     expect(second.png).not.toEqual(first.png);
   });

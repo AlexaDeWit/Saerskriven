@@ -3,7 +3,7 @@ import {
   modelMetadataSchema,
   type Model,
 } from '@saerskriven/model';
-import type { Either } from 'effect';
+import type { Result } from 'effect';
 import { z } from 'zod';
 import { pathReach } from './path-arguments.js';
 import { createdModel, readBoundPhrase, type WriteReport } from './write.js';
@@ -49,7 +49,7 @@ export const createDescription = [
 export function createModel(
   workspace: ModelWorkspace,
   args: CreateArguments,
-): Either.Either<CreateResult, readonly string[]> {
+): Result.Result<CreateResult, readonly string[]> {
   return createdModel(workspace, args.file, described(args), []);
 }
 

@@ -13,7 +13,7 @@ import {
   repositoryRoot,
   testDataPath,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
@@ -1131,7 +1131,7 @@ export const nativeFixtures: readonly NativeFixture[] = [
 
 /** What the native read makes of a text, throwing where it refuses one. */
 export const readOrThrow = (text: string) =>
-  Either.getOrThrow(saerskrivenYamlCodec.read(text));
+  Result.getOrThrow(saerskrivenYamlCodec.read(text));
 
 /**
  * `model` with its threats in number order, the order a native write puts

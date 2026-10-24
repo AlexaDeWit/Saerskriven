@@ -5,7 +5,7 @@ import {
   type WriteResult,
 } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   useCallback,
   useEffect,
@@ -147,7 +147,7 @@ export function useFileSession(
   const closeFile = useCallback((): void => {
     setClosing(false);
     setReport(undefined);
-    if (Either.isRight(dispatch(Action.Closed()))) {
+    if (Result.isSuccess(dispatch(Action.Closed()))) {
       bridge.release();
     }
   }, [bridge]);

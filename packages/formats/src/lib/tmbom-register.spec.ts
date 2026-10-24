@@ -1,5 +1,5 @@
 import type { TmbomDocument } from '@saerskriven/wire-tmbom';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { importModel } from './import.js';
 import { imported, importTexts, tmbomFixture } from './import.fixtures.js';
 import { saerskrivenYamlCodec } from './saerskriven-yaml.js';
@@ -17,7 +17,7 @@ const control = (
 
 it('imports every assumption of the example as one that applies to the model, and keeps that through a save', () => {
   const source = tmbomFixture().assumptions ?? [];
-  const read = Either.getOrThrow(importModel(importTexts.tmbom));
+  const read = Result.getOrThrow(importModel(importTexts.tmbom));
   expect(
     read.model.assumptions.map(({ status, threats, appliesToModel }) => ({
       status,
@@ -34,7 +34,7 @@ it('imports every assumption of the example as one that applies to the model, an
   for (const { description } of source)
     expect(read.model.metadata.description).not.toContain(description);
   const written = saerskrivenYamlCodec.write(read.model);
-  const reread = Either.getOrThrow(saerskrivenYamlCodec.read(written.output));
+  const reread = Result.getOrThrow(saerskrivenYamlCodec.read(written.output));
   expect(
     reread.model.assumptions.every((assumption) => assumption.appliesToModel),
   ).toBe(true);

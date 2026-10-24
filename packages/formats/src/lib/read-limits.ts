@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { ReadFailure } from './codec.js';
 import { isKeyed } from './records.js';
 
@@ -51,24 +51,24 @@ export function exceededReadLimit(
  */
 export function parseWithinLimits(
   text: string,
-  parse: (text: string) => Either.Either<unknown, ReadFailure>,
-): Either.Either<unknown, ReadFailure> {
-  return Either.flatMap(withinTextLimit(text), (bounded) =>
-    Either.flatMap(parse(bounded), withinNestingLimit),
+  parse: (text: string) => Result.Result<unknown, ReadFailure>,
+): Result.Result<unknown, ReadFailure> {
+  return Result.flatMap(withinTextLimit(text), (bounded) =>
+    Result.flatMap(parse(bounded), withinNestingLimit),
   );
 }
 
 /** Refuses text whose UTF-8 size exceeds the shared read bound. */
 export function withinTextLimit(
   text: string,
-): Either.Either<string, ReadFailure> {
+): Result.Result<string, ReadFailure> {
   const observed =
     text.length > readLimits.maxTextBytes
       ? text.length
       : encoder.encode(text).length;
   return withinTextBytes(observed)
-    ? Either.right(text)
-    : Either.left(exceededReadLimit('maxTextBytes', observed));
+    ? Result.succeed(text)
+    : Result.fail(exceededReadLimit('maxTextBytes', observed));
 }
 
 /**
@@ -84,12 +84,12 @@ const encoder = new TextEncoder();
 
 function withinNestingLimit(
   value: unknown,
-): Either.Either<unknown, ReadFailure> {
+): Result.Result<unknown, ReadFailure> {
   return deeperThanLimit(value)
-    ? Either.left(
+    ? Result.fail(
         exceededReadLimit('maxNestingDepth', readLimits.maxNestingDepth + 1),
       )
-    : Either.right(value);
+    : Result.succeed(value);
 }
 
 function deeperThanLimit(value: unknown): boolean {

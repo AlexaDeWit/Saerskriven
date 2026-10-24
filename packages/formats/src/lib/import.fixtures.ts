@@ -1,7 +1,7 @@
 import { committedText } from '@saerskriven/model/fixtures';
 import { otmWireSchema, type OtmDocument } from '@saerskriven/wire-otm';
 import { tmbomWireSchema, type TmbomDocument } from '@saerskriven/wire-tmbom';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { vendoredTexts } from './corpus.fixtures.js';
 import { importModel } from './import.js';
 
@@ -23,7 +23,7 @@ export const otmFixture = () =>
   otmWireSchema.parse(JSON.parse(importTexts.otm) as unknown);
 /** `document` imported as JSON text, throwing the failure where it is refused. */
 export const imported = (document: unknown) =>
-  Either.getOrThrowWith(
+  Result.getOrThrowWith(
     importModel(JSON.stringify(document)),
     (failure) => new Error(JSON.stringify(failure)),
   );

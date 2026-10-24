@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { testDataPath } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { savePicker, stubSavePicker } from './save-picker.fixtures.js';
 import {
   canvasContainer,
@@ -97,7 +97,7 @@ test('opens an OTM file through Open as a new model, and saves native YAML under
   await expect(page.locator('.react-flow__edge')).toHaveCount(3);
   const output = await savedFile(page);
   expect(output.name).toBe('example.yaml');
-  const read = Either.getOrThrow(saerskrivenYamlCodec.read(output.text));
+  const read = Result.getOrThrow(saerskrivenYamlCodec.read(output.text));
   expect(read.model.threats).toHaveLength(2);
   await expect(menuButton(page)).toHaveAccessibleName('Menu');
 });

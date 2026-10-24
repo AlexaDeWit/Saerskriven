@@ -1,5 +1,5 @@
 import type { Model } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import type { Action } from './actions.js';
@@ -29,7 +29,7 @@ type ModelStoreRuntime = {
   readonly modelStore: StoreApi<State>;
   readonly dispatch: (
     action: Action,
-  ) => Either.Either<void, RecoveryStorageFailure>;
+  ) => Result.Result<void, RecoveryStorageFailure>;
 };
 
 /**
@@ -51,7 +51,7 @@ export function createModelStore(
 
   const dispatch = (
     action: Action,
-  ): Either.Either<void, RecoveryStorageFailure> => {
+  ): Result.Result<void, RecoveryStorageFailure> => {
     const before = modelStore.getState();
     const reduced = reduce(before, action);
     const followed = action._tag === 'Followed';
@@ -73,7 +73,7 @@ export function createModelStore(
     if (!followed && resultChanged(before, next)) {
       sync.publish(syncedState(next));
     }
-    return stored ?? Either.right(undefined);
+    return stored ?? Result.succeed(undefined);
   };
 
   return { modelStore, dispatch };
@@ -128,9 +128,9 @@ function startState(
   mark: RestoreMark,
 ): State {
   return storage.load().pipe(
-    Either.match({
-      onLeft: (failure) => unreadStart(fallback, startupFailure(failure)),
-      onRight: (snapshot) =>
+    Result.match({
+      onFailure: (failure) => unreadStart(fallback, startupFailure(failure)),
+      onSuccess: (snapshot) =>
         snapshot === undefined
           ? initialState(fallback)
           : restoreStart(snapshot, fallback, mark),
@@ -164,19 +164,19 @@ function settled(
   before: State,
   reduced: State,
   action: Action,
-  stored: Either.Either<void, RecoveryStorageFailure> | undefined,
+  stored: Result.Result<void, RecoveryStorageFailure> | undefined,
 ): State {
   if (stored === undefined) {
     return reduced;
   }
   const closing = action._tag === 'Closed';
-  if (Either.isLeft(stored)) {
+  if (Result.isFailure(stored)) {
     return {
       ...(closing ? before : reduced),
       recoveryCurrent: closing ? before.recoveryCurrent : false,
       recoveryUnread: before.recoveryUnread,
       lastFailure: StudioFailure.RecoveryUnavailable({
-        problem: stored.left.problem,
+        problem: stored.failure.problem,
       }),
     };
   }

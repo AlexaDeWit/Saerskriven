@@ -2,7 +2,7 @@ import type {
   CallToolResult,
   ContentBlock,
 } from '@modelcontextprotocol/server';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { prefaced } from './preface.js';
 
 /**
@@ -12,12 +12,12 @@ import { prefaced } from './preface.js';
  * `dataNotInstructions`.
  */
 export function toolResult<Answer extends Record<string, unknown>>(
-  outcome: Either.Either<Answer, readonly string[]>,
+  outcome: Result.Result<Answer, readonly string[]>,
   render: (answer: Answer) => readonly string[],
 ): CallToolResult {
-  return Either.match(outcome, {
-    onLeft: refused,
-    onRight: (answer) => answered(answer, render(answer), []),
+  return Result.match(outcome, {
+    onFailure: refused,
+    onSuccess: (answer) => answered(answer, render(answer), []),
   });
 }
 
@@ -33,12 +33,12 @@ export type WithBlocks<Answer> = {
  * what they hold stays out of `structuredContent`.
  */
 export function attachedToolResult<Answer extends Record<string, unknown>>(
-  outcome: Either.Either<WithBlocks<Answer>, readonly string[]>,
+  outcome: Result.Result<WithBlocks<Answer>, readonly string[]>,
   render: (answer: Answer) => readonly string[],
 ): CallToolResult {
-  return Either.match(outcome, {
-    onLeft: refused,
-    onRight: ({ answer, blocks }) => answered(answer, render(answer), blocks),
+  return Result.match(outcome, {
+    onFailure: refused,
+    onSuccess: ({ answer, blocks }) => answered(answer, render(answer), blocks),
   });
 }
 

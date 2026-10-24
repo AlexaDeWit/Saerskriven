@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   diagramIndexOf,
   locatedDiagram,
@@ -35,17 +35,17 @@ export type RemoveDiagramFailure = Extract<
 export function addDiagram(
   model: Model,
   diagram: Pick<Diagram, 'id' | 'title'>,
-): Either.Either<Model, AddDiagramFailure> {
+): Result.Result<Model, AddDiagramFailure> {
   if (model.diagrams.some((existing) => existing.id === diagram.id)) {
-    return Either.left(
+    return Result.fail(
       OperationFailure.DuplicateDiagramId({ diagramId: diagram.id }),
     );
   }
   const titleRefusal = refusedTitle(diagram.id, diagram.title);
   if (titleRefusal !== undefined) {
-    return Either.left(titleRefusal);
+    return Result.fail(titleRefusal);
   }
-  return Either.right({
+  return Result.succeed({
     ...model,
     diagrams: [
       ...model.diagrams,
@@ -59,19 +59,19 @@ export function renameDiagram(
   model: Model,
   diagramId: DiagramId,
   title: string,
-): Either.Either<Model, RenameDiagramFailure> {
-  return Either.flatMap(
+): Result.Result<Model, RenameDiagramFailure> {
+  return Result.flatMap(
     diagramIndexOf(model, diagramId),
-    (diagramIndex): Either.Either<Model, RenameDiagramFailure> => {
+    (diagramIndex): Result.Result<Model, RenameDiagramFailure> => {
       const refusal = refusedTitle(diagramId, title);
       return refusal === undefined
-        ? Either.right(
+        ? Result.succeed(
             withDiagram(model, diagramIndex, (diagram) => ({
               ...diagram,
               title,
             })),
           )
-        : Either.left(refusal);
+        : Result.fail(refusal);
     },
   );
 }
@@ -80,18 +80,18 @@ export function renameDiagram(
 export function removeDiagram(
   model: Model,
   diagramId: DiagramId,
-): Either.Either<Model, RemoveDiagramFailure> {
-  return Either.flatMap(
+): Result.Result<Model, RemoveDiagramFailure> {
+  return Result.flatMap(
     locatedDiagram(model, diagramId),
-    (diagram): Either.Either<Model, RemoveDiagramFailure> =>
+    (diagram): Result.Result<Model, RemoveDiagramFailure> =>
       diagram.placements.length > 0
-        ? Either.left(
+        ? Result.fail(
             OperationFailure.DiagramNotEmpty({
               diagramId,
               elements: diagram.placements.length,
             }),
           )
-        : Either.right({
+        : Result.succeed({
             ...model,
             diagrams: model.diagrams.filter(
               (candidate) => candidate.id !== diagramId,

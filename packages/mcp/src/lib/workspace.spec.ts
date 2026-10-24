@@ -1,5 +1,5 @@
 import { DetectionFailure, renderReadFailure } from '@saerskriven/formats';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { realpathSync, rmSync, symlinkSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { modelFile } from './edit.fixtures.js';
@@ -22,20 +22,20 @@ const tree = workspaceTree();
 
 const opened = (file?: string): ModelWorkspace => {
   const workspace = openWorkspace({ root: tree.root, file });
-  if (Either.isLeft(workspace)) {
-    throw new Error(renderWorkspaceFailure(workspace.left).join('\n'));
+  if (Result.isFailure(workspace)) {
+    throw new Error(renderWorkspaceFailure(workspace.failure).join('\n'));
   }
-  return workspace.right;
+  return workspace.success;
 };
 
 const workspace = opened();
 
 const failureOf = (requested: string): WorkspaceFailure => {
   const read = readModelFile(workspace, requested);
-  if (Either.isRight(read)) {
+  if (Result.isSuccess(read)) {
     throw new Error(`${requested} was read, and this expects a refusal`);
   }
-  return read.left;
+  return read.failure;
 };
 
 const outsideRoot = (requested: string, resolved: string): WorkspaceFailure =>
@@ -55,8 +55,8 @@ describe('the root a server is confined to', () => {
     const missing = join(tree.root, 'nowhere');
     const refused = openWorkspace({ root: missing });
     expect(
-      Either.isLeft(refused)
-        ? renderWorkspaceFailure(refused.left).join('\n')
+      Result.isFailure(refused)
+        ? renderWorkspaceFailure(refused.failure).join('\n')
         : 'the root was accepted',
     ).toContain(`The root "${missing}" cannot be used: ENOENT`);
   });
@@ -69,7 +69,7 @@ describe('the root a server is confined to', () => {
 
   it('refuses a default file outside the root', () => {
     expect(
-      Either.isLeft(
+      Result.isFailure(
         openWorkspace({ root: tree.root, file: '../outside.yaml' }),
       ),
     ).toBe(true);
@@ -77,7 +77,7 @@ describe('the root a server is confined to', () => {
 
   it('holds the default file to the root where the server follows the host', () => {
     expect(
-      Either.isLeft(
+      Result.isFailure(
         openWorkspace({
           root: tree.root,
           file: '../outside.yaml',
@@ -91,7 +91,7 @@ describe('the root a server is confined to', () => {
 describe('a path a tool call names', () => {
   it('reads a file under the root', () => {
     const read = readModelFile(workspace, 'small.yaml');
-    expect(Either.isRight(read)).toBe(true);
+    expect(Result.isSuccess(read)).toBe(true);
   });
 
   it('refuses a path that climbs out of the root, with where it resolved', () => {
@@ -159,18 +159,20 @@ describe('a path beyond the root, on a call the host listed a directory for', ()
   const host = hostTree();
   const listing = HostDirectories.Listed({ directories: [host.listed] });
   const following: ModelWorkspace = {
-    ...Either.getOrThrow(openWorkspace({ root: host.launch, reach: 'host' })),
+    ...Result.getOrThrow(openWorkspace({ root: host.launch, reach: 'host' })),
     host: listing,
   };
   const listedModel = join(host.listed, modelFile);
 
   it('resolves an absolute path inside the listed directory', () => {
-    expect(confined(following, listedModel)).toEqual(Either.right(listedModel));
+    expect(confined(following, listedModel)).toEqual(
+      Result.succeed(listedModel),
+    );
   });
 
   it('resolves a relative path against the root, into the listed directory', () => {
     expect(confined(following, relative(host.launch, listedModel))).toEqual(
-      Either.right(listedModel),
+      Result.succeed(listedModel),
     );
   });
 
@@ -194,7 +196,7 @@ describe('a path beyond the root, on a call the host listed a directory for', ()
     'refuses %s, with where it resolved and the listing',
     (_what, requested, resolved) => {
       expect(confined(following, requested)).toEqual(
-        Either.left(
+        Result.fail(
           WorkspaceFailure.OutsideRoot({
             requested,
             resolved,
@@ -207,15 +209,15 @@ describe('a path beyond the root, on a call the host listed a directory for', ()
   );
 
   it('reads the listing of no call but its own', () => {
-    const unasked = Either.getOrThrow(
+    const unasked = Result.getOrThrow(
       openWorkspace({ root: host.launch, reach: 'host' }),
     );
-    expect(Either.isLeft(confined(unasked, listedModel))).toBe(true);
+    expect(Result.isFailure(confined(unasked, listedModel))).toBe(true);
   });
 
   it('holds the default file to the root, whatever the call was listed', () => {
     const own = hostTree();
-    const defaulted = Either.getOrThrow(
+    const defaulted = Result.getOrThrow(
       openWorkspace({ root: own.launch, file: insideFile, reach: 'host' }),
     );
     rmSync(join(own.launch, insideFile));
@@ -232,7 +234,7 @@ describe('a path beyond the root, on a call the host listed a directory for', ()
         ? undefined
         : readModelFile(named.workspace, named.file),
     ).toEqual(
-      Either.left(
+      Result.fail(
         WorkspaceFailure.OutsideRoot({
           requested: join(own.launch, insideFile),
           resolved: join(own.listed, modelFile),

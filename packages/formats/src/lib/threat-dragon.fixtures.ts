@@ -5,7 +5,7 @@ import type {
   threatDragonWireSchema,
   ThreatDragonThreat,
 } from '@saerskriven/wire-threat-dragon';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { ReadResult } from './codec.js';
 import { allCells, threatsOf } from './threat-dragon-document.js';
 import { readThreatDragon } from './threat-dragon-read.js';
@@ -1166,7 +1166,7 @@ export function allThreats(
 export const threatDragonReading = (
   text: string,
 ): ReadResult<typeof threatDragonWireSchema> =>
-  Either.getOrThrowWith(
+  Result.getOrThrowWith(
     readThreatDragon(text),
     (failure) =>
       new Error(`The Threat Dragon codec refused a text: ${failure._tag}`),

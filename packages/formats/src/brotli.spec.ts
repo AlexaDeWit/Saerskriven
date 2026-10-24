@@ -1,7 +1,7 @@
 import { committedText } from '@saerskriven/model/fixtures';
 import { called, instantiated, mostUnsigned } from '@saerskriven/wasm';
 import { moduleWhoseEveryCall, trapping } from '@saerskriven/wasm/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readFileSync } from 'node:fs';
 import { brotliCompressSync, brotliDecompressSync, constants } from 'node:zlib';
 import { brotliUnbuilt, brotliWasm } from './fixtures.js';
@@ -99,12 +99,12 @@ const withMemory = async <Value>(
 };
 
 const compressed = async (bytes: Uint8Array): Promise<Uint8Array> =>
-  Either.getOrThrow(await compressBrotli(bytes, brotliWasm()));
+  Result.getOrThrow(await compressBrotli(bytes, brotliWasm()));
 
 const refusalOf = (
-  outcome: Either.Either<unknown, BrotliFailure>,
+  outcome: Result.Result<unknown, BrotliFailure>,
 ): BrotliFailure | undefined =>
-  Either.isLeft(outcome) ? outcome.left : undefined;
+  Result.isFailure(outcome) ? outcome.failure : undefined;
 
 const codecCalls = [
   'input',
@@ -158,7 +158,7 @@ describe.skipIf(brotliUnbuilt)('a model compressed through the module', () => {
     const stream = await compressed(model);
     expect(stream.length).toBeLessThan(model.length);
     expect(
-      Either.getOrThrow(
+      Result.getOrThrow(
         await decompressBrotli(stream, brotliWasm(), model.length),
       ),
     ).toEqual(model);
@@ -191,7 +191,7 @@ describe.skipIf(brotliUnbuilt)('a model compressed through the module', () => {
     const wasm = new Uint8Array(brotliWasm());
     const compile = vi.spyOn(WebAssembly, 'compile');
     try {
-      const stream = Either.getOrThrow(await compressBrotli(model, wasm));
+      const stream = Result.getOrThrow(await compressBrotli(model, wasm));
       await decompressBrotli(stream, wasm, model.length);
       expect(compile).toHaveBeenCalledTimes(1);
     } finally {
@@ -202,7 +202,7 @@ describe.skipIf(brotliUnbuilt)('a model compressed through the module', () => {
   it('decodes an empty stream to no bytes under a maximum of 0', async () => {
     const stream = await compressed(new Uint8Array(0));
     expect(
-      Either.getOrThrow(await decompressBrotli(stream, brotliWasm(), 0)),
+      Result.getOrThrow(await decompressBrotli(stream, brotliWasm(), 0)),
     ).toEqual(new Uint8Array(0));
   });
 });
@@ -266,14 +266,14 @@ describe.skipIf(brotliUnbuilt)('a stream the decoder refuses', () => {
 
 describe.skipIf(brotliUnbuilt)('one instance called more than once', () => {
   it('answers no output after a call that trapped, where an earlier call wrote one', async () => {
-    const module = Either.getOrThrow(
+    const module = Result.getOrThrow(
       await instantiated(
         brotliWasm(),
         ['compress'],
         'the module exports no brotli codec',
       ),
     );
-    Either.getOrThrow(called(module, model, () => module.compress()));
+    Result.getOrThrow(called(module, model, () => module.compress()));
     expect(module.output_length()).toBeGreaterThan(0);
     expect(() => module.input(mostUnsigned)).toThrow(WebAssembly.RuntimeError);
     expect(module.output_length()).toBe(0);

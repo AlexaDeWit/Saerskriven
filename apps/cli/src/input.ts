@@ -11,7 +11,7 @@ import {
   type ImportResult,
   type ReadFailure,
 } from '@saerskriven/formats';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readTextFile, withinReadBound } from './files.js';
 import {
   invalidInput,
@@ -27,7 +27,7 @@ import {
  */
 export function readModel(
   file: string,
-): Either.Either<DetectedRead, CommandOutcome> {
+): Result.Result<DetectedRead, CommandOutcome> {
   return readWith(file, readAnyFormat);
 }
 
@@ -37,7 +37,7 @@ export function readModel(
  */
 export function readConvertible(
   file: string,
-): Either.Either<DetectedRead | ImportResult, CommandOutcome> {
+): Result.Result<DetectedRead | ImportResult, CommandOutcome> {
   return readWith(file, readOrImport);
 }
 
@@ -59,20 +59,20 @@ export function describeDivergences(
 
 function readWith<Read>(
   file: string,
-  read: (text: string) => Either.Either<Read, ReadFailure | DetectionFailure>,
-): Either.Either<Read, CommandOutcome> {
-  return Either.flatMap(withinSizeBound(file), () =>
-    Either.match(readTextFile(file), {
-      onLeft: (reason) => Either.left(usageError(lines(`error: ${reason}`))),
-      onRight: (text) =>
-        Either.mapLeft(read(text), (failure) =>
+  read: (text: string) => Result.Result<Read, ReadFailure | DetectionFailure>,
+): Result.Result<Read, CommandOutcome> {
+  return Result.flatMap(withinSizeBound(file), () =>
+    Result.match(readTextFile(file), {
+      onFailure: (reason) => Result.fail(usageError(lines(`error: ${reason}`))),
+      onSuccess: (text) =>
+        Result.mapError(read(text), (failure) =>
           invalidInput(describeReadFailure(failure)),
         ),
     }),
   );
 }
 
-function withinSizeBound(file: string): Either.Either<void, CommandOutcome> {
+function withinSizeBound(file: string): Result.Result<void, CommandOutcome> {
   return withinReadBound(file, (observed) =>
     invalidInput(
       describeReadFailure(exceededReadLimit('maxTextBytes', observed)),

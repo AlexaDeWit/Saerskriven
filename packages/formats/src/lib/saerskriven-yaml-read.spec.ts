@@ -1,6 +1,6 @@
 import { drawnAt } from '@saerskriven/model/fixtures';
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { parse } from 'yaml';
 import { ReadFailure } from './codec.js';
 import { readFailureIssues } from './codec.fixtures.js';
@@ -151,19 +151,19 @@ const noteWithAccent = oneFlowInVersion2.replace(
 
 function readingOf(text: string) {
   const result = readSaerskrivenYaml(text);
-  return Either.isRight(result) ? result.right : undefined;
+  return Result.isSuccess(result) ? result.success : undefined;
 }
 
 function failureOf(text: string) {
   const result = readSaerskrivenYaml(text);
-  return Either.isLeft(result) ? result.left : undefined;
+  return Result.isFailure(result) ? result.failure : undefined;
 }
 
 function modelOfDocumentIn(text: string) {
   const read = readSaerskrivenYaml(text);
-  return Either.isLeft(read)
+  return Result.isFailure(read)
     ? undefined
-    : Either.getOrUndefined(readSaerskrivenYamlDocument(read.right.source));
+    : Result.getOrUndefined(readSaerskrivenYamlDocument(read.success.source));
 }
 
 function accentsOf(text: string) {
@@ -550,7 +550,7 @@ describe('a Saerskriven YAML document mapped without its text', () => {
     'maps $named from its version 1 wire document alone to the model its text reads as',
     ({ text, readAs }) => {
       expect(
-        Either.getOrUndefined(
+        Result.getOrUndefined(
           readSaerskrivenYamlDocument(
             saerskrivenYamlWireSchema.parse(parse(text)),
           ),

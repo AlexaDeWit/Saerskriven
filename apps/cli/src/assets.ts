@@ -1,6 +1,6 @@
 import { reasonOf } from '@saerskriven/mcp';
 import { ledBy } from '@saerskriven/render/png';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getAsset, getAssetKeys, isSea } from 'node:sea';
@@ -40,18 +40,18 @@ export type WasmAssets = {
 export function wasmModule(
   directory: string,
   name: string,
-): Either.Either<Uint8Array, string> {
+): Result.Result<Uint8Array, string> {
   const path = join(directory, name);
   const known = loadedModules.get(path);
   if (known !== undefined) {
-    return Either.right(known);
+    return Result.succeed(known);
   }
-  const found = Either.try({
+  const found = Result.try({
     try: (): Uint8Array => bytesOf(directory, name),
     catch: reasonOf,
   });
-  if (Either.isRight(found)) {
-    loadedModules.set(path, found.right);
+  if (Result.isSuccess(found)) {
+    loadedModules.set(path, found.success);
   }
   return found;
 }
@@ -68,12 +68,12 @@ export function wasmAssets(
   directory: string,
   name: string,
   leading?: string,
-): Either.Either<WasmAssets, string> {
+): Result.Result<WasmAssets, string> {
   const key = `${directory}\0${name}\0${leading ?? ''}`;
   const known = loaded.get(key);
   return known === undefined
     ? read(key, directory, name, leading)
-    : Either.right(known);
+    : Result.succeed(known);
 }
 
 function read(
@@ -81,15 +81,15 @@ function read(
   directory: string,
   name: string,
   leading: string | undefined,
-): Either.Either<WasmAssets, string> {
-  const found = Either.flatMap(wasmModule(directory, name), (wasm) =>
-    Either.flatMap(
-      Either.try({ try: () => facesIn(directory), catch: reasonOf }),
+): Result.Result<WasmAssets, string> {
+  const found = Result.flatMap(wasmModule(directory, name), (wasm) =>
+    Result.flatMap(
+      Result.try({ try: () => facesIn(directory), catch: reasonOf }),
       (faces) => lettered({ wasm, faces }, directory, leading),
     ),
   );
-  if (Either.isRight(found)) {
-    loaded.set(key, found.right);
+  if (Result.isSuccess(found)) {
+    loaded.set(key, found.success);
   }
   return found;
 }
@@ -98,9 +98,9 @@ function lettered(
   listed: { readonly wasm: Uint8Array; readonly faces: readonly string[] },
   directory: string,
   leading: string | undefined,
-): Either.Either<WasmAssets, string> {
-  return Either.flatMap(offered(listed.faces, directory, leading), (faces) =>
-    Either.try({
+): Result.Result<WasmAssets, string> {
+  return Result.flatMap(offered(listed.faces, directory, leading), (faces) =>
+    Result.try({
       try: (): WasmAssets => ({
         wasm: listed.wasm,
         fonts: faces.map((face) => new Uint8Array(bytesOf(directory, face))),
@@ -114,12 +114,12 @@ function offered(
   faces: readonly string[],
   directory: string,
   leading: string | undefined,
-): Either.Either<readonly string[], string> {
+): Result.Result<readonly string[], string> {
   if (faces.length === 0) {
-    return Either.left(`${directory} holds no .ttf font face`);
+    return Result.fail(`${directory} holds no .ttf font face`);
   }
   return leading === undefined
-    ? Either.right(faces)
+    ? Result.succeed(faces)
     : ledBy(faces, (face) => face, leading, directory);
 }
 

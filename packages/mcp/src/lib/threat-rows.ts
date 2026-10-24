@@ -16,7 +16,7 @@ import {
   type ThreatCategory,
   type ThreatFlag,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { quotedList } from './reading.js';
 import {
@@ -105,16 +105,16 @@ export function renderCategory(category: ThreatCategory): string {
 export function threatNamed(
   model: Model,
   ref: string,
-): Either.Either<Threat, readonly string[]> {
+): Result.Result<Threat, readonly string[]> {
   const found =
     model.threats.find((threat) => threat.id === ref) ??
     model.threats.find((threat) => String(threat.number) === ref);
   return found === undefined
-    ? Either.left([
+    ? Result.fail([
         `The model holds no threat ${quotedForTerminal(ref)}, by number or by id.`,
         `It holds ${String(model.threats.length)} threats. Call saer_search_threats for their numbers.`,
       ])
-    : Either.right(found);
+    : Result.succeed(found);
 }
 
 /**

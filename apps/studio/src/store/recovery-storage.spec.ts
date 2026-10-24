@@ -9,7 +9,7 @@ import {
   floodingEntries,
   sharedModel,
 } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { reasonOf } from '../reason.js';
 import { studioVersion } from '../version.js';
 import { FileLifecycle } from './state.js';
@@ -55,12 +55,12 @@ function loadStored(raw: string) {
 }
 
 const rejectedAs = (problem: RecoveryProblem) =>
-  Either.left(RecoveryStorageFailure.Rejected({ problem }));
+  Result.fail(RecoveryStorageFailure.Rejected({ problem }));
 
 const parserReason = (raw: string): string =>
-  Either.getOrThrow(
-    Either.flip(
-      Either.try({ try: () => JSON.parse(raw) as unknown, catch: reasonOf }),
+  Result.getOrThrow(
+    Result.flip(
+      Result.try({ try: () => JSON.parse(raw) as unknown, catch: reasonOf }),
     ),
   );
 
@@ -96,7 +96,7 @@ describe('local recovery storage', () => {
     const memory = memoryStorage();
     const storage = localRecoveryStorage(() => memory.backend);
 
-    expect(storage.load()).toEqual(Either.right(undefined));
+    expect(storage.load()).toEqual(Result.succeed(undefined));
   });
 
   it('replaces the one versioned snapshot and gives the model back on load', () => {
@@ -105,11 +105,11 @@ describe('local recovery storage', () => {
     const first = recoverySnapshot(sampleModel, false, opened());
     const latest = recoverySnapshot(sampleModel, true, opened(nativeSource));
 
-    expect(Either.isRight(storage.replace(first))).toBe(true);
+    expect(Result.isSuccess(storage.replace(first))).toBe(true);
     expect(storage.load()).toEqual(
-      Either.right(expectedRestore(sampleModel, false, opened())),
+      Result.succeed(expectedRestore(sampleModel, false, opened())),
     );
-    expect(Either.isRight(storage.replace(latest))).toBe(true);
+    expect(Result.isSuccess(storage.replace(latest))).toBe(true);
 
     const raw = memory.values.get(recoveryStorageKey) ?? '';
     expect(JSON.parse(raw)).toMatchObject({
@@ -123,7 +123,7 @@ describe('local recovery storage', () => {
     expect(raw).not.toContain('"renaming"');
     expect(raw).not.toContain('"lastFailure"');
     expect(storage.load()).toEqual(
-      Either.right(expectedRestore(sampleModel, true, opened(nativeSource))),
+      Result.succeed(expectedRestore(sampleModel, true, opened(nativeSource))),
     );
   });
 
@@ -137,21 +137,21 @@ describe('local recovery storage', () => {
       secondDiagram,
     );
 
-    expect(Either.isRight(storage.replace(shown))).toBe(true);
+    expect(Result.isSuccess(storage.replace(shown))).toBe(true);
     expect(storage.load()).toEqual(
-      Either.right(
+      Result.succeed(
         expectedRestore(twoDiagramModel, false, opened(), secondDiagram),
       ),
     );
 
     storage.replace(recoverySnapshot(twoDiagramModel, false, opened()));
     const earlier = storage.load();
-    expect(Either.isRight(earlier)).toBe(true);
-    expect(Either.getOrThrow(earlier)?.activeDiagram).toBeUndefined();
+    expect(Result.isSuccess(earlier)).toBe(true);
+    expect(Result.getOrThrow(earlier)?.activeDiagram).toBeUndefined();
   });
 
   it('restores a snapshot whose document and retained source are version 1, migrated, with its dirty flag, file and diagram', () => {
-    const snapshot = Either.getOrThrow(loadStored(snapshotBeforeVersion2));
+    const snapshot = Result.getOrThrow(loadStored(snapshotBeforeVersion2));
 
     expect(snapshot?.dirty).toBe(true);
     expect(snapshot?.activeDiagram).toBe(secondDiagram);
@@ -191,7 +191,7 @@ describe('local recovery storage', () => {
   });
 
   it('stores the document a save writes and no retained document for a Saerskriven YAML file, so a file version 2 holds stores no version 3 text', () => {
-    const read = Either.getOrThrow(
+    const read = Result.getOrThrow(
       saerskrivenYamlCodec.read(
         committedText('saerskriven/feature-complete-v3.yaml'),
       ),
@@ -222,7 +222,7 @@ describe('local recovery storage', () => {
     const stored = recoverySnapshot(sharedModel, true, file);
     expect(stored.document.formatVersion).toBe(3);
     expect(loadStored(JSON.stringify(stored))).toEqual(
-      Either.right(expectedRestore(sharedModel, true, file)),
+      Result.succeed(expectedRestore(sharedModel, true, file)),
     );
   });
 
@@ -233,7 +233,7 @@ describe('local recovery storage', () => {
   });
 
   it('restores a version 3 document and retained source', () => {
-    const read = Either.getOrThrow(
+    const read = Result.getOrThrow(
       saerskrivenYamlCodec.read(
         committedText('saerskriven/feature-complete-v3.yaml'),
       ),
@@ -250,7 +250,7 @@ describe('local recovery storage', () => {
       }),
     );
     expect(restored).toEqual(
-      Either.right(expectedRestore(read.model, false, file)),
+      Result.succeed(expectedRestore(read.model, false, file)),
     );
   });
 
@@ -258,14 +258,14 @@ describe('local recovery storage', () => {
     const memory = memoryStorage();
     memory.values.set(recoveryStorageKey, snapshotBeforeVersion2);
     const storage = localRecoveryStorage(() => memory.backend);
-    const earlier = Either.getOrThrow(storage.load());
+    const earlier = Result.getOrThrow(storage.load());
     const present = {
       ...(earlier?.present ?? sampleModel),
       assumptions: (earlier?.present ?? sampleModel).assumptions.map(
         (assumption) => ({ ...assumption, appliesToModel: true }),
       ),
     };
-    const source = Either.getOrThrow(
+    const source = Result.getOrThrow(
       saerskrivenYamlCodec.read(saerskrivenYamlCodec.write(present).output),
     ).source;
     const file = FileLifecycle.Opened({
@@ -275,7 +275,7 @@ describe('local recovery storage', () => {
     storage.replace(recoverySnapshot(present, true, file, secondDiagram));
 
     expect(storage.load()).toEqual(
-      Either.right(
+      Result.succeed(
         expectedRestore(
           present,
           true,
@@ -287,7 +287,7 @@ describe('local recovery storage', () => {
         ),
       ),
     );
-    const restored = Either.getOrThrow(storage.load());
+    const restored = Result.getOrThrow(storage.load());
     expect(restored?.dirty).toBe(true);
     expect(restored?.activeDiagram).toBe(secondDiagram);
     expect(restored?.file).toMatchObject({
@@ -316,7 +316,7 @@ describe('local recovery storage', () => {
     };
     storage.replace(recoverySnapshot(present, true, FileLifecycle.NoFile()));
 
-    expect(Either.getOrThrow(storage.load())?.present.threats).toEqual(
+    expect(Result.getOrThrow(storage.load())?.present.threats).toEqual(
       present.threats,
     );
   });
@@ -416,7 +416,7 @@ describe('local recovery storage', () => {
       refused.clear(),
     ]) {
       expect(outcome).toEqual(
-        Either.left(
+        Result.fail(
           RecoveryStorageFailure.Unavailable({
             problem: RecoveryProblem.Thrown({ reason: 'storage disabled' }),
           }),
@@ -430,7 +430,7 @@ describe('local recovery storage', () => {
     const storage = localRecoveryStorage(() => memory.backend);
     storage.replace(recoverySnapshot(sampleModel, true, opened()));
 
-    expect(Either.isRight(storage.clear())).toBe(true);
+    expect(Result.isSuccess(storage.clear())).toBe(true);
     expect(memory.values.has(recoveryStorageKey)).toBe(false);
   });
 });

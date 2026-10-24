@@ -5,7 +5,7 @@ These are requirements, not suggestions.
 
 ## Error handling
 
-Fallible APIs return Effect's `Either`, with a package-owned tagged
+Fallible APIs return Effect's `Result`, with a package-owned tagged
 failure on the error channel: an Effect `Data.taggedEnum` discriminated
 on `_tag`, readonly, and serializing to its plain tagged shape. Throwing
 is not an error channel in this project's TypeScript. `parseModel`
@@ -25,7 +25,7 @@ A resource read and a prompt have no refused result in the MCP protocol, so
 the MCP server has a second boundary: the resource-read and prompt handlers
 in `packages/mcp/src/lib/server.ts` turn the failure they are handed into the
 protocol error the SDK contract requires, and they are the only place in the
-server that throws. The functions they call still return `Either`.
+server that throws. The functions they call still return `Result`.
 
 One other function throws on purpose. `svgNumber` in
 `packages/canvas/src/lib/numbers.ts` raises a `RangeError` for a number that
@@ -37,7 +37,7 @@ render cannot hand React a failure as a value, so the throw ends at each app's
 outermost boundary: the studio's error boundary, `runCli`, and the MCP SDK's
 dispatch around the server's handlers, which answers with an error result.
 
-An operation with no value to return is typed `Either<void, E>`, never a
+An operation with no value to return is typed `Result<void, E>`, never a
 bare `void`. Narrowing such a parameter to `void` is not the simplification
 it looks like: TypeScript accepts a function returning anything where a
 `void`-returning function is expected, so every callback already passed in

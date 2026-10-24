@@ -9,7 +9,7 @@ import {
   threatSchema,
   type Threat,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import {
   elementDetail,
@@ -40,7 +40,6 @@ import {
 } from './threat-rows.js';
 import type { ModelWorkspace } from './workspace.js';
 
-/** What `saer_get_threat` takes. */
 export const getThreatArgumentsSchema = fileArgumentSchema.extend({
   ref: z
     .string()
@@ -49,10 +48,8 @@ export const getThreatArgumentsSchema = fileArgumentSchema.extend({
     ),
 });
 
-/** What `saer_get_threat` takes. */
 export type GetThreatArguments = z.infer<typeof getThreatArgumentsSchema>;
 
-/** What `saer_get_threat` answers with. */
 export const getThreatResultSchema = readingSchema.extend({
   threat: threatSchema,
   flags: z.array(threatFlagSchema),
@@ -61,10 +58,8 @@ export const getThreatResultSchema = readingSchema.extend({
   assumptions: z.array(assumptionSchema),
 });
 
-/** What `saer_get_threat` answers with. */
 export type GetThreatResult = z.infer<typeof getThreatResultSchema>;
 
-/** What `saer_get_threat` tells a client it is for. */
 export const getThreatDescription = [
   'Read one threat of a Saerskriven threat model in full: the whole record, which says whether the threat applies to the model as a whole (`appliesToModel`), the flags its records raise, the elements it attaches to, the mitigation records addressing it, and the assumption records its analysis rests on, each assumption saying whether it also applies to the model.',
   flagsDescription,
@@ -83,9 +78,9 @@ export const getThreatDescription = [
 export function getThreat(
   workspace: ModelWorkspace,
   args: GetThreatArguments,
-): Either.Either<GetThreatResult, readonly string[]> {
-  return Either.flatMap(readNamed(workspace, args.file), (reading) =>
-    Either.map(threatNamed(reading.model, args.ref), (threat) =>
+): Result.Result<GetThreatResult, readonly string[]> {
+  return Result.flatMap(readNamed(workspace, args.file), (reading) =>
+    Result.map(threatNamed(reading.model, args.ref), (threat) =>
       recorded(reading, threat),
     ),
   );

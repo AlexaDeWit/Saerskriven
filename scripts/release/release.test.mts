@@ -4,7 +4,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, test } from 'node:test';
 
-import { Either } from 'effect';
+import { Result } from 'effect';
 
 import {
   parseReleaseVersion,
@@ -24,8 +24,8 @@ import {
   right,
 } from './release.fixtures.mts';
 
-const readVersion = (): Either.Either<string, ReleaseFailure> =>
-  Either.right('0.1.0');
+const readVersion = (): Result.Result<string, ReleaseFailure> =>
+  Result.succeed('0.1.0');
 
 const tagOptions = (
   run: RunCommand,

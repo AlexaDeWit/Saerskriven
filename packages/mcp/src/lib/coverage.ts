@@ -6,7 +6,7 @@ import {
   type Model,
   type Severity,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import {
   elementRow,
@@ -24,7 +24,6 @@ import {
 } from './reading.js';
 import type { ModelWorkspace } from './workspace.js';
 
-/** What `saer_coverage` takes. */
 export type CoverageArguments = z.infer<typeof fileArgumentSchema>;
 
 const openSeveritySchema = z.object({
@@ -33,17 +32,14 @@ const openSeveritySchema = z.object({
   threats: z.array(z.int().positive()),
 });
 
-/** What `saer_coverage` answers with. */
 export const coverageResultSchema = readingSchema.extend({
   unanalyzed: z.array(elementRowSchema),
   open: z.array(openSeveritySchema),
   perElement: z.array(elementRowSchema),
 });
 
-/** What `saer_coverage` answers with. */
 export type CoverageResult = z.infer<typeof coverageResultSchema>;
 
-/** What `saer_coverage` tells a client it is for. */
 export const coverageDescription = [
   'Report what one Saerskriven threat model has analyzed and what it has not: the elements no threat references, the open threats grouped by severity, and the number of threats recorded against every element of every diagram.',
   'Call this to decide where to work next, and to answer whether a model is analyzed at all. Use saer_search_elements where you want to look up particular elements, and saer_search_threats where you want the threats themselves rather than the counts.',
@@ -56,8 +52,8 @@ export const coverageDescription = [
 export function coverage(
   workspace: ModelWorkspace,
   args: CoverageArguments,
-): Either.Either<CoverageResult, readonly string[]> {
-  return Either.map(readNamed(workspace, args.file), coverageOf);
+): Result.Result<CoverageResult, readonly string[]> {
+  return Result.map(readNamed(workspace, args.file), coverageOf);
 }
 
 /** The coverage as the lines its text result carries. */

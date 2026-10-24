@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { parseYaml } from './parse-yaml.js';
 import { readLimits } from './read-limits.js';
 
@@ -10,7 +10,7 @@ describe('bounded YAML line endings', () => {
         ending,
       );
       expect(parseYaml(text)).toEqual(
-        Either.right({ severity: { high: '#123456' } }),
+        Result.succeed({ severity: { high: '#123456' } }),
       );
     },
   );
@@ -18,19 +18,19 @@ describe('bounded YAML line endings', () => {
   it('preserves escaped carriage returns and normalizes raw block-scalar line endings', () => {
     const text = 'escaped: "first\\rsecond"\rblock: |\r  first\r  second\r';
     expect(parseYaml(text)).toEqual(
-      Either.right({ escaped: 'first\rsecond', block: 'first\nsecond\n' }),
+      Result.succeed({ escaped: 'first\rsecond', block: 'first\nsecond\n' }),
     );
   });
 
   it('reports the same malformed-input location for CR and LF sources', () => {
     const lines = ['severity:', '  high: [', ''];
     expect(parseYaml(lines.join('\r'))).toEqual(parseYaml(lines.join('\n')));
-    expect(Either.isLeft(parseYaml(lines.join('\r')))).toBe(true);
+    expect(Result.isFailure(parseYaml(lines.join('\r')))).toBe(true);
   });
 
   it('checks the original byte count before normalization', () => {
     const text = '\r'.repeat(readLimits.maxTextBytes + 1);
-    expect(Either.getLeft(parseYaml(text))).toMatchObject({
+    expect(Result.getFailure(parseYaml(text))).toMatchObject({
       value: {
         _tag: 'ExceededReadLimit',
         limit: 'maxTextBytes',
@@ -45,7 +45,7 @@ describe('bounded YAML line endings', () => {
       () => '*a',
     ).join(',');
     const read = parseYaml(`a: &a []\rb: [${aliases}]\r`);
-    expect(Either.getLeft(read)).toMatchObject({
+    expect(Result.getFailure(read)).toMatchObject({
       value: { _tag: 'ExceededReadLimit', limit: 'maxAliasCount' },
     });
   });

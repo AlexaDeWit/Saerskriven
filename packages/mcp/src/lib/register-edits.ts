@@ -39,7 +39,7 @@ import {
   type Model,
   type ThreatId,
 } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { unappliedEdit } from './operation-failure.js';
 
@@ -205,7 +205,7 @@ export function isRegisterEdit(edit: {
 export function applyRegisterEdit(
   model: Model,
   edit: RegisterEdit,
-): Either.Either<Model, OperationFailure> {
+): Result.Result<Model, OperationFailure> {
   switch (edit.op) {
     case 'add_threat':
       return addThreat(model, {
@@ -315,15 +315,15 @@ const withAssumption = patching(
 function patching<Held extends { readonly id: string }>(
   select: (model: Model) => readonly Held[],
   unknown: (id: Held['id']) => OperationFailure,
-  replace: (model: Model, next: Held) => Either.Either<Model, OperationFailure>,
+  replace: (model: Model, next: Held) => Result.Result<Model, OperationFailure>,
 ): (
   model: Model,
   id: Held['id'],
   change: (held: Held) => Held,
-) => Either.Either<Model, OperationFailure> {
+) => Result.Result<Model, OperationFailure> {
   return (model, id, change) =>
-    Either.flatMap(
-      Either.fromNullable(
+    Result.flatMap(
+      Result.fromNullishOr(
         select(model).find((record) => record.id === id),
         () => unknown(id),
       ),

@@ -234,7 +234,7 @@ without history.
 ## Rules for changes
 
 - A reducer arm changes the model only by calling a `@saerskriven/model`
-  operation and folding its `Either`. Never assign into `state.present` or
+  operation and folding its `Result`. Never assign into `state.present` or
   into anything it holds: the stacks share those objects, so one write in
   place rewrites every snapshot at once and takes undo, redo and unsaved work
   down together. The spec that holds this clones the state with

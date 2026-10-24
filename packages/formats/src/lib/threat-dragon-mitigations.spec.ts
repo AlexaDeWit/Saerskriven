@@ -1,13 +1,13 @@
 import type { Mitigation, MitigationStatus, Model } from '@saerskriven/model';
 import { parsedFixture } from '@saerskriven/model/fixtures';
 import type { ThreatDragonDocument } from '@saerskriven/wire-threat-dragon';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { Divergence } from './divergence.js';
 import { readThreatDragon } from './threat-dragon-read.js';
 import { writeThreatDragon } from './threat-dragon-write.js';
 import { allThreats, mitigationTextFixture } from './threat-dragon.fixtures.js';
 
-const read = Either.getOrThrow(
+const read = Result.getOrThrow(
   readThreatDragon(JSON.stringify(mitigationTextFixture)),
 );
 
@@ -29,7 +29,7 @@ const withRecords = (mitigations: ReturnType<typeof record>[]): Model =>
 
 const writtenOnto = (model: Model) => {
   const written = writeThreatDragon(model, read.source);
-  const document: ThreatDragonDocument = Either.getOrThrow(
+  const document: ThreatDragonDocument = Result.getOrThrow(
     readThreatDragon(written.output),
   ).source;
   return {
@@ -116,7 +116,7 @@ describe('flattening the records of a threat into its one text', () => {
       }),
     ]);
     const written = writeThreatDragon(model, read.source);
-    const reread = Either.getOrThrow(readThreatDragon(written.output));
+    const reread = Result.getOrThrow(readThreatDragon(written.output));
     expect(
       allThreats(reread.source).find(({ id }) => id === 'threat-open')
         ?.mitigation,

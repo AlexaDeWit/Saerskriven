@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   flowEndFailure,
   locatedDrawn,
@@ -54,8 +54,8 @@ export function setFlowWaypoints(
   elementId: ElementId,
   waypoints: readonly Point[],
   decimals?: Decimals,
-): Either.Either<Model, FlowRouteFailure> {
-  return Either.map(
+): Result.Result<Model, FlowRouteFailure> {
+  return Result.map(
     locatedFlow(model, diagramId, elementId),
     ({ diagramIndex, drawn: flow }) => {
       const stored = storedPoints(waypoints, decimals);
@@ -87,13 +87,13 @@ export function reconnectFlow(
   side: 'source' | 'target',
   endpointId: ElementId,
   anchor?: Side,
-): Either.Either<Model, ReconnectFlowFailure> {
-  return Either.flatMap(
+): Result.Result<Model, ReconnectFlowFailure> {
+  return Result.flatMap(
     locatedFlow(model, diagramId, elementId),
     ({
       diagramIndex,
       drawn: flow,
-    }): Either.Either<Model, ReconnectFlowFailure> => {
+    }): Result.Result<Model, ReconnectFlowFailure> => {
       const next = attachedEndpoint(endpointId, anchor);
       const refusal = flowEndFailure(
         model,
@@ -103,10 +103,10 @@ export function reconnectFlow(
         side === 'source' ? flow.target : flow.source,
       );
       if (refusal !== undefined) {
-        return Either.left(refusal);
+        return Result.fail(refusal);
       }
       const previous = flow[side];
-      return Either.right(
+      return Result.succeed(
         previous.kind === 'attached' &&
           previous.element === endpointId &&
           previous.side === anchor
@@ -136,8 +136,8 @@ export function setFlowEndPosition(
   side: 'source' | 'target',
   position: Point,
   decimals?: Decimals,
-): Either.Either<Model, FlowRouteFailure> {
-  return Either.map(
+): Result.Result<Model, FlowRouteFailure> {
+  return Result.map(
     locatedFlow(model, diagramId, elementId),
     ({ diagramIndex, drawn: flow }) => {
       const held = flow[side];
@@ -177,21 +177,21 @@ export function setAwayEndPosition(
   side: 'source' | 'target',
   position: Point,
   decimals?: Decimals,
-): Either.Either<Model, SetAwayEndPositionFailure> {
-  return Either.flatMap(
+): Result.Result<Model, SetAwayEndPositionFailure> {
+  return Result.flatMap(
     locatedFlow(model, diagramId, elementId),
     ({
       diagramIndex,
       drawn: flow,
-    }): Either.Either<Model, SetAwayEndPositionFailure> => {
+    }): Result.Result<Model, SetAwayEndPositionFailure> => {
       const held = flow[side];
       if (held.kind !== 'away') {
-        return Either.left(
+        return Result.fail(
           OperationFailure.FlowEndNotAway({ elementId, diagramId, side }),
         );
       }
       const stored = storedPoint(position, decimals);
-      return Either.right(
+      return Result.succeed(
         samePoint(held.position, position) || samePoint(held.position, stored)
           ? model
           : withPlacement(
@@ -209,8 +209,8 @@ export function setFlowDirection(
   model: Model,
   elementId: ElementId,
   bidirectional: boolean,
-): Either.Either<Model, FlowEditFailure> {
-  return Either.map(heldFlow(model, elementId), (flow) =>
+): Result.Result<Model, FlowEditFailure> {
+  return Result.map(heldFlow(model, elementId), (flow) =>
     flow.bidirectional === bidirectional
       ? model
       : withElement(model, { ...flow, bidirectional }),
@@ -227,8 +227,8 @@ export function setFlowDirection(
 export function reverseFlow(
   model: Model,
   elementId: ElementId,
-): Either.Either<Model, FlowEditFailure> {
-  return Either.map(heldFlow(model, elementId), (flow) => {
+): Result.Result<Model, FlowEditFailure> {
+  return Result.map(heldFlow(model, elementId), (flow) => {
     const drawings = model.diagrams.flatMap((diagram, diagramIndex) => {
       const drawn = drawnElementOn(model, diagram, elementId);
       return drawn?.kind === 'flow' ? [{ diagramIndex, drawn }] : [];
@@ -254,13 +254,13 @@ export function reverseFlow(
 function heldFlow(
   model: Model,
   elementId: ElementId,
-): Either.Either<Flow, FlowEditFailure> {
-  return Either.flatMap(
+): Result.Result<Flow, FlowEditFailure> {
+  return Result.flatMap(
     locatedElement(model, elementId),
-    ({ element }): Either.Either<Flow, FlowEditFailure> =>
+    ({ element }): Result.Result<Flow, FlowEditFailure> =>
       element.kind === 'flow'
-        ? Either.right(element)
-        : Either.left(OperationFailure.NotFlowElement({ elementId })),
+        ? Result.succeed(element)
+        : Result.fail(OperationFailure.NotFlowElement({ elementId })),
   );
 }
 
@@ -268,16 +268,16 @@ function locatedFlow(
   model: Model,
   diagramId: DiagramId,
   elementId: ElementId,
-): Either.Either<LocatedDrawn<DrawnFlow>, FlowRouteFailure> {
-  return Either.flatMap(
+): Result.Result<LocatedDrawn<DrawnFlow>, FlowRouteFailure> {
+  return Result.flatMap(
     locatedDrawn(model, diagramId, elementId),
     ({
       diagramIndex,
       drawn,
-    }): Either.Either<LocatedDrawn<DrawnFlow>, FlowRouteFailure> =>
+    }): Result.Result<LocatedDrawn<DrawnFlow>, FlowRouteFailure> =>
       drawn.kind === 'flow'
-        ? Either.right({ diagramIndex, drawn })
-        : Either.left(OperationFailure.NotFlowElement({ elementId })),
+        ? Result.succeed({ diagramIndex, drawn })
+        : Result.fail(OperationFailure.NotFlowElement({ elementId })),
   );
 }
 

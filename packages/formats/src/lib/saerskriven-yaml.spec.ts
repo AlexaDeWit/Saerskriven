@@ -16,7 +16,7 @@ import {
 import { saerskrivenYamlWireSchema } from '@saerskriven/wire-saerskriven-yaml';
 import { saerskrivenYamlV2WireSchema } from '@saerskriven/wire-saerskriven-yaml-v2';
 import { saerskrivenYamlV3WireSchema } from '@saerskriven/wire-saerskriven-yaml-v3';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import * as fc from 'fast-check';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -401,7 +401,7 @@ describe(
     it('survives a write and a read as itself, threats in number order, with nothing diverging', () => {
       fc.assert(
         fc.property(modelInputArbitrary, (input) => {
-          const model = Either.getOrThrow(parseDrawnModel(input, 'diagram'));
+          const model = Result.getOrThrow(parseDrawnModel(input, 'diagram'));
           const written = saerskrivenYamlCodec.write(model);
           expect(written.divergences).toEqual([]);
           const reading = readOrThrow(written.output);
@@ -416,7 +416,7 @@ describe(
         fc.property(modelInputArbitrary, (input) => {
           const output: unknown = parse(
             saerskrivenYamlCodec.write(
-              Either.getOrThrow(parseDrawnModel(input, 'diagram')),
+              Result.getOrThrow(parseDrawnModel(input, 'diagram')),
             ).output,
           );
           const document = saerskrivenYamlV2WireSchema.parse(output);
@@ -430,7 +430,7 @@ describe(
       fc.assert(
         fc.property(modelInputArbitrary, (input) => {
           const output = saerskrivenYamlCodec.write(
-            Either.getOrThrow(parseDrawnModel(input, 'diagram')),
+            Result.getOrThrow(parseDrawnModel(input, 'diagram')),
           ).output;
           expect(
             saerskrivenYamlCodec.write(readOrThrow(output).model).output,

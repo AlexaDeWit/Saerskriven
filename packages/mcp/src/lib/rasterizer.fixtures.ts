@@ -6,7 +6,7 @@ import {
 import { drawingFace, ledBy } from '@saerskriven/render/png';
 import type { ResvgAssets } from '@saerskriven/render/resvg';
 import { builtModule, stop, unbuilt } from '@saerskriven/wasm/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readFileSync } from 'node:fs';
 import type { RasterizerAssets } from './render-diagram.js';
 
@@ -22,7 +22,7 @@ const rasterizerWasm = builtModule(resvgWasmAsset);
  * Mono, so the faces are ordered by `ledBy`, as `apps/cli` orders them.
  */
 export const builtRasterizer: RasterizerAssets = () =>
-  Either.map(
+  Result.map(
     ledBy(
       typstFontAssets(stop),
       (font) => font.name,
@@ -41,7 +41,7 @@ export const builtRasterizer: RasterizerAssets = () =>
  * built module of its own to break.
  */
 export const brokenRasterizer: RasterizerAssets = () =>
-  Either.right({
+  Result.succeed({
     wasm: new Uint8Array([0, 1, 2, 3]),
     fonts: [new Uint8Array([0])],
   });

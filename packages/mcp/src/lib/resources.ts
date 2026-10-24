@@ -4,7 +4,7 @@ import type {
   Variables,
 } from '@modelcontextprotocol/server';
 import { diagramsNamed, type Diagram } from '@saerskriven/model';
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import { prefaced } from './preface.js';
 import { readNamed } from './reading.js';
 import { register, renderRegisterResult } from './register.js';
@@ -69,10 +69,10 @@ export const ResourceFailure = Data.taggedEnum<ResourceFailure>();
 /** The register resource: the register of the default model. */
 export function readRegisterResource(
   workspace: ModelWorkspace,
-): Either.Either<ReadResourceResult, ResourceFailure> {
-  return Either.mapBoth(register(workspace, {}), {
-    onLeft: () => ResourceFailure.NoModel(),
-    onRight: (answer) => ({
+): Result.Result<ReadResourceResult, ResourceFailure> {
+  return Result.mapBoth(register(workspace, {}), {
+    onFailure: () => ResourceFailure.NoModel(),
+    onSuccess: (answer) => ({
       contents: [
         {
           uri: registerUri,
@@ -94,15 +94,15 @@ export async function readDiagramResource(
   assets: RasterizerAssets,
   uri: URL,
   variables: Variables,
-): Promise<Either.Either<ReadResourceResult, ResourceFailure>> {
-  const chosen = Either.flatMap(decodedName(variables['diagram']), (named) =>
-    Either.flatMap(
-      Either.mapLeft(readNamed(workspace, undefined), () =>
+): Promise<Result.Result<ReadResourceResult, ResourceFailure>> {
+  const chosen = Result.flatMap(decodedName(variables['diagram']), (named) =>
+    Result.flatMap(
+      Result.mapError(readNamed(workspace, undefined), () =>
         ResourceFailure.NoModel(),
       ),
       (reading) =>
-        Either.map(
-          Either.fromNullable(
+        Result.map(
+          Result.fromNullishOr(
             diagramsNamed(reading.model.diagrams, named)[0],
             () => ResourceFailure.NoSuchDiagram(),
           ),
@@ -110,19 +110,19 @@ export async function readDiagramResource(
         ),
     ),
   );
-  if (Either.isLeft(chosen)) {
-    return Either.left(chosen.left);
+  if (Result.isFailure(chosen)) {
+    return Result.fail(chosen.failure);
   }
-  const { reading, diagram } = chosen.right;
+  const { reading, diagram } = chosen.success;
   const image = await rasterized(
     diagram,
     reading.model,
     assets,
     mcpImageLongEdge,
   );
-  return Either.mapBoth(image, {
-    onLeft: () => ResourceFailure.RasterizerFailed(),
-    onRight: (drawing) =>
+  return Result.mapBoth(image, {
+    onFailure: () => ResourceFailure.RasterizerFailed(),
+    onSuccess: (drawing) =>
       diagramContents(uri, drawnOf(reading, diagram, drawing)),
   });
 }
@@ -135,9 +135,9 @@ export function diagramResources(
   workspace: ModelWorkspace,
 ): ListResourcesResult {
   return {
-    resources: Either.match(readNamed(workspace, undefined), {
-      onLeft: () => [],
-      onRight: ({ model }) =>
+    resources: Result.match(readNamed(workspace, undefined), {
+      onFailure: () => [],
+      onSuccess: ({ model }) =>
         model.diagrams.filter(addressable).map((diagram, index) => ({
           uri: diagramUri(diagram.id),
           name: diagramResourceName(index + 1),
@@ -156,9 +156,9 @@ export function completedDiagrams(
   workspace: ModelWorkspace,
   typed: string,
 ): string[] {
-  return Either.match(readNamed(workspace, undefined), {
-    onLeft: () => [],
-    onRight: ({ model }) =>
+  return Result.match(readNamed(workspace, undefined), {
+    onFailure: () => [],
+    onSuccess: ({ model }) =>
       model.diagrams
         .filter(addressable)
         .map((diagram) => diagram.id)
@@ -172,13 +172,13 @@ function addressable(diagram: Diagram): boolean {
 
 function decodedName(
   value: string | string[] | undefined,
-): Either.Either<string, ResourceFailure> {
+): Result.Result<string, ResourceFailure> {
   return typeof value === 'string'
-    ? Either.try({
+    ? Result.try({
         try: () => decodeURIComponent(value),
         catch: () => ResourceFailure.UndecodableName(),
       })
-    : Either.left(ResourceFailure.NoSuchDiagram());
+    : Result.fail(ResourceFailure.NoSuchDiagram());
 }
 
 function diagramContents(

@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   diagramIndexOf,
   locatedDrawn,
@@ -48,26 +48,26 @@ export function placeElement(
   diagramId: DiagramId,
   placement: Placement,
   decimals?: Decimals,
-): Either.Either<Model, PlaceElementFailure> {
+): Result.Result<Model, PlaceElementFailure> {
   const elementId = placement.element;
-  return Either.flatMap(diagramIndexOf(model, diagramId), (diagramIndex) =>
-    Either.flatMap(
+  return Result.flatMap(diagramIndexOf(model, diagramId), (diagramIndex) =>
+    Result.flatMap(
       locatedElement(model, elementId),
-      ({ element }): Either.Either<Model, PlaceElementFailure> => {
+      ({ element }): Result.Result<Model, PlaceElementFailure> => {
         const placed = elementIdsIn(model.diagrams[diagramIndex]);
         if (placed.has(elementId)) {
-          return Either.left(
+          return Result.fail(
             OperationFailure.ElementAlreadyOnDiagram({ elementId, diagramId }),
           );
         }
         const drawn = drawnElement(element, placement);
         if (drawn === undefined || !drawableEnds(drawn, placed)) {
-          return Either.left(
+          return Result.fail(
             OperationFailure.InvalidPlacement({ elementId, diagramId }),
           );
         }
         const stored = placementOf(storedElement(drawn, decimals));
-        return Either.right(
+        return Result.succeed(
           withPlacedEnds(
             model,
             withDiagram(model, diagramIndex, (diagram) => ({
@@ -94,13 +94,13 @@ export function unplaceElement(
   diagramId: DiagramId,
   elementId: ElementId,
   decimals?: Decimals,
-): Either.Either<Model, UnplaceElementFailure> {
-  return Either.flatMap(
+): Result.Result<Model, UnplaceElementFailure> {
+  return Result.flatMap(
     locatedDrawn(model, diagramId, elementId),
-    ({ diagramIndex }): Either.Either<Model, UnplaceElementFailure> =>
+    ({ diagramIndex }): Result.Result<Model, UnplaceElementFailure> =>
       diagramsOf(model, elementId).length === 1
-        ? Either.left(OperationFailure.LastPlacement({ elementId, diagramId }))
-        : Either.right(
+        ? Result.fail(OperationFailure.LastPlacement({ elementId, diagramId }))
+        : Result.succeed(
             withPlacedEnds(
               model,
               withDiagram(model, diagramIndex, (diagram) => ({

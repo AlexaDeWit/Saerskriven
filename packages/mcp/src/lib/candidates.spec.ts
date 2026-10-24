@@ -1,10 +1,10 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { join } from 'node:path';
 import { candidateFiles } from './candidates.js';
 import { workspaceTree } from './workspace.fixtures.js';
 import { openWorkspace } from './workspace.js';
 
-const workspace = Either.getOrThrow(
+const workspace = Result.getOrThrow(
   openWorkspace({ root: workspaceTree().root }),
 );
 

@@ -1,7 +1,7 @@
 import { defaultRenderTheme } from '@saerskriven/canvas';
 import { readLimits } from '@saerskriven/formats';
 import { referencingYaml } from '@saerskriven/mcp/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { join } from 'node:path';
 import { fixtureFile, scratchDirectory } from './cli.fixtures.js';
 import { runCli } from './cli.js';
@@ -27,14 +27,14 @@ describe('best-effort theme files', () => {
     '\ufeff# comment\r\n',
     '\ufeff# comment\r',
   ])('uses defaults for empty content %j', (text) => {
-    const read = Either.getOrThrow(readThemeFile(file(text)));
+    const read = Result.getOrThrow(readThemeFile(file(text)));
     expect(read).toEqual({ theme: defaultRenderTheme, diagnostics: [] });
   });
 
   it.each(['\n', '\r\n', '\r'])(
     'reads overrides after a comment with line ending %j',
     (ending) => {
-      const read = Either.getOrThrow(
+      const read = Result.getOrThrow(
         readThemeFile(
           file(
             ['# comment', 'severity:', '  high: "#123456"', ''].join(ending),
@@ -49,11 +49,11 @@ describe('best-effort theme files', () => {
   it.each(['\n', '\r\n', '\r'])(
     'distinguishes comment-only input from explicit null with line ending %j',
     (ending) => {
-      const empty = Either.getOrThrow(
+      const empty = Result.getOrThrow(
         readThemeFile(file(['# first', '  ', '# second', ''].join(ending))),
       );
       expect(empty).toEqual({ theme: defaultRenderTheme, diagnostics: [] });
-      const explicit = Either.getOrThrow(
+      const explicit = Result.getOrThrow(
         readThemeFile(file(['# first', 'null', ''].join(ending))),
       );
       expect(explicit.theme).toEqual(defaultRenderTheme);

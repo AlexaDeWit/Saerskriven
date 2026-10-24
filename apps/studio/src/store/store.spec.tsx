@@ -1,5 +1,5 @@
 import { act, render } from '@testing-library/react';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { useEffect } from 'react';
 import { Action } from './actions.js';
 import {
@@ -74,9 +74,9 @@ describe('the model store', () => {
 });
 
 const loaded = (snapshot?: RecoverySnapshot): RecoveryStorage => ({
-  load: () => Either.right(snapshot),
-  replace: () => Either.right(undefined),
-  clear: () => Either.right(undefined),
+  load: () => Result.succeed(snapshot),
+  replace: () => Result.succeed(undefined),
+  clear: () => Result.succeed(undefined),
 });
 
 const silent: StoreSync = {
@@ -91,11 +91,11 @@ function tabs(snapshot?: RecoverySnapshot) {
     ...loaded(snapshot),
     replace: () => {
       writes.replaced += 1;
-      return Either.right(undefined);
+      return Result.succeed(undefined);
     },
     clear: () => {
       writes.cleared += 1;
-      return Either.right(undefined);
+      return Result.succeed(undefined);
     },
   };
   const sync: StoreSync = {
@@ -169,7 +169,7 @@ describe('session recovery', () => {
       ...loaded(),
       replace: (snapshot) => {
         stored = snapshot;
-        return Either.right(undefined);
+        return Result.succeed(undefined);
       },
     };
     const runtime = createModelStore(storage, silent, twoDiagramModel);
@@ -194,7 +194,7 @@ describe('session recovery', () => {
     const storage: RecoveryStorage = {
       ...loaded(),
       load: () =>
-        Either.left(
+        Result.fail(
           RecoveryStorageFailure.Rejected({
             problem: RecoveryProblem.Unsupported(),
           }),
@@ -218,16 +218,16 @@ describe('session recovery', () => {
       let replacements = 0;
       const storage: RecoveryStorage = {
         ...loaded(),
-        load: () => Either.left(failure),
+        load: () => Result.fail(failure),
         replace: () => {
           replacements += 1;
           return replacements === 1
-            ? Either.left(
+            ? Result.fail(
                 RecoveryStorageFailure.Unavailable({
                   problem: RecoveryProblem.Thrown({ reason: 'Quota reached.' }),
                 }),
               )
-            : Either.right(undefined);
+            : Result.succeed(undefined);
         },
       };
       const runtime = createModelStore(storage, silent, sampleModel);
@@ -302,7 +302,7 @@ describe('session recovery', () => {
       {
         ...loaded(),
         load: () =>
-          Either.left(
+          Result.fail(
             RecoveryStorageFailure.Rejected({
               problem: RecoveryProblem.Unsupported(),
             }),
@@ -328,7 +328,7 @@ describe('session recovery', () => {
       replace: (snapshot) => {
         expect(runtime.modelStore.getState().present).toBe(sampleModel);
         stored = snapshot;
-        return Either.right(undefined);
+        return Result.succeed(undefined);
       },
     };
     runtime = createModelStore(storage, silent, sampleModel);
@@ -348,7 +348,7 @@ describe('session recovery', () => {
       ...loaded(),
       replace: () => {
         replacements += 1;
-        return Either.right(undefined);
+        return Result.succeed(undefined);
       },
     };
     const runtime = createModelStore(storage, silent, sampleModel);
@@ -365,8 +365,8 @@ describe('session recovery', () => {
       replace: () => {
         replacements += 1;
         return replacements === 1
-          ? Either.right(undefined)
-          : Either.left(
+          ? Result.succeed(undefined)
+          : Result.fail(
               RecoveryStorageFailure.Unavailable({
                 problem: RecoveryProblem.Thrown({ reason: 'Quota reached.' }),
               }),
@@ -409,7 +409,7 @@ describe('session recovery', () => {
     tab.storage = {
       ...tab.storage,
       replace: () =>
-        Either.left(
+        Result.fail(
           RecoveryStorageFailure.Unavailable({
             problem: RecoveryProblem.Thrown({ reason: 'Quota reached.' }),
           }),
@@ -505,7 +505,7 @@ describe('session recovery', () => {
       ...loaded(restorableSnapshot(sampleModel, true, FileLifecycle.NoFile())),
       clear: () => {
         clears += 1;
-        return Either.right(undefined);
+        return Result.succeed(undefined);
       },
     };
     const runtime = createModelStore(storage, silent);
@@ -527,24 +527,26 @@ describe('session recovery', () => {
       clear: () => {
         clears += 1;
         return clears === 1
-          ? Either.left(
+          ? Result.fail(
               RecoveryStorageFailure.Unavailable({
                 problem: RecoveryProblem.Thrown({ reason: 'Clear failed.' }),
               }),
             )
-          : Either.right(undefined);
+          : Result.succeed(undefined);
       },
     };
     const runtime = createModelStore(storage, silent);
 
-    expect(runtime.dispatch(Action.Closed())._tag).toBe('Left');
+    expect(runtime.dispatch(Action.Closed())._tag).toBe('Failure');
     const retained = runtime.modelStore.getState();
     expect(retained.present).toEqual(sampleModel);
     expect(retained.file).toEqual(file);
     expect(isDirty(retained)).toBe(true);
     expect(retained.lastFailure?._tag).toBe('RecoveryUnavailable');
 
-    expect(runtime.dispatch(Action.Closed())).toEqual(Either.right(undefined));
+    expect(runtime.dispatch(Action.Closed())).toEqual(
+      Result.succeed(undefined),
+    );
     expect(runtime.modelStore.getState().present).toBe(placeholderModel);
     expect(runtime.modelStore.getState().file).toEqual(FileLifecycle.NoFile());
   });

@@ -17,7 +17,7 @@ import type {
   ThreatDragonDocument,
 } from '@saerskriven/wire-threat-dragon';
 import { Ajv } from 'ajv';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { renderDivergences, type Divergence } from './divergence.js';
 import { threatDragonJsonSchema } from './corpus.fixtures.js';
 import { threatsOf } from './threat-dragon-document.js';
@@ -83,7 +83,7 @@ const onDiagramOf = (model: Model, id: string) =>
   diagramsOf(model, elementId(id))[0].id;
 
 const movedByHalf = (id: string): Model =>
-  Either.getOrThrow(
+  Result.getOrThrow(
     moveElement(richer, onDiagramOf(richer, id), elementId(id), {
       x: 0.5,
       y: 0.5,
@@ -100,7 +100,7 @@ const underTen: readonly (readonly [id: string, size: Size])[] = [
 
 const shrunk = underTen.reduce(
   (model, [id, size]) =>
-    Either.getOrThrow(
+    Result.getOrThrow(
       resizeElement(model, onDiagramOf(model, id), elementId(id), size),
     ),
   richer,
@@ -326,9 +326,9 @@ describe('writing a model that holds accents', () => {
     'element-zone',
     'element-note',
   ];
-  const accented = Either.getOrThrow(
+  const accented = Result.getOrThrow(
     setAccent(
-      Either.getOrThrow(
+      Result.getOrThrow(
         setAccent(
           richer,
           onDiagramOf(richer, 'element-clerk'),

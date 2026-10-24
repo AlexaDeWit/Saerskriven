@@ -1,5 +1,5 @@
 import { drawingFace } from '@saerskriven/render/png';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { AssetFailure } from '../asset-failure.js';
 
 const response = (byte: number): Response =>
@@ -25,9 +25,9 @@ describe('the bytes a projection is drawn with', () => {
     vi.stubGlobal('fetch', fetchBytes);
     const loader = await import('./render-assets.js');
 
-    const pdf = Either.getOrThrow(await loader.loadPdfAssets());
-    const again = Either.getOrThrow(await loader.loadPdfAssets());
-    const png = Either.getOrThrow(await loader.loadPngAssets());
+    const pdf = Result.getOrThrow(await loader.loadPdfAssets());
+    const again = Result.getOrThrow(await loader.loadPdfAssets());
+    const png = Result.getOrThrow(await loader.loadPngAssets());
 
     expect(pdf.wasm).toEqual(new Uint8Array([7]));
     expect(pdf.fonts).toHaveLength(5);
@@ -45,8 +45,8 @@ describe('the bytes a projection is drawn with', () => {
     );
     const loader = await import('./render-assets.js');
 
-    const pdf = Either.getOrThrow(await loader.loadPdfAssets());
-    const png = Either.getOrThrow(await loader.loadPngAssets());
+    const pdf = Result.getOrThrow(await loader.loadPdfAssets());
+    const png = Result.getOrThrow(await loader.loadPngAssets());
 
     expect(pdf.fonts[0]).toEqual(new Uint8Array([1]));
     expect(png.fonts[0]).toEqual(new Uint8Array([2]));
@@ -61,9 +61,9 @@ describe('the bytes a projection is drawn with', () => {
 
     const refused = await loader.loadPngAssets();
 
-    expect(Either.isRight(await loader.loadPdfAssets())).toBe(true);
+    expect(Result.isSuccess(await loader.loadPdfAssets())).toBe(true);
     expect(refused).toEqual(
-      Either.left(AssetFailure.FaceMissing({ face: drawingFace })),
+      Result.fail(AssetFailure.FaceMissing({ face: drawingFace })),
     );
   });
 
@@ -80,14 +80,14 @@ describe('the bytes a projection is drawn with', () => {
     const loader = await import('./render-assets.js');
 
     const denied = await loader.loadPdfAssets();
-    expect(Either.isLeft(denied)).toBe(true);
-    if (Either.isRight(denied)) {
+    expect(Result.isFailure(denied)).toBe(true);
+    if (Result.isSuccess(denied)) {
       throw new Error('The refused asset load unexpectedly succeeded.');
     }
-    expect(denied.left).toMatchObject({ _tag: 'Answered', status: 404 });
+    expect(denied.failure).toMatchObject({ _tag: 'Answered', status: 404 });
     refused = false;
 
-    expect(Either.isRight(await loader.loadPdfAssets())).toBe(true);
+    expect(Result.isSuccess(await loader.loadPdfAssets())).toBe(true);
   });
 
   it('reports a fetch rejection as text', async () => {
@@ -95,7 +95,7 @@ describe('the bytes a projection is drawn with', () => {
     const loader = await import('./render-assets.js');
 
     expect(await loader.loadPngAssets()).toEqual(
-      Either.left(AssetFailure.Unavailable({ reason: 'offline' })),
+      Result.fail(AssetFailure.Unavailable({ reason: 'offline' })),
     );
   });
 });

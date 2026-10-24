@@ -1,7 +1,7 @@
 import { issueFloodCode, type Model } from '@saerskriven/model';
 import type { saerskrivenYamlV3WireSchema } from '@saerskriven/wire-saerskriven-yaml-v3';
 import { threatDragonWireSchema } from '@saerskriven/wire-threat-dragon';
-import { Data, Either } from 'effect';
+import { Data, Result } from 'effect';
 import { z } from 'zod';
 import {
   ReadFailure,
@@ -81,14 +81,14 @@ export const DetectionFailure = Data.taggedEnum<DetectionFailure>();
  */
 export function readAnyFormat(
   text: string,
-): Either.Either<DetectedRead, ReadFailure | DetectionFailure> {
+): Result.Result<DetectedRead, ReadFailure | DetectionFailure> {
   for (const entry of registry) {
     const answer = entry.read(text);
     if (answer !== undefined) {
       return answer;
     }
   }
-  return Either.left(
+  return Result.fail(
     DetectionFailure.NoFormatClaimed({
       tried: registry.map((entry) => entry.format),
     }),
@@ -203,7 +203,7 @@ type Attempt = {
   readonly format: FormatName;
   readonly read: (
     text: string,
-  ) => Either.Either<DetectedRead, ReadFailure> | undefined;
+  ) => Result.Result<DetectedRead, ReadFailure> | undefined;
 };
 
 const registry: readonly Attempt[] = [
@@ -228,12 +228,12 @@ function attempt<
     format,
     read: (text: string) => {
       const reading = codec.read(text);
-      if (Either.isRight(reading)) {
-        return Either.right({ format, codec, ...reading.right });
+      if (Result.isSuccess(reading)) {
+        return Result.succeed({ format, codec, ...reading.success });
       }
-      return verdictOn(reading.left, discriminators) === 'declined'
+      return verdictOn(reading.failure, discriminators) === 'declined'
         ? undefined
-        : Either.left(reading.left);
+        : Result.fail(reading.failure);
     },
   };
 }

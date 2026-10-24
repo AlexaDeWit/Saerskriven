@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   assumptionOf,
   boxAt,
@@ -45,14 +45,14 @@ const drawnOn = (model: Model) => drawnElements(model, model.diagrams[0]);
 const tamper = 'threat-tamper-order';
 
 function pasted(source: Model, target: Model) {
-  const fragment = Either.getOrThrow(
+  const fragment = Result.getOrThrow(
     selectionFragment(source, diagram, [elementId('element-api')]),
   );
-  const remapped = Either.getOrThrow(
+  const remapped = Result.getOrThrow(
     remapFragment(fragment, 'pasted', { x: 20, y: 20 }, target),
   );
   const counts = fragmentRecordCounts(target, remapped);
-  const inserted = Either.getOrThrow(insertFragment(target, diagram, remapped));
+  const inserted = Result.getOrThrow(insertFragment(target, diagram, remapped));
   const threat = inserted.threats.at(-1)?.id;
   return { inserted, counts, threat };
 }
@@ -67,7 +67,7 @@ const [mitigation] = validModelFixture.mitigations;
 const [assumption] = validModelFixture.assumptions;
 
 const apiFragment = () =>
-  Either.getOrThrow(
+  Result.getOrThrow(
     selectionFragment(validModel, diagram, [elementId('element-api')]),
   );
 
@@ -86,7 +86,7 @@ describe('selectionFragment', () => {
     expect(fragment.assumptions.map(({ id }) => id)).toEqual([
       'assumption-managed-db',
     ]);
-    expect(Either.isRight(parseModel(fragment))).toBe(true);
+    expect(Result.isSuccess(parseModel(fragment))).toBe(true);
   });
 
   it('excludes the links a copied threat holds to elements outside the selection', () => {
@@ -100,12 +100,12 @@ describe('selectionFragment', () => {
   });
 
   it('copies an assumption only through a copied threat that links it', () => {
-    const unthreatened = Either.getOrThrow(
+    const unthreatened = Result.getOrThrow(
       selectionFragment(validModel, diagram, [elementId('element-db')]),
     );
     expect(unthreatened.threats).toEqual([]);
     expect(unthreatened.assumptions).toEqual([]);
-    const threatened = Either.getOrThrow(
+    const threatened = Result.getOrThrow(
       selectionFragment(validModel, diagram, [elementId('element-api')]),
     );
     expect(threatened.assumptions).toEqual(validModel.assumptions);
@@ -119,7 +119,7 @@ describe('selectionFragment', () => {
         appliesToModel: true,
       })),
     });
-    const fragment = Either.getOrThrow(
+    const fragment = Result.getOrThrow(
       selectionFragment(modelWide, diagram, [elementId('element-api')]),
     );
     expect(fragment.assumptions).toEqual(validModel.assumptions);
@@ -133,7 +133,7 @@ describe('selectionFragment', () => {
         appliesToModel: true,
       })),
     });
-    const fragment = Either.getOrThrow(
+    const fragment = Result.getOrThrow(
       selectionFragment(modelWide, diagram, [elementId('element-api')]),
     );
     expect(fragment.threats).toEqual(apiFragment().threats);
@@ -141,14 +141,14 @@ describe('selectionFragment', () => {
 
   it('includes the endpoint of a selected flow and keeps its free endpoint', () => {
     const flow = flowIn(validModel, 'element-order-flow');
-    const fragment = Either.getOrThrow(
+    const fragment = Result.getOrThrow(
       selectionFragment(validModel, diagram, [flow.id]),
     );
     expect(drawnOn(fragment)).toContainEqual(flow);
     expect(drawnOn(fragment).map((element) => element.id)).toEqual(
       expect.arrayContaining(['element-order-flow', 'element-customer']),
     );
-    expect(Either.isRight(parseModel(fragment))).toBe(true);
+    expect(Result.isSuccess(parseModel(fragment))).toBe(true);
   });
 
   it('includes a flow that runs between two selected nodes', () => {
@@ -161,7 +161,7 @@ describe('selectionFragment', () => {
     }
     flow.target = { kind: 'attached', element: 'element-api' };
     const connected = drawnFixture(input);
-    const fragment = Either.getOrThrow(
+    const fragment = Result.getOrThrow(
       selectionFragment(connected, diagram, [
         elementId('element-customer'),
         elementId('element-api'),
@@ -174,10 +174,10 @@ describe('selectionFragment', () => {
 
   it('refuses a missing diagram and a missing element', () => {
     expect(
-      Either.isLeft(selectionFragment(validModel, diagramId('missing'), [])),
+      Result.isFailure(selectionFragment(validModel, diagramId('missing'), [])),
     ).toBe(true);
     expect(
-      Either.isLeft(
+      Result.isFailure(
         selectionFragment(validModel, diagram, [elementId('missing')]),
       ),
     ).toBe(true);
@@ -185,17 +185,17 @@ describe('selectionFragment', () => {
 });
 
 const whole = () => {
-  const fragment = Either.getOrThrow(
+  const fragment = Result.getOrThrow(
     selectionFragment(
       validModel,
       diagram,
       drawnOn(validModel).map((element) => element.id),
     ),
   );
-  const fresh = Either.getOrThrow(
+  const fresh = Result.getOrThrow(
     remapFragment(fragment, 'fresh', { x: 20, y: 30 }, validModel),
   );
-  const inserted = Either.getOrThrow(
+  const inserted = Result.getOrThrow(
     insertFragment(validModel, diagram, fresh),
   );
   return { fragment, fresh, inserted };
@@ -221,11 +221,11 @@ describe('remapFragment and insertFragment', () => {
   ])(
     'stores the geometry it offsets at %s decimals, and leaves a copied size as it was',
     (decimals, position) => {
-      const copied = Either.getOrThrow(
+      const copied = Result.getOrThrow(
         selectionFragment(noisyModel, noisyDiagram, [noisyProcess]),
       );
 
-      const remapped = Either.getOrThrow(
+      const remapped = Result.getOrThrow(
         remapFragment(copied, 'copy', { x: 24, y: 24 }, noisyModel, decimals),
       );
 
@@ -247,12 +247,14 @@ describe('remapFragment and insertFragment', () => {
         (_, index) => validModel.lastIssuedThreatNumber + index + 1,
       ),
     );
-    expect(Either.isRight(parseModel(inserted))).toBe(true);
+    expect(Result.isSuccess(parseModel(inserted))).toBe(true);
   });
 
   it('rejects a fragment whose ids the model already holds', () => {
     const { fresh, inserted } = whole();
-    expect(Either.isLeft(insertFragment(inserted, diagram, fresh))).toBe(true);
+    expect(Result.isFailure(insertFragment(inserted, diagram, fresh))).toBe(
+      true,
+    );
   });
 
   it('pastes a threat with no model link, whatever the fragment states', () => {
@@ -264,10 +266,10 @@ describe('remapFragment and insertFragment', () => {
         appliesToModel: true,
       })),
     });
-    const remapped = Either.getOrThrow(
+    const remapped = Result.getOrThrow(
       remapFragment(crafted, 'pasted', { x: 0, y: 0 }, validModel),
     );
-    const inserted = Either.getOrThrow(
+    const inserted = Result.getOrThrow(
       insertFragment(validModel, diagram, remapped),
     );
     expect(
@@ -276,35 +278,37 @@ describe('remapFragment and insertFragment', () => {
   });
 
   it('pastes an unnamed element and a flow on one boundary at both ends, which only an edit refuses', () => {
-    const source = Either.getOrThrow(seededModel(unnamedWithLoopedFlow));
-    const fragment = Either.getOrThrow(
+    const source = Result.getOrThrow(seededModel(unnamedWithLoopedFlow));
+    const fragment = Result.getOrThrow(
       selectionFragment(
         source,
         diagram,
         drawnOn(source).map((element) => element.id),
       ),
     );
-    const remapped = Either.getOrThrow(
+    const remapped = Result.getOrThrow(
       remapFragment(fragment, 'pasted', { x: 0, y: 0 }, validModel),
     );
-    expect(Either.isRight(insertFragment(validModel, diagram, remapped))).toBe(
-      true,
-    );
+    expect(
+      Result.isSuccess(insertFragment(validModel, diagram, remapped)),
+    ).toBe(true);
   });
 
   it('refuses a missing diagram, and returns the model itself for an empty fragment', () => {
     const { fragment } = whole();
     expect(
-      Either.isLeft(insertFragment(validModel, diagramId('missing'), fragment)),
+      Result.isFailure(
+        insertFragment(validModel, diagramId('missing'), fragment),
+      ),
     ).toBe(true);
-    const empty = Either.getOrThrow(selectionFragment(validModel, diagram, []));
-    expect(Either.getOrThrow(insertFragment(validModel, diagram, empty))).toBe(
+    const empty = Result.getOrThrow(selectionFragment(validModel, diagram, []));
+    expect(Result.getOrThrow(insertFragment(validModel, diagram, empty))).toBe(
       validModel,
     );
   });
   it('restricts copied lists to selected targets and remaps every retained relationship', () => {
     const secured = drawnFixture(securityModelFixture);
-    const partial = Either.getOrThrow(
+    const partial = Result.getOrThrow(
       selectionFragment(secured, diagram, [
         elementId('element-perimeter'),
         elementId('element-api'),
@@ -313,14 +317,14 @@ describe('remapFragment and insertFragment', () => {
     expect(
       drawnOn(partial).find((element) => element.kind === 'trust-boundary'),
     ).toMatchObject({ containedElements: ['element-api'], crossingFlows: [] });
-    const full = Either.getOrThrow(
+    const full = Result.getOrThrow(
       selectionFragment(
         secured,
         diagram,
         drawnOn(secured).map((element) => element.id),
       ),
     );
-    const remapped = Either.getOrThrow(
+    const remapped = Result.getOrThrow(
       remapFragment(full, 'copy', { x: 20, y: 30 }, secured),
     );
     expect(drawnOn(remapped)[3]).toMatchObject({
@@ -330,10 +334,10 @@ describe('remapFragment and insertFragment', () => {
       containedElements: ['copy:element-api', 'copy:element-db'],
       crossingFlows: ['copy:element-order-flow'],
     });
-    const inserted = Either.getOrThrow(
+    const inserted = Result.getOrThrow(
       insertFragment(secured, diagram, remapped),
     );
-    expect(Either.isRight(parseModel(inserted))).toBe(true);
+    expect(Result.isSuccess(parseModel(inserted))).toBe(true);
     expect(drawnOn(inserted).slice(0, drawnOn(secured).length)).toStrictEqual(
       drawnOn(secured),
     );
@@ -351,20 +355,20 @@ describe('pasted threat numbers', () => {
       threatOf({ number: 3, elements: ['el-a'] }),
     ],
   });
-  const cut = Either.getOrThrow(removeElement(source, cutElement));
+  const cut = Result.getOrThrow(removeElement(source, cutElement));
 
   function remapped(target: Model, prefix: string, from = source): Model {
-    const fragment = Either.getOrThrow(
+    const fragment = Result.getOrThrow(
       selectionFragment(from, drawn, [cutElement]),
     );
-    return Either.getOrThrow(
+    return Result.getOrThrow(
       remapFragment(fragment, prefix, { x: 20, y: 20 }, target),
     );
   }
 
   function pastedInto(target: Model, fragment: Model) {
-    const inserted = Either.getOrThrow(insertFragment(target, drawn, fragment));
-    expect(Either.isRight(parseModel(inserted))).toBe(true);
+    const inserted = Result.getOrThrow(insertFragment(target, drawn, fragment));
+    expect(Result.isSuccess(parseModel(inserted))).toBe(true);
     return {
       numbers: inserted.threats
         .slice(target.threats.length)
@@ -383,7 +387,7 @@ describe('pasted threat numbers', () => {
     const copied = pastedInto(source, remapped(source, 'copied'));
     expect(copied.numbers).toEqual([4, 5]);
     expect(copied.inserted.lastIssuedThreatNumber).toBe(5);
-    const partlyHeld = Either.getOrThrow(
+    const partlyHeld = Result.getOrThrow(
       removeThreat(source, threatId('threat-1')),
     );
     const mixed = pastedInto(partlyHeld, remapped(partlyHeld, 'mixed'));
@@ -456,7 +460,7 @@ describe('pasting records', () => {
   );
 
   it('clones a record the model no longer holds', () => {
-    const culled = Either.getOrThrow(
+    const culled = Result.getOrThrow(
       unlinkMitigation(
         validModel,
         validModel.mitigations[0].id,
@@ -555,21 +559,23 @@ describe('pasting records', () => {
   });
 
   it('refuses a copied record that shares an id with a different record', () => {
-    const fragment = Either.getOrThrow(
+    const fragment = Result.getOrThrow(
       selectionFragment(validModel, diagram, [elementId('element-api')]),
     );
-    const remapped = Either.getOrThrow(
+    const remapped = Result.getOrThrow(
       remapFragment(fragment, 'pasted', { x: 0, y: 0 }, validModel),
     );
     const edited = withRecords({
       mitigations: [{ ...mitigation, prose: 'Edited.' }],
       assumptions: validModelFixture.assumptions,
     });
-    expect(Either.isLeft(insertFragment(edited, diagram, remapped))).toBe(true);
+    expect(Result.isFailure(insertFragment(edited, diagram, remapped))).toBe(
+      true,
+    );
   });
 
   it('pastes no model link and no record that links no pasted threat', () => {
-    const fragment = Either.getOrThrow(
+    const fragment = Result.getOrThrow(
       selectionFragment(validModel, diagram, [elementId('element-api')]),
     );
     const crafted = parsedFixture({
@@ -585,10 +591,10 @@ describe('pasting records', () => {
       ],
     });
     const empty = withRecords({ mitigations: [], assumptions: [] });
-    const remapped = Either.getOrThrow(
+    const remapped = Result.getOrThrow(
       remapFragment(crafted, 'pasted', { x: 0, y: 0 }, empty),
     );
-    const inserted = Either.getOrThrow(
+    const inserted = Result.getOrThrow(
       insertFragment(empty, diagram, remapped),
     );
     expect(inserted.assumptions).toEqual([
@@ -641,24 +647,24 @@ describe('pasting a threat that applies to the model', () => {
     mitigations: [shared],
     assumptions: [rested],
   });
-  const cut = Either.getOrThrow(removeElement(source, copied));
+  const cut = Result.getOrThrow(removeElement(source, copied));
 
   function pastedInto(target: Model, from = source) {
-    const fragment = Either.getOrThrow(
+    const fragment = Result.getOrThrow(
       selectionFragment(from, drawn, [copied]),
     );
-    const remapped = Either.getOrThrow(
+    const remapped = Result.getOrThrow(
       remapFragment(fragment, 'pasted', { x: 20, y: 20 }, target),
     );
     return {
-      inserted: Either.getOrThrow(insertFragment(target, drawn, remapped)),
+      inserted: Result.getOrThrow(insertFragment(target, drawn, remapped)),
       records: fragmentRecordCounts(target, remapped),
       held: fragmentHeldThreats(target, remapped).map(({ id }) => id),
     };
   }
 
   const edited = (change: Partial<Threat>): Model =>
-    Either.getOrThrow(replaceThreat(source, { ...modelWide, ...change }));
+    Result.getOrThrow(replaceThreat(source, { ...modelWide, ...change }));
 
   it('attaches the pasted element to the threat a cut left in the model, under its number, and copies none', () => {
     expect(cut.threats).toEqual([{ ...modelWide, elements: [] }]);

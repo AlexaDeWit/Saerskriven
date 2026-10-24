@@ -6,7 +6,7 @@ import {
 } from '@saerskriven/model';
 import { drawnAt, elementId, parsedFixture } from '@saerskriven/model/fixtures';
 import { waitFor } from '@testing-library/react';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { recordingSurface } from '../commands/commands.fixtures.js';
 import { commandById, runCommand } from '../commands/registry.js';
 import { deferred } from '../files/files.fixtures.js';
@@ -240,7 +240,7 @@ describe('copySelected', () => {
       true,
     );
     await copySelected();
-    const copy = Either.getOrThrow(
+    const copy = Result.getOrThrow(
       saerskrivenYamlCodec.read(clipboard.text()),
     ).model;
     expect(copy.threats[0].elements).toEqual([actorElement]);
@@ -319,7 +319,7 @@ describe('pasteSelected', () => {
     await copySelected();
     expect(
       drawnAt(
-        Either.getOrThrow(saerskrivenYamlCodec.read(clipboard.text())).model,
+        Result.getOrThrow(saerskrivenYamlCodec.read(clipboard.text())).model,
       ),
     ).toHaveLength(3);
     await pasteSelected();

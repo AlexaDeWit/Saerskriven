@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { ElementId, ThreatId } from './ids.js';
 import { OperationFailure } from './operation-failures.js';
 import type { Model } from './parse.js';
@@ -52,24 +52,24 @@ export type ThreatModelLinkFailure = UnknownThreatFailure;
 export function addThreat(
   model: Model,
   threat: Threat,
-): Either.Either<Model, AddThreatFailure> {
+): Result.Result<Model, AddThreatFailure> {
   if (model.threats.some((candidate) => candidate.id === threat.id)) {
-    return Either.left(
+    return Result.fail(
       OperationFailure.DuplicateThreatId({ threatId: threat.id }),
     );
   }
   if (threat.number <= model.lastIssuedThreatNumber) {
-    return Either.left(
+    return Result.fail(
       OperationFailure.ReusedThreatNumber({ number: threat.number }),
     );
   }
   const unlinkable = unknownElementIn(model.elements, threat.elements);
   if (unlinkable) {
-    return Either.left(
+    return Result.fail(
       OperationFailure.UnknownElement({ elementId: unlinkable }),
     );
   }
-  return Either.right({
+  return Result.succeed({
     ...model,
     threats: [...model.threats, threat],
     lastIssuedThreatNumber: threat.number,
@@ -87,8 +87,8 @@ export function addThreat(
 export function removeThreat(
   model: Model,
   threatId: ThreatId,
-): Either.Either<Model, RemoveThreatFailure> {
-  return Either.map(heldThreat(model, threatId), () =>
+): Result.Result<Model, RemoveThreatFailure> {
+  return Result.map(heldThreat(model, threatId), () =>
     withoutThreatLinks(
       {
         ...model,
@@ -142,12 +142,12 @@ export function droppedThreats(before: Model, after: Model): Threat[] {
 export function replaceThreat(
   model: Model,
   threat: Threat,
-): Either.Either<Model, ReplaceThreatFailure> {
-  return Either.flatMap(
+): Result.Result<Model, ReplaceThreatFailure> {
+  return Result.flatMap(
     heldThreat(model, threat.id),
-    (replaced): Either.Either<Model, ReplaceThreatFailure> => {
+    (replaced): Result.Result<Model, ReplaceThreatFailure> => {
       if (replaced.number !== threat.number) {
-        return Either.left(
+        return Result.fail(
           OperationFailure.ChangedThreatNumber({
             threatId: threat.id,
             number: threat.number,
@@ -156,10 +156,10 @@ export function replaceThreat(
       }
       const unlinkable = unknownElementIn(model.elements, threat.elements);
       return unlinkable
-        ? Either.left(
+        ? Result.fail(
             OperationFailure.UnknownElement({ elementId: unlinkable }),
           )
-        : Either.right(withThreat(model, threat));
+        : Result.succeed(withThreat(model, threat));
     },
   );
 }
@@ -172,8 +172,8 @@ export function attachThreat(
   model: Model,
   threatId: ThreatId,
   elementId: ElementId,
-): Either.Either<Model, AttachThreatFailure> {
-  return Either.map(linkableThreat(model, threatId, elementId), (threat) =>
+): Result.Result<Model, AttachThreatFailure> {
+  return Result.map(linkableThreat(model, threatId, elementId), (threat) =>
     withThreat(model, {
       ...threat,
       elements: withId(threat.elements, elementId),
@@ -192,8 +192,8 @@ export function detachThreat(
   model: Model,
   threatId: ThreatId,
   elementId: ElementId,
-): Either.Either<Model, DetachThreatFailure> {
-  return Either.map(linkableThreat(model, threatId, elementId), (threat) =>
+): Result.Result<Model, DetachThreatFailure> {
+  return Result.map(linkableThreat(model, threatId, elementId), (threat) =>
     withThreat(model, {
       ...threat,
       elements: withoutId(threat.elements, elementId),
@@ -208,7 +208,7 @@ export function detachThreat(
 export function linkThreatToModel(
   model: Model,
   threatId: ThreatId,
-): Either.Either<Model, ThreatModelLinkFailure> {
+): Result.Result<Model, ThreatModelLinkFailure> {
   return withModelLink(model, threatId, true);
 }
 
@@ -220,7 +220,7 @@ export function linkThreatToModel(
 export function unlinkThreatFromModel(
   model: Model,
   threatId: ThreatId,
-): Either.Either<Model, ThreatModelLinkFailure> {
+): Result.Result<Model, ThreatModelLinkFailure> {
   return withModelLink(model, threatId, false);
 }
 
@@ -235,8 +235,8 @@ export function nextThreatNumber(model: Model): number {
 function heldThreat(
   model: Model,
   threatId: ThreatId,
-): Either.Either<Threat, UnknownThreatFailure> {
-  return Either.fromNullable(
+): Result.Result<Threat, UnknownThreatFailure> {
+  return Result.fromNullishOr(
     model.threats.find((candidate) => candidate.id === threatId),
     () => OperationFailure.UnknownThreat({ threatId }),
   );
@@ -252,8 +252,8 @@ function withModelLink(
   model: Model,
   threatId: ThreatId,
   appliesToModel: boolean,
-): Either.Either<Model, ThreatModelLinkFailure> {
-  return Either.map(heldThreat(model, threatId), (held) =>
+): Result.Result<Model, ThreatModelLinkFailure> {
+  return Result.map(heldThreat(model, threatId), (held) =>
     held.appliesToModel === appliesToModel
       ? model
       : withThreat(model, { ...held, appliesToModel }),
@@ -286,12 +286,12 @@ function linkableThreat(
   model: Model,
   threatId: ThreatId,
   elementId: ElementId,
-): Either.Either<Threat, ThreatLinkFailure> {
-  return Either.flatMap(
+): Result.Result<Threat, ThreatLinkFailure> {
+  return Result.flatMap(
     heldThreat(model, threatId),
-    (threat): Either.Either<Threat, ThreatLinkFailure> =>
+    (threat): Result.Result<Threat, ThreatLinkFailure> =>
       model.elements.some(({ id }) => id === elementId)
-        ? Either.right(threat)
-        : Either.left(OperationFailure.UnknownElement({ elementId })),
+        ? Result.succeed(threat)
+        : Result.fail(OperationFailure.UnknownElement({ elementId })),
   );
 }

@@ -13,7 +13,7 @@ import {
   threatDragonWireSchema,
   type ThreatDragonDocument,
 } from '@saerskriven/wire-threat-dragon';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readFailureIssues } from './codec.fixtures.js';
 import { ReadFailure } from './codec.js';
 import { renderDivergences, type Divergence } from './divergence.js';
@@ -34,9 +34,9 @@ import {
 import { unusedConstructs } from './wire-coverage.fixtures.js';
 
 const failureOf = (text: string): ReadFailure =>
-  Either.match(readThreatDragon(text), {
-    onLeft: (failure) => failure,
-    onRight: () => {
+  Result.match(readThreatDragon(text), {
+    onFailure: (failure) => failure,
+    onSuccess: () => {
       throw new Error('The codec accepted a text it must refuse.');
     },
   });
@@ -435,7 +435,9 @@ describe('a Threat Dragon read that stops', () => {
 
   it('returns a failure rather than throwing on a text nested past any stack', () => {
     expect(
-      Either.isLeft(readThreatDragon(`${'['.repeat(3000)}${']'.repeat(3000)}`)),
+      Result.isFailure(
+        readThreatDragon(`${'['.repeat(3000)}${']'.repeat(3000)}`),
+      ),
     ).toBe(true);
   });
 });

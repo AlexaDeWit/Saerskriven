@@ -1,7 +1,7 @@
 import type { Model } from '@saerskriven/model';
 import { otmWireSchema, type OtmDocument } from '@saerskriven/wire-otm';
 import { tmbomWireSchema, type TmbomDocument } from '@saerskriven/wire-tmbom';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { parseWire, ReadFailure } from './codec.js';
 import {
@@ -35,9 +35,9 @@ export type ImportResult = {
  */
 export function importModel(
   text: string,
-): Either.Either<ImportResult, ReadFailure> {
-  return Either.flatMap(parseYaml(text), (given) =>
-    Either.flatMap(importFormatOf(given), (format) => convert(format, given)),
+): Result.Result<ImportResult, ReadFailure> {
+  return Result.flatMap(parseYaml(text), (given) =>
+    Result.flatMap(importFormatOf(given), (format) => convert(format, given)),
   );
 }
 
@@ -49,24 +49,24 @@ export function importModel(
  */
 export function readOrImport(
   text: string,
-): Either.Either<DetectedRead | ImportResult, ReadFailure | DetectionFailure> {
-  return Either.orElse(readAnyFormat(text), (failure) =>
+): Result.Result<DetectedRead | ImportResult, ReadFailure | DetectionFailure> {
+  return Result.orElse(readAnyFormat(text), (failure) =>
     DetectionFailure.$is('NoFormatClaimed')(failure)
       ? importNamed(text, failure)
-      : Either.left(failure),
+      : Result.fail(failure),
   );
 }
 
 function importFormatOf(
   given: unknown,
-): Either.Either<ImportFormat, ReadFailure> {
+): Result.Result<ImportFormat, ReadFailure> {
   if (isRecord(given) && Object.hasOwn(given, 'otmVersion')) {
-    return Either.right('otm');
+    return Result.succeed('otm');
   }
   if (isRecord(given) && Object.hasOwn(given, '$schema')) {
-    return Either.right('tmbom');
+    return Result.succeed('tmbom');
   }
-  return Either.left(
+  return Result.fail(
     ReadFailure.InvalidWireDocument({
       issues: [
         {
@@ -95,35 +95,35 @@ function releaseNamedBy(schemaUri: string): string {
 function importNamed(
   text: string,
   unclaimed: DetectionFailure,
-): Either.Either<ImportResult, ReadFailure | DetectionFailure> {
+): Result.Result<ImportResult, ReadFailure | DetectionFailure> {
   const given = parseYaml(text);
-  if (Either.isLeft(given)) {
-    return Either.left(unclaimed);
+  if (Result.isFailure(given)) {
+    return Result.fail(unclaimed);
   }
-  const format = importFormatOf(given.right);
-  return Either.isLeft(format)
-    ? Either.left(unclaimed)
-    : convert(format.right, given.right);
+  const format = importFormatOf(given.success);
+  return Result.isFailure(format)
+    ? Result.fail(unclaimed)
+    : convert(format.success, given.success);
 }
 
 function convert(
   format: ImportFormat,
   given: unknown,
-): Either.Either<ImportResult, ReadFailure> {
-  const parsed: Either.Either<OtmDocument | TmbomDocument, ReadFailure> =
+): Result.Result<ImportResult, ReadFailure> {
+  const parsed: Result.Result<OtmDocument | TmbomDocument, ReadFailure> =
     format === 'otm'
       ? parseWire(otmWireSchema, given)
       : parseWire(tmbomWireSchema, given);
-  if (Either.isLeft(parsed)) {
-    return Either.left(parsed.left);
+  if (Result.isFailure(parsed)) {
+    return Result.fail(parsed.failure);
   }
-  const source = parsed.right;
+  const source = parsed.success;
   const mapped = 'otmVersion' in source ? mapOtm(source) : mapTmbom(source);
   if (mapped.context.failure !== undefined) {
-    return Either.left(mapped.context.failure);
+    return Result.fail(mapped.context.failure);
   }
   if (mapped.context.issues.length > 0) {
-    return Either.left(
+    return Result.fail(
       ReadFailure.InvalidWireDocument({ issues: mapped.context.issues }),
     );
   }
@@ -133,9 +133,9 @@ function convert(
     mapped.context.reservePath,
   );
   if (mapped.context.failure !== undefined) {
-    return Either.left(mapped.context.failure);
+    return Result.fail(mapped.context.failure);
   }
-  return Either.map(mapped.model(), (model) => ({
+  return Result.map(mapped.model(), (model) => ({
     format,
     model,
     divergences: [...undeclared, ...mapped.context.divergences],

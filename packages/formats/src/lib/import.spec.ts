@@ -3,7 +3,7 @@ import type { Model } from '@saerskriven/model';
 import { committedText } from '@saerskriven/model/fixtures';
 import { otmWireSchema } from '@saerskriven/wire-otm';
 import { tmbomWireSchema, type TmbomDocument } from '@saerskriven/wire-tmbom';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { stringify } from 'yaml';
 import { readFailureIssues } from './codec.fixtures.js';
 import { DetectionFailure, formatNameSchema } from './detect.js';
@@ -27,12 +27,12 @@ import { unusedConstructs } from './wire-coverage.fixtures.js';
 it.each(['otm', 'tmbom'] as const)(
   'imports the upstream %s graph into a native file in JSON or YAML syntax',
   (format) => {
-    const converted = Either.getOrThrowWith(
+    const converted = Result.getOrThrowWith(
       importModel(importTexts[format]),
       (failure) => new Error(JSON.stringify(failure)),
     );
     const yaml = stringify(JSON.parse(importTexts[format]) as unknown);
-    expect(Either.getOrThrow(importModel(yaml))).toEqual(converted);
+    expect(Result.getOrThrow(importModel(yaml))).toEqual(converted);
     expect(converted.format).toBe(format);
     expect(
       drawnElements(converted.model, converted.model.diagrams[0]).filter(
@@ -45,7 +45,7 @@ it.each(['otm', 'tmbom'] as const)(
     const written = saerskrivenYamlCodec.write(converted.model);
     expect(written.divergences).toEqual([]);
     expect(
-      Either.getOrThrow(saerskrivenYamlCodec.read(written.output)).model,
+      Result.getOrThrow(saerskrivenYamlCodec.read(written.output)).model,
     ).toEqual(converted.model);
     expect(converted.divergences).toEqual(
       expect.arrayContaining([
@@ -56,7 +56,7 @@ it.each(['otm', 'tmbom'] as const)(
 );
 
 it('places an OTM component the diagram representation misses on the shared grid', () => {
-  const read = Either.getOrThrow(importModel(importTexts.otm));
+  const read = Result.getOrThrow(importModel(importTexts.otm));
   const placed = drawnElements(read.model, read.model.diagrams[0]).find(
     (element) => element.name === 'Class CustomerDatabase',
   );
@@ -72,7 +72,7 @@ it('places an OTM component the diagram representation misses on the shared grid
 });
 
 it('places TM-BOM nodes on the same grid, offset by their trust-zone band', () => {
-  const read = Either.getOrThrow(importModel(importTexts.tmbom));
+  const read = Result.getOrThrow(importModel(importTexts.tmbom));
   const placed = drawnElements(read.model, read.model.diagrams[0]).find(
     (element) => element.name.startsWith('Host Filesystem'),
   );
@@ -157,9 +157,9 @@ it('validates the different TM-BOM 1.0.2 requirements', () => {
     })),
     risks: [],
   };
-  expect(Either.isRight(importModel(JSON.stringify(newer)))).toBe(true);
+  expect(Result.isSuccess(importModel(JSON.stringify(newer)))).toBe(true);
   expect(
-    Either.isLeft(
+    Result.isFailure(
       importModel(
         JSON.stringify({
           ...newer,
@@ -178,8 +178,8 @@ it.each(['duplicate', 'dangling'] as const)(
     else if (document.dataflows?.[0] !== undefined)
       document.dataflows[0].source = 'absent';
     expect(importModel(JSON.stringify(document))).toMatchObject({
-      _tag: 'Left',
-      left: { _tag: 'InvalidWireDocument' },
+      _tag: 'Failure',
+      failure: { _tag: 'InvalidWireDocument' },
     });
   },
 );
@@ -195,12 +195,12 @@ it('refuses an OTM component placed past 1,000,000, pathed into the model', () =
   const result = importModel(JSON.stringify(document));
 
   expect(result).toMatchObject({
-    _tag: 'Left',
-    left: { _tag: 'InvalidModel' },
+    _tag: 'Failure',
+    failure: { _tag: 'InvalidModel' },
   });
   expect(
-    Either.isLeft(result) &&
-      readFailureIssues(result.left).map(({ path }) => path.slice(-2)),
+    Result.isFailure(result) &&
+      readFailureIssues(result.failure).map(({ path }) => path.slice(-2)),
   ).toEqual([['position', 'x']]);
 });
 
@@ -208,13 +208,13 @@ it('refuses unknown TM-BOM endpoint types and dangling threat targets', () => {
   const document = tmbomFixture();
   document.data_flows[0].source.type = 'unsupported';
   expect(importModel(JSON.stringify(document))).toMatchObject({
-    _tag: 'Left',
-    left: { _tag: 'InvalidWireDocument' },
+    _tag: 'Failure',
+    failure: { _tag: 'InvalidWireDocument' },
   });
   const dangling = tmbomFixture();
   if (dangling.threats?.[0] !== undefined)
     dangling.threats[0].components_affected = ['absent'];
-  expect(Either.isLeft(importModel(JSON.stringify(dangling)))).toBe(true);
+  expect(Result.isFailure(importModel(JSON.stringify(dangling)))).toBe(true);
 });
 
 it.each<
@@ -259,8 +259,8 @@ it.each([
     );
 
     expect(importModel(JSON.stringify(document))).toMatchObject({
-      _tag: 'Left',
-      left: {
+      _tag: 'Failure',
+      failure: {
         _tag: 'InvalidWireDocument',
         issues: [
           {
@@ -277,7 +277,7 @@ it.each(['0.3.0', '1.0.0'])(
   'refuses unadopted OTM version %s',
   (otmVersion) => {
     expect(
-      Either.isLeft(
+      Result.isFailure(
         importModel(JSON.stringify({ ...otmFixture(), otmVersion })),
       ),
     ).toBe(true);
@@ -291,21 +291,21 @@ it('enforces the existing size, depth, and alias limits on imports', () => {
     'a: &a [*a]',
   ]) {
     expect(importModel(text)).toMatchObject({
-      _tag: 'Left',
-      left: { _tag: 'ExceededReadLimit' },
+      _tag: 'Failure',
+      failure: { _tag: 'ExceededReadLimit' },
     });
   }
   expect(importModel('otmVersion: [')).toMatchObject({
-    _tag: 'Left',
-    left: { _tag: 'MalformedText' },
+    _tag: 'Failure',
+    failure: { _tag: 'MalformedText' },
   });
 });
 
 it('rejects the upstream Vault example with dangling trust-zone references', () => {
   const text = committedText('tmbom/vault-invalid-zones.json');
   expect(importModel(text)).toMatchObject({
-    _tag: 'Left',
-    left: { _tag: 'InvalidWireDocument' },
+    _tag: 'Failure',
+    failure: { _tag: 'InvalidWireDocument' },
   });
   expect(refusalDetails(text)).toContainEqual({
     code: 'unknown-source-reference',
@@ -315,8 +315,8 @@ it('rejects the upstream Vault example with dangling trust-zone references', () 
 
 it('identifies an unsupported import, naming the releases it reads, before reporting schema fields', () => {
   expect(importModel('An unrelated document')).toMatchObject({
-    _tag: 'Left',
-    left: {
+    _tag: 'Failure',
+    failure: {
       _tag: 'InvalidWireDocument',
       issues: [
         {
@@ -364,8 +364,8 @@ it.each(['assets', 'threats', 'mitigations'] as const)(
     const text = JSON.stringify(document);
     expect(text.length).toBeLessThan(readLimits.maxTextBytes);
     expect(importModel(text)).toMatchObject({
-      _tag: 'Left',
-      left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+      _tag: 'Failure',
+      failure: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
     });
   },
 );
@@ -386,8 +386,8 @@ it('bounds TM-BOM data-placement expansion before joining store descriptions', (
   const text = JSON.stringify(document);
   expect(text.length).toBeLessThan(readLimits.maxTextBytes);
   expect(importModel(text)).toMatchObject({
-    _tag: 'Left',
-    left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+    _tag: 'Failure',
+    failure: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
   });
 });
 
@@ -405,8 +405,8 @@ it('budgets generated OTM identifiers before escaping and repeating them', () =>
   const text = JSON.stringify(document);
   expect(text.length).toBeLessThan(readLimits.maxTextBytes);
   expect(importModel(text)).toMatchObject({
-    _tag: 'Left',
-    left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+    _tag: 'Failure',
+    failure: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
   });
 });
 
@@ -421,8 +421,8 @@ it('budgets repeated diagnostic paths from aliased assumptions', () => {
   const text = stringify(document);
   expect(text.length).toBeLessThan(readLimits.maxTextBytes);
   expect(importModel(text)).toMatchObject({
-    _tag: 'Left',
-    left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+    _tag: 'Failure',
+    failure: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
   });
 });
 
@@ -436,8 +436,8 @@ it('bounds repeated assumption text from YAML aliases', () => {
   const text = stringify(document);
   expect(text.length).toBeLessThan(readLimits.maxTextBytes);
   expect(importModel(text)).toMatchObject({
-    _tag: 'Left',
-    left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+    _tag: 'Failure',
+    failure: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
   });
 });
 
@@ -446,8 +446,8 @@ it('bounds aliased descriptions on distinct unattached OTM mitigations', () => {
   const aliased = `otmVersion: 0.2.0\nproject: {id: p, name: Project}\nmitigations:\n- id: first\n  name: Mitigation\n  riskReduction: 0\n  description: &description ${description}\n${Array.from({ length: 39 }, (_, index) => `- id: m${String(index)}\n  name: Mitigation\n  riskReduction: 0\n  description: *description\n`).join('')}`;
   expect(aliased.length).toBeLessThan(readLimits.maxTextBytes);
   expect(importModel(aliased)).toMatchObject({
-    _tag: 'Left',
-    left: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
+    _tag: 'Failure',
+    failure: { _tag: 'ExceededReadLimit', limit: 'maxImportTextUnits' },
   });
 });
 
@@ -525,8 +525,8 @@ it.each(['asset', 'threat', 'mitigation'] as const)(
     else if (kind === 'threat') occurrence.threat = 'absent';
     else occurrence.mitigations = [{ mitigation: 'absent', state: 'required' }];
     expect(importModel(JSON.stringify(document))).toMatchObject({
-      _tag: 'Left',
-      left: { _tag: 'InvalidWireDocument' },
+      _tag: 'Failure',
+      failure: { _tag: 'InvalidWireDocument' },
     });
   },
 );
@@ -549,11 +549,11 @@ it('builds no mitigation linked to no threat and no assumption with no reference
   }));
   expect(
     readings
-      .filter(({ result }) => Either.isLeft(result))
+      .filter(({ result }) => Result.isFailure(result))
       .map(({ name }) => name),
   ).toEqual(['tmbom/vault-invalid-zones.json']);
   const models = readings.flatMap(({ name, result }) =>
-    Either.isRight(result) ? [{ name, model: result.right.model }] : [],
+    Result.isSuccess(result) ? [{ name, model: result.success.model }] : [],
   );
   expect(new Set(models.map(({ name }) => name.split('/')[0]))).toEqual(
     new Set(['otm', 'tmbom']),
@@ -574,10 +574,10 @@ it('builds no mitigation linked to no threat and no assumption with no reference
 });
 
 const refusalDetails = (text: string) =>
-  Either.match(importModel(text), {
-    onLeft: (failure) =>
+  Result.match(importModel(text), {
+    onFailure: (failure) =>
       readFailureIssues(failure).map((issue) => issue.detail),
-    onRight: () => [],
+    onSuccess: () => [],
   });
 
 const namesIn = (model: Model): ReadonlyMap<string, string> =>
@@ -938,7 +938,7 @@ describe('readOrImport', () => {
     ['otm', importTexts.otm],
     ['tmbom', importTexts.tmbom],
   ] as const)('reads a %s text', (format, text) => {
-    expect(Either.getOrThrow(readOrImport(text)).format).toBe(format);
+    expect(Result.getOrThrow(readOrImport(text)).format).toBe(format);
   });
 
   it.each([
@@ -946,7 +946,7 @@ describe('readOrImport', () => {
     ['is malformed', 'otmVersion: [0.2.0'],
   ])('keeps the detection failure for a text that %s', (_reason, text) => {
     expect(readOrImport(text)).toEqual(
-      Either.left(
+      Result.fail(
         DetectionFailure.NoFormatClaimed({ tried: formatNameSchema.options }),
       ),
     );
@@ -964,7 +964,7 @@ describe('readOrImport', () => {
     ['an import', 'otmVersion: 0.2.0'],
   ])('keeps the refusal of %s that claimed the text', (_claimant, text) => {
     expect(readOrImport(text)).toMatchObject({
-      left: { _tag: 'InvalidWireDocument' },
+      failure: { _tag: 'InvalidWireDocument' },
     });
   });
 });

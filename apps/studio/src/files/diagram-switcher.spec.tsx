@@ -9,7 +9,7 @@ import userEvent, { type UserEvent } from '@testing-library/user-event';
 import { emptyModel } from '@saerskriven/model';
 import { saerskrivenYamlCodec } from '@saerskriven/formats';
 import { locales } from '@saerskriven/i18n';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { chooseLanguage } from '../messages/locale.js';
 import { inLocale } from '../messages/messages.fixtures.js';
 import {
@@ -87,7 +87,7 @@ describe.each(locales)('blank diagram titles in %s', (locale) => {
         ),
       };
       const original = saerskrivenYamlCodec.write(model).output;
-      const opened = Either.getOrThrow(saerskrivenYamlCodec.read(original));
+      const opened = Result.getOrThrow(saerskrivenYamlCodec.read(original));
       modelStore.setState(initialState(opened.model), true);
       mounted();
 

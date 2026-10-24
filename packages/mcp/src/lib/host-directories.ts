@@ -5,7 +5,7 @@ import {
   type McpServer,
   type ServerContext,
 } from '@modelcontextprotocol/server';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { realpathSync, statSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -70,23 +70,23 @@ export function workspaceForCall(
   workspace: ModelWorkspace,
   paths: readonly (string | undefined)[],
   turn: HostTurn,
-): Either.Either<ModelWorkspace, InputRequiredResult> {
+): Result.Result<ModelWorkspace, InputRequiredResult> {
   if (
     !HostDirectories.$is('Unasked')(workspace.host) ||
     paths.every((path) => path === undefined || underRoot(workspace, path))
   ) {
-    return Either.right(workspace);
+    return Result.succeed(workspace);
   }
   if (!turn.declaresRoots) {
-    return Either.right({ ...workspace, host: HostDirectories.Undeclared() });
+    return Result.succeed({ ...workspace, host: HostDirectories.Undeclared() });
   }
   return turn.responses === undefined
-    ? Either.left(
+    ? Result.fail(
         inputRequired({
           inputRequests: { [rootsRequestKey]: inputRequired.listRoots() },
         }),
       )
-    : Either.right({
+    : Result.succeed({
         ...workspace,
         host: listedDirectories(turn.responses[rootsRequestKey]),
       });
@@ -120,7 +120,7 @@ export function listedDirectories(answer: unknown): HostDirectories {
  * turns any other into the UNC path of a share on another machine.
  */
 export function localFileUrl(uri: string): URL | undefined {
-  const url = Either.getOrUndefined(Either.try(() => new URL(uri)));
+  const url = Result.getOrUndefined(Result.try(() => new URL(uri)));
   return url?.protocol === 'file:' && url.hostname === '' ? url : undefined;
 }
 
@@ -135,7 +135,7 @@ const rootsAnswerSchema = z.object({ roots: z.array(z.unknown()) });
 const rootSchema = z.object({ uri: z.string() });
 
 function underRoot(workspace: ModelWorkspace, path: string): boolean {
-  return Either.isRight(confined(workspace, path));
+  return Result.isSuccess(confined(workspace, path));
 }
 
 function directoryOf(entry: unknown): readonly string[] {
@@ -143,8 +143,8 @@ function directoryOf(entry: unknown): readonly string[] {
   const url = root.success ? localFileUrl(root.data.uri) : undefined;
   return url === undefined
     ? []
-    : Either.getOrElse(
-        Either.try(() => existingDirectory(url)),
+    : Result.getOrElse(
+        Result.try(() => existingDirectory(url)),
         () => [],
       );
 }

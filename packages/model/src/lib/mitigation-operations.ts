@@ -1,4 +1,4 @@
-import type { Either } from 'effect';
+import type { Result } from 'effect';
 import type { MitigationId, ThreatId } from './ids.js';
 import type { Mitigation, MitigationStatus } from './mitigations.js';
 import type { OperationFailure } from './operation-failures.js';
@@ -45,7 +45,7 @@ export type SetMitigationStatusFailure = UnknownMitigationFailure;
 export function addMitigation(
   model: Model,
   mitigation: Mitigation,
-): Either.Either<Model, AddMitigationFailure> {
+): Result.Result<Model, AddMitigationFailure> {
   return addedRecord(model, mitigationRegister, mitigation);
 }
 
@@ -57,7 +57,7 @@ export function addMitigation(
 export function replaceMitigation(
   model: Model,
   mitigation: Mitigation,
-): Either.Either<Model, ReplaceMitigationFailure> {
+): Result.Result<Model, ReplaceMitigationFailure> {
   return replacedRecord(model, mitigationRegister, mitigation);
 }
 
@@ -68,7 +68,7 @@ export function replaceMitigation(
 export function removeMitigation(
   model: Model,
   mitigationId: MitigationId,
-): Either.Either<Model, RemoveMitigationFailure> {
+): Result.Result<Model, RemoveMitigationFailure> {
   return removedRecord(model, mitigationRegister, mitigationId);
 }
 
@@ -80,7 +80,7 @@ export function linkMitigation(
   model: Model,
   mitigationId: MitigationId,
   threatId: ThreatId,
-): Either.Either<Model, MitigationLinkFailure> {
+): Result.Result<Model, MitigationLinkFailure> {
   return relinkedRecord(
     model,
     mitigationRegister,
@@ -99,7 +99,7 @@ export function unlinkMitigation(
   model: Model,
   mitigationId: MitigationId,
   threatId: ThreatId,
-): Either.Either<Model, MitigationLinkFailure> {
+): Result.Result<Model, MitigationLinkFailure> {
   return relinkedRecord(
     model,
     mitigationRegister,
@@ -117,6 +117,6 @@ export function setMitigationStatus(
   model: Model,
   mitigationId: MitigationId,
   status: MitigationStatus,
-): Either.Either<Model, SetMitigationStatusFailure> {
+): Result.Result<Model, SetMitigationStatusFailure> {
   return withRecordStatus(model, mitigationRegister, mitigationId, status);
 }

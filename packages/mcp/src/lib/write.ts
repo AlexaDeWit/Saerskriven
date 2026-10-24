@@ -10,7 +10,7 @@ import {
   type Divergence,
 } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
-import { Data, Either, pipe } from 'effect';
+import { Data, Result, pipe } from 'effect';
 import { randomUUID } from 'node:crypto';
 import {
   chmodSync,
@@ -131,16 +131,16 @@ export function createdModel(
   requested: string,
   model: Model,
   carried: readonly Divergence[],
-): Either.Either<WriteReport, readonly string[]> {
+): Result.Result<WriteReport, readonly string[]> {
   return pipe(
     confined(workspace, requested),
-    Either.mapLeft(renderWorkspaceFailure),
-    Either.flatMap((path) => {
+    Result.mapError(renderWorkspaceFailure),
+    Result.flatMap((path) => {
       const file = resultPath(workspace, path);
       return pipe(
         serialized(file, () => saerskrivenYamlCodec.write(model)),
-        Either.flatMap((written) =>
-          Either.map(
+        Result.flatMap((written) =>
+          Result.map(
             createdFile({ file, path }, written.output),
             (revision): WriteReport => ({
               file,
@@ -151,7 +151,7 @@ export function createdModel(
             }),
           ),
         ),
-        Either.mapLeft(renderWriteFailure),
+        Result.mapError(renderWriteFailure),
       );
     }),
   );
@@ -194,8 +194,8 @@ export function renderWriteFailure(failure: WriteFailure): readonly string[] {
 export function namedFile(
   workspace: ModelWorkspace,
   file: string | undefined,
-): Either.Either<NamedModel, WriteFailure> {
-  return Either.fromNullable(namedModel(workspace, file), () =>
+): Result.Result<NamedModel, WriteFailure> {
+  return Result.fromNullishOr(namedModel(workspace, file), () =>
     WriteFailure.NoFile({ root: workspace.root }),
   );
 }
@@ -209,8 +209,8 @@ export function unchangedSince(
   file: string,
   revision: string,
   read: ReadModelFile,
-): Either.Either<ReadModelFile, WriteFailure> {
-  return Either.map(staleUnless(file, revision, read.revision), () => read);
+): Result.Result<ReadModelFile, WriteFailure> {
+  return Result.map(staleUnless(file, revision, read.revision), () => read);
 }
 
 /**
@@ -226,13 +226,13 @@ export function replacedFile(
   text: string,
   quoted: string,
   created?: number,
-): Either.Either<string, WriteFailure> {
-  return Either.flatMap(readableBytes(target, text), (bytes) =>
+): Result.Result<string, WriteFailure> {
+  return Result.flatMap(readableBytes(target, text), (bytes) =>
     throughTemporary(
       target,
       bytes,
       (temporary) =>
-        Either.flatMap(unmovedSince(target, quoted), () =>
+        Result.flatMap(unmovedSince(target, quoted), () =>
           renamedOnto(target, temporary),
         ),
       created,
@@ -249,8 +249,8 @@ export function replacedFile(
 export function overwrittenFile(
   target: WriteTarget,
   text: string,
-): Either.Either<string, OverwriteFailure> {
-  return Either.flatMap(readableBytes(target, text), (bytes) =>
+): Result.Result<string, OverwriteFailure> {
+  return Result.flatMap(readableBytes(target, text), (bytes) =>
     throughTemporary(target, bytes, (temporary) =>
       renamedOnto(target, temporary),
     ),
@@ -265,8 +265,8 @@ export function createdFile(
   target: WriteTarget,
   text: string,
   created?: number,
-): Either.Either<string, WriteFailure> {
-  return Either.flatMap(readableBytes(target, text), (bytes) =>
+): Result.Result<string, WriteFailure> {
+  return Result.flatMap(readableBytes(target, text), (bytes) =>
     createdBytes(target, bytes, created),
   );
 }
@@ -281,12 +281,12 @@ export function createdBytes(
   target: WriteTarget,
   bytes: Uint8Array,
   created?: number,
-): Either.Either<string, WriteFailure> {
+): Result.Result<string, WriteFailure> {
   return throughTemporary(
     target,
     bytes,
     (temporary) =>
-      Either.try({
+      Result.try({
         try: () => {
           linkSync(temporary, target.path);
         },
@@ -304,8 +304,8 @@ export function createdBytes(
 export function serialized<Value>(
   file: string,
   write: () => Value,
-): Either.Either<Value, WriteFailure> {
-  return Either.try({
+): Result.Result<Value, WriteFailure> {
+  return Result.try({
     try: write,
     catch: (error) => unwritten(file, error),
   });
@@ -316,11 +316,11 @@ const errnoSchema = z.object({ code: z.string() });
 function readableBytes(
   target: WriteTarget,
   text: string,
-): Either.Either<Buffer, OverwriteFailure> {
+): Result.Result<Buffer, OverwriteFailure> {
   const bytes = Buffer.from(text, 'utf8');
   return withinTextBytes(bytes.length)
-    ? Either.right(bytes)
-    : Either.left(
+    ? Result.succeed(bytes)
+    : Result.fail(
         WriteFailure.PastReadBound({ file: target.file, size: bytes.length }),
       );
 }
@@ -328,21 +328,21 @@ function readableBytes(
 function throughTemporary<Failure extends WriteFailure>(
   target: WriteTarget,
   bytes: Uint8Array,
-  commit: (temporary: string) => Either.Either<void, Failure>,
+  commit: (temporary: string) => Result.Result<void, Failure>,
   created?: number,
-): Either.Either<string, Failure | Unwritten> {
+): Result.Result<string, Failure | Unwritten> {
   const temporary = join(
     dirname(target.path),
     `.${basename(target.path)}.${randomUUID()}.saer`,
   );
   return discarding(
     temporary,
-    Either.flatMap(
-      Either.flatMap(staged(target, temporary, bytes, created), () =>
+    Result.flatMap(
+      Result.flatMap(staged(target, temporary, bytes, created), () =>
         commit(temporary),
       ),
       () =>
-        Either.try({
+        Result.try({
           try: () => revisionOf(bytes),
           catch: (error) => unwritten(target.file, error),
         }),
@@ -355,9 +355,9 @@ function staged(
   temporary: string,
   bytes: Uint8Array,
   created?: number,
-): Either.Either<void, Unwritten> {
+): Result.Result<void, Unwritten> {
   const mode = modeOf(target.path) ?? created;
-  return Either.try({
+  return Result.try({
     try: () => {
       writeFileSync(
         temporary,
@@ -375,8 +375,8 @@ function staged(
 function renamedOnto(
   target: WriteTarget,
   temporary: string,
-): Either.Either<void, Unwritten> {
-  return Either.try({
+): Result.Result<void, Unwritten> {
+  return Result.try({
     try: () => {
       renameSync(temporary, target.path);
     },
@@ -387,25 +387,25 @@ function renamedOnto(
 function unmovedSince(
   target: WriteTarget,
   quoted: string,
-): Either.Either<void, WriteFailure> {
-  return Either.flatMap(rehashed(target), (found) =>
+): Result.Result<void, WriteFailure> {
+  return Result.flatMap(rehashed(target), (found) =>
     staleUnless(target.file, quoted, found),
   );
 }
 
-function rehashed(target: WriteTarget): Either.Either<string, WriteFailure> {
-  return Either.flatMap(
-    Either.try({
+function rehashed(target: WriteTarget): Result.Result<string, WriteFailure> {
+  return Result.flatMap(
+    Result.try({
       try: () => statSync(target.path).size,
       catch: (error) => unwritten(target.file, error),
     }),
     (size) =>
       withinTextBytes(size)
-        ? Either.try({
+        ? Result.try({
             try: () => revisionOf(readFileSync(target.path)),
             catch: (error) => unwritten(target.file, error),
           })
-        : Either.left(
+        : Result.fail(
             WriteFailure.Unwritten({
               file: target.file,
               reason: `it is now ${String(size)} bytes, past the ${String(readLimits.maxTextBytes)} this server reads`,
@@ -418,23 +418,23 @@ function staleUnless(
   file: string,
   quoted: string,
   found: string,
-): Either.Either<void, WriteFailure> {
+): Result.Result<void, WriteFailure> {
   return quoted === found
-    ? Either.right(undefined)
-    : Either.left(WriteFailure.StaleRevision({ file, quoted, found }));
+    ? Result.succeed(undefined)
+    : Result.fail(WriteFailure.StaleRevision({ file, quoted, found }));
 }
 
 function discarding<Outcome>(temporary: string, outcome: Outcome): Outcome {
-  return Either.match(
-    Either.try(() => {
+  return Result.match(
+    Result.try(() => {
       rmSync(temporary, { force: true });
     }),
-    { onLeft: () => outcome, onRight: () => outcome },
+    { onFailure: () => outcome, onSuccess: () => outcome },
   );
 }
 
 function modeOf(path: string): number | undefined {
-  return Either.getOrUndefined(Either.try(() => statSync(path).mode & 0o777));
+  return Result.getOrUndefined(Result.try(() => statSync(path).mode & 0o777));
 }
 
 function unwritten(file: string, error: unknown): Unwritten {

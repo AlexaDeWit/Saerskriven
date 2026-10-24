@@ -1,6 +1,6 @@
 import { diagramsOf, placeElement, type Model } from '@saerskriven/model';
 import { copiesModel, diagramId, elementId } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { initialState, type State } from '../store/state.js';
 import { modelStore } from '../store/store.js';
 import { currentAnnouncement, resetAnnouncements } from './announcements.js';
@@ -65,7 +65,7 @@ describe('when Merge an element into this one is available', () => {
 
 describe('merging from the studio', () => {
   it('keeps the element selected, and names the diagram where a placement was dropped', () => {
-    const both = Either.getOrThrow(
+    const both = Result.getOrThrow(
       placeElement(copiesModel, storefront, {
         element: apiCopy,
         position: { x: 420, y: 300 },

@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { parseModel, type Model } from './parse.js';
 
 /**
@@ -6,7 +6,7 @@ import { parseModel, type Model } from './parse.js';
  * threat number issued yet. It comes through {@link parseModel}, and a parse
  * failure throws when the package loads.
  */
-export const emptyModel: Model = Either.getOrThrowWith(
+export const emptyModel: Model = Result.getOrThrowWith(
   parseModel({
     metadata: { title: '', owner: '', description: '', contributors: [] },
     elements: [],

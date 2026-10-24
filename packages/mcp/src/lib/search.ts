@@ -1,6 +1,6 @@
 import { quotedForTerminal } from '@saerskriven/formats';
 import { diagramsNamed, type Model } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { z } from 'zod';
 import { fileArgumentSchema } from './path-arguments.js';
 
@@ -110,14 +110,14 @@ export function noDiagramNamed(name: string): readonly string[] {
 export function diagramsOf(
   model: Model,
   named: string | undefined,
-): Either.Either<Model['diagrams'], readonly string[]> {
+): Result.Result<Model['diagrams'], readonly string[]> {
   if (named === undefined) {
-    return Either.right(model.diagrams);
+    return Result.succeed(model.diagrams);
   }
   const selected = diagramsNamed(model.diagrams, named);
   return selected.length > 0
-    ? Either.right(selected)
-    : Either.left(noDiagramNamed(named));
+    ? Result.succeed(selected)
+    : Result.fail(noDiagramNamed(named));
 }
 
 /**

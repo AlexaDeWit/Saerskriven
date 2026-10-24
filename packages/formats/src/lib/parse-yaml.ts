@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { parseDocument, YAMLParseError } from 'yaml';
 import { ReadFailure } from './codec.js';
 import {
@@ -13,10 +13,10 @@ import { aliasCostIn, type ComposedDocument } from './yaml-alias-cost.js';
  * bounds measured by {@link aliasCostIn}. A nesting the parser has no stack
  * for is reported as `maxNestingDepth`.
  */
-export function parseYaml(text: string): Either.Either<unknown, ReadFailure> {
+export function parseYaml(text: string): Result.Result<unknown, ReadFailure> {
   return parseWithinLimits(text, (bounded) =>
-    Either.flatMap(
-      Either.flatMap(
+    Result.flatMap(
+      Result.flatMap(
         compose(bounded.replace(/\r(?!\n)/gu, '\n')),
         withinAliasLimits,
       ),
@@ -25,37 +25,37 @@ export function parseYaml(text: string): Either.Either<unknown, ReadFailure> {
   );
 }
 
-function compose(text: string): Either.Either<ComposedDocument, ReadFailure> {
-  return Either.flatMap(
-    Either.try({ try: () => parseDocument(text), catch: toReadFailure }),
+function compose(text: string): Result.Result<ComposedDocument, ReadFailure> {
+  return Result.flatMap(
+    Result.try({ try: () => parseDocument(text), catch: toReadFailure }),
     (document) => {
       const [refused] = document.errors;
       return refused === undefined
-        ? Either.right(document)
-        : Either.left(toReadFailure(refused));
+        ? Result.succeed(document)
+        : Result.fail(toReadFailure(refused));
     },
   );
 }
 
 function withinAliasLimits(
   document: ComposedDocument,
-): Either.Either<ComposedDocument, ReadFailure> {
+): Result.Result<ComposedDocument, ReadFailure> {
   const cost = aliasCostIn(document, {
     expanded: readLimits.maxAliasCount + 1,
     reached: readLimits.maxAliasExpansion + 1,
   });
   if (cost.expanded > readLimits.maxAliasCount) {
-    return Either.left(exceededReadLimit('maxAliasCount', cost.expanded));
+    return Result.fail(exceededReadLimit('maxAliasCount', cost.expanded));
   }
   return cost.reached > readLimits.maxAliasExpansion
-    ? Either.left(exceededReadLimit('maxAliasExpansion', cost.reached))
-    : Either.right(document);
+    ? Result.fail(exceededReadLimit('maxAliasExpansion', cost.reached))
+    : Result.succeed(document);
 }
 
 function toValue(
   document: ComposedDocument,
-): Either.Either<unknown, ReadFailure> {
-  return Either.try({
+): Result.Result<unknown, ReadFailure> {
+  return Result.try({
     try: () => document.toJS({ maxAliasCount: -1 }) as unknown,
     catch: toReadFailure,
   });

@@ -8,7 +8,7 @@ import {
 import { readAnyFormat, type DetectedRead } from '@saerskriven/formats';
 import type { Model } from '@saerskriven/model';
 import { committedText, testDataPath } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readFileSync } from 'node:fs';
 import {
   canvasContainer,
@@ -445,7 +445,7 @@ export const exportedFile = async (
 
 /** Reads a written or committed file in whichever format claims it, and fails the test where none does. */
 export const readBack = (text: string): DetectedRead =>
-  Either.getOrThrowWith(
+  Result.getOrThrowWith(
     readAnyFormat(text),
     () => new Error(`no format claimed the file: ${text.slice(0, 200)}`),
   );

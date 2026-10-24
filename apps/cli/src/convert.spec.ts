@@ -7,7 +7,7 @@ import {
 } from '@saerskriven/formats';
 import { referencingYaml, unclaimedYaml } from '@saerskriven/mcp/fixtures';
 import { repositoryRoot, testDataPath } from '@saerskriven/model/fixtures';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   existsSync,
   linkSync,
@@ -40,7 +40,7 @@ const repositoryModel = join(
 const frozenVersion1 = testDataPath('saerskriven/saerskriven-v0.3.0.yaml');
 
 const readBack = (text: string | Uint8Array): DetectedRead =>
-  Either.getOrThrow(readAnyFormat(String(text)));
+  Result.getOrThrow(readAnyFormat(String(text)));
 
 const version2Of = (path: string): string =>
   saerskrivenYamlCodec.write(readBack(readFileSync(path, 'utf8')).model).output;

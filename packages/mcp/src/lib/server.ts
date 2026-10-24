@@ -11,7 +11,7 @@ import {
   type ReadResourceResult,
   type ServerContext,
 } from '@modelcontextprotocol/server';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   coverage,
   coverageDescription,
@@ -206,9 +206,9 @@ type Within = <Result>(
 
 function withinReach(server: McpServer, workspace: ModelWorkspace): Within {
   return (ctx, paths, run) =>
-    Either.match(workspaceForCall(workspace, paths, hostTurnOf(server, ctx)), {
-      onLeft: (round) => round,
-      onRight: run,
+    Result.match(workspaceForCall(workspace, paths, hostTurnOf(server, ctx)), {
+      onFailure: (round) => round,
+      onSuccess: run,
     });
 }
 
@@ -220,7 +220,7 @@ function fileTool<
   answer: (
     workspace: ModelWorkspace,
     args: Arguments,
-  ) => Either.Either<Answer, readonly string[]>,
+  ) => Result.Result<Answer, readonly string[]>,
   render: (answer: Answer) => readonly string[],
 ): (
   args: Arguments,
@@ -479,9 +479,9 @@ function prompts(server: McpServer, within: Within): void {
 
 function resourceOrThrow(
   uri: string,
-  outcome: Either.Either<ReadResourceResult, ResourceFailure>,
+  outcome: Result.Result<ReadResourceResult, ResourceFailure>,
 ): ReadResourceResult {
-  return Either.getOrThrowWith(outcome, (failure) =>
+  return Result.getOrThrowWith(outcome, (failure) =>
     ResourceFailure.$match(failure, {
       NoModel: () => notFound(uri),
       NoSuchDiagram: () => notFound(uri),
@@ -496,10 +496,10 @@ function resourceOrThrow(
 }
 
 function promptOrThrow(
-  outcome: Either.Either<PromptParts, PromptFailure>,
+  outcome: Result.Result<PromptParts, PromptFailure>,
 ): GetPromptResult {
-  return Either.getOrThrowWith(
-    Either.map(outcome, promptMessages),
+  return Result.getOrThrowWith(
+    Result.map(outcome, promptMessages),
     (failure) =>
       new ProtocolError(
         ProtocolErrorCode.InvalidParams,

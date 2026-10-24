@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   elementId,
   drawnFixture,
@@ -19,7 +19,7 @@ describe('setElementProperties', () => {
     'edits $properties.kind facts without changing identity, geometry or register data',
     ({ id, properties }) => {
       const before = validModel.elements.find((element) => element.id === id);
-      const result = Either.getOrThrow(
+      const result = Result.getOrThrow(
         setElementProperties(validModel, elementId(id), properties),
       );
       const after = result.elements.find((element) => element.id === id);
@@ -29,9 +29,9 @@ describe('setElementProperties', () => {
       expect(result.lastIssuedThreatNumber).toBe(
         validModel.lastIssuedThreatNumber,
       );
-      expect(Either.isRight(parseModel(result))).toBe(true);
+      expect(Result.isSuccess(parseModel(result))).toBe(true);
       expect(
-        Either.getOrThrow(
+        Result.getOrThrow(
           setElementProperties(result, elementId(id), properties),
         ),
       ).toBe(result);
@@ -40,7 +40,7 @@ describe('setElementProperties', () => {
 
   it('keeps omitted fields, clears explicit undefined, and returns the original model for an unchanged patch', () => {
     const id = elementId('element-order-flow');
-    const recorded = Either.getOrThrow(
+    const recorded = Result.getOrThrow(
       setElementProperties(validModel, id, {
         kind: 'flow',
         protocol: '',
@@ -49,17 +49,17 @@ describe('setElementProperties', () => {
       }),
     );
     expect(
-      Either.getOrThrow(setElementProperties(recorded, id, { kind: 'flow' })),
+      Result.getOrThrow(setElementProperties(recorded, id, { kind: 'flow' })),
     ).toBe(recorded);
     expect(
-      Either.getOrThrow(
+      Result.getOrThrow(
         setElementProperties(recorded, id, {
           kind: 'flow',
           trustBoundaryIds: [],
         }),
       ),
     ).toBe(recorded);
-    const cleared = Either.getOrThrow(
+    const cleared = Result.getOrThrow(
       setElementProperties(recorded, id, {
         kind: 'flow',
         isEncrypted: undefined,
@@ -69,7 +69,7 @@ describe('setElementProperties', () => {
     expect(flow).toMatchObject({ protocol: '', trustBoundaryIds: [] });
     expect(flow).not.toHaveProperty('isEncrypted');
     expect(
-      Either.getOrThrow(
+      Result.getOrThrow(
         setElementProperties(cleared, id, {
           kind: 'flow',
           isEncrypted: undefined,
@@ -81,20 +81,20 @@ describe('setElementProperties', () => {
   it('rejects unknown elements, a mismatched kind and text the model cannot store', () => {
     expect(
       setElementProperties(validModel, elementId('missing'), { kind: 'actor' }),
-    ).toMatchObject({ left: { _tag: 'UnknownElement' } });
+    ).toMatchObject({ failure: { _tag: 'UnknownElement' } });
     expect(
       setElementProperties(validModel, elementId('element-api'), {
         kind: 'actor',
         providesAuthentication: true,
       }),
-    ).toMatchObject({ left: { _tag: 'InvalidElementProperties' } });
+    ).toMatchObject({ failure: { _tag: 'InvalidElementProperties' } });
     expect(
       setElementProperties(validModel, elementId('element-api'), {
         kind: 'process',
         privilegeLevel: '\u202E',
       }),
     ).toMatchObject({
-      left: {
+      failure: {
         _tag: 'InvalidElementProperties',
         issues: [expect.objectContaining({ path: ['privilegeLevel'] })],
       },
@@ -108,19 +108,19 @@ describe('setElementProperties', () => {
           kind: 'flow',
           trustBoundaryIds: [elementId(reference)],
         }),
-      ).toMatchObject({ left: { _tag: 'InvalidElementRelationship' } });
+      ).toMatchObject({ failure: { _tag: 'InvalidElementRelationship' } });
     }
     expect(
       setElementProperties(validModel, elementId('element-perimeter'), {
         kind: 'trust-boundary',
         containedElements: [elementId('element-perimeter')],
       }),
-    ).toMatchObject({ left: { _tag: 'InvalidElementRelationship' } });
+    ).toMatchObject({ failure: { _tag: 'InvalidElementRelationship' } });
     expect(validModel).toStrictEqual(drawnFixture(validModelFixture));
   });
 
   it('preserves relationship order and repeated assertions without adding reciprocal links', () => {
-    const result = Either.getOrThrow(
+    const result = Result.getOrThrow(
       setElementProperties(validModel, elementId('element-perimeter'), {
         kind: 'trust-boundary',
         crossingFlows: [

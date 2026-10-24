@@ -23,7 +23,7 @@ import {
   type PngImage,
 } from '@saerskriven/render/png';
 import type { ResvgAssets } from '@saerskriven/render/resvg';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { flowEndSchema } from './element-rows.js';
@@ -61,9 +61,8 @@ const imageExtension = '.png';
  * Where a render gets the rasterizer module and its faces, found by the host
  * process. The faces lead with `drawingFace` from `@saerskriven/render/png`.
  */
-export type RasterizerAssets = () => Either.Either<ResvgAssets, string>;
+export type RasterizerAssets = () => Result.Result<ResvgAssets, string>;
 
-/** What `saer_render_diagram` takes. */
 export const renderDiagramArgumentsSchema = fileArgumentSchema.extend({
   diagram: z
     .string()
@@ -90,7 +89,6 @@ export const renderDiagramArgumentsSchema = fileArgumentSchema.extend({
     ),
 });
 
-/** What `saer_render_diagram` takes. */
 export type RenderDiagramArguments = z.infer<
   typeof renderDiagramArgumentsSchema
 >;
@@ -123,7 +121,6 @@ export const renderDiagramResultSchema = readingSchema.extend({
   written: writtenImageSchema.optional(),
 });
 
-/** What `saer_render_diagram` answers with. */
 export type RenderDiagramResult = z.infer<typeof renderDiagramResultSchema>;
 
 /**
@@ -137,7 +134,6 @@ export function imageLinkDescription(width: number, height: number): string {
 /** What a render produced: the answer a client validates, and the blocks it carries. */
 export type DrawnDiagram = WithBlocks<RenderDiagramResult>;
 
-/** What `saer_render_diagram` tells a client it is for. */
 export const renderDiagramDescription = [
   'Draw one diagram of a Saerskriven threat model as a picture and return it as a PNG image block, so you can see the shape of the system rather than read a listing of its parts.',
   'Call this when the geometry matters: which elements a trust boundary encloses, where a flow runs, what the diagram looks like to the people who drew it. Do not call it to enumerate elements or threats, which saer_search_elements and saer_search_threats answer in a fraction of the context a picture costs.',
@@ -152,16 +148,16 @@ export async function renderDiagram(
   workspace: ModelWorkspace,
   assets: RasterizerAssets,
   args: RenderDiagramArguments,
-): Promise<Either.Either<DrawnDiagram, readonly string[]>> {
-  const prepared = Either.flatMap(readNamed(workspace, args.file), (reading) =>
-    Either.mapBoth(chosenDiagram(reading.model.diagrams, args.diagram), {
-      onLeft: refusedChoice,
-      onRight: (diagram) => ({ reading, diagram }),
+): Promise<Result.Result<DrawnDiagram, readonly string[]>> {
+  const prepared = Result.flatMap(readNamed(workspace, args.file), (reading) =>
+    Result.mapBoth(chosenDiagram(reading.model.diagrams, args.diagram), {
+      onFailure: refusedChoice,
+      onSuccess: (diagram) => ({ reading, diagram }),
     }),
   );
-  return Either.isLeft(prepared)
-    ? Either.left(prepared.left)
-    : drawn(workspace, assets, args, prepared.right);
+  return Result.isFailure(prepared)
+    ? Result.fail(prepared.failure)
+    : drawn(workspace, assets, args, prepared.success);
 }
 
 /** The render as the lines its text result carries. */
@@ -188,19 +184,19 @@ export async function rasterized(
   assets: RasterizerAssets,
   longEdge: number,
   showThreatLabels?: boolean,
-): Promise<Either.Either<PngImage, readonly string[]>> {
+): Promise<Result.Result<PngImage, readonly string[]>> {
   const found = assets();
-  if (Either.isLeft(found)) {
-    return Either.left([
-      `This install cannot draw a PNG: ${escapedForTerminal(found.left)}.`,
+  if (Result.isFailure(found)) {
+    return Result.fail([
+      `This install cannot draw a PNG: ${escapedForTerminal(found.failure)}.`,
     ]);
   }
   const image = await renderPng(diagram, model, 'en-CA', {
-    assets: found.right,
+    assets: found.success,
     longEdge,
     showThreatLabels,
   });
-  return Either.mapLeft(image, refused);
+  return Result.mapError(image, refused);
 }
 
 /** A drawing written nowhere, as the answer and the image block it carries. */
@@ -230,10 +226,10 @@ async function drawn(
   assets: RasterizerAssets,
   args: RenderDiagramArguments,
   chosen: ChosenDiagram,
-): Promise<Either.Either<DrawnDiagram, readonly string[]>> {
+): Promise<Result.Result<DrawnDiagram, readonly string[]>> {
   const target = writeTarget(workspace, args.out);
-  if (Either.isLeft(target)) {
-    return Either.left(target.left);
+  if (Result.isFailure(target)) {
+    return Result.fail(target.failure);
   }
   const image = await rasterized(
     chosen.diagram,
@@ -242,32 +238,32 @@ async function drawn(
     args.width ?? mcpImageLongEdge,
     args.showThreatLabels,
   );
-  return Either.flatMap(image, (drawing) =>
-    answered(chosen, drawing, target.right),
+  return Result.flatMap(image, (drawing) =>
+    answered(chosen, drawing, target.success),
   );
 }
 
 function writeTarget(
   workspace: ModelWorkspace,
   out: string | undefined,
-): Either.Either<WriteTarget | undefined, readonly string[]> {
+): Result.Result<WriteTarget | undefined, readonly string[]> {
   if (out === undefined) {
-    return Either.right(undefined);
+    return Result.succeed(undefined);
   }
-  return Either.flatMap(
-    Either.mapLeft(confined(workspace, out), renderWorkspaceFailure),
+  return Result.flatMap(
+    Result.mapError(confined(workspace, out), renderWorkspaceFailure),
     (path) =>
-      Either.map(endsInPng(out), () => ({
+      Result.map(endsInPng(out), () => ({
         file: resultPath(workspace, path),
         path,
       })),
   );
 }
 
-function endsInPng(out: string): Either.Either<void, readonly string[]> {
+function endsInPng(out: string): Result.Result<void, readonly string[]> {
   return extensionOf(out) === imageExtension
-    ? Either.right(undefined)
-    : Either.left([
+    ? Result.succeed(undefined)
+    : Result.fail([
         `The path ${quotedForTerminal(out)} does not end in ${imageExtension}, and this tool writes the bytes of a PNG.`,
         `Name it with a ${imageExtension} extension, so a later reader of that path finds what the name says it holds.`,
       ]);
@@ -277,8 +273,8 @@ function answered(
   chosen: ChosenDiagram,
   drawing: PngImage,
   target: WriteTarget | undefined,
-): Either.Either<DrawnDiagram, readonly string[]> {
-  return Either.map(saved(target, drawing.png), (written) => {
+): Result.Result<DrawnDiagram, readonly string[]> {
+  return Result.map(saved(target, drawing.png), (written) => {
     const answer = resultOf(chosen, drawing, written);
     return { answer, blocks: blocksOf(answer, drawing.png) };
   });
@@ -287,15 +283,15 @@ function answered(
 function saved(
   target: WriteTarget | undefined,
   png: Uint8Array,
-): Either.Either<
+): Result.Result<
   z.infer<typeof writtenImageSchema> | undefined,
   readonly string[]
 > {
   return target === undefined
-    ? Either.right(undefined)
-    : Either.mapBoth(createdBytes(target, png), {
-        onLeft: renderWriteFailure,
-        onRight: (revision) => ({
+    ? Result.succeed(undefined)
+    : Result.mapBoth(createdBytes(target, png), {
+        onFailure: renderWriteFailure,
+        onSuccess: (revision) => ({
           file: target.file,
           uri: pathToFileURL(target.path).href,
           revision,

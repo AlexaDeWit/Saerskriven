@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   assumptionId,
   drawnFixture,
@@ -76,7 +76,7 @@ describe('addAssumption', () => {
   it('refuses an assumption that links no threat and does not apply to the model', () => {
     const unlinked = assumptionSchema.parse({ ...tlsInput, threats: [] });
     expect(addAssumption(registerModel, unlinked)).toEqual(
-      Either.left(
+      Result.fail(
         OperationFailure.AssumptionWithoutReference({
           assumptionId: unlinked.id,
         }),

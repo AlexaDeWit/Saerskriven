@@ -8,7 +8,7 @@ import {
   type Model,
 } from '@saerskriven/model';
 import type { OtmDocument } from '@saerskriven/wire-otm';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { importContext } from './import-model.js';
 import {
   imported,
@@ -256,7 +256,7 @@ describe('an OTM file with two diagram representations', () => {
     expect(writtenSaerskrivenYamlVersion(model)).toBe(3);
     const written = saerskrivenYamlCodec.write(model);
     expect(
-      Either.getOrThrow(saerskrivenYamlCodec.read(written.output)).model,
+      Result.getOrThrow(saerskrivenYamlCodec.read(written.output)).model,
     ).toEqual(model);
   });
 });

@@ -1,4 +1,4 @@
-import { Either } from 'effect';
+import { Result } from 'effect';
 import {
   attached,
   boxAt,
@@ -15,11 +15,11 @@ import type { Point } from './geometry.js';
 import type { OperationFailure } from './operation-failures.js';
 import { parseModel, type Model } from './parse.js';
 
-type OperationOutcome = Either.Either<Model, OperationFailure>;
+type OperationOutcome = Result.Result<Model, OperationFailure>;
 
 /** The model an operation succeeded with, throwing with the failure's tag where it did not. */
 export const modelOf = (result: OperationOutcome): Model =>
-  Either.getOrThrowWith(
+  Result.getOrThrowWith(
     result,
     (failure) =>
       new Error(`Expected the operation to succeed: ${failure._tag}`),
@@ -29,7 +29,7 @@ export const modelOf = (result: OperationOutcome): Model =>
 export const errorOf = (
   result: OperationOutcome,
 ): OperationFailure | undefined =>
-  Either.isLeft(result) ? result.left : undefined;
+  Result.isFailure(result) ? result.failure : undefined;
 
 type OperationCase = {
   readonly input: Model;
@@ -50,8 +50,8 @@ export function operationContract(
       const pristine = structuredClone(input);
       const result = run(input);
       expect(input).toEqual(pristine);
-      if (Either.isEither(result) && Either.isRight(result)) {
-        expect(Either.isRight(parseModel(result.right))).toBe(true);
+      if (Result.isResult(result) && Result.isSuccess(result)) {
+        expect(Result.isSuccess(parseModel(result.success))).toBe(true);
       }
     },
   );

@@ -17,7 +17,7 @@ import {
   securityPropertyFixtures as properties,
 } from '@saerskriven/model/fixtures';
 import { threatDragonWireSchema } from '@saerskriven/wire-threat-dragon';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { readSaerskrivenYaml } from './saerskriven-yaml-read.js';
 import {
   writeSaerskrivenYaml,
@@ -36,7 +36,7 @@ const secured = drawnFixture(securityModelFixture);
 function nativeCycle(model: Model): Model {
   const written = writeSaerskrivenYaml(model);
   expect(written.divergences).toEqual([]);
-  const read = Either.getOrThrow(readSaerskrivenYaml(written.output));
+  const read = Result.getOrThrow(readSaerskrivenYaml(written.output));
   expect(read.divergences).toEqual([]);
   return read.model;
 }
@@ -106,10 +106,10 @@ describe('optional security facts in native YAML', () => {
   });
 
   it('keeps security facts during unrelated geometry, name and flow edits', () => {
-    let edited = Either.getOrThrow(
+    let edited = Result.getOrThrow(
       renameElement(secured, elementId('element-api'), 'Renamed'),
     );
-    edited = Either.getOrThrow(
+    edited = Result.getOrThrow(
       moveElement(
         edited,
         secured.diagrams[0].id,
@@ -117,16 +117,16 @@ describe('optional security facts in native YAML', () => {
         { x: 1000, y: 1000 },
       ),
     );
-    edited = Either.getOrThrow(
+    edited = Result.getOrThrow(
       resizeElement(edited, secured.diagrams[0].id, elementId('element-db'), {
         width: 200,
         height: 90,
       }),
     );
-    edited = Either.getOrThrow(
+    edited = Result.getOrThrow(
       setFlowDirection(edited, elementId('element-order-flow'), true),
     );
-    edited = Either.getOrThrow(
+    edited = Result.getOrThrow(
       setFlowWaypoints(
         edited,
         secured.diagrams[0].id,
@@ -134,7 +134,7 @@ describe('optional security facts in native YAML', () => {
         [],
       ),
     );
-    edited = Either.getOrThrow(
+    edited = Result.getOrThrow(
       reconnectFlow(
         edited,
         secured.diagrams[0].id,
@@ -152,18 +152,18 @@ describe('optional security facts in native YAML', () => {
 describe('security facts across Threat Dragon and native YAML', () => {
   it('writes every fact without the original JSON and reads it through native YAML', () => {
     const written = writeThreatDragon(secured);
-    const read = Either.getOrThrow(readThreatDragon(written.output));
+    const read = Result.getOrThrow(readThreatDragon(written.output));
     expect(elementFacts(nativeCycle(read.model))).toStrictEqual(
       elementFacts(secured),
     );
-    const reverse = Either.getOrThrow(
+    const reverse = Result.getOrThrow(
       readThreatDragon(writeThreatDragon(nativeCycle(secured)).output),
     );
     expect(elementFacts(reverse.model)).toStrictEqual(elementFacts(secured));
   });
 
   it('keeps source styling while writing explicit changes and removals to mapped facts', () => {
-    const read = Either.getOrThrow(
+    const read = Result.getOrThrow(
       readThreatDragon(writeThreatDragon(secured).output),
     );
     const source = structuredClone(read.source);
@@ -182,7 +182,7 @@ describe('security facts across Threat Dragon and native YAML', () => {
         element.id === next.id ? next : element,
       ),
     });
-    const changed = Either.getOrThrow(
+    const changed = Result.getOrThrow(
       readThreatDragon(
         writeThreatDragon(
           withActor({ ...node, providesAuthentication: true }),
@@ -196,7 +196,7 @@ describe('security facts across Threat Dragon and native YAML', () => {
     });
     expect(allCells(changed.source)[0].zIndex).toBe(321);
     const { providesAuthentication: _held, ...unauthenticated } = node;
-    const removed = Either.getOrThrow(
+    const removed = Result.getOrThrow(
       readThreatDragon(
         writeThreatDragon(withActor(unauthenticated), source).output,
       ),
@@ -216,9 +216,9 @@ describe('security facts across Threat Dragon and native YAML', () => {
     if (flow === undefined) return;
     flow.data.protocol = '\u202EHTTPS';
     const read = readThreatDragon(JSON.stringify(source));
-    expect(Either.isLeft(read)).toBe(true);
+    expect(Result.isFailure(read)).toBe(true);
     expect(
-      readFailureIssues(Either.getOrThrow(Either.flip(read))),
+      readFailureIssues(Result.getOrThrow(Result.flip(read))),
     ).toContainEqual(
       expect.objectContaining({
         path: ['diagrams', 0, 'elements', 3, 'protocol'],
@@ -229,7 +229,7 @@ describe('security facts across Threat Dragon and native YAML', () => {
 
 describe('the feature-complete Threat Dragon file through both codecs', () => {
   it('preserves source facts, declared relationships, threat links, numbers and issuance bookkeeping', () => {
-    const before = Either.getOrThrow(readThreatDragon(featureCompleteText));
+    const before = Result.getOrThrow(readThreatDragon(featureCompleteText));
     const expected = allCells(before.source).map((cell) => ({
       id: cell.id,
       ...facts(cell.data),
@@ -263,7 +263,7 @@ describe('the feature-complete Threat Dragon file through both codecs', () => {
       before.model.lastIssuedThreatNumber,
     );
     const written = writeThreatDragon(after);
-    const restored = Either.getOrThrow(readThreatDragon(written.output));
+    const restored = Result.getOrThrow(readThreatDragon(written.output));
     expect(restored.divergences).toEqual(before.divergences);
     expect(elementFacts(restored.model)).toStrictEqual(expected);
     expect(
@@ -289,7 +289,7 @@ describe('declared relationship validation and edits', () => {
     flow.data.trustBoundaryIds = ['missing-boundary'];
     const result = readThreatDragon(JSON.stringify(source));
     expect(
-      readFailureIssues(Either.getOrThrow(Either.flip(result))),
+      readFailureIssues(Result.getOrThrow(Result.flip(result))),
     ).toContainEqual(
       expect.objectContaining({
         path: ['diagrams', 0, 'elements', 3, 'trustBoundaryIds', 0],
@@ -307,9 +307,9 @@ describe('declared relationship validation and edits', () => {
     const index = field === 'trustBoundaryIds' ? 3 : 4;
     Object.assign(source.diagrams[0].elements[index], { [field]: [reference] });
     const result = readSaerskrivenYaml(JSON.stringify(source));
-    expect(Either.isLeft(result)).toBe(true);
+    expect(Result.isFailure(result)).toBe(true);
     expect(
-      readFailureIssues(Either.getOrThrow(Either.flip(result))),
+      readFailureIssues(Result.getOrThrow(Result.flip(result))),
     ).toContainEqual(
       expect.objectContaining({
         path: ['diagrams', 0, 'elements', index, field, 0],

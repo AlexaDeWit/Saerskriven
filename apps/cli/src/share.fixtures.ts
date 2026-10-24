@@ -1,7 +1,7 @@
 import { readAnyFormat } from '@saerskriven/formats';
 import { readShareLink } from '@saerskriven/formats/share-link';
 import { inNumberOrder, type Model } from '@saerskriven/model';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { builtAssets } from './cli.fixtures.js';
 import { brotliModule } from './share.js';
 
@@ -10,8 +10,8 @@ import { brotliModule } from './share.js';
  * brotli module the build wrote beside the bundle.
  */
 export async function modelIn(link: string): Promise<Model> {
-  const wasm = Either.getOrThrow(brotliModule(builtAssets));
-  return Either.getOrThrow(await readShareLink(new URL(link).hash, wasm)).model;
+  const wasm = Result.getOrThrow(brotliModule(builtAssets));
+  return Result.getOrThrow(await readShareLink(new URL(link).hash, wasm)).model;
 }
 
 /**
@@ -19,6 +19,6 @@ export async function modelIn(link: string): Promise<Model> {
  * is the order a link carries them in.
  */
 export function modelOf(text: string): Model {
-  const model = Either.getOrThrow(readAnyFormat(text)).model;
+  const model = Result.getOrThrow(readAnyFormat(text)).model;
   return { ...model, threats: inNumberOrder(model.threats) };
 }

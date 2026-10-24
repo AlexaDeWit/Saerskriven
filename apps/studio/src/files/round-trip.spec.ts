@@ -6,7 +6,7 @@ import {
   type Divergence,
   type FormatName,
 } from '@saerskriven/formats';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import type { Action } from '../store/actions.js';
 import { isDirty } from '../store/selectors.js';
 import {
@@ -92,8 +92,8 @@ describe.each(gated)('$path', ({ path, format }) => {
     expect(bridge.writes).toHaveLength(1);
 
     const reread = readAnyFormat(bridge.writes[0].text);
-    expect(Either.isRight(reread)).toBe(true);
-    expect(Either.getOrThrow(reread).model).toStrictEqual(before);
+    expect(Result.isSuccess(reread)).toBe(true);
+    expect(Result.getOrThrow(reread).model).toStrictEqual(before);
   });
 
   it('writes back everything the file said, the parts the model has no home for included', async () => {

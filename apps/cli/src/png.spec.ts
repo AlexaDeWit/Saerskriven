@@ -3,7 +3,7 @@ import {
   typstFontFiles,
 } from '@saerskriven/render/build-assets';
 import { drawingFace } from '@saerskriven/render/png';
-import { Either } from 'effect';
+import { Result } from 'effect';
 import { fakeAssets, scratchDirectory } from './cli.fixtures.js';
 import { pngAssets, resvgWasmFile } from './png.js';
 
@@ -20,14 +20,14 @@ describe('the faces a rasterization is offered', () => {
   it('leads with the face the drawings are lettered in', () => {
     const found = pngAssets(assetsHolding(typstFontFiles));
     expect(
-      Either.map(found, (assets) => Buffer.from(assets.fonts[0] ?? [])),
-    ).toEqual(Either.right(faceBytes(drawingFace)));
+      Result.map(found, (assets) => Buffer.from(assets.fonts[0] ?? [])),
+    ).toEqual(Result.succeed(faceBytes(drawingFace)));
   });
 
   it('offers every face the build carried', () => {
     const found = pngAssets(assetsHolding(typstFontFiles));
-    expect(Either.map(found, (assets) => assets.fonts.length)).toEqual(
-      Either.right(typstFontFiles.length),
+    expect(Result.map(found, (assets) => assets.fonts.length)).toEqual(
+      Result.succeed(typstFontFiles.length),
     );
   });
 
@@ -35,6 +35,6 @@ describe('the faces a rasterization is offered', () => {
     const bare = assetsHolding(
       typstFontFiles.filter((name) => name !== drawingFace),
     );
-    expect(Either.isLeft(pngAssets(bare))).toBe(true);
+    expect(Result.isFailure(pngAssets(bare))).toBe(true);
   });
 });
