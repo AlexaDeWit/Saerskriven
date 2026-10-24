@@ -1,3 +1,19 @@
+## 0.11.0 (2026-10-24)
+
+### Features
+
+- Hide threat labels in exported diagrams with the CLI's `--no-threat-labels` or MCP's `showThreatLabels: false`. Labels stay enabled by default. The threat register stays complete. ([#896](https://github.com/AlexaDeWit/Saerskriven/pull/896))
+
+### Fixes
+
+- Paste copied graphs at the visible canvas centre, including after panning or zooming. ([#894](https://github.com/AlexaDeWit/Saerskriven/pull/894))
+- Shorten MCP tool descriptions and pagination guidance while keeping complete results, revision checks and write guards. ([#898](https://github.com/AlexaDeWit/Saerskriven/pull/898))
+
+### Security and dependencies
+
+- Use Node 26.12.1 for development, tests and all four CLI executables. This update includes the [October 2026 Node security fixes](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases). They address Brotli decoder memory corruption, DNS and TLS validation, and entropy caching across startup snapshots. They also block keys for compromised eMudhra intermediate certificates. Refresh compatible npm and Rust dependencies. ([#895](https://github.com/AlexaDeWit/Saerskriven/pull/895))
+- Update the test-only Mermaid parser to 12.2.0 and its KaTeX dependency to patched 0.18.10. Refresh the Nix and Rust dependency pins. ([#900](https://github.com/AlexaDeWit/Saerskriven/pull/900))
+
 ## 0.10.0 (2026-10-17)
 
 ### 🚀 Features
