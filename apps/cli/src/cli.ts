@@ -181,6 +181,10 @@ function renderCommand(program: Command, state: ParseState): void {
       '--include-diagrams',
       'include Mermaid diagrams before the Markdown register',
     )
+    .option(
+      '--no-threat-labels',
+      'omit threat badges from SVG, PNG and PDF diagrams',
+    )
     .option('--styled', 'HTML-enriched Markdown with semantic badge classes')
     .option(
       '--no-stylesheet',

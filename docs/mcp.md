@@ -241,7 +241,8 @@ SVG. It rasterizes through the same module and faces `saer render --format png`
 uses, so an install missing either refuses with the reason named. Given `out`,
 it also writes the PNG to a free path, under the root or a directory the host
 lists, and returns it as a resource link. It replaces no file and writes no
-model.
+model. Set `showThreatLabels: false` to hide threat badges in the drawing.
+Labels remain visible by default. The model and threat register are unchanged.
 
 ### Sharing
 

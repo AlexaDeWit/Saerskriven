@@ -1,3 +1,7 @@
+export {
+  diagramOptionsSchema,
+  type DiagramOptions,
+} from './lib/diagram-options.js';
 export { renderRegister } from './lib/markdown-register.js';
 export {
   registerOptionsSchema,

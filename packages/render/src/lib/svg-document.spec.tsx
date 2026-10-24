@@ -31,6 +31,7 @@ import {
   type GoldenDocument,
 } from '../render.fixtures.js';
 import { renderSvg } from './svg-document.js';
+import { renderTypst } from './typst-document.js';
 import { renderTerms } from './terms.js';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
@@ -425,6 +426,31 @@ const everyGlyphIn = (locale: Locale): string =>
   renderSvg(firstDiagram(everyGlyphModel), everyGlyphModel, locale).svg;
 
 describe('a diagram as a standalone SVG document', () => {
+  it('omits threat labels only when requested and preserves the PDF register and model', () => {
+    const diagram = firstDiagram(everyGlyphModel);
+    const before = structuredClone(everyGlyphModel);
+    const shown = renderSvg(diagram, everyGlyphModel, 'en-CA');
+    const hidden = renderSvg(diagram, everyGlyphModel, 'en-CA', undefined, {
+      showThreatLabels: false,
+    });
+    expect(markTextsOf(shown.svg).length).toBeGreaterThan(0);
+    expect(markTextsOf(hidden.svg)).toEqual([]);
+    expect(
+      renderSvg(diagram, everyGlyphModel, 'en-CA', undefined, {
+        showThreatLabels: true,
+      }),
+    ).toEqual(shown);
+    const pdf = renderTypst(everyGlyphModel, 'en-CA').typst;
+    const plainPdf = renderTypst(everyGlyphModel, 'en-CA', undefined, {
+      showThreatLabels: false,
+    }).typst;
+    expect(plainPdf).not.toContain('<text class=\\"saer-diagram-badge-mark\\"');
+    expect(pdf).toContain('<text class=\\"saer-diagram-badge-mark\\"');
+    expect(plainPdf.slice(plainPdf.indexOf('#heading(level: 1)'))).toBe(
+      pdf.slice(pdf.indexOf('#heading(level: 1)')),
+    );
+    expect(everyGlyphModel).toEqual(before);
+  });
   it.each(goldenDocuments)(
     'writes $name as the committed golden file, on a second run too',
     async (entry) => {

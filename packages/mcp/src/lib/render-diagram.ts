@@ -13,7 +13,10 @@ import {
   type Diagram,
   type Model,
 } from '@saerskriven/model';
-import { renderUnplacedWarning } from '@saerskriven/render';
+import {
+  diagramOptionsSchema,
+  renderUnplacedWarning,
+} from '@saerskriven/render';
 import {
   renderPng,
   ResvgFailure,
@@ -49,12 +52,7 @@ import {
 /** The media type of every image this server puts in a result. */
 export const imageMediaType = 'image/png';
 
-/**
- * The pixel length `saer_render_diagram` draws an image block's longer edge
- * at by default: the size an MCP host downscales an image block to. Held
- * independently of `@saerskriven/render/png`'s own default, since MCP does
- * not follow that default's size.
- */
+/** MCP hosts downscale image blocks to this longer edge, independent of the render default. */
 export const mcpImageLongEdge = 1568;
 
 const imageExtension = '.png';
@@ -73,6 +71,9 @@ export const renderDiagramArgumentsSchema = fileArgumentSchema.extend({
     .describe(
       'Which diagram to draw, named by its id or its exact title. An id is tried first. A model holding one diagram does not have to name it; a model holding several is refused until this names one.',
     ),
+  showThreatLabels: diagramOptionsSchema.shape.showThreatLabels.describe(
+    'Show threat badges. Defaults to true. Set false for architecture diagrams.',
+  ),
   width: z
     .int()
     .min(1)
@@ -186,6 +187,7 @@ export async function rasterized(
   model: Model,
   assets: RasterizerAssets,
   longEdge: number,
+  showThreatLabels?: boolean,
 ): Promise<Either.Either<PngImage, readonly string[]>> {
   const found = assets();
   if (Either.isLeft(found)) {
@@ -196,6 +198,7 @@ export async function rasterized(
   const image = await renderPng(diagram, model, 'en-CA', {
     assets: found.right,
     longEdge,
+    showThreatLabels,
   });
   return Either.mapLeft(image, refused);
 }
@@ -237,6 +240,7 @@ async function drawn(
     chosen.reading.model,
     assets,
     args.width ?? mcpImageLongEdge,
+    args.showThreatLabels,
   );
   return Either.flatMap(image, (drawing) =>
     answered(chosen, drawing, target.right),
