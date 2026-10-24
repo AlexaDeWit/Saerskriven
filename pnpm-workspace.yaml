@@ -196,3 +196,6 @@ catalog:
   # a pure reducer. React Flow carries a zustand 4 copy of its own for its
   # internal store, which is its business and no version this workspace uses.
   zustand: ^5.0.15
+minimumReleaseAgeExclude:
+  # Renovate security update: @vitest/ui@5.0.5
+  - "@vitest/ui@5.0.5"
