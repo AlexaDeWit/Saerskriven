@@ -4,16 +4,10 @@ import { Either } from 'effect';
 import { z } from 'zod';
 import { fileArgumentSchema } from './path-arguments.js';
 
-/**
- * How much of each match a search carries back: the identifying fields, or
- * the whole record with fewer matches before the cut.
- */
 export const responseFormatSchema = z.enum(['concise', 'detailed']);
 
-/** How much of each match a search carries back. */
 export type ResponseFormat = z.infer<typeof responseFormatSchema>;
 
-/** The arguments every search takes, extended with each search's own filters. */
 export const searchArgumentsSchema = fileArgumentSchema.extend({
   query: z
     .string()
@@ -35,13 +29,11 @@ export const searchArgumentsSchema = fileArgumentSchema.extend({
     ),
 });
 
-/** Which page of its matches a search carries: its response format and offset. */
 export type SearchPage = Pick<
   z.infer<typeof searchArgumentsSchema>,
   'response_format' | 'offset'
 >;
 
-/** How many matches one result carries, per response format. */
 export const searchLimits = { concise: 50, detailed: 20 } as const;
 
 /** Pagination counts. `nextOffset` exists only when matches remain. */
@@ -53,10 +45,8 @@ export const searchCountsSchema = z.object({
   nextOffset: z.int().positive().optional(),
 });
 
-/** What a search matched, and how much of that the result carries. */
 export type SearchCounts = z.infer<typeof searchCountsSchema>;
 
-/** The matches a result carries, one page of the whole listing. */
 export type LimitedRows<Row> = {
   readonly rows: readonly Row[];
   readonly counts: SearchCounts;

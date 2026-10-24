@@ -39,7 +39,6 @@ const recordKinds = [
   'assumption',
 ] as const satisfies readonly RecordReference['kind'][];
 
-/** What `saer_search_records` takes. */
 export const searchRecordsArgumentsSchema = searchArgumentsSchema.extend({
   kind: z
     .enum(recordKinds)
@@ -76,22 +75,18 @@ export const searchRecordsArgumentsSchema = searchArgumentsSchema.extend({
     ),
 });
 
-/** What `saer_search_records` takes. */
 export type SearchRecordsArguments = z.infer<
   typeof searchRecordsArgumentsSchema
 >;
 
-/** What `saer_search_records` answers with. */
 export const searchRecordsResultSchema = readingSchema.extend({
   counts: searchCountsSchema,
   response_format: responseFormatSchema,
   records: z.array(recordRowSchema),
 });
 
-/** What `saer_search_records` answers with. */
 export type SearchRecordsResult = z.infer<typeof searchRecordsResultSchema>;
 
-/** What `saer_search_records` tells a client it is for. */
 export const searchRecordsDescription = [
   'Find mitigations and assumptions, including unlinked records. Returns kind, id, status, linked threat ids, mitigation title or assumption prose, model applicability and derived `unlinked`.',
   defaultedFileSentence,

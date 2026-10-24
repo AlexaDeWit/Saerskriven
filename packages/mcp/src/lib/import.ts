@@ -22,7 +22,6 @@ import {
   type ModelWorkspace,
 } from './workspace.js';
 
-/** What `saer_import` takes: the file to convert and where the model goes. */
 export const importArgumentsSchema = z.object({
   file: z.string().describe(`The OTM or TM-BOM file to convert. ${pathReach}`),
   target: z
@@ -32,10 +31,8 @@ export const importArgumentsSchema = z.object({
     ),
 });
 
-/** What `saer_import` takes. */
 export type ImportArguments = z.infer<typeof importArgumentsSchema>;
 
-/** What `saer_import` answers with. */
 export const importResultSchema = writeReportSchema.extend({
   source: z.object({ file: z.string(), format: importFormatSchema }),
   movedToVersion3: z
@@ -45,10 +42,8 @@ export const importResultSchema = writeReportSchema.extend({
     ),
 });
 
-/** What `saer_import` answers with. */
 export type ImportResult = z.infer<typeof importResultSchema>;
 
-/** What `saer_import` tells a client it is for. */
 export const importDescription = [
   'Convert Open Threat Model (OTM) or TM-BOM into a new native YAML model.',
   '`file` is the source, `target` must not exist. Conversion is one-way: edit the new model, never the source.',

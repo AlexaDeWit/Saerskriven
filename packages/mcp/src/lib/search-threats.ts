@@ -35,7 +35,6 @@ import {
 } from './threat-rows.js';
 import type { ModelWorkspace } from './workspace.js';
 
-/** What `saer_search_threats` takes. */
 export const searchThreatsArgumentsSchema = searchArgumentsSchema.extend({
   status: threatStatusSchema
     .optional()
@@ -67,22 +66,18 @@ export const searchThreatsArgumentsSchema = searchArgumentsSchema.extend({
     ),
 });
 
-/** What `saer_search_threats` takes. */
 export type SearchThreatsArguments = z.infer<
   typeof searchThreatsArgumentsSchema
 >;
 
-/** What `saer_search_threats` answers with. */
 export const searchThreatsResultSchema = readingSchema.extend({
   counts: searchCountsSchema,
   response_format: responseFormatSchema,
   threats: z.array(threatDetailSchema),
 });
 
-/** What `saer_search_threats` answers with. */
 export type SearchThreatsResult = z.infer<typeof searchThreatsResultSchema>;
 
-/** What `saer_search_threats` tells a client it is for. */
 export const searchThreatsDescription = [
   'Find recorded threats in register order: number, id, title, status, severity, category, element ids, model-wide applicability and flags.',
   defaultedFileSentence,

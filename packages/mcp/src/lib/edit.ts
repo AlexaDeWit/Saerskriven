@@ -49,10 +49,6 @@ import {
   type ReadModelFile,
 } from './workspace.js';
 
-/**
- * What `saer_edit` takes: the file, the handle it was read at, the batch, and
- * whether to drop what this version cannot read.
- */
 export const editArgumentsSchema = revisionArgumentSchema.extend({
   edits: z
     .array(modelEditSchema)
@@ -68,10 +64,8 @@ export const editArgumentsSchema = revisionArgumentSchema.extend({
     ),
 });
 
-/** What `saer_edit` takes. */
 export type EditArguments = z.infer<typeof editArgumentsSchema>;
 
-/** What `saer_edit` answers with. */
 export const editResultSchema = writeReportSchema.extend({
   applied: z.int().positive(),
   culled: z
@@ -101,10 +95,8 @@ export const editResultSchema = writeReportSchema.extend({
     ),
 });
 
-/** What `saer_edit` answers with. */
 export type EditResult = z.infer<typeof editResultSchema>;
 
-/** What `saer_edit` tells a client it is for. */
 export const editDescription = [
   'Apply an ordered edit batch and save in the existing format. A Saerskriven YAML file is written as version 2, whichever version it was read from, while version 2 holds the model, and as version 3 once it holds what version 2 cannot: an element on more than one diagram, a flow end drawn away from its element, or a relationship list naming an element of another diagram. A release that reads only versions 1 and 2 refuses a version 3 file whole, and `movedToVersion3` in the result says when a batch moved a file read as version 1 or 2 there.',
   'Edits run on one parsed model with one final write. Any refused edit stops the batch without changing file bytes. The error names its index and reason.',

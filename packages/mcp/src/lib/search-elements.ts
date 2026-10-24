@@ -34,7 +34,6 @@ import {
 } from './search.js';
 import type { ModelWorkspace } from './workspace.js';
 
-/** What `saer_search_elements` takes. */
 export const searchElementsArgumentsSchema = searchArgumentsSchema.extend({
   element: elementIdSchema
     .optional()
@@ -54,22 +53,18 @@ export const searchElementsArgumentsSchema = searchArgumentsSchema.extend({
     ),
 });
 
-/** What `saer_search_elements` takes. */
 export type SearchElementsArguments = z.infer<
   typeof searchElementsArgumentsSchema
 >;
 
-/** What `saer_search_elements` answers with. */
 export const searchElementsResultSchema = readingSchema.extend({
   counts: searchCountsSchema,
   response_format: responseFormatSchema,
   elements: z.array(elementResultSchema),
 });
 
-/** What `saer_search_elements` answers with. */
 export type SearchElementsResult = z.infer<typeof searchElementsResultSchema>;
 
-/** What `saer_search_elements` tells a client it is for. */
 export const searchElementsDescription = [
   'Find actors, processes, stores, flows, trust boundaries and canvas notes. Returns ids, diagram membership, kind, name, scope, optional accent and recorded threat counts.',
   defaultedFileSentence,

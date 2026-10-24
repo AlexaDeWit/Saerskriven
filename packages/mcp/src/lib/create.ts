@@ -11,7 +11,6 @@ import type { ModelWorkspace } from './workspace.js';
 
 const metadata = modelMetadataSchema.shape;
 
-/** What `saer_create` takes: where the file goes and the model's metadata. */
 export const createArgumentsSchema = z.object({
   file: z
     .string()
@@ -34,13 +33,10 @@ export const createArgumentsSchema = z.object({
     ),
 });
 
-/** What `saer_create` takes. */
 export type CreateArguments = z.infer<typeof createArgumentsSchema>;
 
-/** What `saer_create` answers with. */
 export type CreateResult = WriteReport;
 
-/** What `saer_create` tells a client it is for. */
 export const createDescription = [
   'Create an empty native YAML version 2 model with title and optional owner, description and contributors. No diagrams or analysis exist yet.',
   '`file` must not exist. Use saer_edit to change an existing model.',

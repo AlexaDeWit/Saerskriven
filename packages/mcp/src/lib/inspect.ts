@@ -29,7 +29,6 @@ import {
 import { renderAssumption } from './record-rows.js';
 import type { ModelWorkspace } from './workspace.js';
 
-/** What `saer_inspect` tells a client it is for. */
 export const inspectDescription = [
   'Read model metadata, model-wide assumptions, diagram summaries, totals, shared-element counts and format divergences.',
   'Call first for an unread model. Quote its fresh `revision` in writes.',
@@ -38,7 +37,6 @@ export const inspectDescription = [
   'Without a default or `file`, list candidate files under the root with no revision. Read-only.',
 ].join(' ');
 
-/** What `saer_inspect` takes. */
 export type InspectArguments = z.infer<typeof fileArgumentSchema>;
 
 const diagramSummarySchema = z.object({
@@ -87,7 +85,6 @@ export const inspectResultSchema = z.object({
   result: z.discriminatedUnion('kind', [inspectedSchema, candidatesSchema]),
 });
 
-/** What `saer_inspect` answers with. */
 export type InspectResult = z.infer<typeof inspectResultSchema>;
 
 /**
