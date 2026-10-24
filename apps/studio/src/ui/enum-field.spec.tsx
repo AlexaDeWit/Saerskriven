@@ -80,7 +80,7 @@ describe('EnumField', () => {
     }
   });
 
-  it('draws a suffix outside the label it tells apart, keeps both in the option name, and describes the option by its detail', async () => {
+  it('includes the visible label, suffix and detail in the option name', async () => {
     const user = userEvent.setup();
     render(
       <EnumField
@@ -106,15 +106,11 @@ describe('EnumField', () => {
     await user.keyboard('{Enter}');
 
     const option = screen.getByRole('option', {
-      name: 'Same long label (second)',
+      name: 'Same long label (second) detail of second',
     });
     expect(option.querySelector('[data-option-suffix]')?.textContent).toBe(
       '(second)',
     );
-    expect(
-      document.getElementById(option.getAttribute('aria-describedby') ?? '')
-        ?.textContent,
-    ).toContain('second');
   });
 
   it('shows its placeholder with nothing chosen while it has no value', async () => {

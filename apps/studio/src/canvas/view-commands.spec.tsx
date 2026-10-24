@@ -187,7 +187,9 @@ describe('useViewCommands', () => {
     await waitFor(() => {
       expect(transform()).not.toBe(selected);
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Reset zoom to 100%' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: /Reset zoom to 100%$/u }),
+    );
     await waitFor(() => {
       expect(transform()).toContain('scale(1)');
     });

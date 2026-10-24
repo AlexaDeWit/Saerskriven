@@ -24,7 +24,7 @@ export function AppearanceMenu({
       label={t('menu.appearance-chosen', { mode: chosen })}
       trigger={
         <>
-          <span>{heading}</span>
+          <span>{heading}</span>{' '}
           <span aria-hidden="true" className={styles.chord}>
             {chosen}
           </span>
@@ -58,7 +58,7 @@ export function LanguageMenu() {
       label={translator.t('menu.language-chosen', { language: chosen })}
       trigger={
         <>
-          <span>{heading}</span>
+          <span>{heading}</span>{' '}
           <span aria-hidden="true" className={styles.chord}>
             {chosen}
           </span>

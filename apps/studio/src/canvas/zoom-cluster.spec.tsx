@@ -23,7 +23,7 @@ describe('ZoomCluster', () => {
       'Control+-',
     );
     expect(
-      button('Reset zoom to 100%').getAttribute('aria-describedby'),
+      button('100% Reset zoom to 100%').getAttribute('aria-describedby'),
     ).toBeTruthy();
     expect(button('Fit to view').getAttribute('aria-keyshortcuts')).toBe(
       'Control+0',
@@ -45,7 +45,7 @@ describe('ZoomCluster', () => {
     await user.click(button('Zoom out'));
     await user.click(button('Fit to view'));
     await user.click(button('Fit selection'));
-    await user.click(button('Reset zoom to 100%'));
+    await user.click(button('100% Reset zoom to 100%'));
 
     expect(recording.asked).toEqual([
       'zoomIn',
@@ -70,16 +70,18 @@ describe('ZoomCluster', () => {
           <ZoomCluster />
         </ReactFlowProvider>,
       );
-      const reset = button('Reset zoom to 100%');
+      const reset = button('100% Reset zoom to 100%');
 
       for (const locale of locales) {
         act(() => {
           chooseLanguage(locale);
         });
 
-        expect(reset.textContent).toBe(
-          new Intl.NumberFormat(locale, { style: 'percent' }).format(1),
-        );
+        const shown = new Intl.NumberFormat(locale, {
+          style: 'percent',
+        }).format(1);
+        expect(reset.textContent).toBe(shown);
+        expect(reset.getAttribute('aria-label')?.startsWith(shown)).toBe(true);
       }
     });
   });

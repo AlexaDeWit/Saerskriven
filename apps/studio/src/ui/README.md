@@ -103,12 +103,11 @@ stored value to a catalogue message. `StatusField` lists them in the order the
 threat panel lists threats, from `review-order.ts`. `labelOf` is required, so a
 stored value is never drawn as its own label. It can return an `OptionText`: a
 `suffix` that tells two like labels apart, drawn on its own line so the cut
-below cannot hide it, and a `detail` line under the option that becomes its
-accessible description. The trigger and each option draw at most two lines of
-their label, so a long label cannot grow the trigger past the room its listbox
+below cannot hide it, and a `detail` line under the option. The trigger and each
+option draw at most two lines of their label, so a long label cannot grow the trigger past the room its listbox
 needs, and a caller can cut the trigger shorter. The accessible name is still
-the whole label and its suffix. A field with no `value` shows its `placeholder`,
-and its first option keeps the listbox's tab stop. The listbox is placed and
+the whole label, its suffix and its detail, in visible order. A field with no
+`value` shows its `placeholder`, and its first option keeps the listbox's tab stop. The listbox is placed and
 sized within the box the field scrolls in, the panel body, so it opens clear of
 the chrome card and the pane header. Radix hides the listbox's scrollbar, so
 where the options run past that room a chevron at the cut edge says the list
