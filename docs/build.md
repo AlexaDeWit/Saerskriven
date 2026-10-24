@@ -19,8 +19,8 @@ and builds every target on one Linux machine: `x86_64-unknown-linux-gnu`,
 `x86_64-pc-windows-msvc`. It runs the host executable five times: once for its
 version, once to validate `test-data/saerskriven/two-diagrams.yaml`, once each
 to render that model to PDF and to PNG, and once to write it as a share link.
-Node 26 packages an executable and is the runtime inside it. Node 24 stays the
-development and test runtime.
+Node 26.12.1 runs development and tests, packages each executable, and is the
+runtime inside it. This pin includes the October 2026 security fixes.
 
 The `test-compiled` target puts the CLI's scenario table through that
 executable. It hashes the `compile` output, and Nx stores and restores
@@ -295,7 +295,7 @@ defence against a compromised dependency or against hostile code inside the
 executable. Node calls its permission model a "seat belt" for trusted code,
 and its security policy says the model is designed "**not** to act as a
 security boundary against intentional misuse or a compromised process"
-([`SECURITY.md`](https://github.com/nodejs/node/blob/v26.11.0/SECURITY.md#permission-model-boundaries---permission)).
+([`SECURITY.md`](https://github.com/nodejs/node/blob/v26.12.1/SECURITY.md#permission-model-boundaries---permission)).
 The bundle run under node carries no restriction at all.
 
 The model also refuses a few calls whatever the grants: under it `fsync`,
@@ -322,7 +322,7 @@ The spec runs in the `test-compiled` target and in no other.
 A Node that adds a permission flag stops the build: the script compares the
 flags `node --help` lists with the ones it grants or denies, and refuses to
 package until each is one or the other. Node's main branch has `--allow-env`,
-which 26.11 does not: under it a process starts without the environment
+which 26.12.1 does not: under it a process starts without the environment
 variables it was not granted.
 
 ### What a Linux executable needs
@@ -330,7 +330,7 @@ variables it was not granted.
 The Linux executables are dynamically linked, as the official Node binaries
 are. The [README](../README.md#macos-and-linux) states what a system has to
 provide, and it is the one statement of it. Its source is Node's
-[`BUILDING.md`](https://github.com/nodejs/node/blob/v26.11.0/BUILDING.md#official-binary-platforms-and-toolchains),
+[`BUILDING.md`](https://github.com/nodejs/node/blob/v26.12.1/BUILDING.md#official-binary-platforms-and-toolchains),
 which gives the floor of the official binaries and says that since Node 25
 they need the libatomic runtime. To read what a built executable asks for:
 
@@ -340,7 +340,8 @@ objdump -T dist/cli/saer-<version>-x86_64-unknown-linux-gnu |
   grep -o 'GLIBC_[0-9.]*' | sort -V -u | tail -1
 ```
 
-On Node 26.11.0 both Linux executables name `libatomic.so.1`, `libstdc++.so.6`,
+Historical measurements on Node 26.11.0 found that both Linux executables name
+`libatomic.so.1`, `libstdc++.so.6`,
 `libgcc_s.so.1` and glibc's `libc`, `libm`, `libdl` and `libpthread`, and
 reference no version above `GLIBC_2.28` and `GLIBCXX_3.4.21`, which is at or
 under the floor Node states. A system that cannot provide them uses the
@@ -348,9 +349,9 @@ under the floor Node states. A system that cannot provide them uses the
 
 ### Bumping Node
 
-The flake names two Nodes. `nodejs_24` is the development and test runtime,
-and nothing here moves it. `nodejs-slim_26` packages the executables, and the
-version in the four URLs is its version, so a nixpkgs bump that moves Node 26
+The flake uses `nodejs_26` for development and tests and `nodejs-slim_26` for
+packaging. Both come from the same nixpkgs revision. The version in the four
+URLs is the packaging version, so a nixpkgs bump that moves Node 26
 moves all four URLs while the hashes stay behind. From then on every
 `nix develop` fails with a hash mismatch, because the binaries are an input of
 every shell, until the four hashes are replaced. Renovate does not know about
@@ -394,7 +395,8 @@ What a bump can change, and where to look:
   `README.md`, in the message of `scripts/release/install.sh` and in the
   test of that message in `scripts/release/install.test.mts`.
 - **The version in this page.** The two links into Node's repository above
-  name `v26.11.0`, and so do the sentences that say what was measured on it.
+  name `v26.12.1`. Keep historical measurements labelled with their measured
+  version until the new executable is measured.
 - **The Web Storage globals** that [CODING.md](../CODING.md#build-targets)
   records for the runtime inside an executable.
 

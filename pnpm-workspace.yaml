@@ -109,7 +109,7 @@ catalog:
   # types for their nodes, so the register's tree builders are typed from
   # here.
   '@types/mdast': ^4.0.4
-  '@types/node': ^24.0.0
+  '@types/node': ^26.0.0
   '@types/react': ^19.0.0
   '@types/react-dom': ^19.0.0
   # Parser only, for the boundaries host: no type program and no checker
