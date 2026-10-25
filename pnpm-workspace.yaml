@@ -192,3 +192,9 @@ minimumReleaseAgeExclude:
   - vitest@5.0.5
   - '@vitest/ui@5.0.5'
   - '@vitest/coverage-v8@5.0.5'
+
+# Read report ZIPs from memory: the bundled fd-slicer stops before EOF on
+# Node 26 (microsoft/playwright#40724). This holds one archive in memory.
+# Remove when the paired Playwright/browser upgrade includes #40747 (1.60+).
+patchedDependencies:
+  playwright-core@1.59.1: patches/playwright-core@1.59.1.patch
