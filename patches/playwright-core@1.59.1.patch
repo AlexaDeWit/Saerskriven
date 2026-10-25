@@ -1,0 +1,15 @@
+diff --git a/lib/server/utils/zipFile.js b/lib/server/utils/zipFile.js
+index fd49cf4e96f0a2e3d1b9f2786a4493418e56678c..84e141487c04aa1d270a332475c1d4067170480c 100644
+--- a/lib/server/utils/zipFile.js
++++ b/lib/server/utils/zipFile.js
+@@ -29,8 +29,9 @@ class ZipFile {
+   }
+   async _open() {
+     const { yauzl } = require("../../zipBundle");
++    const buffer = await require("fs").promises.readFile(this._fileName);
+     await new Promise((fulfill, reject) => {
+-      yauzl.open(this._fileName, { autoClose: false }, (e, z) => {
++      yauzl.fromBuffer(buffer, { autoClose: false }, (e, z) => {
+         if (e) {
+           reject(e);
+           return;

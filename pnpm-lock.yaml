@@ -181,6 +181,9 @@ catalogs:
 overrides:
   nx>undici: ^7.29.1
 
+patchedDependencies:
+  playwright-core@1.59.1: f0810e6aa31c40ada73b2bcaf3842bb9e3139559355b2db935aa83b2a9c9ba57
+
 importers:
 
   .:
@@ -378,7 +381,7 @@ importers:
     devDependencies:
       '@axe-core/playwright':
         specifier: 'catalog:'
-        version: 4.14.0(playwright-core@1.59.1)
+        version: 4.14.0(playwright-core@1.59.1(patch_hash=f0810e6aa31c40ada73b2bcaf3842bb9e3139559355b2db935aa83b2a9c9ba57))
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.59.1
@@ -5344,10 +5347,10 @@ snapshots:
       is-potential-custom-element-name: 1.0.1
       lru-cache: 11.5.3
 
-  '@axe-core/playwright@4.14.0(playwright-core@1.59.1)':
+  '@axe-core/playwright@4.14.0(playwright-core@1.59.1(patch_hash=f0810e6aa31c40ada73b2bcaf3842bb9e3139559355b2db935aa83b2a9c9ba57))':
     dependencies:
       axe-core: 4.14.0
-      playwright-core: 1.59.1
+      playwright-core: 1.59.1(patch_hash=f0810e6aa31c40ada73b2bcaf3842bb9e3139559355b2db935aa83b2a9c9ba57)
 
   '@babel/code-frame@7.29.7':
     dependencies:
@@ -9745,11 +9748,11 @@ snapshots:
 
   pkce-challenge@5.0.1: {}
 
-  playwright-core@1.59.1: {}
+  playwright-core@1.59.1(patch_hash=f0810e6aa31c40ada73b2bcaf3842bb9e3139559355b2db935aa83b2a9c9ba57): {}
 
   playwright@1.59.1:
     dependencies:
-      playwright-core: 1.59.1
+      playwright-core: 1.59.1(patch_hash=f0810e6aa31c40ada73b2bcaf3842bb9e3139559355b2db935aa83b2a9c9ba57)
     optionalDependencies:
       fsevents: 2.3.2
 
