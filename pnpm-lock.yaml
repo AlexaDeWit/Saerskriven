@@ -98,7 +98,7 @@ catalogs:
       version: 15.0.0
     effect:
       specifier: ^4.0.5
-      version: 4.0.5
+      version: 4.0.6
     esbuild:
       specifier: ^0.28.0
       version: 0.28.2
@@ -232,7 +232,7 @@ importers:
         version: 5.0.5(vitest@5.0.5)
       effect:
         specifier: 'catalog:'
-        version: 4.0.5
+        version: 4.0.6
       esbuild:
         specifier: 'catalog:'
         version: 0.28.2
@@ -304,7 +304,7 @@ importers:
         version: 15.0.0
       effect:
         specifier: 'catalog:'
-        version: 4.0.5
+        version: 4.0.6
       smol-toml:
         specifier: 'catalog:'
         version: 1.9.1
@@ -341,7 +341,7 @@ importers:
         version: 12.12.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       effect:
         specifier: 'catalog:'
-        version: 4.0.5
+        version: 4.0.6
       radix-ui:
         specifier: 'catalog:'
         version: 1.8.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -399,7 +399,7 @@ importers:
         version: link:../../packages/model
       effect:
         specifier: 'catalog:'
-        version: 4.0.5
+        version: 4.0.6
 
   packages/canvas:
     dependencies:
@@ -454,7 +454,7 @@ importers:
         version: link:../wire-tmbom
       effect:
         specifier: 'catalog:'
-        version: 4.0.5
+        version: 4.0.6
       yaml:
         specifier: 'catalog:'
         version: 2.9.1
@@ -487,7 +487,7 @@ importers:
         version: link:../render
       effect:
         specifier: 'catalog:'
-        version: 4.0.5
+        version: 4.0.6
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -503,7 +503,7 @@ importers:
     dependencies:
       effect:
         specifier: 'catalog:'
-        version: 4.0.5
+        version: 4.0.6
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -534,7 +534,7 @@ importers:
         version: 4.0.4
       effect:
         specifier: 'catalog:'
-        version: 4.0.5
+        version: 4.0.6
       react:
         specifier: 'catalog:'
         version: 19.3.1
@@ -580,7 +580,7 @@ importers:
     dependencies:
       effect:
         specifier: 'catalog:'
-        version: 4.0.5
+        version: 4.0.6
 
   packages/wire-otm:
     dependencies:
@@ -3869,8 +3869,8 @@ packages:
     resolution: {integrity: sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==}
     engines: {node: '>=12'}
 
-  effect@4.0.5:
-    resolution: {integrity: sha512-BY4/28NlpOd99yzmV741xbVGmp+1U7tks4oB7F/Png64bTa5tm5eCA6W0RiXsnuLDDoJpjfVSo4Dnq4BZb/89Q==}
+  effect@4.0.6:
+    resolution: {integrity: sha512-Tc3mkzuLR6t6P9dhLt0D2GrxYtmU5td4XEJEiXCmILz53IRIfJyHsKZWjTA3xEjiwpNTtXBgI4iqYPxMztBDrw==}
 
   ejs@5.0.1:
     resolution: {integrity: sha512-COqBPFMxuPTPspXl2DkVYaDS3HtrD1GpzOGkNTJ1IYkifq/r9h8SVEFrjA3D9/VJGOEoMQcrlhpntcSUrM8k6A==}
@@ -8644,7 +8644,7 @@ snapshots:
 
   dotenv@16.4.7: {}
 
-  effect@4.0.5: {}
+  effect@4.0.6: {}
 
   ejs@5.0.1: {}
 
