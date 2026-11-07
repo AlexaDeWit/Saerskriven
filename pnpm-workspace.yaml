@@ -80,12 +80,12 @@ catalog:
   # PDF's bytes, so a bump is a reviewed change. 0.7.0 carries Typst 0.14.2,
   # which the PDF's own Creator field records.
   '@myriaddreamin/typst-ts-web-compiler': 0.7.0
-  '@nx/esbuild': 23.3.0
-  '@nx/eslint-plugin': 23.3.0
-  '@nx/js': 23.3.0
-  '@nx/playwright': 23.3.0
-  '@nx/vite': 23.3.0
-  '@nx/vitest': 23.3.0
+  '@nx/esbuild': 23.3.1
+  '@nx/eslint-plugin': 23.3.1
+  '@nx/js': 23.3.1
+  '@nx/playwright': 23.3.1
+  '@nx/vite': 23.3.1
+  '@nx/vitest': 23.3.1
   # Pinned exactly to the nixpkgs playwright-driver version: the browsers come
   # from the flake, and a driver of one version cannot run browsers installed
   # for another. The version-equality test in apps/studio-e2e reds a mismatch,
@@ -140,7 +140,7 @@ catalog:
   fast-check: ^4.0.0
   jiti: 2.7.0
   jsdom: ^30.0.0
-  nx: 23.3.0
+  nx: 23.3.1
   # Pinned exactly: a pre-1.0 oxfmt bump may reformat the tree, so it happens
   # only in a reviewed PR. Renovate proposes the bumps.
   oxfmt: 0.72.0
